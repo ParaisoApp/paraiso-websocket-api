@@ -1,7 +1,10 @@
 package com.example.plugins
 
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationCallPipeline.ApplicationPhase.Plugins
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
@@ -27,14 +30,21 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
+        intercept(Plugins) {
+            val origin = call.request.header(HttpHeaders.Origin)
+            if (origin != null && origin != "http://localhost:3000/") {
+                call.respond(HttpStatusCode.Forbidden)
+                finish()
+            }
+        }
         webSocket("chat") {
+            send(Frame.Text("Enter username (or hit enter to generate random):"))
+            val username = (incoming.receive() as Frame.Text).readText().ifEmpty { "Guest ${UUID.randomUUID()}" }
             UUID.randomUUID().toString().let{
                 val currentUser = User(username = it, websocket = this)
                 allConnectedUsers[it] = currentUser
                 sendCurrentUserToGroupChat(currentUser)
             }
-            send(Frame.Text("Enter username (or hit enter to generate random):"))
-            val username = (incoming.receive() as Frame.Text).readText().ifEmpty { "Guest ${UUID.randomUUID()}" }
             //val currentLoggedInUser = User(username = username, websocket = this)
             //allConnectedUsers += currentLoggedInUser
             val greetingText = Frame.Text(getGreetingsText(allConnectedUsers, username))
