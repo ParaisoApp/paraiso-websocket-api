@@ -30,16 +30,10 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
-        intercept(Plugins) {
-            val origin = call.request.header(HttpHeaders.Origin)
-            if (origin != null && origin != "http://localhost:3000/") {
-                call.respond(HttpStatusCode.Forbidden)
-                finish()
-            }
-        }
         webSocket("chat") {
             send(Frame.Text("Enter username (or hit enter to generate random):"))
-            val username = (incoming.receive() as Frame.Text).readText().ifEmpty { "Guest ${UUID.randomUUID()}" }
+            val input = incoming.receive()
+            val username = (input as Frame.Text).readText().ifEmpty { "Guest ${UUID.randomUUID()}" }
             UUID.randomUUID().toString().let{
                 val currentUser = User(username = it, websocket = this)
                 allConnectedUsers[it] = currentUser
@@ -111,6 +105,7 @@ fun Application.configureSockets() {
 //}
 
 suspend fun DefaultWebSocketSession.joinGroupChat(user: User) {
+    allConnectedUsers.broadcastToAllUsers("${user.userId} joined")
     send(Frame.Text("Happy Chatting."))
     try {
         for (frame in incoming) {
@@ -146,7 +141,6 @@ suspend fun MutableMap<String, User>.broadcastToAllUsers(message: String) {
 suspend fun DefaultWebSocketSession.sendCurrentUserToGroupChat(
     user: User
 ) {
-    allConnectedUsers.broadcastToAllUsers("${user.userId} joined")
     joinGroupChat(user)
 }
 
