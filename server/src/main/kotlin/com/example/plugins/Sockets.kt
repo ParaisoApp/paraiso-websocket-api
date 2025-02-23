@@ -1,6 +1,5 @@
 package com.example.plugins
 
-import io.klogging.logger
 import io.ktor.serialization.WebsocketConverterNotFoundException
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.suitableCharset
@@ -11,16 +10,18 @@ import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.converter
 import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.sendSerialized
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
 import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.DefaultWebSocketSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
-import io.ktor.websocket.readBytes
 import io.ktor.websocket.readText
+import io.ktor.websocket.serialization.sendSerializedBase
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.util.Collections
@@ -50,24 +51,22 @@ fun Application.configureSockets() {
 }
 
 suspend fun WebSocketServerSession.joinGroupChat(user: User) {
-    allConnectedUsers.broadcastToAllUsers("${user.username} joined")
-    send(Frame.Text("Happy Chatting."))
+    sendSerialized("Happy Chatting.")
     try {
         incoming.consumeEach {frame ->
             when(frame){
                 is Frame.Text ->{
-                    try{
-                        val mes = converter?.deserialize(
+                    val msg: Message = try{
+                        converter?.deserialize(
                             call.request.headers.suitableCharset(),
                             typeInfo<Message>(),
                             frame
-                        ) as? Message
-                        if(mes?.type != "pong"){
-                            val outputMessage = "${user.username}: ${frame.readText()}"
-                            allConnectedUsers.broadcastToAllUsers(outputMessage)
-                        }
-                    }catch(e: WebsocketConverterNotFoundException){
-                        println(e.localizedMessage)
+                        ) as? Message ?: Message.Companion.create(user.userId, frame.readText())
+                    }catch(e: Exception){
+                        Message.Companion.create(frame.readText(), user.userId)
+                    }
+                    if(msg.type != "pong"){
+                        allConnectedUsers.broadcastToAllUsers(msg, this)
                     }
                 }
                 else -> {}//ignore
@@ -76,7 +75,7 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
     } catch (e: Exception) {
         println(e.localizedMessage)
     } finally {
-        allConnectedUsers.broadcastToAllUsers("${user.username} disconnected")
+        allConnectedUsers.broadcastBasicToAllUsers("${user.username} disconnected", this)
         allConnectedUsers.remove(user.userId)
         user.websocket.close()
     }
@@ -90,15 +89,33 @@ fun getGreetingsText(users: MutableMap<String, User>, currentUserUsername: Strin
     }
 }
 
-suspend fun MutableMap<String, User>.broadcastToAllUsers(message: String) {
-    this.forEach { (_, user) ->
-        user.websocket.send(Frame.Text(message))
+suspend fun MutableMap<String, User>.broadcastToAllUsers(message: Message, session: WebSocketServerSession) {
+    coroutineScope {
+        this@broadcastToAllUsers.forEach { (_, user) ->
+            launch{
+                session.converter?.let{
+                    user.websocket.sendSerialized(message)
+                }
+            }
+        }
+    }
+}
+
+suspend fun MutableMap<String, User>.broadcastBasicToAllUsers(message: String, session: WebSocketServerSession) {
+    coroutineScope {
+        this@broadcastBasicToAllUsers.forEach { (_, user) ->
+            launch{
+                session.converter?.let{
+                    user.websocket.sendSerialized(message)
+                }
+            }
+        }
     }
 }
 
 data class User(
     val userId: String,
     val username: String,
-    val websocket: DefaultWebSocketSession,
+    val websocket: WebSocketServerSession,
     var isReadyToChat: Boolean = false
 )
