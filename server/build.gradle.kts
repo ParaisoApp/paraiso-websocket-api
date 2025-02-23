@@ -1,5 +1,5 @@
 plugins {
-    id("base-websocket-api")
+    id("websocket")
     id("io.ktor.plugin") version "2.3.10"
 }
 
@@ -8,8 +8,9 @@ dependencies {
     implementation("io.ktor:ktor-websockets")
     implementation("io.ktor:ktor-server-websockets")
     implementation("io.ktor:ktor-server-netty")
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
 }
 
 application {
-    mainClass.set("com.example.ApplicationKt")
+    mainClass.set("com.example.Application")
 }

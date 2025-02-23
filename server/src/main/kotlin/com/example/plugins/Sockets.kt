@@ -1,118 +1,76 @@
 package com.example.plugins
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.application.ApplicationCallPipeline.ApplicationPhase.Plugins
-import io.ktor.server.request.*
-import io.ktor.server.response.*
+import io.klogging.logger
+import io.ktor.serialization.WebsocketConverterNotFoundException
+import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
+import io.ktor.serialization.suitableCharset
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.converter
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
+import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.DefaultWebSocketSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
+import io.ktor.websocket.readBytes
 import io.ktor.websocket.readText
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.util.Collections
 import java.util.LinkedHashMap
 import java.util.UUID
 
 val allConnectedUsers: MutableMap<String, User> = Collections.synchronizedMap(LinkedHashMap())
-//val groupChatUsers: MutableSet<User> = Collections.synchronizedSet(LinkedHashSet())
+// val groupChatUsers: MutableSet<User> = Collections.synchronizedSet(LinkedHashSet())
 
 fun Application.configureSockets() {
     install(WebSockets) {
-        pingPeriod = Duration.ofSeconds(15)
-        timeout = Duration.ofSeconds(15)
+        contentConverter = KotlinxWebsocketSerializationConverter(Json)
+        pingPeriod = Duration.ofSeconds(30)
+        timeout = Duration.ofSeconds(45)
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
     routing {
         webSocket("chat") {
-            send(Frame.Text("Enter username (or hit enter to generate random):"))
-            val input = incoming.receive()
-            val username = (input as Frame.Text).readText().ifEmpty { "Guest ${UUID.randomUUID()}" }
-            UUID.randomUUID().toString().let{
-                val currentUser = User(username = it, websocket = this)
+            UUID.randomUUID().toString().let {
+                val currentUser = User(userId = it, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = this)
                 allConnectedUsers[it] = currentUser
-                sendCurrentUserToGroupChat(currentUser)
+                joinGroupChat(currentUser)
             }
-            //val currentLoggedInUser = User(username = username, websocket = this)
-            //allConnectedUsers += currentLoggedInUser
-            val greetingText = Frame.Text(getGreetingsText(allConnectedUsers, username))
-            send(greetingText)
-//            send(Frame.Text("If you would like to join group chat type 1 or 0 if you want to talk privately with connected users"))
-//            val roomResponse = (incoming.receive() as Frame.Text).readText()
-//            when (roomResponse) {
-//                "1" -> {
-//                    sendCurrentUserToGroupChat(currentLoggedInUser)
-//                }
-//                "0" -> listConnectedUsersAndConnect(currentLoggedInUser)
-//                else -> {
-//                    send(Frame.Text("Well this is not an option, so you'll be redirected to group chat"))
-//                    sendCurrentUserToGroupChat(currentLoggedInUser)
-//                }
-//            }
         }
     }
 }
 
-//suspend fun DefaultWebSocketSession.listConnectedUsersAndConnect(user: User) {
-//    send(
-//        Frame.Text(
-//            """Here are the currently connected users
-//            Choose one to chat with
-//            ${allConnectedUsers.mapIndexed { index, user -> "$index-${user.username}${if (groupChatUsers.contains(user)) "(in group chat)" else ""}" }}
-//            NOTE: The user you'll choose will receive messages from you whether if they was
-//            in group or private channel, but they can't text you back unless they chose to
-//            """.trimMargin()
-//        )
-//    )
-//    val chatMateResponse = (incoming.receive() as Frame.Text).readText()
-//    val chatMate: User? = try {
-//        allConnectedUsers.toList()[chatMateResponse.toInt()]
-//    } catch (e: Exception) {
-//        send(Frame.Text("Specified user was not found or may have disconnected"))
-//        null
-//    }
-//    if (chatMate == null) {
-//        send(Frame.Text("You'll be sent to group chat and will notify once someone connects"))
-//        return sendCurrentUserToGroupChat(currentUser)
-//    }
-//    try {
-//        send(Frame.Text("Happy chatting with ${chatMate.username}"))
-//        for (frame in incoming) {
-//            if (frame is Frame.Text) {
-//                val outputMessage = "${currentUser.username}: ${frame.readText()}"
-//                chatMate.websocket.send(Frame.Text(outputMessage))
-//            }
-//        }
-//    } catch (e: NumberFormatException) {
-//        send(Frame.Text("No Such user were found, thus you'll be redirected to group channel"))
-//        sendCurrentUserToGroupChat(currentUser)
-//    } catch (e: IndexOutOfBoundsException) {
-//        send(Frame.Text("No Such user were found, thus you'll be redirected to group channel"))
-//        sendCurrentUserToGroupChat(currentUser)
-//    } catch (e: Exception) {
-//        println(e.localizedMessage)
-//    } finally {
-//        chatMate.websocket.send(Frame.Text("${currentUser.username} disconnected"))
-//        allConnectedUsers.remove() -= currentUser
-//        currentUser.websocket.close()
-//    }
-//}
-
-suspend fun DefaultWebSocketSession.joinGroupChat(user: User) {
-    allConnectedUsers.broadcastToAllUsers("${user.userId} joined")
+suspend fun WebSocketServerSession.joinGroupChat(user: User) {
+    allConnectedUsers.broadcastToAllUsers("${user.username} joined")
     send(Frame.Text("Happy Chatting."))
     try {
-        for (frame in incoming) {
-            if (frame is Frame.Text) {
-                val outputMessage = "${user.username}: ${frame.readText()}"
-                //TODO does this toString work?
-                allConnectedUsers.broadcastToAllUsers(outputMessage)
+        incoming.consumeEach {frame ->
+            when(frame){
+                is Frame.Text ->{
+                    try{
+                        val mes = converter?.deserialize(
+                            call.request.headers.suitableCharset(),
+                            typeInfo<Message>(),
+                            frame
+                        ) as? Message
+                        if(mes?.type != "pong"){
+                            val outputMessage = "${user.username}: ${frame.readText()}"
+                            allConnectedUsers.broadcastToAllUsers(outputMessage)
+                        }
+                    }catch(e: WebsocketConverterNotFoundException){
+                        println(e.localizedMessage)
+                    }
+                }
+                else -> {}//ignore
             }
         }
     } catch (e: Exception) {
@@ -138,14 +96,8 @@ suspend fun MutableMap<String, User>.broadcastToAllUsers(message: String) {
     }
 }
 
-suspend fun DefaultWebSocketSession.sendCurrentUserToGroupChat(
-    user: User
-) {
-    joinGroupChat(user)
-}
-
 data class User(
-    val userId: String = UUID.randomUUID().toString(),
+    val userId: String,
     val username: String,
     val websocket: DefaultWebSocketSession,
     var isReadyToChat: Boolean = false

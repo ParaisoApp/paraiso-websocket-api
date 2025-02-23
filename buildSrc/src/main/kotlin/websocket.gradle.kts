@@ -7,11 +7,11 @@ plugins {
     application
 }
 
-group = "com.base"
+group = "com"
 version = "0.0.1-SNAPSHOT"
 
 application {
-    mainClass.set("com.base.baseapi.ApiApplication")
+    mainClass.set("com.example.Application")
 }
 
 java {
@@ -26,7 +26,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm")
-    //implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
     implementation("io.klogging:klogging-jvm:0.5.11")
     implementation("ch.qos.logback:logback-classic:1.2.3")
 }
