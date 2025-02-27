@@ -1,7 +1,7 @@
 package com.example.plugins
 
- import kotlinx.serialization.SerialName
- import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class Message(
@@ -17,17 +17,23 @@ fun Message.Companion.create(content: String, userId: String) = Message(
     content = content,
     userId = userId,
     media = "",
-    type =  MessageType.MSG
+    type = MessageType.MSG
 )
 
 @Serializable
-enum class MessageType(){
-    @SerialName("msg") MSG,
-    @SerialName("ping") PING,
-    @SerialName("pong") PONG
+enum class MessageType() {
+    @SerialName("msg")
+    MSG,
+
+    @SerialName("ping")
+    PING,
+
+    @SerialName("pong")
+    PONG
 }
+
 @Serializable
 data class FooBar(
     val foo: String?,
-    val bar: String?,
+    val bar: String?
 )

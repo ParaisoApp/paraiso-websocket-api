@@ -1,11 +1,7 @@
 package com.example.plugins
 
 import io.ktor.serialization.WebsocketContentConverter
-import io.ktor.serialization.WebsocketConverterNotFoundException
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.serialization.suitableCharset
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.routing.routing
@@ -19,7 +15,6 @@ import io.ktor.server.websocket.webSocket
 import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
-import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -29,7 +24,6 @@ import java.time.Duration
 import java.util.Collections
 import java.util.LinkedHashMap
 import java.util.UUID
-import kotlin.reflect.typeOf
 
 val allConnectedUsers: MutableMap<String, User> = Collections.synchronizedMap(LinkedHashMap())
 // val groupChatUsers: MutableSet<User> = Collections.synchronizedSet(LinkedHashSet())
@@ -54,33 +48,21 @@ fun Application.configureSockets() {
 }
 suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     frame: Frame
-): Any? {
-    val result = runCatching {
-        this.deserialize(
-            Charset.defaultCharset(),
-            typeInfo<T>(),
-            frame
-        )
-    }
-    return result.getOrNull()
-}
+): T? = runCatching {
+    this.deserialize(
+        Charset.defaultCharset(),
+        typeInfo<T>(),
+        frame
+    )
+}.getOrNull() as? T
 
 suspend fun WebSocketServerSession.joinGroupChat(user: User) {
     sendSerialized("Happy Chatting.")
     try {
-        incoming.consumeEach {frame ->
-            val res = converter?.findCorrectConversion<Message>(frame) ?:
-                converter?.findCorrectConversion<FooBar>(frame)
-                println(res)
-            when(res){
-                is Message ->{
-                    println(res)
-//                    if(msg.type != MessageType.PONG){
-//                        allConnectedUsers.broadcastToAllUsers(msg, this)
-//                    }
-                }
-                else -> {println(res)}//ignore
-            }
+        incoming.consumeEach { frame ->
+            val res = converter?.findCorrectConversion<Message>(frame)
+                ?: converter?.findCorrectConversion<FooBar>(frame)
+            println(res)
         }
     } catch (e: Exception) {
         println(e.localizedMessage)
@@ -102,8 +84,8 @@ fun getGreetingsText(users: MutableMap<String, User>, currentUserUsername: Strin
 suspend fun MutableMap<String, User>.broadcastToAllUsers(message: Message, session: WebSocketServerSession) {
     coroutineScope {
         this@broadcastToAllUsers.forEach { (_, user) ->
-            launch{
-                session.converter?.let{
+            launch {
+                session.converter?.let {
                     user.websocket.sendSerialized(message)
                 }
             }
@@ -114,8 +96,8 @@ suspend fun MutableMap<String, User>.broadcastToAllUsers(message: Message, sessi
 suspend fun MutableMap<String, User>.broadcastBasicToAllUsers(message: String, session: WebSocketServerSession) {
     coroutineScope {
         this@broadcastBasicToAllUsers.forEach { (_, user) ->
-            launch{
-                session.converter?.let{
+            launch {
+                session.converter?.let {
                     user.websocket.sendSerialized(message)
                 }
             }
