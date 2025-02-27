@@ -5,11 +5,11 @@ package com.example.plugins
 
 @Serializable
 data class Message(
-    val userId: String? = null,
-    val title: String? = null,
-    val content: String? = null,
-    val media: String? = null,
-    val type: MessageType? = null
+    val userId: String?,
+    val title: String?,
+    val content: String?,
+    val media: String?,
+    val type: MessageType?
 )
 
 fun Message.Companion.create(content: String, userId: String) = Message(
@@ -26,3 +26,8 @@ enum class MessageType(){
     @SerialName("ping") PING,
     @SerialName("pong") PONG
 }
+@Serializable
+data class FooBar(
+    val foo: String?,
+    val bar: String?,
+)

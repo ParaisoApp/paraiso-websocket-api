@@ -52,35 +52,34 @@ fun Application.configureSockets() {
         }
     }
 }
-
 suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     frame: Frame
-){
-    runCatching {
-        val result = this.deserialize(
+): Any? {
+    val result = runCatching {
+        this.deserialize(
             Charset.defaultCharset(),
             typeInfo<T>(),
             frame
-        ) as? T
-        println(result)
-    }.getOrNull()
+        )
+    }
+    return result.getOrNull()
 }
 
 suspend fun WebSocketServerSession.joinGroupChat(user: User) {
     sendSerialized("Happy Chatting.")
     try {
         incoming.consumeEach {frame ->
-            when(frame){
-                is Frame.Text ->{
-                    converter?.findCorrectConversion<Message>(frame)
-//                    val msg = Json.decodeFromString<Message>(frame.readText())
-//                    println(msg)
-//
+            val res = converter?.findCorrectConversion<Message>(frame) ?:
+                converter?.findCorrectConversion<FooBar>(frame)
+                println(res)
+            when(res){
+                is Message ->{
+                    println(res)
 //                    if(msg.type != MessageType.PONG){
 //                        allConnectedUsers.broadcastToAllUsers(msg, this)
 //                    }
                 }
-                else -> {}//ignore
+                else -> {println(res)}//ignore
             }
         }
     } catch (e: Exception) {
