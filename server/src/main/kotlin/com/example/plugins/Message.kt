@@ -5,11 +5,11 @@ package com.example.plugins
 
 @Serializable
 data class Message(
-    val userId: String?,
-    val title: String?,
-    val content: String?,
-    val media: String?,
-    val type: MessageType?
+    val userId: String? = null,
+    val title: String? = null,
+    val content: String? = null,
+    val media: String? = null,
+    val type: MessageType? = null
 )
 
 fun Message.Companion.create(content: String, userId: String) = Message(
