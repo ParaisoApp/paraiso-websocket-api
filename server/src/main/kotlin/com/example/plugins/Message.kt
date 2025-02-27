@@ -1,20 +1,28 @@
 package com.example.plugins
 
+ import kotlinx.serialization.SerialName
  import kotlinx.serialization.Serializable
 
 @Serializable
 data class Message(
-    val title: String? = "",
-    val content: String? = "",
-    val userId: String? = "",
-    val mediaUrl: String? = "",
-    val type: String? = ""
+    val userId: String?,
+    val title: String?,
+    val content: String?,
+    val media: String?,
+    val type: MessageType?
 )
 
 fun Message.Companion.create(content: String, userId: String) = Message(
     title = "",
     content = content,
     userId = userId,
-    mediaUrl = "",
-    type = "msg"
+    media = "",
+    type =  MessageType.MSG
 )
+
+@Serializable
+enum class MessageType(){
+    @SerialName("msg") MSG,
+    @SerialName("ping") PING,
+    @SerialName("pong") PONG
+}

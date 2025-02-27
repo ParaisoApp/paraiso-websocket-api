@@ -61,11 +61,13 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
                             call.request.headers.suitableCharset(),
                             typeInfo<Message>(),
                             frame
-                        ) as? Message ?: Message.Companion.create(user.userId, frame.readText())
+                        ) as? Message ?: Message.Companion.create(content = frame.readText(), userId = user.userId)
                     }catch(e: Exception){
-                        Message.Companion.create(frame.readText(), user.userId)
+                        println(e)
+                        println(frame.readText())
+                        Message.Companion.create(content = frame.readText(), userId = user.userId)
                     }
-                    if(msg.type != "pong"){
+                    if(msg.type != MessageType.PONG){
                         allConnectedUsers.broadcastToAllUsers(msg, this)
                     }
                 }
