@@ -62,7 +62,10 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
         incoming.consumeEach { frame ->
             val res = converter?.findCorrectConversion<Message>(frame)
                 ?: converter?.findCorrectConversion<FooBar>(frame)
-            println(res)
+            when(res){
+                is Message -> allConnectedUsers.broadcastToAllUsers(res, this)
+                else -> println(res)
+            }
         }
     } catch (e: Exception) {
         println(e.localizedMessage)
