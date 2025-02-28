@@ -15,6 +15,7 @@ import io.ktor.server.websocket.webSocket
 import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
+import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -48,18 +49,27 @@ fun Application.configureSockets() {
 }
 suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     frame: Frame
-): T? = runCatching {
-    this.deserialize(
-        Charset.defaultCharset(),
-        typeInfo<T>(),
-        frame
-    )
-}.getOrNull() as? T
+): T? {
+    return try {
+        this.deserialize(
+            Charset.defaultCharset(),
+            typeInfo<T>(),
+            frame
+        ) as? T
+    } catch (e: Exception){
+        println(e)
+        null
+    }
+}
+
 
 suspend fun WebSocketServerSession.joinGroupChat(user: User) {
     sendSerialized("Happy Chatting.")
     try {
         incoming.consumeEach { frame ->
+            if(frame is Frame.Text) println(frame.readText())
+            val tryConvert = converter?.findCorrectConversion<TypeMapping>(frame)
+            println(tryConvert)
             val res = converter?.findCorrectConversion<Message>(frame)
                 ?: converter?.findCorrectConversion<FooBar>(frame)
             when(res){

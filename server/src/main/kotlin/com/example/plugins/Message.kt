@@ -4,6 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class TypeMapping(
+    val typeMapper: Map<String, String>
+)
+
+@Serializable
 data class Message(
     val userId: String?,
     val title: String?,
