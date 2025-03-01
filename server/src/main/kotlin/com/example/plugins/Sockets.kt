@@ -67,14 +67,14 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
     sendSerialized("Happy Chatting.")
     try {
         incoming.consumeEach { frame ->
-            if(frame is Frame.Text) println(frame.readText())
-            val tryConvert = converter?.findCorrectConversion<TypeMapping>(frame)
-            println(tryConvert)
-            val res = converter?.findCorrectConversion<Message>(frame)
-                ?: converter?.findCorrectConversion<FooBar>(frame)
-            when(res){
-                is Message -> allConnectedUsers.broadcastToAllUsers(res, this)
-                else -> println(res)
+            val messageWithType = converter?.findCorrectConversion<TypeMapping>(frame)
+                ?.typeMapping?.entries?.first()
+            when(messageWithType?.key){
+                MessageType.MSG -> {
+                    val message = Json.decodeFromString<Message>(messageWithType.value)
+                    allConnectedUsers.broadcastToAllUsers(message, this)
+                }
+                else -> println("error")
             }
         }
     } catch (e: Exception) {
@@ -99,7 +99,7 @@ suspend fun MutableMap<String, User>.broadcastToAllUsers(message: Message, sessi
         this@broadcastToAllUsers.forEach { (_, user) ->
             launch {
                 session.converter?.let {
-                    user.websocket.sendSerialized(message)
+                    user.websocket.sendSerialized<Message>(message)
                 }
             }
         }

@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TypeMapping(
-    val typeMapper: Map<String, String>
+    val typeMapping: Map<MessageType, String>
 )
 
 @Serializable
@@ -14,15 +14,14 @@ data class Message(
     val title: String?,
     val content: String?,
     val media: String?,
-    val type: MessageType?
+    val type: String? = null
 )
 
 fun Message.Companion.create(content: String, userId: String) = Message(
     title = "",
     content = content,
     userId = userId,
-    media = "",
-    type = MessageType.MSG
+    media = ""
 )
 
 @Serializable
@@ -36,9 +35,3 @@ enum class MessageType() {
     @SerialName("pong")
     PONG
 }
-
-@Serializable
-data class FooBar(
-    val foo: String?,
-    val bar: String?
-)
