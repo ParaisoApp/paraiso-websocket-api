@@ -70,11 +70,11 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
                 ?.typeMapping?.entries?.first()
             when(messageWithType?.key){
                 MessageType.MSG -> {
-                    val message = Json.decodeFromString<Message>(messageWithType.value)
+                    val message = Json.decodeFromString<Message>(messageWithType.value).copy(userId = user.userId)
                     allConnectedUsers.broadcastToAllUsers(message, MessageType.MSG, this)
                 }
                 MessageType.VOTE -> {
-                    val vote = Json.decodeFromString<Vote>(messageWithType.value)
+                    val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)
                     allConnectedUsers.broadcastToAllUsers(vote, MessageType.VOTE, this)
                 }
                 else -> println("error")
