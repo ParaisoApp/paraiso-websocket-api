@@ -15,7 +15,6 @@ import io.ktor.server.websocket.webSocket
 import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
-import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -64,10 +63,10 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
 
 
 suspend fun WebSocketServerSession.joinGroupChat(user: User) {
-    sendSerialized("Happy Chatting.")
+    sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to "Happy Chatting")))
     try {
         incoming.consumeEach { frame ->
-            val messageWithType = converter?.findCorrectConversion<TypeMapping>(frame)
+            val messageWithType = converter?.findCorrectConversion<TypeMapping<String>>(frame)
                 ?.typeMapping?.entries?.first()
             when(messageWithType?.key){
                 MessageType.MSG -> {
@@ -99,7 +98,7 @@ suspend fun MutableMap<String, User>.broadcastToAllUsers(message: Message, sessi
         this@broadcastToAllUsers.forEach { (_, user) ->
             launch {
                 session.converter?.let {
-                    user.websocket.sendSerialized<Message>(message)
+                    user.websocket.sendSerialized<TypeMapping<Message>>(TypeMapping(mapOf(MessageType.MSG to message)))
                 }
             }
         }
@@ -111,7 +110,7 @@ suspend fun MutableMap<String, User>.broadcastBasicToAllUsers(message: String, s
         this@broadcastBasicToAllUsers.forEach { (_, user) ->
             launch {
                 session.converter?.let {
-                    user.websocket.sendSerialized(message)
+                    user.websocket.sendSerialized(TypeMapping(mapOf(MessageType.BASIC to message)))
                 }
             }
         }
