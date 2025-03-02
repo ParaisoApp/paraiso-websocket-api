@@ -38,9 +38,10 @@ fun Application.configureSockets() {
     }
     routing {
         webSocket("chat") {
-            UUID.randomUUID().toString().let {
-                val currentUser = User(userId = it, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = this)
-                allConnectedUsers[it] = currentUser
+            UUID.randomUUID().toString().let {id ->
+                val currentUser = User(userId = id, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = this)
+                sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.GUEST to id)))
+                allConnectedUsers[id] = currentUser
                 joinGroupChat(currentUser)
             }
         }
