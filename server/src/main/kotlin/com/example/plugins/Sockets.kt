@@ -71,7 +71,11 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
             when(messageWithType?.key){
                 MessageType.MSG -> {
                     val message = Json.decodeFromString<Message>(messageWithType.value)
-                    allConnectedUsers.broadcastToAllUsers(message, this)
+                    allConnectedUsers.broadcastToAllUsers(message, MessageType.MSG, this)
+                }
+                MessageType.VOTE -> {
+                    val vote = Json.decodeFromString<Vote>(messageWithType.value)
+                    allConnectedUsers.broadcastToAllUsers(vote, MessageType.VOTE, this)
                 }
                 else -> println("error")
             }
@@ -79,7 +83,7 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
     } catch (e: Exception) {
         println(e.localizedMessage)
     } finally {
-        allConnectedUsers.broadcastBasicToAllUsers("${user.username} disconnected", this)
+        allConnectedUsers.broadcastToAllUsers("${user.username} disconnected", MessageType.BASIC, this)
         allConnectedUsers.remove(user.userId)
         user.websocket.close()
     }
@@ -93,12 +97,12 @@ fun getGreetingsText(users: MutableMap<String, User>, currentUserUsername: Strin
     }
 }
 
-suspend fun MutableMap<String, User>.broadcastToAllUsers(message: Message, session: WebSocketServerSession) {
+suspend inline fun <reified T> MutableMap<String, User>.broadcastToAllUsers(value: T, type: MessageType, session: WebSocketServerSession) {
     coroutineScope {
         this@broadcastToAllUsers.forEach { (_, user) ->
             launch {
                 session.converter?.let {
-                    user.websocket.sendSerialized<TypeMapping<Message>>(TypeMapping(mapOf(MessageType.MSG to message)))
+                    user.websocket.sendSerialized<TypeMapping<T>>(TypeMapping(mapOf(type to value)))
                 }
             }
         }
