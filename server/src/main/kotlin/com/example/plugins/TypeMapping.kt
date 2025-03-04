@@ -20,6 +20,9 @@ enum class MessageType() {
     @SerialName("guest")
     GUEST,
 
+    @SerialName("userList")
+    USER_LIST,
+
     @SerialName("basic")
     BASIC,
 

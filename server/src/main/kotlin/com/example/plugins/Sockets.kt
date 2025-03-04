@@ -40,7 +40,6 @@ fun Application.configureSockets() {
         webSocket("chat") {
             UUID.randomUUID().toString().let {id ->
                 val currentUser = User(userId = id, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = this)
-                sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.GUEST to id)))
                 allConnectedUsers[id] = currentUser
                 joinGroupChat(currentUser)
             }
@@ -64,14 +63,19 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
 
 
 suspend fun WebSocketServerSession.joinGroupChat(user: User) {
+    sendSerialized<TypeMapping<List<String>>>(TypeMapping(mapOf(MessageType.USER_LIST to allConnectedUsers.values.map { it.userId })))
     sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to "Happy Chatting")))
+    allConnectedUsers.broadcastToAllUsers(user.userId, MessageType.GUEST, this)
     try {
         incoming.consumeEach { frame ->
             val messageWithType = converter?.findCorrectConversion<TypeMapping<String>>(frame)
                 ?.typeMapping?.entries?.first()
             when(messageWithType?.key){
                 MessageType.MSG -> {
-                    val message = Json.decodeFromString<Message>(messageWithType.value).copy(userId = user.userId)
+                    val message = Json.decodeFromString<Message>(messageWithType.value).copy(
+                        id = "${(Math.random() * 10000).toInt()}",
+                        userId = user.userId
+                    )
                     allConnectedUsers.broadcastToAllUsers(message, MessageType.MSG, this)
                 }
                 MessageType.VOTE -> {
@@ -104,18 +108,6 @@ suspend inline fun <reified T> MutableMap<String, User>.broadcastToAllUsers(valu
             launch {
                 session.converter?.let {
                     user.websocket.sendSerialized<TypeMapping<T>>(TypeMapping(mapOf(type to value)))
-                }
-            }
-        }
-    }
-}
-
-suspend fun MutableMap<String, User>.broadcastBasicToAllUsers(message: String, session: WebSocketServerSession) {
-    coroutineScope {
-        this@broadcastBasicToAllUsers.forEach { (_, user) ->
-            launch {
-                session.converter?.let {
-                    user.websocket.sendSerialized(TypeMapping(mapOf(MessageType.BASIC to message)))
                 }
             }
         }
