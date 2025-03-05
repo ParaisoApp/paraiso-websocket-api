@@ -17,6 +17,9 @@ enum class MessageType() {
     @SerialName("vote")
     VOTE,
 
+    @SerialName("delete")
+    DELETE,
+
     @SerialName("guest")
     GUEST,
 

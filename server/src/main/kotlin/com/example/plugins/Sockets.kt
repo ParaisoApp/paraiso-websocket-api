@@ -82,6 +82,10 @@ suspend fun WebSocketServerSession.joinGroupChat(user: User) {
                     val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)
                     allConnectedUsers.broadcastToAllUsers(vote, MessageType.VOTE, this)
                 }
+                MessageType.DELETE -> {
+                    val vote = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = user.userId)
+                    allConnectedUsers.broadcastToAllUsers(vote, MessageType.DELETE, this)
+                }
                 else -> println("error")
             }
         }
