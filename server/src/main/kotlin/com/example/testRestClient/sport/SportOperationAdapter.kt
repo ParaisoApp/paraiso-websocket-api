@@ -1,5 +1,6 @@
 package com.example.testRestClient.sport
 
+import com.example.testRestClient.util.ApiConfig
 import com.example.messageTypes.BoxScore as BoxScoreDomain
 import com.example.messageTypes.Scoreboard as ScoreboardDomain
 import com.example.testRestClient.util.BaseAdapter
@@ -11,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class SportOperationAdapter(
-    //private val apiConfig: ApiConfig
+    private val apiConfig: ApiConfig
 ): BaseAdapter, Klogging {
 
     companion object {
@@ -20,7 +21,7 @@ class SportOperationAdapter(
 
     suspend fun getSchedule(): ScoreboardDomain? = withContext(dispatcher) {
         try{
-            val url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+            val url = "${apiConfig.statsBaseUrl}/scoreboard"
             val response: BBallScoreboard = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if(it.status != HttpStatusCode.OK){
@@ -37,7 +38,7 @@ class SportOperationAdapter(
     }
     suspend fun getGameStats(gameId: String): BoxScoreDomain? = withContext(dispatcher)  {
         try{
-            val url = "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=$gameId"
+            val url = "${apiConfig.statsBaseUrl}/summary?event=$gameId"
             val response: BBallGameStats = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if(it.status != HttpStatusCode.OK){
