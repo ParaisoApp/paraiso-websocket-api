@@ -17,6 +17,7 @@ import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.server.websocket.sendSerialized
 import io.ktor.websocket.close
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,7 +56,7 @@ class WebSocketHandler: Klogging {
         }
     }
     private suspend fun WebSocketServerSession.joinGroupChat(user: User) {
-        launch {
+        val sendScoreboard = launch {
             while(true){
                 scoreboard?.let {
                     sendSerialized<TypeMapping<Scoreboard?>>(TypeMapping(mapOf(MessageType.SCOREBOARD to scoreboard)))
@@ -92,6 +93,7 @@ class WebSocketHandler: Klogging {
         } catch (ex: Exception) {
             logger.error(ex){"Error parsing incoming data"}
         } finally {
+            sendScoreboard.cancelAndJoin()
             allConnectedUsers.broadcastToAllUsers("${user.username} disconnected", MessageType.BASIC)
             allConnectedUsers.remove(user.userId)
             user.websocket.close()
