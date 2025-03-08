@@ -18,6 +18,7 @@ data class BBallScoreboard(
 data class Event(
     val name: String,
     val shortName: String,
+    val date: String,
     val competitions: List<Competition>,
 )
 
@@ -64,7 +65,7 @@ data class Address(
 
 @Serializable
 data class Status(
-    val clock: Double,
+    val displayClock: String,
     val period: Int,
     val type: Type
 )
@@ -77,11 +78,14 @@ data class Type(
 )
 
 fun BBallScoreboard.toDomain() = Scoreboard(
-    competitions = this.events.map { it.competitions.first().toDomain() }
+    competitions = this.events.map { it.competitions.first().toDomain( it.name, it.shortName, it.date) }
 )
 
-fun Competition.toDomain() = CompetitionDomain(
+fun Competition.toDomain(name: String, shortName: String, date: String) = CompetitionDomain(
     id = id,
+    name = name,
+    shortName = shortName,
+    date = date,
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
     status = status.toDomain()
@@ -116,10 +120,12 @@ fun Venue.toDomain() = VenueDomain(
     state = address.state
 )
 
-fun Status.toDomain() = StatusDomain(
-    clock = clock,
-    period = period,
-    name = type.name,
-    state = type.state,
-    completed = type.completed
-)
+fun Status.toDomain() : StatusDomain {
+    return StatusDomain(
+        clock = if(type.name == "STATUS_FINAL") "F" else displayClock,
+        period = period,
+        name = type.name,
+        state = type.state,
+        completed = type.completed
+    )
+}

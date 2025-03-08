@@ -27,11 +27,11 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     }
 }
 
-suspend inline fun <reified T> MutableMap<String, User>.broadcastToAllUsers(value: T, type: MessageType, session: WebSocketServerSession) {
+suspend inline fun <reified T> MutableMap<String, User>.broadcastToAllUsers(value: T, type: MessageType) {
     coroutineScope {
         this@broadcastToAllUsers.forEach { (_, user) ->
             launch {
-                session.converter?.let {
+                user.websocket.let {
                     user.websocket.sendSerialized<TypeMapping<T>>(TypeMapping(mapOf(type to value)))
                 }
             }

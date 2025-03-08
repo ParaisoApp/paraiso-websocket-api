@@ -1,7 +1,5 @@
 package com.example.plugins
 
-import com.example.messageTypes.User
-import com.example.testRestClient.sport.SportOperationAdapter
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -10,12 +8,9 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
-import java.util.Collections
-import java.util.LinkedHashMap
 
 
 fun Application.configureSockets() {
@@ -27,13 +22,12 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
-        val allConnectedUsers: MutableMap<String, User> = Collections.synchronizedMap(LinkedHashMap())
         val handler = WebSocketHandler()
         runBlocking {
-            handler.buildSports()
+            handler.buildScoreboard()
         }
         webSocket("chat") {
-            handler.handleGuest(this, allConnectedUsers)
+            handler.handleGuest(this)
         }
     }
 }

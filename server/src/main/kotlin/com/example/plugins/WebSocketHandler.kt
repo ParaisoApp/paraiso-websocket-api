@@ -18,41 +18,52 @@ import io.ktor.server.websocket.sendSerialized
 import io.ktor.websocket.close
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
 class WebSocketHandler: Klogging {
     private var scoreboard: Scoreboard? = null
-    private var boxScores: List<BoxScore>? = null
+    private var boxScores: List<BoxScore> = listOf()
+    private val allConnectedUsers: MutableMap<String, User> = mutableMapOf()
     suspend fun buildScoreboard(){
         val sportAdapter = SportOperationAdapter()
         scoreboard = sportAdapter.getSchedule()
-        updateScores(sportAdapter)
+        //updateScores(sportAdapter)
     }
 
-    suspend fun updateScores(sportAdapter: SportOperationAdapter){
-        scoreboard?.competitions?.map {
-            delay(1000L)
+    private suspend fun updateScores(sportAdapter: SportOperationAdapter){
+        scoreboard?.competitions?.mapNotNull {
+            delay(10000L)
             sportAdapter.getGameStats(it.id)
-        }?.filterNotNull()?.also {
-            boxScores = it
+        }?.also { newBoxScores ->
+            allConnectedUsers.broadcastToAllUsers(boxScores, MessageType.BOX_SCORES)
+            boxScores = newBoxScores
         }
         delay(300000L)
         updateScores(sportAdapter)
     }
 
-    suspend fun handleGuest(session: WebSocketServerSession, allConnectedUsers: MutableMap<String, User>){
+    suspend fun handleGuest(session: WebSocketServerSession){
         UUID.randomUUID().toString().let { id ->
             val currentUser = User(userId = id, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = session)
             allConnectedUsers[id] = currentUser
-            session.joinGroupChat(currentUser, allConnectedUsers)
+            session.joinGroupChat(currentUser)
         }
     }
-    private suspend fun WebSocketServerSession.joinGroupChat(user: User, allConnectedUsers: MutableMap<String, User>) {
+    private suspend fun WebSocketServerSession.joinGroupChat(user: User) {
+        launch {
+            while(true){
+                scoreboard?.let {
+                    sendSerialized<TypeMapping<Scoreboard?>>(TypeMapping(mapOf(MessageType.SCOREBOARD to scoreboard)))
+                }
+                delay(50000L)
+            }
+        }
         sendSerialized<TypeMapping<List<String>>>(TypeMapping(mapOf(MessageType.USER_LIST to allConnectedUsers.values.map { it.userId })))
         sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to "Happy Chatting")))
-        allConnectedUsers.broadcastToAllUsers(user.userId, MessageType.GUEST, this)
+        allConnectedUsers.broadcastToAllUsers(user.userId, MessageType.GUEST)
         try {
             incoming.consumeEach { frame ->
                 val messageWithType = converter?.findCorrectConversion<TypeMapping<String>>(frame)
@@ -63,15 +74,15 @@ class WebSocketHandler: Klogging {
                             id = "${(Math.random() * 10000).toInt()}",
                             userId = user.userId
                         )
-                        allConnectedUsers.broadcastToAllUsers(message, MessageType.MSG, this)
+                        allConnectedUsers.broadcastToAllUsers(message, MessageType.MSG)
                     }
                     MessageType.VOTE -> {
                         val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)
-                        allConnectedUsers.broadcastToAllUsers(vote, MessageType.VOTE, this)
+                        allConnectedUsers.broadcastToAllUsers(vote, MessageType.VOTE)
                     }
                     MessageType.DELETE -> {
                         val vote = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = user.userId)
-                        allConnectedUsers.broadcastToAllUsers(vote, MessageType.DELETE, this)
+                        allConnectedUsers.broadcastToAllUsers(vote, MessageType.DELETE)
                     }
                     else -> logger.error{"Invalid message type received $messageWithType"}
                 }
@@ -79,7 +90,7 @@ class WebSocketHandler: Klogging {
         } catch (ex: Exception) {
             logger.error(ex){"Error parsing incoming data"}
         } finally {
-            allConnectedUsers.broadcastToAllUsers("${user.username} disconnected", MessageType.BASIC, this)
+            allConnectedUsers.broadcastToAllUsers("${user.username} disconnected", MessageType.BASIC)
             allConnectedUsers.remove(user.userId)
             user.websocket.close()
         }

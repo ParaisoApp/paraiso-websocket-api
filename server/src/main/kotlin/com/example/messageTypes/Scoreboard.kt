@@ -10,6 +10,9 @@ data class Scoreboard(
 @Serializable
 data class Competition(
     val id: String,
+    val name: String,
+    val shortName: String,
+    val date: String,
     val teams: List<Team>,
     val venue: Venue,
     val status: Status
@@ -39,7 +42,7 @@ data class Venue(
 
 @Serializable
 data class Status(
-    val clock: Double,
+    val clock: String,
     val period: Int,
     val name: String,
     val state: String,

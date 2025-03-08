@@ -26,6 +26,12 @@ enum class MessageType() {
     @SerialName("userList")
     USER_LIST,
 
+    @SerialName("scoreboard")
+    SCOREBOARD,
+
+    @SerialName("boxScores")
+    BOX_SCORES,
+
     @SerialName("basic")
     BASIC,
 

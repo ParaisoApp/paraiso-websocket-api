@@ -16,16 +16,16 @@ data class FullTeam(
 )
 
 @Serializable
-data class StatTypes (
-    val names: List<String>,
-    val descriptions: List<String>
-)
-
-@Serializable
 data class TeamStat(
     val displayValue: String,
     val abbreviation: String? = "",
     val label: String
+)
+
+@Serializable
+data class StatTypes (
+    val names: List<String>,
+    val descriptions: List<String>
 )
 
 @Serializable
