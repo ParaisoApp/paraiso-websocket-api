@@ -43,4 +43,4 @@ api/src/main/resources/application.yml
 /server/.gradle
 /client/build
 /server/build
-!**/application.yml
+*.application.yml
