@@ -44,3 +44,4 @@ api/src/main/resources/application.yml
 /client/build
 /server/build
 *.application.yml
+server/src/main/resources/application.yml
