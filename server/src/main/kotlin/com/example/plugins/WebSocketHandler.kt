@@ -9,6 +9,7 @@ import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.Vote
 import com.example.testRestClient.sport.SportOperationAdapter
+import com.example.testRestClient.util.ApiConfig
 import com.example.util.broadcastToAllUsers
 import com.example.util.findCorrectConversion
 import io.klogging.Klogging
@@ -28,7 +29,8 @@ class WebSocketHandler: Klogging {
     private var boxScores: List<BoxScore> = listOf()
     private val allConnectedUsers: MutableMap<String, User> = mutableMapOf()
     suspend fun buildScoreboard(){
-        val sportAdapter = SportOperationAdapter()
+        val apiConfig = ApiConfig()
+        val sportAdapter = SportOperationAdapter(apiConfig)
         scoreboard = sportAdapter.getSchedule()
         //updateScores(sportAdapter)
     }
