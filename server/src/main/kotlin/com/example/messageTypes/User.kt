@@ -1,4 +1,4 @@
-package com.example.plugins
+package com.example.messageTypes
 
 import io.ktor.server.websocket.WebSocketServerSession
 

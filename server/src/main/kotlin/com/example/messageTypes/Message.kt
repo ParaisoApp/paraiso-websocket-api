@@ -1,4 +1,4 @@
-package com.example.plugins
+package com.example.messageTypes
 
 import kotlinx.serialization.Serializable
 

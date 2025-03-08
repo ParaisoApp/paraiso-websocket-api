@@ -1,5 +1,14 @@
 package com.example.plugins
 
+import com.example.messageTypes.BoxScore
+import com.example.messageTypes.Delete
+import com.example.messageTypes.Message
+import com.example.messageTypes.MessageType
+import com.example.messageTypes.Scoreboard
+import com.example.messageTypes.TypeMapping
+import com.example.messageTypes.User
+import com.example.messageTypes.Vote
+import com.example.testRestClient.sport.SportOperationAdapter
 import com.example.util.broadcastToAllUsers
 import com.example.util.findCorrectConversion
 import io.klogging.Klogging
@@ -8,10 +17,31 @@ import io.ktor.server.websocket.converter
 import io.ktor.server.websocket.sendSerialized
 import io.ktor.websocket.close
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
 class WebSocketHandler: Klogging {
+    private var scoreboard: Scoreboard? = null
+    private var boxScores: List<BoxScore>? = null
+    suspend fun buildScoreboard(){
+        val sportAdapter = SportOperationAdapter()
+        scoreboard = sportAdapter.getSchedule()
+        updateScores(sportAdapter)
+    }
+
+    suspend fun updateScores(sportAdapter: SportOperationAdapter){
+        scoreboard?.competitions?.map {
+            delay(1000L)
+            sportAdapter.getGameStats(it.id)
+        }?.filterNotNull()?.also {
+            boxScores = it
+        }
+        delay(300000L)
+        updateScores(sportAdapter)
+    }
+
     suspend fun handleGuest(session: WebSocketServerSession, allConnectedUsers: MutableMap<String, User>){
         UUID.randomUUID().toString().let { id ->
             val currentUser = User(userId = id, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = session)

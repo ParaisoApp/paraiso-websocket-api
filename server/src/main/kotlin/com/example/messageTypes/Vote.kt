@@ -1,10 +1,10 @@
-package com.example.plugins
+package com.example.messageTypes
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Delete(
+data class Vote(
     val userId: String,
     val postId: String,
-    val parentId: String
+    val upvote: Boolean
 )

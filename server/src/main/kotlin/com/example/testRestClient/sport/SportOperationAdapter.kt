@@ -1,15 +1,24 @@
 package com.example.testRestClient.sport
 
+import com.example.messageTypes.BoxScore as BoxScoreDomain
+import com.example.messageTypes.Scoreboard as ScoreboardDomain
 import com.example.testRestClient.util.BaseAdapter
 import io.klogging.Klogging
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class SportOperationAdapter(
     //private val apiConfig: ApiConfig
 ): BaseAdapter, Klogging {
-    suspend fun getSchedule(): BBallScoreboard? {
+
+    companion object {
+        private val dispatcher = Dispatchers.IO
+    }
+
+    suspend fun getSchedule(): ScoreboardDomain? = withContext(dispatcher) {
         try{
             val url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
             val response: BBallScoreboard = getHttpClient().use { httpClient ->
@@ -20,14 +29,13 @@ class SportOperationAdapter(
                     it.body()
                 }
             }
-            getGameStats(response.events[0].competitions[0].id)
-            return response
+            response.toDomain()
         }catch (ex: Exception){
             logger.error("ex: $ex")
-            return null
+            null
         }
     }
-    suspend fun getGameStats(gameId: String): BBallGameStats? {
+    suspend fun getGameStats(gameId: String): BoxScoreDomain? = withContext(dispatcher)  {
         try{
             val url = "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=$gameId"
             val response: BBallGameStats = getHttpClient().use { httpClient ->
@@ -38,10 +46,10 @@ class SportOperationAdapter(
                     it.body()
                 }
             }
-            return response
+            response.toDomain()
         }catch (ex: Exception){
             logger.error("ex: $ex")
-            return null
+            null
         }
     }
 }

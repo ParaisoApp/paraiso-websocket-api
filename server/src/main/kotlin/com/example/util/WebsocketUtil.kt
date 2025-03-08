@@ -1,8 +1,8 @@
 package com.example.util
 
-import com.example.plugins.MessageType
-import com.example.plugins.TypeMapping
-import com.example.plugins.User
+import com.example.messageTypes.MessageType
+import com.example.messageTypes.TypeMapping
+import com.example.messageTypes.User
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
