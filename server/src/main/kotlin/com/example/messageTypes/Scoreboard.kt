@@ -29,7 +29,7 @@ data class Team(
     val homeAway: String,
     val records: List<Record>,
     val winner: Boolean? = false,
-    val linescores: List<LineScore>? = null,
+    val lineScores: List<Double>? = null,
     val score: String
 )
 
@@ -47,11 +47,6 @@ data class Status(
     val name: String,
     val state: String,
     val completed: Boolean
-)
-
-@Serializable
-data class LineScore(
-    val value: Double
 )
 
 @Serializable

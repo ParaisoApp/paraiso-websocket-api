@@ -4,7 +4,6 @@ import com.example.messageTypes.Scoreboard
 import com.example.messageTypes.Competition as CompetitionDomain
 import com.example.messageTypes.Team as TeamDomain
 import com.example.messageTypes.Record as RecordDomain
-import com.example.messageTypes.LineScore as LineScoreDomain
 import com.example.messageTypes.Venue as VenueDomain
 import com.example.messageTypes.Status as StatusDomain
 import kotlinx.serialization.Serializable
@@ -101,17 +100,13 @@ fun Competitor.toTeamDomain() = TeamDomain(
     homeAway = homeAway,
     records = records.map { it.toDomain() },
     winner = winner,
-    linescores = linescores?.map { it.toDomain() },
+    lineScores = linescores?.map { it.value },
     score = score
 )
 
 fun Record.toDomain() = RecordDomain(
     name = name,
     summary = summary
-)
-
-fun LineScore.toDomain() = LineScoreDomain(
-    value = value
 )
 
 fun Venue.toDomain() = VenueDomain(
@@ -122,7 +117,7 @@ fun Venue.toDomain() = VenueDomain(
 
 fun Status.toDomain() : StatusDomain {
     return StatusDomain(
-        clock = if(type.name == "STATUS_FINAL") "Final" else displayClock,
+        clock = displayClock,
         period = period,
         name = type.name,
         state = type.state,
