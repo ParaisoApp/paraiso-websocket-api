@@ -122,7 +122,7 @@ fun Venue.toDomain() = VenueDomain(
 
 fun Status.toDomain() : StatusDomain {
     return StatusDomain(
-        clock = if(type.name == "STATUS_FINAL") "F" else displayClock,
+        clock = if(type.name == "STATUS_FINAL") "Final" else displayClock,
         period = period,
         name = type.name,
         state = type.state,
