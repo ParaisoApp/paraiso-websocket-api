@@ -23,7 +23,7 @@ data class TeamStat(
 )
 
 @Serializable
-data class StatTypes (
+data class StatTypes(
     val names: List<String>,
     val descriptions: List<String>
 )
@@ -40,5 +40,5 @@ data class Athlete(
     val didNotPlay: Boolean,
     val reason: String,
     val ejected: Boolean,
-    val stats: List<String>,
+    val stats: List<String>
 )

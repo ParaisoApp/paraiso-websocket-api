@@ -12,10 +12,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-
 interface BaseAdapter : Klogging {
     fun getHttpClient(): HttpClient {
-        return HttpClient(CIO){
+        return HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(
                     Json {

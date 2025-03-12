@@ -12,7 +12,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
 
-
 fun Application.configureSockets() {
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })

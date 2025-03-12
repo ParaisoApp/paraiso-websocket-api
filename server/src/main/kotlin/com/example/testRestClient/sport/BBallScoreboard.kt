@@ -1,12 +1,12 @@
 package com.example.testRestClient.sport
 
 import com.example.messageTypes.Scoreboard
-import com.example.messageTypes.Competition as CompetitionDomain
-import com.example.messageTypes.Team as TeamDomain
-import com.example.messageTypes.Record as RecordDomain
-import com.example.messageTypes.Venue as VenueDomain
-import com.example.messageTypes.Status as StatusDomain
 import kotlinx.serialization.Serializable
+import com.example.messageTypes.Competition as CompetitionDomain
+import com.example.messageTypes.Record as RecordDomain
+import com.example.messageTypes.Status as StatusDomain
+import com.example.messageTypes.Team as TeamDomain
+import com.example.messageTypes.Venue as VenueDomain
 
 @Serializable
 data class BBallScoreboard(
@@ -18,7 +18,7 @@ data class Event(
     val name: String,
     val shortName: String,
     val date: String,
-    val competitions: List<Competition>,
+    val competitions: List<Competition>
 )
 
 @Serializable
@@ -47,7 +47,7 @@ data class LineScore(
 @Serializable
 data class Record(
     val name: String,
-    val summary: String,
+    val summary: String
 )
 
 @Serializable
@@ -77,7 +77,7 @@ data class Type(
 )
 
 fun BBallScoreboard.toDomain() = Scoreboard(
-    competitions = this.events.map { it.competitions.first().toDomain( it.name, it.shortName, it.date) }
+    competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, it.date) }
 )
 
 fun Competition.toDomain(name: String, shortName: String, date: String) = CompetitionDomain(
@@ -115,7 +115,7 @@ fun Venue.toDomain() = VenueDomain(
     state = address.state
 )
 
-fun Status.toDomain() : StatusDomain {
+fun Status.toDomain(): StatusDomain {
     return StatusDomain(
         clock = displayClock,
         period = period,

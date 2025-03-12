@@ -4,8 +4,6 @@ import com.example.messageTypes.MessageType
 import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import io.ktor.serialization.WebsocketContentConverter
-import io.ktor.server.websocket.WebSocketServerSession
-import io.ktor.server.websocket.converter
 import io.ktor.server.websocket.sendSerialized
 import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.Frame
@@ -21,7 +19,7 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
             typeInfo<T>(),
             frame
         ) as? T
-    } catch (e: Exception){
+    } catch (e: Exception) {
         println(e)
         null
     }

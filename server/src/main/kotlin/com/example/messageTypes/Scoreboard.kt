@@ -52,5 +52,5 @@ data class Status(
 @Serializable
 data class Record(
     val name: String,
-    val summary: String,
+    val summary: String
 )

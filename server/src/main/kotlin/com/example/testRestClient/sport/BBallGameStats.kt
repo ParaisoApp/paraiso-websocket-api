@@ -1,19 +1,19 @@
 package com.example.testRestClient.sport
 
 import kotlinx.serialization.Serializable
+import com.example.messageTypes.Athlete as AthleteDomain
 import com.example.messageTypes.BoxScore as BoxScoreDomain
 import com.example.messageTypes.FullTeam as FullTeamDomain
-import com.example.messageTypes.TeamStat as TeamStatDomain
 import com.example.messageTypes.StatTypes as StatTypesDomain
-import com.example.messageTypes.Athlete as AthleteDomain
+import com.example.messageTypes.TeamStat as TeamStatDomain
 
 @Serializable
-data class BBallGameStats (
+data class BBallGameStats(
     val boxscore: BoxScore
 )
 
 @Serializable
-data class BoxScore (
+data class BoxScore(
     val teams: List<TeamWithStats>,
     val players: List<Player>? = emptyList()
 )
@@ -32,7 +32,7 @@ data class TeamStat(
 )
 
 @Serializable
-data class Player (
+data class Player(
     val team: Team,
     val statistics: List<Statistic>
 )
@@ -44,28 +44,28 @@ data class Team(
     val name: String,
     val abbreviation: String,
     val displayName: String,
-    val shortDisplayName: String,
+    val shortDisplayName: String
 )
 
 @Serializable
-data class Statistic (
+data class Statistic(
     val names: List<String>,
     val descriptions: List<String>,
     val athletes: List<AthleteBase>
 )
 
 @Serializable
-data class AthleteBase (
+data class AthleteBase(
     val athlete: Athlete,
     val starter: Boolean,
     val didNotPlay: Boolean,
     val reason: String,
     val ejected: Boolean,
-    val stats: List<String>,
+    val stats: List<String>
 )
 
 @Serializable
-data class Athlete (
+data class Athlete(
     val id: String,
     val displayName: String,
     val shortName: String,
@@ -74,9 +74,9 @@ data class Athlete (
 )
 
 @Serializable
-data class Position (
+data class Position(
     val name: String,
-    val abbreviation: String,
+    val abbreviation: String
 )
 
 fun BBallGameStats.toDomain() = BoxScoreDomain(
