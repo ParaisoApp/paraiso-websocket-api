@@ -34,22 +34,21 @@ class WebSocketHandler : Klogging {
     private val userList: MutableMap<String, User> = mutableMapOf()
 
     private val messageSharedFlowMut = MutableSharedFlow<Message>(replay = 0)
-    private val messageSharedFlow = messageSharedFlowMut.asSharedFlow()
-
     private val voteSharedFlowMut = MutableSharedFlow<Vote>(replay = 0)
-    private val voteSharedFlow = voteSharedFlowMut.asSharedFlow()
-
     private val deleteSharedFlowMut = MutableSharedFlow<Delete>(replay = 0)
-    private val deleteSharedFlow = deleteSharedFlowMut.asSharedFlow()
-
     private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
-    private val basicSharedFlow = basicSharedFlowMut.asSharedFlow()
-
     private val guestSharedFlowMut = MutableSharedFlow<String>(replay = 0)
-    private val guestSharedFlow = guestSharedFlowMut.asSharedFlow()
-
     private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
-    private val boxScoreFlow = boxScoreFlowMut.asSharedFlow()
+
+    private val flowList = listOf( // convert to immutable for send to client
+        Pair(MessageType.MSG, messageSharedFlowMut.asSharedFlow()),
+        Pair(MessageType.VOTE, voteSharedFlowMut.asSharedFlow()),
+        Pair(MessageType.DELETE, deleteSharedFlowMut.asSharedFlow()),
+        Pair(MessageType.BASIC, basicSharedFlowMut.asSharedFlow()),
+        Pair(MessageType.GUEST, guestSharedFlowMut.asSharedFlow()),
+        Pair(MessageType.BOX_SCORES, boxScoreFlowMut.asSharedFlow()),
+    )
+
     suspend fun buildScoreboard() {
         val apiConfig = ApiConfig()
         val sportAdapter = SportOperationAdapter(apiConfig)
@@ -88,38 +87,21 @@ class WebSocketHandler : Klogging {
             }
         }
 
-        val messageCollectionJobs = listOf(
+        val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
             launch {
-                messageSharedFlow.collect { message ->
-                    sendTypedMessage(MessageType.MSG, message)
-                }
-            },
-            launch {
-                voteSharedFlow.collect { message ->
-                    sendTypedMessage(MessageType.VOTE, message)
-                }
-            },
-            launch {
-                deleteSharedFlow.collect { message ->
-                    sendTypedMessage(MessageType.DELETE, message)
-                }
-            },
-            launch {
-                guestSharedFlow.collect { message ->
-                    sendTypedMessage(MessageType.GUEST, message)
-                }
-            },
-            launch {
-                basicSharedFlow.collect { message ->
-                    sendTypedMessage(MessageType.BASIC, message)
-                }
-            },
-            launch {
-                boxScoreFlow.collect { message ->
-                    sendTypedMessage(MessageType.BOX_SCORES, message)
+                sharedFlow.collect { message ->
+                    when (type) {
+                        MessageType.MSG -> sendTypedMessage(type, message as Message)
+                        MessageType.VOTE -> sendTypedMessage(type, message as Vote)
+                        MessageType.DELETE -> sendTypedMessage(type, message as Delete)
+                        MessageType.BASIC -> sendTypedMessage(type, message as String)
+                        MessageType.GUEST -> sendTypedMessage(type, message as String)
+                        MessageType.BOX_SCORES -> sendTypedMessage(type, message as BoxScore)
+                        else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
+                    }
                 }
             }
-        )
+        }
 
         guestSharedFlowMut.emit(user.userId)
 

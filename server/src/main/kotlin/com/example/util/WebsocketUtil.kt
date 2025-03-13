@@ -10,8 +10,8 @@ import io.ktor.websocket.Frame
 import java.nio.charset.Charset
 suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     frame: Frame
-): T? {
-    return try {
+): T? =
+    try {
         this.deserialize(
             Charset.defaultCharset(),
             typeInfo<T>(),
@@ -21,8 +21,8 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
         println(e)
         null
     }
-}
 
-suspend fun <T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) {
+
+suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
     sendSerialized<TypeMapping<T>>(TypeMapping(mapOf(messageType to data)))
-}
+
