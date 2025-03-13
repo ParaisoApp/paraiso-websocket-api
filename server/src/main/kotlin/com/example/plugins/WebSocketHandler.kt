@@ -11,6 +11,7 @@ import com.example.messageTypes.Vote
 import com.example.testRestClient.sport.SportOperationAdapter
 import com.example.testRestClient.util.ApiConfig
 import com.example.util.findCorrectConversion
+import com.example.util.sendTypedMessage
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
@@ -75,46 +76,46 @@ class WebSocketHandler : Klogging {
         }
     }
     private suspend fun WebSocketServerSession.joinGroupChat(user: User) {
+        sendTypedMessage(MessageType.USER_LIST, allConnectedUsers.values.map { it.userId })
+        sendTypedMessage(MessageType.BASIC, "Happy Chatting")
         val sendScoreboard = launch {
             while (true) {
                 scoreboard?.let {
-                    sendSerialized<TypeMapping<Scoreboard?>>(TypeMapping(mapOf(MessageType.SCOREBOARD to scoreboard)))
+                    sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
                 }
                 delay(50000L)
             }
         }
-        sendSerialized<TypeMapping<List<String>>>(TypeMapping(mapOf(MessageType.USER_LIST to allConnectedUsers.values.map { it.userId })))
-        sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to "Happy Chatting")))
 
         val messageCollectionJobs = listOf(
             launch {
                 messageSharedFlow.collect { message ->
-                    sendSerialized<TypeMapping<Message>>(TypeMapping(mapOf(MessageType.MSG to message)))
+                    sendTypedMessage(MessageType.MSG, message)
                 }
             },
             launch {
                 voteSharedFlow.collect { message ->
-                    sendSerialized<TypeMapping<Vote>>(TypeMapping(mapOf(MessageType.VOTE to message)))
+                    sendTypedMessage(MessageType.VOTE, message)
                 }
             },
             launch {
                 deleteSharedFlow.collect { message ->
-                    sendSerialized<TypeMapping<Delete>>(TypeMapping(mapOf(MessageType.DELETE to message)))
+                    sendTypedMessage(MessageType.DELETE, message)
                 }
             },
             launch {
                 guestSharedFlow.collect { message ->
-                    sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.GUEST to message)))
+                    sendTypedMessage(MessageType.GUEST, message)
                 }
             },
             launch {
                 basicSharedFlow.collect { message ->
-                    sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to message)))
+                    sendTypedMessage(MessageType.BASIC, message)
                 }
             },
             launch {
                 boxScoreFlow.collect { message ->
-                    sendSerialized<TypeMapping<List<BoxScore>>>(TypeMapping(mapOf(MessageType.BOX_SCORES to message)))
+                    sendTypedMessage(MessageType.BOX_SCORES, message)
                 }
             }
         )
