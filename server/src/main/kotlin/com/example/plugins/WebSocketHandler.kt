@@ -22,7 +22,6 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -49,23 +48,23 @@ class WebSocketHandler : Klogging {
         Pair(MessageType.BOX_SCORES, boxScoreFlowMut.asSharedFlow()),
     )
 
+    private val apiConfig = ApiConfig()
+    private val sportAdapter = SportOperationAdapter(apiConfig)
+
     suspend fun buildScoreboard() {
-        val apiConfig = ApiConfig()
-        val sportAdapter = SportOperationAdapter(apiConfig)
         scoreboard = sportAdapter.getSchedule()
-        // updateScores(sportAdapter)
     }
 
-    private suspend fun updateScores(sportAdapter: SportOperationAdapter) {
-        scoreboard?.competitions?.mapNotNull {
-            delay(10000L)
-            sportAdapter.getGameStats(it.id)
-        }?.also { newBoxScores ->
-            boxScoreFlowMut.emit(newBoxScores)
-            boxScores = newBoxScores
+    suspend fun updateScores() {
+        while(true){
+            scoreboard?.competitions?.mapNotNull {
+                sportAdapter.getGameStats(it.id)
+            }?.also { newBoxScores ->
+                boxScoreFlowMut.emit(newBoxScores)
+                boxScores = newBoxScores
+            }
+            delay(300000L)
         }
-        delay(300000L)
-        updateScores(sportAdapter)
     }
 
     suspend fun handleGuest(session: WebSocketServerSession) {
@@ -78,14 +77,6 @@ class WebSocketHandler : Klogging {
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         sendTypedMessage(MessageType.USER_LIST, userList.values.map { it.userId })
         sendTypedMessage(MessageType.BASIC, "Happy Chatting")
-        val sendScoreboard = launch {
-            while (true) {
-                scoreboard?.let {
-                    sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
-                }
-                delay(50000L)
-            }
-        }
 
         val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
             launch {
@@ -100,6 +91,24 @@ class WebSocketHandler : Klogging {
                         else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
                     }
                 }
+            }
+        }
+
+        val sendScoreboard = launch {
+            while (true) {
+                scoreboard?.let {
+                    sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
+                }
+                delay(50000L)
+            }
+        }
+
+        val senBoxscore = launch {
+            while (true) {
+                if(boxScores.isNotEmpty()){
+                    sendTypedMessage(MessageType.BOX_SCORES, boxScores)
+                }
+                delay(50000L)
             }
         }
 
@@ -133,6 +142,7 @@ class WebSocketHandler : Klogging {
         }finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             sendScoreboard.cancelAndJoin()
+            senBoxscore.cancelAndJoin()
             basicSharedFlowMut.emit("${user.username} disconnected")
             userList.remove(user.userId)
             user.websocket.close()
