@@ -43,6 +43,9 @@ class WebSocketHandler : Klogging {
     private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
     private val basicSharedFlow = basicSharedFlowMut.asSharedFlow()
 
+    private val guestSharedFlowMut = MutableSharedFlow<String>(replay = 0)
+    private val guestSharedFlow = guestSharedFlowMut.asSharedFlow()
+
     private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
     private val boxScoreFlow = boxScoreFlowMut.asSharedFlow()
     suspend fun buildScoreboard() {
@@ -83,8 +86,7 @@ class WebSocketHandler : Klogging {
         sendSerialized<TypeMapping<List<String>>>(TypeMapping(mapOf(MessageType.USER_LIST to allConnectedUsers.values.map { it.userId })))
         sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to "Happy Chatting")))
 
-        basicSharedFlowMut.emit(user.userId)
-        val jobs = listOf(
+        val messageCollectionJobs = listOf(
             launch {
                 messageSharedFlow.collect { message ->
                     sendSerialized<TypeMapping<Message>>(TypeMapping(mapOf(MessageType.MSG to message)))
@@ -101,8 +103,13 @@ class WebSocketHandler : Klogging {
                 }
             },
             launch {
-                basicSharedFlow.collect { message ->
+                guestSharedFlow.collect { message ->
                     sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.GUEST to message)))
+                }
+            },
+            launch {
+                basicSharedFlow.collect { message ->
+                    sendSerialized<TypeMapping<String>>(TypeMapping(mapOf(MessageType.BASIC to message)))
                 }
             },
             launch {
@@ -112,33 +119,35 @@ class WebSocketHandler : Klogging {
             }
         )
 
-        runCatching {
-                incoming.consumeEach { frame ->
-                    val messageWithType = converter?.findCorrectConversion<TypeMapping<String>>(frame)
-                        ?.typeMapping?.entries?.first()
-                    when (messageWithType?.key) {
-                        MessageType.MSG -> {
-                            val message = Json.decodeFromString<Message>(messageWithType.value).copy(
-                                id = "${(Math.random() * 10000).toInt()}",
-                                userId = user.userId
-                            )
-                            messageSharedFlowMut.emit(message)
-                        }
-                        MessageType.VOTE -> {
-                            val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)
-                            voteSharedFlowMut.emit(vote)
-                        }
-                        MessageType.DELETE -> {
-                            val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = user.userId)
-                            deleteSharedFlowMut.emit(delete)
-                        }
-                        else -> logger.error { "Invalid message type received $messageWithType" }
+        guestSharedFlowMut.emit(user.userId)
+
+        try {
+            incoming.consumeEach { frame ->
+                val messageWithType = converter?.findCorrectConversion<TypeMapping<String>>(frame)
+                    ?.typeMapping?.entries?.first()
+                when (messageWithType?.key) {
+                    MessageType.MSG -> {
+                        val message = Json.decodeFromString<Message>(messageWithType.value).copy(
+                            id = "${(Math.random() * 10000).toInt()}",
+                            userId = user.userId
+                        )
+                        messageSharedFlowMut.emit(message)
                     }
+                    MessageType.VOTE -> {
+                        val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)
+                        voteSharedFlowMut.emit(vote)
+                    }
+                    MessageType.DELETE -> {
+                        val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = user.userId)
+                        deleteSharedFlowMut.emit(delete)
+                    }
+                    else -> logger.error { "Invalid message type received $messageWithType" }
                 }
-        }.onFailure{ ex ->
+            }
+        }catch(ex: Exception){
             logger.error(ex) { "Error parsing incoming data" }
-        }.also {
-            jobs.forEach { it.cancelAndJoin() }
+        }finally {
+            messageCollectionJobs.forEach { it.cancelAndJoin() }
             sendScoreboard.cancelAndJoin()
             basicSharedFlowMut.emit("${user.username} disconnected")
             allConnectedUsers.remove(user.userId)
