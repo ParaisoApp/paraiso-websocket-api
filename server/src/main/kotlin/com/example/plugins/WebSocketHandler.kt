@@ -30,7 +30,8 @@ import java.util.UUID
 class WebSocketHandler : Klogging {
     private var scoreboard: Scoreboard? = null
     private var boxScores: List<BoxScore> = listOf()
-    private val allConnectedUsers: MutableMap<String, User> = mutableMapOf()
+
+    private val userList: MutableMap<String, User> = mutableMapOf()
 
     private val messageSharedFlowMut = MutableSharedFlow<Message>(replay = 0)
     private val messageSharedFlow = messageSharedFlowMut.asSharedFlow()
@@ -71,12 +72,12 @@ class WebSocketHandler : Klogging {
     suspend fun handleGuest(session: WebSocketServerSession) {
         UUID.randomUUID().toString().let { id ->
             val currentUser = User(userId = id, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = session)
-            allConnectedUsers[id] = currentUser
-            session.joinGroupChat(currentUser)
+            userList[id] = currentUser
+            session.joinChat(currentUser)
         }
     }
-    private suspend fun WebSocketServerSession.joinGroupChat(user: User) {
-        sendTypedMessage(MessageType.USER_LIST, allConnectedUsers.values.map { it.userId })
+    private suspend fun WebSocketServerSession.joinChat(user: User) {
+        sendTypedMessage(MessageType.USER_LIST, userList.values.map { it.userId })
         sendTypedMessage(MessageType.BASIC, "Happy Chatting")
         val sendScoreboard = launch {
             while (true) {
@@ -151,7 +152,7 @@ class WebSocketHandler : Klogging {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             sendScoreboard.cancelAndJoin()
             basicSharedFlowMut.emit("${user.username} disconnected")
-            allConnectedUsers.remove(user.userId)
+            userList.remove(user.userId)
             user.websocket.close()
         }
     }
