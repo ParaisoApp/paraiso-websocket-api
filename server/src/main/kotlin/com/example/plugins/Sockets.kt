@@ -42,7 +42,6 @@ fun Application.configureSockets() {
         }
         serverScope.launch {
             handler.buildScoreboard()
-            handler.updateScores()
         }
     }
 }

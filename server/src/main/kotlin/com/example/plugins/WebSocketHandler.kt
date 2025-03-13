@@ -53,9 +53,10 @@ class WebSocketHandler : Klogging {
 
     suspend fun buildScoreboard() {
         scoreboard = sportAdapter.getSchedule()
+        updateScores()
     }
 
-    suspend fun updateScores() {
+    private suspend fun updateScores() {
         while(true){
             scoreboard?.competitions?.mapNotNull {
                 sportAdapter.getGameStats(it.id)
@@ -63,7 +64,7 @@ class WebSocketHandler : Klogging {
                 boxScoreFlowMut.emit(newBoxScores)
                 boxScores = newBoxScores
             }
-            delay(300000L)
+            delay(30000000L)
         }
     }
 
@@ -87,7 +88,7 @@ class WebSocketHandler : Klogging {
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.GUEST -> sendTypedMessage(type, message as String)
-                        MessageType.BOX_SCORES -> sendTypedMessage(type, message as BoxScore)
+                        MessageType.BOX_SCORES -> if(message is List<*>) sendTypedMessage(type, message.filterIsInstance<BoxScore>())
                         else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
                     }
                 }
