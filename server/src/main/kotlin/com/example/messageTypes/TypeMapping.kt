@@ -23,6 +23,9 @@ enum class MessageType() {
     @SerialName("guest")
     GUEST,
 
+    @SerialName("userLeave")
+    USER_LEAVE,
+
     @SerialName("userList")
     USER_LIST,
 

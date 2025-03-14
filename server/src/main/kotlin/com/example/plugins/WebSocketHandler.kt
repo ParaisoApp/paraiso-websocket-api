@@ -38,6 +38,7 @@ class WebSocketHandler : Klogging {
     private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
     private val guestSharedFlowMut = MutableSharedFlow<String>(replay = 0)
     private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
+    private val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
 
     private val flowList = listOf( // convert to immutable for send to client
         Pair(MessageType.MSG, messageSharedFlowMut.asSharedFlow()),
@@ -46,6 +47,7 @@ class WebSocketHandler : Klogging {
         Pair(MessageType.BASIC, basicSharedFlowMut.asSharedFlow()),
         Pair(MessageType.GUEST, guestSharedFlowMut.asSharedFlow()),
         Pair(MessageType.BOX_SCORES, boxScoreFlowMut.asSharedFlow()),
+        Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow()),
     )
 
     private val apiConfig = ApiConfig()
@@ -89,6 +91,7 @@ class WebSocketHandler : Klogging {
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.GUEST -> sendTypedMessage(type, message as String)
                         MessageType.BOX_SCORES -> if(message is List<*>) sendTypedMessage(type, message.filterIsInstance<BoxScore>())
+                        MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
                     }
                 }
@@ -144,7 +147,7 @@ class WebSocketHandler : Klogging {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             sendScoreboard.cancelAndJoin()
             senBoxscore.cancelAndJoin()
-            basicSharedFlowMut.emit("${user.username} disconnected")
+            userLeaveFlowMut.emit(user.userId)
             userList.remove(user.userId)
             user.websocket.close()
         }
