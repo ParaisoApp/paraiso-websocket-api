@@ -2,6 +2,7 @@ package com.example.plugins
 
 import com.example.messageTypes.BoxScore
 import com.example.messageTypes.Delete
+import com.example.messageTypes.DirectMessage
 import com.example.messageTypes.Message
 import com.example.messageTypes.MessageType
 import com.example.messageTypes.Scoreboard
@@ -129,6 +130,14 @@ class WebSocketHandler : Klogging {
                             userId = user.userId
                         )
                         messageSharedFlowMut.emit(message)
+                    }
+                    MessageType.DM -> {
+                        val message = Json.decodeFromString<DirectMessage>(messageWithType.value).copy(
+                            id = "${(Math.random() * 10000).toInt()}",
+                            userId = user.userId
+                        )
+                        launch { sendTypedMessage(MessageType.DM, message) }
+                        userList[message.userReceiveId]?.websocket?.sendTypedMessage(MessageType.DM, message)
                     }
                     MessageType.VOTE -> {
                         val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)

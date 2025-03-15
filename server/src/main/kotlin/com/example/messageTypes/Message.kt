@@ -12,3 +12,12 @@ data class Message(
     val replyId: String?,
     val editId: String?
 )
+
+@Serializable
+data class DirectMessage(
+    val id: String? = null,
+    val userId: String?,
+    val userReceiveId: String?,
+    val content: String?,
+    val media: String?,
+)
