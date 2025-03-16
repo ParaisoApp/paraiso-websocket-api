@@ -8,6 +8,7 @@ import com.example.messageTypes.MessageType
 import com.example.messageTypes.Scoreboard
 import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
+import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
 import com.example.testRestClient.sport.SportOperationAdapter
 import com.example.testRestClient.util.ApiConfig
@@ -16,7 +17,6 @@ import com.example.util.sendTypedMessage
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
-import io.ktor.server.websocket.sendSerialized
 import io.ktor.websocket.close
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
@@ -37,7 +37,7 @@ class WebSocketHandler : Klogging {
     private val voteSharedFlowMut = MutableSharedFlow<Vote>(replay = 0)
     private val deleteSharedFlowMut = MutableSharedFlow<Delete>(replay = 0)
     private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
-    private val guestSharedFlowMut = MutableSharedFlow<String>(replay = 0)
+    private val guestSharedFlowMut = MutableSharedFlow<UserInfo>(replay = 0)
     private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
     private val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
 
@@ -79,7 +79,7 @@ class WebSocketHandler : Klogging {
         }
     }
     private suspend fun WebSocketServerSession.joinChat(user: User) {
-        sendTypedMessage(MessageType.USER_LIST, userList.values.map { it.userId })
+        sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.userId, it.username) })
         sendTypedMessage(MessageType.BASIC, "Happy Chatting")
 
         val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
@@ -90,7 +90,7 @@ class WebSocketHandler : Klogging {
                         MessageType.VOTE -> sendTypedMessage(type, message as Vote)
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.GUEST -> sendTypedMessage(type, message as String)
+                        MessageType.GUEST -> sendTypedMessage(type, message as UserInfo)
                         MessageType.BOX_SCORES -> if(message is List<*>) sendTypedMessage(type, message.filterIsInstance<BoxScore>())
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
@@ -117,7 +117,7 @@ class WebSocketHandler : Klogging {
             }
         }
 
-        guestSharedFlowMut.emit(user.userId)
+        guestSharedFlowMut.emit(UserInfo(user.userId, user.username))
 
         try {
             incoming.consumeEach { frame ->
