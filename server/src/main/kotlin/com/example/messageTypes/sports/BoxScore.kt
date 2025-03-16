@@ -1,4 +1,4 @@
-package com.example.messageTypes
+package com.example.messageTypes.sports
 
 import kotlinx.serialization.Serializable
 
@@ -11,14 +11,14 @@ data class BoxScore(
 data class FullTeam(
     val teamId: String,
     val teamStats: List<TeamStat>,
-    val statTypes: StatTypes?,
+    val statTypes: StatTypes,
     val athletes: List<Athlete>?
 )
 
 @Serializable
 data class TeamStat(
     val displayValue: String,
-    val abbreviation: String? = "",
+    val abbreviation: String,
     val label: String
 )
 
@@ -33,7 +33,7 @@ data class Athlete(
     val id: String,
     val displayName: String,
     val shortName: String,
-    val jersey: String? = "",
+    val jersey: String,
     val positionName: String,
     val positionAbbreviation: String,
     val starter: Boolean,

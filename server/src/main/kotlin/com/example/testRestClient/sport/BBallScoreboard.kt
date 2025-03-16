@@ -1,12 +1,14 @@
 package com.example.testRestClient.sport
 
-import com.example.messageTypes.Scoreboard
+import com.example.messageTypes.sports.Scoreboard
+import com.example.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
-import com.example.messageTypes.Competition as CompetitionDomain
-import com.example.messageTypes.Record as RecordDomain
-import com.example.messageTypes.Status as StatusDomain
-import com.example.messageTypes.Team as TeamDomain
-import com.example.messageTypes.Venue as VenueDomain
+import com.example.messageTypes.sports.Competition as CompetitionDomain
+import com.example.messageTypes.sports.Record as RecordDomain
+import com.example.messageTypes.sports.Status as StatusDomain
+import com.example.messageTypes.sports.Team as TeamDomain
+import com.example.messageTypes.sports.Venue as VenueDomain
+import com.example.messageTypes.sports.TeamYearStats as TeamYearStatsDomain
 
 @Serializable
 data class BBallScoreboard(
@@ -33,10 +35,19 @@ data class Competition(
 data class Competitor(
     val homeAway: String,
     val team: Team,
-    val winner: Boolean? = false,
+    val winner: Boolean? = null,
     val score: String,
+    val statistics: List<TeamYearStats>,
     val linescores: List<LineScore>? = null,
     val records: List<Record>
+)
+
+@Serializable
+data class TeamYearStats(
+    val name: String,
+    val abbreviation: String,
+    val displayValue: String,
+    val rankDisplayValue: String? = null
 )
 
 @Serializable
@@ -99,9 +110,17 @@ fun Competitor.toTeamDomain() = TeamDomain(
     shortDisplayName = team.shortDisplayName,
     homeAway = homeAway,
     records = records.map { it.toDomain() },
-    winner = winner,
-    lineScores = linescores?.map { it.value },
+    winner = winner ?: false,
+    teamYearStats = statistics.map { it.toDomain() },
+    lineScores = linescores?.map { it.value } ?: emptyList(),
     score = score
+)
+
+fun TeamYearStats.toDomain() = TeamYearStatsDomain(
+    name = name,
+    abbreviation = abbreviation,
+    displayValue = displayValue,
+    rankDisplayValue = rankDisplayValue ?: UNKNOWN
 )
 
 fun Record.toDomain() = RecordDomain(

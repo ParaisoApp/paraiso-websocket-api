@@ -1,11 +1,12 @@
 package com.example.testRestClient.sport
 
+import com.example.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
-import com.example.messageTypes.Athlete as AthleteDomain
-import com.example.messageTypes.BoxScore as BoxScoreDomain
-import com.example.messageTypes.FullTeam as FullTeamDomain
-import com.example.messageTypes.StatTypes as StatTypesDomain
-import com.example.messageTypes.TeamStat as TeamStatDomain
+import com.example.messageTypes.sports.Athlete as AthleteDomain
+import com.example.messageTypes.sports.BoxScore as BoxScoreDomain
+import com.example.messageTypes.sports.FullTeam as FullTeamDomain
+import com.example.messageTypes.sports.StatTypes as StatTypesDomain
+import com.example.messageTypes.sports.TeamStat as TeamStatDomain
 
 @Serializable
 data class BBallGameStats(
@@ -15,7 +16,7 @@ data class BBallGameStats(
 @Serializable
 data class BoxScore(
     val teams: List<TeamWithStats>,
-    val players: List<Player>? = emptyList()
+    val players: List<Player>? = null
 )
 
 @Serializable
@@ -27,7 +28,7 @@ data class TeamWithStats(
 @Serializable
 data class TeamStat(
     val displayValue: String,
-    val abbreviation: String? = "",
+    val abbreviation: String? = null,
     val label: String
 )
 
@@ -69,7 +70,7 @@ data class Athlete(
     val id: String,
     val displayName: String,
     val shortName: String,
-    val jersey: String? = "",
+    val jersey: String? = null,
     val position: Position
 )
 
@@ -88,14 +89,14 @@ fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
     return FullTeamDomain(
         teamId = team.id,
         teamStats = statistics.map { it.toDomain() },
-        statTypes = stats?.toDomain(),
+        statTypes = stats?.toDomain() ?: StatTypesDomain(names = emptyList(), descriptions = emptyList()),
         athletes = stats?.athletes?.map { it.toDomain() }
     )
 }
 
 fun TeamStat.toDomain() = TeamStatDomain(
     displayValue = displayValue,
-    abbreviation = abbreviation,
+    abbreviation = abbreviation ?: UNKNOWN,
     label = label
 )
 
@@ -108,7 +109,7 @@ fun AthleteBase.toDomain() = AthleteDomain(
     id = athlete.id,
     displayName = athlete.displayName,
     shortName = athlete.shortName,
-    jersey = athlete.jersey,
+    jersey = athlete.jersey ?: UNKNOWN,
     positionName = athlete.position.name,
     positionAbbreviation = athlete.position.abbreviation,
     starter = starter,

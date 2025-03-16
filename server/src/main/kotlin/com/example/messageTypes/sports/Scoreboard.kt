@@ -1,4 +1,4 @@
-package com.example.messageTypes
+package com.example.messageTypes.sports
 
 import kotlinx.serialization.Serializable
 
@@ -28,9 +28,18 @@ data class Team(
     val shortDisplayName: String,
     val homeAway: String,
     val records: List<Record>,
-    val winner: Boolean? = false,
-    val lineScores: List<Double>? = null,
+    val winner: Boolean,
+    val teamYearStats: List<TeamYearStats>,
+    val lineScores: List<Double>,
     val score: String
+)
+
+@Serializable
+data class TeamYearStats(
+    val name: String,
+    val abbreviation: String,
+    val displayValue: String,
+    val rankDisplayValue: String
 )
 
 @Serializable

@@ -8,18 +8,25 @@ import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.example.messageTypes.BoxScore as BoxScoreDomain
-import com.example.messageTypes.Scoreboard as ScoreboardDomain
+import com.example.messageTypes.sports.BoxScore as BoxScoreDomain
+import com.example.messageTypes.sports.Scoreboard as ScoreboardDomain
+import com.example.messageTypes.sports.AllStandings as AllStandingsDomain
 
 class SportOperationAdapter(
     private val apiConfig: ApiConfig
 ) : BaseAdapter, Klogging {
 
     companion object {
+        private const val SEASON = 2025
+        private const val REGULAR = 2
+        //private const val PLAYOFFS = 1
+        private const val EAST = 5
+        //private const val WEST = 6
+        private const val OVERALL = 0
         private val dispatcher = Dispatchers.IO
     }
 
-    suspend fun getSchedule(): ScoreboardDomain? = withContext(dispatcher) {
+    suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {
         try {
             val url = "${apiConfig.statsBaseUrl}/scoreboard"
             val response: BBallScoreboard = getHttpClient().use { httpClient ->
@@ -40,6 +47,23 @@ class SportOperationAdapter(
         try {
             val url = "${apiConfig.statsBaseUrl}/summary?event=$gameId"
             val response: BBallGameStats = getHttpClient().use { httpClient ->
+                httpClient.get(url).let {
+                    if (it.status != HttpStatusCode.OK) {
+                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                    }
+                    it.body()
+                }
+            }
+            response.toDomain()
+        } catch (ex: Exception) {
+            logger.error("ex: $ex")
+            null
+        }
+    }
+    suspend fun getStandings(): AllStandingsDomain? = withContext(dispatcher) {
+        try {
+            val url = "${apiConfig.coreApiBaseUrl}/seasons/$SEASON/types/$REGULAR/groups/$EAST/standings/$OVERALL"
+            val response: BBallStandings = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }

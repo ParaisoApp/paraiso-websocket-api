@@ -1,15 +1,16 @@
 package com.example.plugins
 
-import com.example.messageTypes.BoxScore
+import com.example.messageTypes.sports.BoxScore
 import com.example.messageTypes.Delete
 import com.example.messageTypes.DirectMessage
 import com.example.messageTypes.Message
 import com.example.messageTypes.MessageType
-import com.example.messageTypes.Scoreboard
+import com.example.messageTypes.sports.Scoreboard
 import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
+import com.example.messageTypes.sports.AllStandings
 import com.example.testRestClient.sport.SportOperationAdapter
 import com.example.testRestClient.util.ApiConfig
 import com.example.util.findCorrectConversion
@@ -29,6 +30,7 @@ import java.util.UUID
 
 class WebSocketHandler : Klogging {
     private var scoreboard: Scoreboard? = null
+    private var standings: AllStandings? = null
     private var boxScores: List<BoxScore> = listOf()
 
     private val userList: MutableMap<String, User> = mutableMapOf()
@@ -54,8 +56,11 @@ class WebSocketHandler : Klogging {
     private val apiConfig = ApiConfig()
     private val sportAdapter = SportOperationAdapter(apiConfig)
 
+    suspend fun getStandings() {
+        standings = sportAdapter.getStandings()
+    }
     suspend fun buildScoreboard() {
-        scoreboard = sportAdapter.getSchedule()
+        scoreboard = sportAdapter.getScoreboard()
         updateScores()
     }
 
@@ -103,12 +108,27 @@ class WebSocketHandler : Klogging {
             while (true) {
                 scoreboard?.let {
                     sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
+                    delay(5000L)
                 }
-                delay(50000L)
+                if(scoreboard != null){
+                    delay(50000L)
+                }
             }
         }
 
-        val senBoxscore = launch {
+        val sendStandings = launch {
+            while (true) {
+                standings?.let {
+                    sendTypedMessage(MessageType.STANDINGS, standings)
+                    delay(5000L)
+                }
+                if(standings != null){
+                    delay(500000L)
+                }
+            }
+        }
+
+        val sendBoxscore = launch {
             while (true) {
                 if(boxScores.isNotEmpty()){
                     sendTypedMessage(MessageType.BOX_SCORES, boxScores)
@@ -155,7 +175,8 @@ class WebSocketHandler : Klogging {
         }finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             sendScoreboard.cancelAndJoin()
-            senBoxscore.cancelAndJoin()
+            sendStandings.cancelAndJoin()
+            sendBoxscore.cancelAndJoin()
             userLeaveFlowMut.emit(user.userId)
             userList.remove(user.userId)
             user.websocket.close()

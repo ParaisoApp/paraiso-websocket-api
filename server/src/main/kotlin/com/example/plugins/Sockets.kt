@@ -43,5 +43,8 @@ fun Application.configureSockets() {
         serverScope.launch {
             handler.buildScoreboard()
         }
+        serverScope.launch {
+            handler.getStandings()
+        }
     }
 }
