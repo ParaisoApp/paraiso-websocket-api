@@ -126,14 +126,14 @@ class WebSocketHandler : Klogging {
                 when (messageWithType?.key) {
                     MessageType.MSG -> {
                         val message = Json.decodeFromString<Message>(messageWithType.value).copy(
-                            id = "${(Math.random() * 10000).toInt()}",
+                            id = UUID.randomUUID().toString(),
                             userId = user.userId
                         )
                         messageSharedFlowMut.emit(message)
                     }
                     MessageType.DM -> {
                         val message = Json.decodeFromString<DirectMessage>(messageWithType.value).copy(
-                            id = "${(Math.random() * 10000).toInt()}",
+                            id = UUID.randomUUID().toString(),
                             userId = user.userId
                         )
                         launch { sendTypedMessage(MessageType.DM, message) }
