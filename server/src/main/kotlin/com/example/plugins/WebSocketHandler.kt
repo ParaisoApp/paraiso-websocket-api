@@ -11,6 +11,7 @@ import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
 import com.example.messageTypes.sports.AllStandings
+import com.example.messageTypes.sports.Team
 import com.example.testRestClient.sport.SportOperationAdapter
 import com.example.testRestClient.util.ApiConfig
 import com.example.util.findCorrectConversion
@@ -30,6 +31,7 @@ import java.util.UUID
 
 class WebSocketHandler : Klogging {
     private var scoreboard: Scoreboard? = null
+    private var teams: List<Team> = emptyList()
     private var standings: AllStandings? = null
     private var boxScores: List<BoxScore> = listOf()
 
@@ -58,6 +60,10 @@ class WebSocketHandler : Klogging {
 
     suspend fun getStandings() {
         standings = sportAdapter.getStandings()
+    }
+
+    suspend fun getTeams() {
+        teams = sportAdapter.getTeams()
     }
     suspend fun buildScoreboard() {
         scoreboard = sportAdapter.getScoreboard()
@@ -104,38 +110,43 @@ class WebSocketHandler : Klogging {
             }
         }
 
-        val sendScoreboard = launch {
-            while (true) {
-                scoreboard?.let {
-                    sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
-                    delay(5000L)
+        val statsJobs = listOf(
+            launch {
+                while (true) {
+                    scoreboard?.let {
+                        sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
+                        delay(500000L)
+                    } ?: run { delay(5000L) }
+
                 }
-                if(scoreboard != null){
+            },
+            launch {
+                while (true) {
+                    if(teams.isNotEmpty()){
+                        sendTypedMessage(MessageType.TEAMS, teams)
+                        delay(500000L)
+                    }else{
+                        delay(5000L)
+                    }
+                }
+            },
+            launch {
+                while (true) {
+                    standings?.let {
+                        sendTypedMessage(MessageType.STANDINGS, standings)
+                        delay(5000000L)
+                    } ?: run { delay(5000L) }
+                }
+            },
+            launch {
+                while (true) {
+                    if(boxScores.isNotEmpty()){
+                        sendTypedMessage(MessageType.BOX_SCORES, boxScores)
+                    }
                     delay(50000L)
                 }
             }
-        }
-
-        val sendStandings = launch {
-            while (true) {
-                standings?.let {
-                    sendTypedMessage(MessageType.STANDINGS, standings)
-                    delay(5000L)
-                }
-                if(standings != null){
-                    delay(500000L)
-                }
-            }
-        }
-
-        val sendBoxscore = launch {
-            while (true) {
-                if(boxScores.isNotEmpty()){
-                    sendTypedMessage(MessageType.BOX_SCORES, boxScores)
-                }
-                delay(50000L)
-            }
-        }
+        )
 
         guestSharedFlowMut.emit(UserInfo(user.userId, user.username))
 
@@ -174,9 +185,7 @@ class WebSocketHandler : Klogging {
             logger.error(ex) { "Error parsing incoming data" }
         }finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
-            sendScoreboard.cancelAndJoin()
-            sendStandings.cancelAndJoin()
-            sendBoxscore.cancelAndJoin()
+            statsJobs.forEach { it.cancelAndJoin() }
             userLeaveFlowMut.emit(user.userId)
             userList.remove(user.userId)
             user.websocket.close()

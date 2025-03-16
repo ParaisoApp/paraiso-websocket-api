@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 import com.example.messageTypes.sports.Competition as CompetitionDomain
 import com.example.messageTypes.sports.Record as RecordDomain
 import com.example.messageTypes.sports.Status as StatusDomain
-import com.example.messageTypes.sports.Team as TeamDomain
+import com.example.messageTypes.sports.TeamGameStats as TeamGameStatsDomain
 import com.example.messageTypes.sports.Venue as VenueDomain
 import com.example.messageTypes.sports.TeamYearStats as TeamYearStatsDomain
 
@@ -101,13 +101,8 @@ fun Competition.toDomain(name: String, shortName: String, date: String) = Compet
     status = status.toDomain()
 )
 
-fun Competitor.toTeamDomain() = TeamDomain(
-    id = team.id,
-    location = team.location,
-    name = team.name,
-    abbreviation = team.abbreviation,
-    displayName = team.displayName,
-    shortDisplayName = team.shortDisplayName,
+fun Competitor.toTeamDomain() = TeamGameStatsDomain(
+    team = team.toDomain(),
     homeAway = homeAway,
     records = records.map { it.toDomain() },
     winner = winner ?: false,

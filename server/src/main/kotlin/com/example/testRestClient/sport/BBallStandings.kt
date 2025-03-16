@@ -49,7 +49,8 @@ fun Standings.toDomain() = StandingsDomain(
 
 fun RecordTypes.toDomain() = RecordTypesDomain(
     displayName = displayName,
-    displayValue = displayValue,
+    wins = displayValue.split('-')[0].toIntOrNull() ?: -1,
+    losses = displayValue.split('-')[1].toIntOrNull() ?: -1,
     stats = stats.map { it.toDomain() }
 )
 

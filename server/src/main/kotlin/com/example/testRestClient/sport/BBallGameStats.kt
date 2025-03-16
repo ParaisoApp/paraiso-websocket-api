@@ -39,16 +39,6 @@ data class Player(
 )
 
 @Serializable
-data class Team(
-    val id: String,
-    val location: String,
-    val name: String,
-    val abbreviation: String,
-    val displayName: String,
-    val shortDisplayName: String
-)
-
-@Serializable
 data class Statistic(
     val names: List<String>,
     val descriptions: List<String>,

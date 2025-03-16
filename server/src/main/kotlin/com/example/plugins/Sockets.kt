@@ -46,5 +46,8 @@ fun Application.configureSockets() {
         serverScope.launch {
             handler.getStandings()
         }
+        serverScope.launch {
+            handler.getTeams()
+        }
     }
 }

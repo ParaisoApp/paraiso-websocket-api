@@ -13,19 +13,14 @@ data class Competition(
     val name: String,
     val shortName: String,
     val date: String,
-    val teams: List<Team>,
+    val teams: List<TeamGameStats>,
     val venue: Venue,
     val status: Status
 )
 
 @Serializable
-data class Team(
-    val id: String,
-    val location: String,
-    val name: String,
-    val abbreviation: String,
-    val displayName: String,
-    val shortDisplayName: String,
+data class TeamGameStats(
+    val team: Team,
     val homeAway: String,
     val records: List<Record>,
     val winner: Boolean,

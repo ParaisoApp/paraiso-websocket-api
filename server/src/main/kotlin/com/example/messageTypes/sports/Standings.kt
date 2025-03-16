@@ -16,7 +16,8 @@ data class Standings(
 @Serializable
 data class RecordTypes(
     val displayName: String,
-    val displayValue: String,
+    val wins: Int,
+    val losses: Int,
     val stats: List<RecordStat>
 )
 
