@@ -33,11 +33,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
-class WebSocketHandler : Klogging {
-    private var scoreboard: Scoreboard? = null
-    private var teams: List<Team> = emptyList()
-    private var standings: AllStandings? = null
-    private var boxScores: List<BoxScore> = listOf()
+class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
 
     private val userList: MutableMap<String, User> = mutableMapOf()
 
@@ -46,7 +42,6 @@ class WebSocketHandler : Klogging {
     private val deleteSharedFlowMut = MutableSharedFlow<Delete>(replay = 0)
     private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
     private val guestSharedFlowMut = MutableSharedFlow<UserInfo>(replay = 0)
-    private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
     private val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
 
     private val flowList = listOf( // convert to immutable for send to client
@@ -55,49 +50,8 @@ class WebSocketHandler : Klogging {
         Pair(MessageType.DELETE, deleteSharedFlowMut.asSharedFlow()),
         Pair(MessageType.BASIC, basicSharedFlowMut.asSharedFlow()),
         Pair(MessageType.GUEST, guestSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.BOX_SCORES, boxScoreFlowMut.asSharedFlow()),
         Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow()),
     )
-
-    private val apiConfig = ApiConfig()
-    private val sportAdapter = SportOperationAdapter(apiConfig)
-
-    suspend fun getStandings() {
-        standings = sportAdapter.getStandings()
-    }
-
-    suspend fun getTeams() {
-        teams = sportAdapter.getTeams()
-    }
-    suspend fun buildScoreboard() {
-        coroutineScope {
-            scoreboard = sportAdapter.getScoreboard()
-            updateScores()
-            while(isActive){
-                // Delay for 10 minutes (10 minutes * 60 seconds * 1000 milliseconds)
-                delay(10 * 60 * 1000)
-                scoreboard?.let{sb ->
-                    if(sb.competitions.map { Instant.parse(it.date) }.minOf { it } < Clock.System.now()){
-                        sportAdapter.getScoreboard()
-                    }
-                }
-            }
-        }
-    }
-
-    private suspend fun updateScores() {
-        coroutineScope {
-            while(isActive){
-                scoreboard?.competitions?.mapNotNull {
-                    sportAdapter.getGameStats(it.id)
-                }?.also { newBoxScores ->
-                    boxScoreFlowMut.emit(newBoxScores)
-                    boxScores = newBoxScores
-                }
-                delay(30000000L)
-            }
-        }
-    }
 
     suspend fun handleGuest(session: WebSocketServerSession) {
         UUID.randomUUID().toString().let { id ->
@@ -119,7 +73,6 @@ class WebSocketHandler : Klogging {
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.GUEST -> sendTypedMessage(type, message as UserInfo)
-                        MessageType.BOX_SCORES -> if(message is List<*>) sendTypedMessage(type, message.filterIsInstance<BoxScore>())
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
                     }
@@ -130,8 +83,8 @@ class WebSocketHandler : Klogging {
         val statsJobs = listOf(
             launch {
                 while (true) {
-                    scoreboard?.let {
-                        sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
+                    sportHandler.scoreboard?.let {
+                        sendTypedMessage(MessageType.SCOREBOARD, it)
                         delay(500000L)
                     } ?: run { delay(5000L) }
 
@@ -139,8 +92,8 @@ class WebSocketHandler : Klogging {
             },
             launch {
                 while (true) {
-                    if(teams.isNotEmpty()){
-                        sendTypedMessage(MessageType.TEAMS, teams)
+                    if(sportHandler.teams.isNotEmpty()){
+                        sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
                         delay(500000L)
                     }else{
                         delay(5000L)
@@ -149,18 +102,23 @@ class WebSocketHandler : Klogging {
             },
             launch {
                 while (true) {
-                    standings?.let {
-                        sendTypedMessage(MessageType.STANDINGS, standings)
+                    sportHandler.standings?.let {
+                        sendTypedMessage(MessageType.STANDINGS, it)
                         delay(5000000L)
                     } ?: run { delay(5000L) }
                 }
             },
             launch {
                 while (true) {
-                    if(boxScores.isNotEmpty()){
-                        sendTypedMessage(MessageType.BOX_SCORES, boxScores)
+                    if(sportHandler.boxScores.isNotEmpty()){
+                        sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
                     }
                     delay(50000L)
+                }
+            },
+            launch {
+                sportHandler.boxScoreFlowMut.collect { message ->
+                    sendTypedMessage(MessageType.BOX_SCORES, message)
                 }
             }
         )
