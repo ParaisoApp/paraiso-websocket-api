@@ -117,7 +117,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                 }
             },
             launch {
-                sportHandler.boxScoreFlowMut.collect { message ->
+                sportHandler.boxScoreFlow.collect { message ->
                     sendTypedMessage(MessageType.BOX_SCORES, message)
                 }
             }

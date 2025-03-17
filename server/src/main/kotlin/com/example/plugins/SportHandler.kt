@@ -21,8 +21,8 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter): Kl
     var standings: AllStandings? = null
     var boxScores: List<BoxScore> = listOf()
 
-    val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
-    private val boxScoreFlow = boxScoreFlowMut.asSharedFlow()
+    private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
+    val boxScoreFlow = boxScoreFlowMut.asSharedFlow()
 
     suspend fun getStandings() {
         standings = sportOperationAdapter.getStandings()
