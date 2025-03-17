@@ -22,10 +22,14 @@ import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -66,19 +70,32 @@ class WebSocketHandler : Klogging {
         teams = sportAdapter.getTeams()
     }
     suspend fun buildScoreboard() {
-        scoreboard = sportAdapter.getScoreboard()
-        updateScores()
+        coroutineScope {
+            scoreboard = sportAdapter.getScoreboard()
+            updateScores()
+            while(isActive){
+                // Delay for 10 minutes (10 minutes * 60 seconds * 1000 milliseconds)
+                delay(10 * 60 * 1000)
+                scoreboard?.let{sb ->
+                    if(sb.competitions.map { Instant.parse(it.date) }.minOf { it } < Clock.System.now()){
+                        sportAdapter.getScoreboard()
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun updateScores() {
-        while(true){
-            scoreboard?.competitions?.mapNotNull {
-                sportAdapter.getGameStats(it.id)
-            }?.also { newBoxScores ->
-                boxScoreFlowMut.emit(newBoxScores)
-                boxScores = newBoxScores
+        coroutineScope {
+            while(isActive){
+                scoreboard?.competitions?.mapNotNull {
+                    sportAdapter.getGameStats(it.id)
+                }?.also { newBoxScores ->
+                    boxScoreFlowMut.emit(newBoxScores)
+                    boxScores = newBoxScores
+                }
+                delay(30000000L)
             }
-            delay(30000000L)
         }
     }
 

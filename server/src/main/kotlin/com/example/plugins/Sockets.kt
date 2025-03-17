@@ -18,13 +18,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
 
-fun Application.configureSockets() {
-    val serverScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-
-    // Clean up resources when the application stops
-    environment.monitor.subscribe(ApplicationStopped) {
-        serverScope.cancel() // Ensure coroutines are canceled on shutdown
-    }
+fun Application.configureSockets(handler: WebSocketHandler) {
 
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
@@ -34,20 +28,8 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
-        val handler = WebSocketHandler()
-        serverScope.launch {
-            webSocket("chat") {
-                handler.handleGuest(this)
-            }
-        }
-        serverScope.launch {
-            handler.buildScoreboard()
-        }
-        serverScope.launch {
-            handler.getStandings()
-        }
-        serverScope.launch {
-            handler.getTeams()
+        webSocket("chat") {
+            handler.handleGuest(this)
         }
     }
 }
