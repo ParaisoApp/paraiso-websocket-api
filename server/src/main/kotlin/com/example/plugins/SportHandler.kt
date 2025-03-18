@@ -36,11 +36,11 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter): Kl
             scoreboard = sportOperationAdapter.getScoreboard()
             launch { updateScores() }
             while(isActive){
-                // Delay for 10 minutes (10 minutes * 60 seconds * 1000 milliseconds)
-                delay(10 * 60 * 1000)
+                // Delay for 1 minutes (10 minutes * 60 seconds * 1000 milliseconds)
+                delay(10 * 1000)
                 scoreboard?.let{sb ->
                     if(sb.competitions.map { Instant.parse(it.date) }.minOf { it } < Clock.System.now()){
-                        sportOperationAdapter.getScoreboard()
+                        scoreboard = sportOperationAdapter.getScoreboard()
                     }
                 }
             }

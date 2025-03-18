@@ -85,7 +85,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                 while (true) {
                     sportHandler.scoreboard?.let {
                         sendTypedMessage(MessageType.SCOREBOARD, it)
-                        delay(500000L)
+                        delay(5 * 1000)
                     } ?: run { delay(5000L) }
 
                 }
@@ -112,8 +112,10 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                 while (true) {
                     if(sportHandler.boxScores.isNotEmpty()){
                         sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
+                        delay(500000L)
+                    }else{
+                        delay(5000L)
                     }
-                    delay(50000L)
                 }
             },
             launch {
