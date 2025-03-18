@@ -1,19 +1,13 @@
 package com.example.plugins
 
-import com.example.messageTypes.sports.BoxScore
 import com.example.messageTypes.Delete
 import com.example.messageTypes.DirectMessage
 import com.example.messageTypes.Message
 import com.example.messageTypes.MessageType
-import com.example.messageTypes.sports.Scoreboard
 import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
-import com.example.messageTypes.sports.AllStandings
-import com.example.messageTypes.sports.Team
-import com.example.testRestClient.sport.SportOperationAdapter
-import com.example.testRestClient.util.ApiConfig
 import com.example.util.findCorrectConversion
 import com.example.util.sendTypedMessage
 import io.klogging.Klogging
@@ -22,14 +16,10 @@ import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import java.util.UUID
 

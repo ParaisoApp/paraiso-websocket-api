@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 
 class SportHandler(private val sportOperationAdapter: SportOperationAdapter): Klogging {
     var scoreboard: Scoreboard? = null
@@ -36,11 +34,13 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter): Kl
             scoreboard = sportOperationAdapter.getScoreboard()
             launch { updateScores() }
             while(isActive){
-                // Delay for 1 minutes (10 minutes * 60 seconds * 1000 milliseconds)
+                // Delay for 1 minute (60 seconds * 1000 milliseconds)
                 delay(10 * 1000)
                 scoreboard?.let{sb ->
-                    if(sb.competitions.map { Instant.parse(it.date) }.minOf { it } < Clock.System.now()){
-                        scoreboard = sportOperationAdapter.getScoreboard()
+                    sb.competitions.map { it.status.state }.toSet().let { allStates ->
+                        if(allStates.contains("in")){
+                            scoreboard = sportOperationAdapter.getScoreboard()
+                        }
                     }
                 }
             }
