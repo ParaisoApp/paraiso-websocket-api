@@ -2,6 +2,7 @@ package com.example.plugins
 
 import com.example.messageTypes.sports.AllStandings
 import com.example.messageTypes.sports.BoxScore
+import com.example.messageTypes.sports.FullTeam
 import com.example.messageTypes.sports.Scoreboard
 import com.example.messageTypes.sports.Team
 import com.example.testRestClient.sport.SportOperationAdapter
@@ -17,9 +18,9 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter): Kl
     var scoreboard: Scoreboard? = null
     var teams: List<Team> = emptyList()
     var standings: AllStandings? = null
-    var boxScores: List<BoxScore> = listOf()
+    var boxScores: List<FullTeam> = listOf()
 
-    private val boxScoreFlowMut = MutableSharedFlow<List<BoxScore>>(replay = 0)
+    private val boxScoreFlowMut = MutableSharedFlow<List<FullTeam>>(replay = 0)
     val boxScoreFlow = boxScoreFlowMut.asSharedFlow()
 
     suspend fun getStandings() {
@@ -53,8 +54,9 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter): Kl
                 scoreboard?.competitions?.mapNotNull {
                     sportOperationAdapter.getGameStats(it.id)
                 }?.also { newBoxScores ->
-                    boxScoreFlowMut.emit(newBoxScores)
-                    boxScores = newBoxScores
+                    val boxScoreMappedToTeam = newBoxScores.flatMap { it.teams }
+                    boxScoreFlowMut.emit(boxScoreMappedToTeam)
+                    boxScores = boxScoreMappedToTeam
                 }
                 delay(30000000L)
             }
