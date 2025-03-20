@@ -8,6 +8,7 @@ import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
+import com.example.messageTypes.sports.Scoreboard
 import com.example.util.findCorrectConversion
 import com.example.util.sendTypedMessage
 import io.klogging.Klogging
@@ -72,9 +73,13 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
 
         val statsJobs = listOf(
             launch {
+                var lastSentScoreboard: Scoreboard? = null
                 while (true) {
                     sportHandler.scoreboard?.let {
-                        sendTypedMessage(MessageType.SCOREBOARD, it)
+                        if(lastSentScoreboard != sportHandler.scoreboard){
+                            sendTypedMessage(MessageType.SCOREBOARD, it)
+                            lastSentScoreboard = sportHandler.scoreboard
+                        }
                         delay(5 * 1000)
                     } ?: run { delay(5000L) }
 
