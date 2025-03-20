@@ -22,7 +22,5 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
         null
     }
 
-
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
     sendSerialized<TypeMapping<T>>(TypeMapping(mapOf(messageType to data)))
-

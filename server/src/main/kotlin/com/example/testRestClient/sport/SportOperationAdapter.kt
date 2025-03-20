@@ -8,9 +8,9 @@ import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.messageTypes.sports.AllStandings as AllStandingsDomain
 import com.example.messageTypes.sports.BoxScore as BoxScoreDomain
 import com.example.messageTypes.sports.Scoreboard as ScoreboardDomain
-import com.example.messageTypes.sports.AllStandings as AllStandingsDomain
 import com.example.messageTypes.sports.Team as TeamDomain
 
 class SportOperationAdapter(
@@ -20,7 +20,8 @@ class SportOperationAdapter(
     companion object {
         private const val SEASON = 2025
         private const val REGULAR = 2
-        //private const val PLAYOFFS = 1
+
+        // private const val PLAYOFFS = 1
         private const val EAST = 5
         private const val WEST = 6
         private const val OVERALL = 0
@@ -81,7 +82,7 @@ class SportOperationAdapter(
                     it.body()
                 }
             }
-            AllStandingsDomain(eastResponse.toDomain().standings + westResponse.toDomain().standings)
+            AllStandingsDomain(eastResponse.toDomain("East").standings + westResponse.toDomain("West").standings)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

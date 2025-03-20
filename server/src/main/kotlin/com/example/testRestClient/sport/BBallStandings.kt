@@ -3,9 +3,9 @@ package com.example.testRestClient.sport
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.example.messageTypes.sports.AllStandings as AllStandingsDomain
-import com.example.messageTypes.sports.Standings as StandingsDomain
-import com.example.messageTypes.sports.RecordTypes as RecordTypesDomain
 import com.example.messageTypes.sports.RecordStat as RecordStatDomain
+import com.example.messageTypes.sports.RecordTypes as RecordTypesDomain
+import com.example.messageTypes.sports.Standings as StandingsDomain
 
 @Serializable
 data class BBallStandings(
@@ -38,12 +38,13 @@ data class RecordStat(
     val value: Double
 )
 
-fun BBallStandings.toDomain() = AllStandingsDomain(
-    standings = standings.map { it.toDomain() }
+fun BBallStandings.toDomain(conference: String) = AllStandingsDomain(
+    standings = standings.map { it.toDomain(conference) }
 )
 
-fun Standings.toDomain() = StandingsDomain(
+fun Standings.toDomain(conference: String) = StandingsDomain(
     teamId = team.ref.substringAfter("/teams/").substringBefore("?"),
+    conference = conference,
     records = records.map { it.toDomain() }
 )
 

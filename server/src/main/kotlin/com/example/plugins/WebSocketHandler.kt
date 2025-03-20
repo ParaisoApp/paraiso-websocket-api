@@ -41,7 +41,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
         Pair(MessageType.DELETE, deleteSharedFlowMut.asSharedFlow()),
         Pair(MessageType.BASIC, basicSharedFlowMut.asSharedFlow()),
         Pair(MessageType.GUEST, guestSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow()),
+        Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow())
     )
 
     suspend fun handleGuest(session: WebSocketServerSession) {
@@ -76,21 +76,20 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                 var lastSentScoreboard: Scoreboard? = null
                 while (true) {
                     sportHandler.scoreboard?.let {
-                        if(lastSentScoreboard != sportHandler.scoreboard){
+                        if (lastSentScoreboard != sportHandler.scoreboard) {
                             sendTypedMessage(MessageType.SCOREBOARD, it)
                             lastSentScoreboard = sportHandler.scoreboard
                         }
                         delay(5 * 1000)
                     } ?: run { delay(5000L) }
-
                 }
             },
             launch {
                 while (true) {
-                    if(sportHandler.teams.isNotEmpty()){
+                    if (sportHandler.teams.isNotEmpty()) {
                         sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
                         delay(500000L)
-                    }else{
+                    } else {
                         delay(5000L)
                     }
                 }
@@ -105,10 +104,10 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             },
             launch {
                 while (true) {
-                    if(sportHandler.boxScores.isNotEmpty()){
+                    if (sportHandler.boxScores.isNotEmpty()) {
                         sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
                         delay(500000L)
-                    }else{
+                    } else {
                         delay(5000L)
                     }
                 }
@@ -153,9 +152,9 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                     else -> logger.error { "Invalid message type received $messageWithType" }
                 }
             }
-        }catch(ex: Exception){
+        } catch (ex: Exception) {
             logger.error(ex) { "Error parsing incoming data" }
-        }finally {
+        } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             statsJobs.forEach { it.cancelAndJoin() }
             userLeaveFlowMut.emit(user.userId)

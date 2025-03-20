@@ -43,5 +43,3 @@ fun Team.toDomain(): TeamDomain = TeamDomain(
     displayName = displayName,
     shortDisplayName = shortDisplayName
 )
-
-

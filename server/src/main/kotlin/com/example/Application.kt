@@ -1,16 +1,17 @@
 package com.example
 
-import com.example.plugins.*
+import com.example.plugins.SportHandler
+import com.example.plugins.WebSocketHandler
+import com.example.plugins.configureSockets
 import com.example.testRestClient.sport.SportOperationAdapter
 import com.example.testRestClient.util.ApiConfig
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 fun main() {
     val jobScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -35,9 +36,11 @@ fun main() {
         configureSockets(handler)
     }.start(wait = true)
 
-    Runtime.getRuntime().addShutdownHook(Thread {
-        println("Shutting down server...")
-        jobScope.cancel() // Cancel background jobs
-        server.stop(1000, 2000)
-    })
+    Runtime.getRuntime().addShutdownHook(
+        Thread {
+            println("Shutting down server...")
+            jobScope.cancel() // Cancel background jobs
+            server.stop(1000, 2000)
+        }
+    )
 }

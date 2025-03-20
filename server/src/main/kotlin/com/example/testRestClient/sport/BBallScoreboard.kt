@@ -7,8 +7,8 @@ import com.example.messageTypes.sports.Competition as CompetitionDomain
 import com.example.messageTypes.sports.Record as RecordDomain
 import com.example.messageTypes.sports.Status as StatusDomain
 import com.example.messageTypes.sports.TeamGameStats as TeamGameStatsDomain
-import com.example.messageTypes.sports.Venue as VenueDomain
 import com.example.messageTypes.sports.TeamYearStats as TeamYearStatsDomain
+import com.example.messageTypes.sports.Venue as VenueDomain
 
 @Serializable
 data class BBallScoreboard(

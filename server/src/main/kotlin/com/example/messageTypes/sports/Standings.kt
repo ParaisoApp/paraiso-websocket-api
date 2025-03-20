@@ -10,6 +10,7 @@ data class AllStandings(
 @Serializable
 data class Standings(
     val teamId: String,
+    val conference: String,
     val records: List<RecordTypes>
 )
 
