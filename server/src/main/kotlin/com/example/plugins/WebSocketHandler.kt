@@ -52,8 +52,8 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
         }
     }
     private suspend fun WebSocketServerSession.joinChat(user: User) {
+        sendTypedMessage(MessageType.USER, UserInfo(user.userId, user.username))
         sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.userId, it.username) })
-        sendTypedMessage(MessageType.BASIC, "Happy Chatting")
 
         val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
             launch {

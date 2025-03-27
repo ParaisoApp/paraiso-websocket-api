@@ -23,6 +23,9 @@ enum class MessageType() {
     @SerialName("delete")
     DELETE,
 
+    @SerialName("user")
+    USER,
+
     @SerialName("guest")
     GUEST,
 
