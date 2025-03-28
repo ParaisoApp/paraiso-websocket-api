@@ -8,6 +8,7 @@ import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
+import com.example.messageTypes.randomGuestName
 import com.example.messageTypes.sports.Scoreboard
 import com.example.util.findCorrectConversion
 import com.example.util.sendTypedMessage
@@ -46,7 +47,11 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
 
     suspend fun handleGuest(session: WebSocketServerSession) {
         UUID.randomUUID().toString().let { id ->
-            val currentUser = User(userId = id, username = "Guest ${(Math.random() * 10000).toInt()}", websocket = session)
+            val currentUser = User(
+                userId = id,
+                username = randomGuestName(),
+                websocket = session
+            )
             userList[id] = currentUser
             session.joinChat(currentUser)
         }
@@ -159,7 +164,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             statsJobs.forEach { it.cancelAndJoin() }
             userLeaveFlowMut.emit(user.userId)
             userList.remove(user.userId)
-            user.websocket.close()
+            user.websocket?.close()
         }
     }
 }
