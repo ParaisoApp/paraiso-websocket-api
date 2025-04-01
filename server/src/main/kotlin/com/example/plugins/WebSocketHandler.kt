@@ -4,6 +4,8 @@ import com.example.messageTypes.Delete
 import com.example.messageTypes.DirectMessage
 import com.example.messageTypes.Message
 import com.example.messageTypes.MessageType
+import com.example.messageTypes.Route
+import com.example.messageTypes.SiteRoute
 import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
@@ -16,12 +18,16 @@ import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -56,6 +62,76 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             session.joinChat(currentUser)
         }
     }
+
+    private suspend fun handleRoute(route: Route, session: WebSocketServerSession): List<Job> = coroutineScope {
+        when(route.route){
+            SiteRoute.HOME -> homeJobs(session)
+            SiteRoute.PROFILE -> profileJobs(session)
+            SiteRoute.SPORT -> sportJobs(session)
+            SiteRoute.TEAM -> teamJobs(session)
+        }
+    }
+
+    private suspend fun homeJobs(session: WebSocketServerSession) = coroutineScope {
+        listOf(launch{})
+    }
+    private suspend fun profileJobs(session: WebSocketServerSession) = coroutineScope {
+        listOf(launch{})
+    }
+    private suspend fun teamJobs(session: WebSocketServerSession) = coroutineScope {
+        listOf(launch{})
+    }
+
+    private suspend fun sportJobs(session: WebSocketServerSession) = coroutineScope {
+        listOf(
+            launch {
+                var lastSentScoreboard: Scoreboard? = null
+                while (isActive) {
+                    sportHandler.scoreboard?.let {
+                        if (lastSentScoreboard != sportHandler.scoreboard) {
+                            session.sendTypedMessage(MessageType.SCOREBOARD, it)
+                            lastSentScoreboard = sportHandler.scoreboard
+                        }
+                        delay(5 * 1000)
+                    } ?: run { delay(5000L) }
+                }
+            },
+            launch {
+                while (isActive) {
+                    if (sportHandler.teams.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
+                        delay(500000L)
+                    } else {
+                        delay(5000L)
+                    }
+                }
+            },
+            launch {
+                while (isActive) {
+                    sportHandler.standings?.let {
+                        session.sendTypedMessage(MessageType.STANDINGS, it)
+                        delay(5000000L)
+                    } ?: run { delay(5000L) }
+                }
+            },
+            launch {
+                while (isActive) {
+                    if (sportHandler.boxScores.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
+                        delay(500000L)
+                    } else {
+                        delay(5000L)
+                    }
+                }
+            }
+//            launch {
+//                sportHandler.boxScoreFlow.collect { message ->
+//                    sendTypedMessage(MessageType.BOX_SCORES, message)
+//                }
+//            }
+        )
+    }
+
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         sendTypedMessage(MessageType.USER, UserInfo(user.userId, user.username))
         sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.userId, it.username) })
@@ -76,56 +152,9 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             }
         }
 
-        val statsJobs = listOf(
-            launch {
-                var lastSentScoreboard: Scoreboard? = null
-                while (true) {
-                    sportHandler.scoreboard?.let {
-                        if (lastSentScoreboard != sportHandler.scoreboard) {
-                            sendTypedMessage(MessageType.SCOREBOARD, it)
-                            lastSentScoreboard = sportHandler.scoreboard
-                        }
-                        delay(5 * 1000)
-                    } ?: run { delay(5000L) }
-                }
-            },
-            launch {
-                while (true) {
-                    if (sportHandler.teams.isNotEmpty()) {
-                        sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(500000L)
-                    } else {
-                        delay(5000L)
-                    }
-                }
-            },
-            launch {
-                while (true) {
-                    sportHandler.standings?.let {
-                        sendTypedMessage(MessageType.STANDINGS, it)
-                        delay(5000000L)
-                    } ?: run { delay(5000L) }
-                }
-            },
-            launch {
-                while (true) {
-                    if (sportHandler.boxScores.isNotEmpty()) {
-                        sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
-                        delay(500000L)
-                    } else {
-                        delay(5000L)
-                    }
-                }
-            },
-            launch {
-                sportHandler.boxScoreFlow.collect { message ->
-                    sendTypedMessage(MessageType.BOX_SCORES, message)
-                }
-            }
-        )
-
         guestSharedFlowMut.emit(UserInfo(user.userId, user.username))
-
+        //holds the active jobs for given route
+        var activeJobs: Job? = null
         try {
             incoming.consumeEach { frame ->
                 val messageWithType = converter?.findCorrectConversion<TypeMapping<String>>(frame)
@@ -154,6 +183,14 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                         val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = user.userId)
                         deleteSharedFlowMut.emit(delete)
                     }
+                    MessageType.ROUTE -> {
+                        val route = Json.decodeFromString<Route>(messageWithType.value)
+                        activeJobs?.cancelAndJoin()
+                        val session = this
+                        activeJobs = launch {
+                            handleRoute(route, session)
+                        }
+                    }
                     else -> logger.error { "Invalid message type received $messageWithType" }
                 }
             }
@@ -161,7 +198,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             logger.error(ex) { "Error parsing incoming data" }
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
-            statsJobs.forEach { it.cancelAndJoin() }
+            activeJobs?.cancelAndJoin()
             userLeaveFlowMut.emit(user.userId)
             userList.remove(user.userId)
             user.websocket?.close()

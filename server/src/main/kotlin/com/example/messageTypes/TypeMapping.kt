@@ -10,7 +10,7 @@ data class TypeMapping<T>(
 )
 
 @Serializable
-enum class MessageType() {
+enum class MessageType {
     @SerialName("msg")
     MSG,
 
@@ -49,6 +49,9 @@ enum class MessageType() {
 
     @SerialName("basic")
     BASIC,
+
+    @SerialName("route")
+    ROUTE,
 
     @SerialName("ping")
     PING,

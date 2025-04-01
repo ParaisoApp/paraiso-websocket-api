@@ -63,7 +63,7 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
                     sportOperationAdapter.getGameStats(it.id)
                 }?.also { newBoxScores ->
                     val boxScoreMappedToTeam = newBoxScores.flatMap { it.teams }
-                    boxScoreFlowMut.emit(boxScoreMappedToTeam)
+                    //boxScoreFlowMut.emit(boxScoreMappedToTeam)
                     boxScores = boxScoreMappedToTeam
                 }
                 delay(30000000L)
