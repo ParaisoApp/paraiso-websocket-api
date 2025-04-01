@@ -12,6 +12,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import java.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : Klogging {
     var scoreboard: Scoreboard? = null
@@ -34,12 +39,16 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
             scoreboard = sportOperationAdapter.getScoreboard()
             launch { updateScores() }
             while (isActive) {
-                // Delay for 1 minute (60 seconds * 1000 milliseconds)
                 delay(10 * 1000)
                 scoreboard?.let { sb ->
-                    sb.competitions.map { it.status.state }.toSet().let { allStates ->
-                        if (allStates.contains("in")) {
+                    sb.competitions.map { Pair(it.status.state, it.date) }.let { pairedStates ->
+                        val earliestTime = pairedStates.minOf{ Instant.parse(it.second) }
+                        val allStates = pairedStates.map { it.first }.toSet()
+                        if (Clock.System.now() > earliestTime) {
                             scoreboard = sportOperationAdapter.getScoreboard()
+                            if(!allStates.contains("pre") && !allStates.contains("in")){
+                                delay(60 * 60 * 1000)
+                            }
                         }
                     }
                 }
