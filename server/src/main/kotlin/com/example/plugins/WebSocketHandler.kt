@@ -112,11 +112,15 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                     val currentScoreboard = sportHandler.scoreboard
 
                     if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
-                        val teamIds = currentScoreboard.competitions.first { comp ->
+                        currentScoreboard.competitions.firstOrNull { comp ->
                             comp.teams.map { it.team.id }.contains(content)
-                        }.teams.map { it.team.id }
-                        val filteredBoxScores = currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
-                        session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
+                        }?.teams?.map { it.team.id }
+                            ?.let{teamIds ->
+                            currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
+                                .let { filteredBoxScores ->
+                                    session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
+                                }
+                        }
                         delay(500000L)
                     } else {
                         delay(5000L)
