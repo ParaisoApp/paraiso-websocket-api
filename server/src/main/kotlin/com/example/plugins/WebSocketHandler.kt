@@ -66,20 +66,64 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
     private suspend fun handleRoute(route: Route, session: WebSocketServerSession): List<Job> = coroutineScope {
         when(route.route){
             SiteRoute.HOME -> homeJobs(session)
-            SiteRoute.PROFILE -> profileJobs(session)
+            SiteRoute.PROFILE -> profileJobs(route.content, session)
             SiteRoute.SPORT -> sportJobs(session)
-            SiteRoute.TEAM -> teamJobs(session)
+            SiteRoute.TEAM -> teamJobs(route.content, session)
         }
     }
 
     private suspend fun homeJobs(session: WebSocketServerSession) = coroutineScope {
         listOf(launch{})
     }
-    private suspend fun profileJobs(session: WebSocketServerSession) = coroutineScope {
+    private suspend fun profileJobs(content: String, session: WebSocketServerSession) = coroutineScope {
         listOf(launch{})
     }
-    private suspend fun teamJobs(session: WebSocketServerSession) = coroutineScope {
-        listOf(launch{})
+    private suspend fun teamJobs(content: String, session: WebSocketServerSession) = coroutineScope {
+        listOf(
+            launch {
+                var lastSentScoreboard: Scoreboard? = null
+                while (isActive) {
+                    val currentScoreboard = sportHandler.scoreboard
+                    currentScoreboard?.let {sb ->
+                        val filteredSb = currentScoreboard.copy(
+                            competitions = sb.competitions.filter { comp -> comp.teams.map { it.team.id }.contains(content) }
+                        )
+                        if (lastSentScoreboard != filteredSb) {
+                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb)
+                            lastSentScoreboard = filteredSb
+                        }
+                        delay(5 * 1000)
+                    } ?: run { delay(5000L) }
+                }
+            },
+            launch {
+                while (isActive) {
+                    if (sportHandler.teams.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
+                        delay(500000L)
+                    } else {
+                        delay(5000L)
+                    }
+                }
+            },
+            launch {
+                while (isActive) {
+                    val currentBoxScores = sportHandler.boxScores
+                    val currentScoreboard = sportHandler.scoreboard
+
+                    if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
+                        val teamIds = currentScoreboard.competitions.first { comp ->
+                            comp.teams.map { it.team.id }.contains(content)
+                        }.teams.map { it.team.id }
+                        val filteredBoxScores = currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
+                        session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
+                        delay(500000L)
+                    } else {
+                        delay(5000L)
+                    }
+                }
+            }
+        )
     }
 
     private suspend fun sportJobs(session: WebSocketServerSession) = coroutineScope {
