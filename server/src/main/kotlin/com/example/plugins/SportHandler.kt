@@ -39,6 +39,9 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
     suspend fun buildScoreboard() {
         coroutineScope {
             scoreboard = sportOperationAdapter.getScoreboard()
+            scoreboard?.competitions?.map { it.id }?.let {gameIds ->
+                fetchAndMapGames(gameIds)
+            }
             while (isActive) {
                 delay(10 * 1000)
                 scoreboard?.let { sb ->
@@ -49,15 +52,9 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
                             scoreboard = sportOperationAdapter.getScoreboard()
 
                             //If boxscores already filled once then filter out games not in progress
-                            (boxScores.takeIf { it.isNotEmpty() }?.let { games.filter { it.second == "in" } } ?: games)
-                                .map { game ->
-                                    async{
-                                        sportOperationAdapter.getGameStats(game.third)
-                                    }
-                                }.awaitAll().filterNotNull().also { newBoxScores ->
-                                    //map result to teams
-                                    boxScores = newBoxScores.flatMap { it.teams }
-                                }
+                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
+                                fetchAndMapGames(gameIds)
+                            }
                             if(!allStates.contains("pre") && !allStates.contains("in")){
                                 delay(60 * 60 * 1000)
                             }
@@ -65,6 +62,17 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun fetchAndMapGames(gameIds: List<String>) = coroutineScope {
+        gameIds.map { gameId ->
+            async{
+                sportOperationAdapter.getGameStats(gameId)
+            }
+        }.awaitAll().filterNotNull().also { newBoxScores ->
+            //map result to teams
+            boxScores = newBoxScores.flatMap { it.teams }
         }
     }
 }
