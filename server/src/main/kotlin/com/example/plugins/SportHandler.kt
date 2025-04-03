@@ -6,6 +6,8 @@ import com.example.messageTypes.sports.Scoreboard
 import com.example.messageTypes.sports.Team
 import com.example.testRestClient.sport.SportOperationAdapter
 import io.klogging.Klogging
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,36 +39,31 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
     suspend fun buildScoreboard() {
         coroutineScope {
             scoreboard = sportOperationAdapter.getScoreboard()
-            launch { updateScores() }
             while (isActive) {
                 delay(10 * 1000)
                 scoreboard?.let { sb ->
-                    sb.competitions.map { Pair(it.status.state, it.date) }.let { pairedStates ->
-                        val earliestTime = pairedStates.minOf{ Instant.parse(it.second) }
-                        val allStates = pairedStates.map { it.first }.toSet()
+                    sb.competitions.map { Triple(it.status.state, it.date, it.id) }.let { games ->
+                        val earliestTime = games.minOf{ Instant.parse(it.second) }
+                        val allStates = games.map { it.first }.toSet()
                         if (Clock.System.now() > earliestTime) {
                             scoreboard = sportOperationAdapter.getScoreboard()
+
+                            //If boxscores already filled once then filter out games not in progress
+                            (boxScores.takeIf { it.isNotEmpty() }?.let { games.filter { it.second == "in" } } ?: games)
+                                .map { game ->
+                                    async{
+                                        sportOperationAdapter.getGameStats(game.third)
+                                    }
+                                }.awaitAll().filterNotNull().also { newBoxScores ->
+                                    //map result to teams
+                                    boxScores = newBoxScores.flatMap { it.teams }
+                                }
                             if(!allStates.contains("pre") && !allStates.contains("in")){
                                 delay(60 * 60 * 1000)
                             }
                         }
                     }
                 }
-            }
-        }
-    }
-
-    private suspend fun updateScores() {
-        coroutineScope {
-            while (isActive) {
-                scoreboard?.competitions?.mapNotNull {
-                    sportOperationAdapter.getGameStats(it.id)
-                }?.also { newBoxScores ->
-                    val boxScoreMappedToTeam = newBoxScores.flatMap { it.teams }
-                    //boxScoreFlowMut.emit(boxScoreMappedToTeam)
-                    boxScores = boxScoreMappedToTeam
-                }
-                delay(30000000L)
             }
         }
     }

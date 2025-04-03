@@ -11,6 +11,8 @@ import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.Vote
 import com.example.messageTypes.randomGuestName
+import com.example.messageTypes.sports.BoxScore
+import com.example.messageTypes.sports.FullTeam
 import com.example.messageTypes.sports.Scoreboard
 import com.example.util.findCorrectConversion
 import com.example.util.sendTypedMessage
@@ -135,13 +137,11 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             launch {
                 var lastSentScoreboard: Scoreboard? = null
                 while (isActive) {
-                    sportHandler.scoreboard?.let {
-                        if (lastSentScoreboard != sportHandler.scoreboard) {
-                            session.sendTypedMessage(MessageType.SCOREBOARD, it)
-                            lastSentScoreboard = sportHandler.scoreboard
-                        }
-                        delay(5 * 1000)
-                    } ?: run { delay(5000L) }
+                    if (sportHandler.scoreboard != null && lastSentScoreboard != sportHandler.scoreboard) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, sportHandler.scoreboard)
+                        lastSentScoreboard = sportHandler.scoreboard
+                    }
+                    delay(5 * 1000)
                 }
             },
             launch {
@@ -163,13 +163,13 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                 }
             },
             launch {
+                var lastSentBoxScores = listOf<FullTeam>()
                 while (isActive) {
-                    if (sportHandler.boxScores.isNotEmpty()) {
+                    if (sportHandler.boxScores.isNotEmpty() && lastSentBoxScores != sportHandler.boxScores) {
                         session.sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
-                        delay(500000L)
-                    } else {
-                        delay(5000L)
+                        lastSentBoxScores = sportHandler.boxScores
                     }
+                    delay(5 * 1000)
                 }
             }
 //            launch {
