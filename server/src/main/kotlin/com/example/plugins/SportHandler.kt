@@ -52,9 +52,10 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
                             scoreboard = sportOperationAdapter.getScoreboard()
 
                             //If boxscores already filled once then filter out games not in progress
-                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
-                                fetchAndMapGames(gameIds)
-                            }
+//                            DISABLE BOX SCORE UPDATES FOR NOW
+//                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
+//                                fetchAndMapGames(gameIds)
+//                            }
                             if(!allStates.contains("pre") && !allStates.contains("in")){
                                 delay(60 * 60 * 1000)
                             }
