@@ -30,7 +30,8 @@ data class Team(
     val name: String,
     val abbreviation: String,
     val displayName: String,
-    val shortDisplayName: String
+    val shortDisplayName: String,
+    val seed: String? = null
 )
 
 fun BBallTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }

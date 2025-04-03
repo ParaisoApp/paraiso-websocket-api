@@ -1,62 +1,71 @@
 package com.example.testRestClient.sport
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.example.messageTypes.sports.AllStandings as AllStandingsDomain
-import com.example.messageTypes.sports.RecordStat as RecordStatDomain
-import com.example.messageTypes.sports.RecordTypes as RecordTypesDomain
+import com.example.messageTypes.sports.StandingsGroup as StandingsGroupDomain
 import com.example.messageTypes.sports.Standings as StandingsDomain
+import com.example.messageTypes.sports.StandingsStat as StandingsStatDomain
+
+@Serializable
+data class BBallStandingsContainer(
+    val content: BBallStandingsContent
+)
+
+@Serializable
+data class BBallStandingsContent(
+    val standings: BBallStandings
+)
 
 @Serializable
 data class BBallStandings(
-    val standings: List<Standings>
+    val groups: List<Group>,
+)
+
+@Serializable
+data class Group(
+    val name: String,
+    val abbreviation: String,
+    val standings: Standings,
 )
 
 @Serializable
 data class Standings(
-    val team: TeamRef,
-    val records: List<RecordTypes>
+    val entries: List<Entry>,
 )
 
 @Serializable
-data class TeamRef(
-    @SerialName("\$ref") val ref: String
+data class Entry(
+    val team: Team,
+    val stats: List<BBallStandingsStat>
 )
 
 @Serializable
-data class RecordTypes(
-    val displayName: String,
+data class BBallStandingsStat(
+    val shortDisplayName: String,
     val displayValue: String,
-    val value: Double,
-    val stats: List<RecordStat>
-)
-
-@Serializable
-data class RecordStat(
     val displayName: String,
-    val abbreviation: String,
-    val value: Double
+    val value: String
 )
 
-fun BBallStandings.toDomain(conference: String) = AllStandingsDomain(
-    standings = standings.map { it.toDomain(conference) }
-)
+fun BBallStandingsContainer.toDomain() = AllStandingsDomain(
+        standingsGroups = content.standings.groups.map { it.toDomain() }
+    )
 
-fun Standings.toDomain(conference: String) = StandingsDomain(
-    teamId = team.ref.substringAfter("/teams/").substringBefore("?"),
-    conference = conference,
-    records = records.map { it.toDomain() }
-)
+fun Group.toDomain() = StandingsGroupDomain(
+        confName = name,
+        confAbbr = abbreviation,
+        standings = standings.entries.map { it.toDomain() }
+    )
 
-fun RecordTypes.toDomain() = RecordTypesDomain(
+fun Entry.toDomain() = StandingsDomain(
+        teamId = team.id,
+        seed = team.seed?.toIntOrNull() ?: 0,
+        stats = stats.map { it.toDomain() }
+    )
+
+fun BBallStandingsStat.toDomain() = StandingsStatDomain(
+    shortDisplayName = shortDisplayName,
+    displayValue = displayValue,
     displayName = displayName,
-    wins = displayValue.split('-')[0].toIntOrNull() ?: -1,
-    losses = displayValue.split('-')[1].toIntOrNull() ?: -1,
-    stats = stats.map { it.toDomain() }
-)
-
-fun RecordStat.toDomain() = RecordStatDomain(
-    displayName = displayName,
-    abbreviation = abbreviation,
-    value = value
+    value = value.toDoubleOrNull() ?: 0.0,
 )

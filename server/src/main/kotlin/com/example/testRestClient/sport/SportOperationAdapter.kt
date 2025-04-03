@@ -64,17 +64,8 @@ class SportOperationAdapter(
     }
     suspend fun getStandings(): AllStandingsDomain? = withContext(dispatcher) {
         try {
-            val eastUrl = "${apiConfig.coreApiBaseUrl}/seasons/$SEASON/types/$REGULAR/groups/$EAST/standings/$OVERALL"
-            val eastResponse: BBallStandings = getHttpClient().use { httpClient ->
-                httpClient.get(eastUrl).let {
-                    if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
-                    }
-                    it.body()
-                }
-            }
-            val westUrl = "${apiConfig.coreApiBaseUrl}/seasons/$SEASON/types/$REGULAR/groups/$WEST/standings/$OVERALL"
-            val westResponse: BBallStandings = getHttpClient().use { httpClient ->
+            val westUrl = "${apiConfig.cdnApiBaseUrl}/standings?xhr=1"
+            val standingsResponse: BBallStandingsContainer = getHttpClient().use { httpClient ->
                 httpClient.get(westUrl).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -82,7 +73,7 @@ class SportOperationAdapter(
                     it.body()
                 }
             }
-            AllStandingsDomain(eastResponse.toDomain("East").standings + westResponse.toDomain("West").standings)
+            standingsResponse.toDomain()
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

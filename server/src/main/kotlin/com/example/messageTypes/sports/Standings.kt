@@ -4,27 +4,27 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AllStandings(
+    val standingsGroups: List<StandingsGroup>
+)
+
+@Serializable
+data class StandingsGroup(
+    val confName: String,
+    val confAbbr: String,
     val standings: List<Standings>
 )
 
 @Serializable
 data class Standings(
     val teamId: String,
-    val conference: String,
-    val records: List<RecordTypes>
+    val seed: Int,
+    val stats: List<StandingsStat>
 )
 
 @Serializable
-data class RecordTypes(
+data class StandingsStat(
+    val shortDisplayName: String,
+    val displayValue: String,
     val displayName: String,
-    val wins: Int,
-    val losses: Int,
-    val stats: List<RecordStat>
-)
-
-@Serializable
-data class RecordStat(
-    val displayName: String,
-    val abbreviation: String,
     val value: Double
 )
