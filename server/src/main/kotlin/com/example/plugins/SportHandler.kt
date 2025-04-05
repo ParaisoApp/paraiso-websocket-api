@@ -48,6 +48,7 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
                     sb.competitions.map { Triple(it.status.state, it.date, it.id) }.let { games ->
                         val earliestTime = games.minOf{ Instant.parse(it.second) }
                         val allStates = games.map { it.first }.toSet()
+                        //if current time is beyond the earliest start time start fetching the scoreboard
                         if (Clock.System.now() > earliestTime) {
                             scoreboard = sportOperationAdapter.getScoreboard()
 
@@ -57,8 +58,12 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
 //                                fetchAndMapGames(gameIds)
 //                            }
                             if(!allStates.contains("pre") && !allStates.contains("in")){
+                                //delay an hour if all games ended
                                 delay(60 * 60 * 1000)
                             }
+                        //else if current time is before the earliest time, delay until the earliest time
+                        }else if(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0){
+                            delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
                         }
                     }
                 }
