@@ -30,7 +30,7 @@ fun main() {
         sportHandler.getTeams()
     }
 
-    val handler = WebSocketHandler(sportHandler)
+    val handler = WebSocketHandler(sportHandler, apiConfig)
 
     val server = embeddedServer(Netty, port = 8080) {
         configureSockets(handler)

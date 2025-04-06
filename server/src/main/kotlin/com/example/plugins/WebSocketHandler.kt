@@ -1,19 +1,25 @@
 package com.example.plugins
 
+import com.example.messageTypes.Ban
 import com.example.messageTypes.Delete
 import com.example.messageTypes.DirectMessage
+import com.example.messageTypes.Login
 import com.example.messageTypes.Message
 import com.example.messageTypes.MessageType
+import com.example.messageTypes.Role
 import com.example.messageTypes.Route
 import com.example.messageTypes.SiteRoute
 import com.example.messageTypes.TypeMapping
 import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
+import com.example.messageTypes.UserRole
 import com.example.messageTypes.Vote
+import com.example.messageTypes.createUnknown
 import com.example.messageTypes.randomGuestName
 import com.example.messageTypes.sports.BoxScore
 import com.example.messageTypes.sports.FullTeam
 import com.example.messageTypes.sports.Scoreboard
+import com.example.testRestClient.util.ApiConfig
 import com.example.util.findCorrectConversion
 import com.example.util.sendTypedMessage
 import io.klogging.Klogging
@@ -33,9 +39,11 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
-class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
+class WebSocketHandler(private val sportHandler: SportHandler, private val apiConfig: ApiConfig) : Klogging {
 
     private val userList: MutableMap<String, User> = mutableMapOf()
+    private val banList: MutableSet<String> = mutableSetOf()
+    private var sessionUser: User = User.createUnknown()
 
     private val messageSharedFlowMut = MutableSharedFlow<Message>(replay = 0)
     private val voteSharedFlowMut = MutableSharedFlow<Vote>(replay = 0)
@@ -58,10 +66,12 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             val currentUser = User(
                 userId = id,
                 username = randomGuestName(),
+                role = UserRole.GUEST,
                 websocket = session
             )
             userList[id] = currentUser
-            session.joinChat(currentUser)
+            sessionUser = currentUser
+            session.joinChat()
         }
     }
 
@@ -180,8 +190,8 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
         )
     }
 
-    private suspend fun WebSocketServerSession.joinChat(user: User) {
-        sendTypedMessage(MessageType.USER, UserInfo(user.userId, user.username))
+    private suspend fun WebSocketServerSession.joinChat() {
+        sendTypedMessage(MessageType.USER, UserInfo(sessionUser.userId, sessionUser.username))
         sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.userId, it.username) })
 
         val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
@@ -200,7 +210,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             }
         }
 
-        guestSharedFlowMut.emit(UserInfo(user.userId, user.username))
+        guestSharedFlowMut.emit(UserInfo(sessionUser.userId, sessionUser.username))
         //holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -211,25 +221,52 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                     MessageType.MSG -> {
                         val message = Json.decodeFromString<Message>(messageWithType.value).copy(
                             id = UUID.randomUUID().toString(),
-                            userId = user.userId
+                            userId = sessionUser.userId
                         )
-                        messageSharedFlowMut.emit(message)
+                        if(banList.contains(sessionUser.userId)){
+                            sendTypedMessage(MessageType.MSG, message)
+                        }else{
+                            messageSharedFlowMut.emit(message)
+                        }
                     }
                     MessageType.DM -> {
                         val message = Json.decodeFromString<DirectMessage>(messageWithType.value).copy(
                             id = UUID.randomUUID().toString(),
-                            userId = user.userId
+                            userId = sessionUser.userId
                         )
                         launch { sendTypedMessage(MessageType.DM, message) }
-                        userList[message.userReceiveId]?.websocket?.sendTypedMessage(MessageType.DM, message)
+                        if(!banList.contains(sessionUser.userId)){
+                            userList[message.userReceiveId]?.websocket?.sendTypedMessage(MessageType.DM, message)
+                        }
                     }
                     MessageType.VOTE -> {
-                        val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = user.userId)
-                        voteSharedFlowMut.emit(vote)
+                        val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = sessionUser.userId)
+                        if(banList.contains(sessionUser.userId)){
+                            sendTypedMessage(MessageType.VOTE, vote)
+                        }else{
+                            voteSharedFlowMut.emit(vote)
+                        }
                     }
                     MessageType.DELETE -> {
-                        val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = user.userId)
-                        deleteSharedFlowMut.emit(delete)
+                        val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = sessionUser.userId)
+                        if(banList.contains(sessionUser.userId)){
+                            sendTypedMessage(MessageType.DELETE, delete)
+                        }else{
+                            deleteSharedFlowMut.emit(delete)
+                        }
+                    }
+                    MessageType.LOGIN -> {
+                        val login = Json.decodeFromString<Login>(messageWithType.value)
+                        if(login.password == apiConfig.admin){
+                            sessionUser = sessionUser.copy(role = UserRole.ADMIN)
+                            sendTypedMessage(MessageType.ROLE, Role(role = UserRole.ADMIN))
+                        }
+                    }
+                    MessageType.BAN -> {
+                        val ban = Json.decodeFromString<Ban>(messageWithType.value)
+                        if(sessionUser.role == UserRole.ADMIN){
+                            banList.add(ban.userId)
+                        }
                     }
                     MessageType.ROUTE -> {
                         val route = Json.decodeFromString<Route>(messageWithType.value)
@@ -247,9 +284,9 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            userLeaveFlowMut.emit(user.userId)
-            userList.remove(user.userId)
-            user.websocket?.close()
+            userLeaveFlowMut.emit(sessionUser.userId)
+            userList.remove(sessionUser.userId)
+            sessionUser.websocket?.close()
         }
     }
 }
