@@ -6,7 +6,6 @@ import com.example.messageTypes.DirectMessage
 import com.example.messageTypes.Login
 import com.example.messageTypes.Message
 import com.example.messageTypes.MessageType
-import com.example.messageTypes.Role
 import com.example.messageTypes.Route
 import com.example.messageTypes.SiteRoute
 import com.example.messageTypes.TypeMapping
@@ -14,9 +13,7 @@ import com.example.messageTypes.User
 import com.example.messageTypes.UserInfo
 import com.example.messageTypes.UserRole
 import com.example.messageTypes.Vote
-import com.example.messageTypes.createUnknown
 import com.example.messageTypes.randomGuestName
-import com.example.messageTypes.sports.BoxScore
 import com.example.messageTypes.sports.FullTeam
 import com.example.messageTypes.sports.Scoreboard
 import com.example.testRestClient.util.ApiConfig
@@ -35,7 +32,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -44,31 +40,31 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
     private val userList: MutableMap<String, User> = mutableMapOf()
     private val banList: MutableSet<String> = mutableSetOf()
 
-    private val messageSharedFlowMut = MutableSharedFlow<Message>(replay = 0)
-    private val voteSharedFlowMut = MutableSharedFlow<Vote>(replay = 0)
-    private val deleteSharedFlowMut = MutableSharedFlow<Delete>(replay = 0)
-    private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
-    private val guestSharedFlowMut = MutableSharedFlow<UserInfo>(replay = 0)
+    private val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
+    private val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)
+    private val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
+    private val basicFlowMut = MutableSharedFlow<String>(replay = 0)
+    private val userLoginFlowMut = MutableSharedFlow<User>(replay = 0)
     private val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
-    private val banUserMut = MutableSharedFlow<Ban>(replay = 0)
+    private val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
 
     private val flowList = listOf( // convert to immutable for send to client
-        Pair(MessageType.MSG, messageSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.VOTE, voteSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.DELETE, deleteSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.BASIC, basicSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.GUEST, guestSharedFlowMut.asSharedFlow()),
+        Pair(MessageType.MSG, messageFlowMut.asSharedFlow()),
+        Pair(MessageType.VOTE, voteFlowMut.asSharedFlow()),
+        Pair(MessageType.DELETE, deleteFlowMut.asSharedFlow()),
+        Pair(MessageType.BASIC, basicFlowMut.asSharedFlow()),
+        Pair(MessageType.USER_LOGIN, userLoginFlowMut.asSharedFlow()),
         Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow()),
-        Pair(MessageType.BAN, banUserMut.asSharedFlow())
+        Pair(MessageType.BAN, banUserFlowMut.asSharedFlow())
     )
 
     suspend fun handleGuest(session: WebSocketServerSession) {
         UUID.randomUUID().toString().let { id ->
             val currentUser = User(
-                userId = id,
-                username = randomGuestName(),
+                id = id,
+                name = randomGuestName(),
                 banned = false,
-                role = UserRole.GUEST,
+                roles = UserRole.GUEST,
                 websocket = session
             )
             userList[id] = currentUser
@@ -193,8 +189,8 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         var sessionUser = user.copy()
-        sendTypedMessage(MessageType.USER, UserInfo(sessionUser.userId, sessionUser.username))
-        sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.userId, it.username) })
+        sendTypedMessage(MessageType.USER, UserInfo(sessionUser.id, sessionUser.name))
+        sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.id, it.name) })
 
         val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
             launch {
@@ -204,12 +200,12 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                         MessageType.VOTE -> sendTypedMessage(type, message as Vote)
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.GUEST -> sendTypedMessage(type, message as UserInfo)
+                        MessageType.USER_LOGIN -> sendTypedMessage(type, message as User)
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         MessageType.BAN -> {
                             val ban = message as? Ban
                             ban?.let{bannedMsg ->
-                                if(sessionUser.userId == bannedMsg.userId){
+                                if(sessionUser.id == bannedMsg.userId){
                                     sessionUser = sessionUser.copy(banned = true)
                                 }
                             }
@@ -220,7 +216,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
             }
         }
 
-        guestSharedFlowMut.emit(UserInfo(sessionUser.userId, sessionUser.username))
+        userLoginFlowMut.emit(sessionUser.copy(websocket = null))
         //holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -231,18 +227,18 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                     MessageType.MSG -> {
                         val message = Json.decodeFromString<Message>(messageWithType.value).copy(
                             id = UUID.randomUUID().toString(),
-                            userId = sessionUser.userId
+                            userId = sessionUser.id
                         )
                         if(sessionUser.banned){
                             sendTypedMessage(MessageType.MSG, message)
                         }else{
-                            messageSharedFlowMut.emit(message)
+                            messageFlowMut.emit(message)
                         }
                     }
                     MessageType.DM -> {
                         val message = Json.decodeFromString<DirectMessage>(messageWithType.value).copy(
                             id = UUID.randomUUID().toString(),
-                            userId = sessionUser.userId
+                            userId = sessionUser.id
                         )
                         launch { sendTypedMessage(MessageType.DM, message) }
                         if(!sessionUser.banned){
@@ -250,32 +246,32 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                         }
                     }
                     MessageType.VOTE -> {
-                        val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = sessionUser.userId)
+                        val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = sessionUser.id)
                         if(sessionUser.banned){
                             sendTypedMessage(MessageType.VOTE, vote)
                         }else{
-                            voteSharedFlowMut.emit(vote)
+                            voteFlowMut.emit(vote)
                         }
                     }
                     MessageType.DELETE -> {
-                        val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = sessionUser.userId)
+                        val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = sessionUser.id)
                         if(sessionUser.banned){
                             sendTypedMessage(MessageType.DELETE, delete)
                         }else{
-                            deleteSharedFlowMut.emit(delete)
+                            deleteFlowMut.emit(delete)
                         }
                     }
                     MessageType.LOGIN -> {
                         val login = Json.decodeFromString<Login>(messageWithType.value)
                         if(login.password == apiConfig.admin){
-                            sessionUser = sessionUser.copy(role = UserRole.ADMIN)
-                            sendTypedMessage(MessageType.ROLE, Role(role = UserRole.ADMIN))
+                            sessionUser = sessionUser.copy(roles = UserRole.ADMIN)
+                            sendTypedMessage(MessageType.USER_LOGIN, sessionUser.copy(websocket = null))
                         }
                     }
                     MessageType.BAN -> {
                         val ban = Json.decodeFromString<Ban>(messageWithType.value)
-                        if(sessionUser.role == UserRole.ADMIN){
-                            banUserMut.emit(ban)
+                        if(sessionUser.roles == UserRole.ADMIN){
+                            banUserFlowMut.emit(ban)
                             banList.add(ban.userId)
                         }
                     }
@@ -295,8 +291,8 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            userLeaveFlowMut.emit(sessionUser.userId)
-            userList.remove(sessionUser.userId)
+            userLeaveFlowMut.emit(sessionUser.id)
+            userList.remove(sessionUser.id)
             sessionUser.websocket?.close()
         }
     }

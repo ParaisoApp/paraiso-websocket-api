@@ -29,8 +29,8 @@ enum class MessageType {
     @SerialName("login")
     LOGIN,
 
-    @SerialName("role")
-    ROLE,
+    @SerialName("userLogin")
+    USER_LOGIN,
 
     @SerialName("ban")
     BAN,

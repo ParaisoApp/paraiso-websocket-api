@@ -6,9 +6,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class User(
-    val userId: String,
-    val username: String,
-    val role: UserRole,
+    val id: String,
+    val name: String,
+    val roles: UserRole,
     val banned: Boolean,
     val websocket: WebSocketServerSession? = null
 ) { companion object }
@@ -31,9 +31,9 @@ enum class UserRole {
 }
 
 fun User.Companion.createUnknown() = User(
-    userId = "UNKNOWN",
-    username = "UNKNOWN",
+    id = "UNKNOWN",
+    name = "UNKNOWN",
     banned = false,
-    role = UserRole.GUEST,
+    roles = UserRole.GUEST,
     websocket = null
 )
