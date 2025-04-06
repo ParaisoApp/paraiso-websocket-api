@@ -189,8 +189,8 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         var sessionUser = user.copy()
-        sendTypedMessage(MessageType.USER, UserInfo(sessionUser.id, sessionUser.name))
-        sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.id, it.name) })
+        sendTypedMessage(MessageType.USER, sessionUser.copy(websocket = null))
+        sendTypedMessage(MessageType.USER_LIST, userList.values.map { it.copy(websocket = null) })
 
         val messageCollectionJobs = flowList.map { (type, sharedFlow) ->
             launch {
@@ -264,8 +264,17 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                     MessageType.LOGIN -> {
                         val login = Json.decodeFromString<Login>(messageWithType.value)
                         if(login.password == apiConfig.admin){
-                            sessionUser = sessionUser.copy(roles = UserRole.ADMIN)
-                            sendTypedMessage(MessageType.USER_LOGIN, sessionUser.copy(websocket = null))
+                            sessionUser.copy(
+                                roles = UserRole.ADMIN,
+                                name = "Breeze"
+                            ).let{ admin ->
+                                sessionUser = admin
+                                userList[sessionUser.id] = admin
+                                admin.copy(websocket = null).let{adminRef ->
+                                    sendTypedMessage(MessageType.USER, adminRef)
+                                    userLoginFlowMut.emit(adminRef)
+                                }
+                            }
                         }
                     }
                     MessageType.BAN -> {
