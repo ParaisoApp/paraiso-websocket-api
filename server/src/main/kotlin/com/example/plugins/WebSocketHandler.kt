@@ -43,7 +43,6 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
 
     private val userList: MutableMap<String, User> = mutableMapOf()
     private val banList: MutableSet<String> = mutableSetOf()
-    private var sessionUser: User = User.createUnknown()
 
     private val messageSharedFlowMut = MutableSharedFlow<Message>(replay = 0)
     private val voteSharedFlowMut = MutableSharedFlow<Vote>(replay = 0)
@@ -51,6 +50,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
     private val basicSharedFlowMut = MutableSharedFlow<String>(replay = 0)
     private val guestSharedFlowMut = MutableSharedFlow<UserInfo>(replay = 0)
     private val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
+    private val banUserMut = MutableSharedFlow<Ban>(replay = 0)
 
     private val flowList = listOf( // convert to immutable for send to client
         Pair(MessageType.MSG, messageSharedFlowMut.asSharedFlow()),
@@ -58,7 +58,8 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
         Pair(MessageType.DELETE, deleteSharedFlowMut.asSharedFlow()),
         Pair(MessageType.BASIC, basicSharedFlowMut.asSharedFlow()),
         Pair(MessageType.GUEST, guestSharedFlowMut.asSharedFlow()),
-        Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow())
+        Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow()),
+        Pair(MessageType.BAN, banUserMut.asSharedFlow())
     )
 
     suspend fun handleGuest(session: WebSocketServerSession) {
@@ -66,12 +67,12 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
             val currentUser = User(
                 userId = id,
                 username = randomGuestName(),
+                banned = false,
                 role = UserRole.GUEST,
                 websocket = session
             )
             userList[id] = currentUser
-            sessionUser = currentUser
-            session.joinChat()
+            session.joinChat(currentUser)
         }
     }
 
@@ -190,7 +191,8 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
         )
     }
 
-    private suspend fun WebSocketServerSession.joinChat() {
+    private suspend fun WebSocketServerSession.joinChat(user: User) {
+        var sessionUser = user.copy()
         sendTypedMessage(MessageType.USER, UserInfo(sessionUser.userId, sessionUser.username))
         sendTypedMessage(MessageType.USER_LIST, userList.values.map { UserInfo(it.userId, it.username) })
 
@@ -204,6 +206,14 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.GUEST -> sendTypedMessage(type, message as UserInfo)
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
+                        MessageType.BAN -> {
+                            val ban = message as? Ban
+                            ban?.let{bannedMsg ->
+                                if(sessionUser.userId == bannedMsg.userId){
+                                    sessionUser = sessionUser.copy(banned = true)
+                                }
+                            }
+                        }
                         else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
                     }
                 }
@@ -223,7 +233,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                             id = UUID.randomUUID().toString(),
                             userId = sessionUser.userId
                         )
-                        if(banList.contains(sessionUser.userId)){
+                        if(sessionUser.banned){
                             sendTypedMessage(MessageType.MSG, message)
                         }else{
                             messageSharedFlowMut.emit(message)
@@ -235,13 +245,13 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                             userId = sessionUser.userId
                         )
                         launch { sendTypedMessage(MessageType.DM, message) }
-                        if(!banList.contains(sessionUser.userId)){
+                        if(!sessionUser.banned){
                             userList[message.userReceiveId]?.websocket?.sendTypedMessage(MessageType.DM, message)
                         }
                     }
                     MessageType.VOTE -> {
                         val vote = Json.decodeFromString<Vote>(messageWithType.value).copy(userId = sessionUser.userId)
-                        if(banList.contains(sessionUser.userId)){
+                        if(sessionUser.banned){
                             sendTypedMessage(MessageType.VOTE, vote)
                         }else{
                             voteSharedFlowMut.emit(vote)
@@ -249,7 +259,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                     }
                     MessageType.DELETE -> {
                         val delete = Json.decodeFromString<Delete>(messageWithType.value).copy(userId = sessionUser.userId)
-                        if(banList.contains(sessionUser.userId)){
+                        if(sessionUser.banned){
                             sendTypedMessage(MessageType.DELETE, delete)
                         }else{
                             deleteSharedFlowMut.emit(delete)
@@ -265,6 +275,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                     MessageType.BAN -> {
                         val ban = Json.decodeFromString<Ban>(messageWithType.value)
                         if(sessionUser.role == UserRole.ADMIN){
+                            banUserMut.emit(ban)
                             banList.add(ban.userId)
                         }
                     }

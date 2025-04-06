@@ -9,6 +9,7 @@ data class User(
     val userId: String,
     val username: String,
     val role: UserRole,
+    val banned: Boolean,
     val websocket: WebSocketServerSession? = null
 ) { companion object }
 @Serializable
@@ -32,6 +33,7 @@ enum class UserRole {
 fun User.Companion.createUnknown() = User(
     userId = "UNKNOWN",
     username = "UNKNOWN",
+    banned = false,
     role = UserRole.GUEST,
     websocket = null
 )
