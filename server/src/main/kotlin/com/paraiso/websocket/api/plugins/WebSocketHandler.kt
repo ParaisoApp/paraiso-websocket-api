@@ -101,16 +101,16 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                             lastSentScoreboard = filteredSb
                         }
                         delay(5 * 1000)
-                    } ?: run { delay(5000L) }
+                    } ?: run { delay(5 * 1000L) }
                 }
             },
             launch {
                 while (isActive) {
                     if (sportHandler.teams.isNotEmpty()) {
                         session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(500000L)
+                        delay(24 * 60 * 1000)
                     } else {
-                        delay(5000L)
+                        delay(5 * 1000L)
                     }
                 }
             },
@@ -129,12 +129,23 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                                         session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
                                     }
                             }
-                        delay(500000L)
+                        delay(24 * 60 * 1000)
                     } else {
-                        delay(5000L)
+                        delay(5 * 1000L)
                     }
                 }
-            }
+            },
+            launch {
+                while (isActive) {
+                    if (sportHandler.rosters.isNotEmpty()) {
+                        val filterRosters = sportHandler.rosters.filter { it.team.id == content }
+                        session.sendTypedMessage(MessageType.ROSTERS, filterRosters)
+                        delay(24 * 60 * 1000)
+                    } else {
+                        delay(5 * 1000)
+                    }
+                }
+            },
         )
     }
 
@@ -154,9 +165,9 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                 while (isActive) {
                     if (sportHandler.teams.isNotEmpty()) {
                         session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(500000L)
+                        delay(24 * 60 * 1000)
                     } else {
-                        delay(5000L)
+                        delay(5 * 1000)
                     }
                 }
             },
@@ -164,8 +175,10 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                 while (isActive) {
                     sportHandler.standings?.let {
                         session.sendTypedMessage(MessageType.STANDINGS, it)
-                        delay(5000000L)
-                    } ?: run { delay(5000L) }
+                        delay(24 * 60 * 1000)
+                    } ?: run {
+                        delay(5 * 1000)
+                    }
                 }
             },
             launch {
@@ -177,12 +190,17 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                     }
                     delay(5 * 1000)
                 }
-            }
-//            launch {
-//                sportHandler.boxScoreFlow.collect { message ->
-//                    sendTypedMessage(MessageType.BOX_SCORES, message)
-//                }
-//            }
+            },
+            launch {
+                while (isActive) {
+                    if (sportHandler.rosters.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.ROSTERS, sportHandler.rosters)
+                        delay(24 * 60 * 1000)
+                    } else {
+                        delay(5 * 1000)
+                    }
+                }
+            },
         )
     }
 

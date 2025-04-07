@@ -35,9 +35,6 @@ enum class MessageType {
     @SerialName("ban")
     BAN,
 
-    @SerialName("guest")
-    GUEST,
-
     @SerialName("userLeave")
     USER_LEAVE,
 
@@ -55,6 +52,9 @@ enum class MessageType {
 
     @SerialName("boxScores")
     BOX_SCORES,
+
+    @SerialName("rosters")
+    ROSTERS,
 
     @SerialName("basic")
     BASIC,
