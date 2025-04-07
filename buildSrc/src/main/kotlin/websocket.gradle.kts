@@ -11,7 +11,7 @@ group = "com"
 version = "0.0.1-SNAPSHOT"
 
 application {
-    mainClass.set("com.example.Application")
+    mainClass.set("com.paraiso.websocket.api.Application")
 }
 
 java {
