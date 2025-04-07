@@ -2,9 +2,9 @@ package com.paraiso.websocket.api.testRestClient.sport
 
 import com.paraiso.websocket.api.messageTypes.sports.createUnknown
 import kotlinx.serialization.Serializable
-import com.paraiso.websocket.api.messageTypes.sports.Roster as RosterDomain
 import com.paraiso.websocket.api.messageTypes.sports.Athlete as AthleteDomain
 import com.paraiso.websocket.api.messageTypes.sports.Coach as CoachDomain
+import com.paraiso.websocket.api.messageTypes.sports.Roster as RosterDomain
 
 @Serializable
 data class RestRoster(

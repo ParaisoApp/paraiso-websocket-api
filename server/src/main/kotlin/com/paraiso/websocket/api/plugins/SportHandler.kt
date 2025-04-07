@@ -11,8 +11,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -36,8 +34,8 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
     }
 
     private suspend fun getRosters(teamsRes: List<Team>) = coroutineScope {
-        rosters = teamsRes.map {team ->
-            async{
+        rosters = teamsRes.map { team ->
+            async {
                 sportOperationAdapter.getRoster(team.id)
             }
         }.awaitAll().filterNotNull()

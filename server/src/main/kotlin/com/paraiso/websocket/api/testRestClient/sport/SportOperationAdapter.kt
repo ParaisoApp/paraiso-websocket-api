@@ -10,9 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.paraiso.websocket.api.messageTypes.sports.AllStandings as AllStandingsDomain
 import com.paraiso.websocket.api.messageTypes.sports.BoxScore as BoxScoreDomain
+import com.paraiso.websocket.api.messageTypes.sports.Roster as RosterDomain
 import com.paraiso.websocket.api.messageTypes.sports.Scoreboard as ScoreboardDomain
 import com.paraiso.websocket.api.messageTypes.sports.Team as TeamDomain
-import com.paraiso.websocket.api.messageTypes.sports.Roster as RosterDomain
 
 class SportOperationAdapter(
     private val apiConfig: ApiConfig
@@ -99,7 +99,7 @@ class SportOperationAdapter(
     }
     suspend fun getRoster(teamId: String): RosterDomain? = withContext(dispatcher) {
         try {
-            val url = "${apiConfig.statsBaseUrl}/teams/${teamId}/roster"
+            val url = "${apiConfig.statsBaseUrl}/teams/$teamId/roster"
             val response: RestRoster = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {

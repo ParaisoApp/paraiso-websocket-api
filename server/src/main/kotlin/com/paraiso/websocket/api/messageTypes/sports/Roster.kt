@@ -15,7 +15,7 @@ data class Coach(
     val firstName: String,
     val lastName: String,
     val experience: Int
-) {companion object}
+) { companion object }
 
 fun Coach.Companion.createUnknown() = Coach(
     id = "",

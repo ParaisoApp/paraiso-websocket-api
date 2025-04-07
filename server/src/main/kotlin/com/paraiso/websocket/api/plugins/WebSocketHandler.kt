@@ -145,7 +145,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                         delay(5 * 1000)
                     }
                 }
-            },
+            }
         )
     }
 
@@ -200,7 +200,7 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                         delay(5 * 1000)
                     }
                 }
-            },
+            }
         )
     }
 
