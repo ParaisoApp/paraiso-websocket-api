@@ -7,17 +7,17 @@ import com.paraiso.websocket.api.messageTypes.sports.StandingsGroup as Standings
 import com.paraiso.websocket.api.messageTypes.sports.StandingsStat as StandingsStatDomain
 
 @Serializable
-data class BBallStandingsContainer(
-    val content: BBallStandingsContent
+data class RestStandingsContainer(
+    val content: RestStandingsContent
 )
 
 @Serializable
-data class BBallStandingsContent(
-    val standings: BBallStandings
+data class RestStandingsContent(
+    val standings: RestStandings
 )
 
 @Serializable
-data class BBallStandings(
+data class RestStandings(
     val groups: List<Group>
 )
 
@@ -47,7 +47,7 @@ data class BBallStandingsStat(
     val value: String
 )
 
-fun BBallStandingsContainer.toDomain() = AllStandingsDomain(
+fun RestStandingsContainer.toDomain() = AllStandingsDomain(
     standingsGroups = content.standings.groups.map { it.toDomain() }
 )
 

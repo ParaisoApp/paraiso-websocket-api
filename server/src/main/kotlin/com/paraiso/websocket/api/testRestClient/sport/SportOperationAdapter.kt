@@ -12,6 +12,7 @@ import com.paraiso.websocket.api.messageTypes.sports.AllStandings as AllStanding
 import com.paraiso.websocket.api.messageTypes.sports.BoxScore as BoxScoreDomain
 import com.paraiso.websocket.api.messageTypes.sports.Scoreboard as ScoreboardDomain
 import com.paraiso.websocket.api.messageTypes.sports.Team as TeamDomain
+import com.paraiso.websocket.api.messageTypes.sports.Roster as RosterDomain
 
 class SportOperationAdapter(
     private val apiConfig: ApiConfig
@@ -31,7 +32,7 @@ class SportOperationAdapter(
     suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {
         try {
             val url = "${apiConfig.statsBaseUrl}/scoreboard"
-            val response: BBallScoreboard = getHttpClient().use { httpClient ->
+            val response: RestScoreboard = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -48,7 +49,7 @@ class SportOperationAdapter(
     suspend fun getGameStats(gameId: String): BoxScoreDomain? = withContext(dispatcher) {
         try {
             val url = "${apiConfig.statsBaseUrl}/summary?event=$gameId"
-            val response: BBallGameStats = getHttpClient().use { httpClient ->
+            val response: RestGameStats = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -65,7 +66,7 @@ class SportOperationAdapter(
     suspend fun getStandings(): AllStandingsDomain? = withContext(dispatcher) {
         try {
             val westUrl = "${apiConfig.cdnApiBaseUrl}/standings?xhr=1"
-            val standingsResponse: BBallStandingsContainer = getHttpClient().use { httpClient ->
+            val standingsResponse: RestStandingsContainer = getHttpClient().use { httpClient ->
                 httpClient.get(westUrl).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -82,7 +83,7 @@ class SportOperationAdapter(
     suspend fun getTeams(): List<TeamDomain> = withContext(dispatcher) {
         try {
             val url = "${apiConfig.statsBaseUrl}/teams"
-            val response: BBallTeams = getHttpClient().use { httpClient ->
+            val response: RestTeams = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -94,6 +95,23 @@ class SportOperationAdapter(
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             emptyList()
+        }
+    }
+    suspend fun getRoster(teamId: String): RosterDomain? = withContext(dispatcher) {
+        try {
+            val url = "${apiConfig.statsBaseUrl}/teams/${teamId}/roster"
+            val response: RestRoster = getHttpClient().use { httpClient ->
+                httpClient.get(url).let {
+                    if (it.status != HttpStatusCode.OK) {
+                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                    }
+                    it.body()
+                }
+            }
+            response.toDomain()
+        } catch (ex: Exception) {
+            logger.error("ex: $ex")
+            null
         }
     }
 }

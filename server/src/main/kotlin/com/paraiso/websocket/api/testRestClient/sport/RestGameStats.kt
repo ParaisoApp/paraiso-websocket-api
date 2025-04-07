@@ -9,7 +9,7 @@ import com.paraiso.websocket.api.messageTypes.sports.StatTypes as StatTypesDomai
 import com.paraiso.websocket.api.messageTypes.sports.TeamStat as TeamStatDomain
 
 @Serializable
-data class BBallGameStats(
+data class RestGameStats(
     val boxscore: BoxScore
 )
 
@@ -47,7 +47,7 @@ data class Statistic(
 
 @Serializable
 data class AthleteBase(
-    val athlete: Athlete,
+    val athlete: RestAthlete,
     val starter: Boolean,
     val didNotPlay: Boolean,
     val reason: String,
@@ -56,21 +56,12 @@ data class AthleteBase(
 )
 
 @Serializable
-data class Athlete(
-    val id: String,
-    val displayName: String,
-    val shortName: String,
-    val jersey: String? = null,
-    val position: Position
-)
-
-@Serializable
 data class Position(
     val name: String,
     val abbreviation: String
 )
 
-fun BBallGameStats.toDomain() = BoxScoreDomain(
+fun RestGameStats.toDomain() = BoxScoreDomain(
     teams = boxscore.teams.map { it.toDomain(boxscore.players) }
 )
 
@@ -106,5 +97,7 @@ fun AthleteBase.toDomain() = AthleteDomain(
     didNotPlay = didNotPlay,
     reason = reason,
     ejected = ejected,
-    stats = stats
+    stats = stats,
+    displayHeight = "",
+    displayWeight = ""
 )

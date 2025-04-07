@@ -11,7 +11,7 @@ import com.paraiso.websocket.api.messageTypes.sports.TeamYearStats as TeamYearSt
 import com.paraiso.websocket.api.messageTypes.sports.Venue as VenueDomain
 
 @Serializable
-data class BBallScoreboard(
+data class RestScoreboard(
     val events: List<Event>
 )
 
@@ -87,7 +87,7 @@ data class Type(
     val completed: Boolean
 )
 
-fun BBallScoreboard.toDomain() = Scoreboard(
+fun RestScoreboard.toDomain() = Scoreboard(
     competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, it.date) }
 )
 

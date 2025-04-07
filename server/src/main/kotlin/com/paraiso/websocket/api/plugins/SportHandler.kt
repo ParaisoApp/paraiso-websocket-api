@@ -2,6 +2,7 @@ package com.paraiso.websocket.api.plugins
 
 import com.paraiso.websocket.api.messageTypes.sports.AllStandings
 import com.paraiso.websocket.api.messageTypes.sports.FullTeam
+import com.paraiso.websocket.api.messageTypes.sports.Roster
 import com.paraiso.websocket.api.messageTypes.sports.Scoreboard
 import com.paraiso.websocket.api.messageTypes.sports.Team
 import com.paraiso.websocket.api.testRestClient.sport.SportOperationAdapter
@@ -21,16 +22,25 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
     var teams: List<Team> = emptyList()
     var standings: AllStandings? = null
     var boxScores: List<FullTeam> = listOf()
-
-    private val boxScoreFlowMut = MutableSharedFlow<List<FullTeam>>(replay = 0)
-    val boxScoreFlow = boxScoreFlowMut.asSharedFlow()
+    var rosters: List<Roster> = listOf()
 
     suspend fun getStandings() {
         standings = sportOperationAdapter.getStandings()
     }
 
     suspend fun getTeams() {
-        teams = sportOperationAdapter.getTeams()
+        sportOperationAdapter.getTeams().let { teamsRes ->
+            teams = teamsRes
+            getRosters(teamsRes)
+        }
+    }
+
+    private suspend fun getRosters(teamsRes: List<Team>) = coroutineScope {
+        rosters = teamsRes.map {team ->
+            async{
+                sportOperationAdapter.getRoster(team.id)
+            }
+        }.awaitAll().filterNotNull()
     }
     suspend fun buildScoreboard() {
         coroutineScope {

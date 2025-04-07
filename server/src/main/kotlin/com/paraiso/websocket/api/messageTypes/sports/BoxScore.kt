@@ -36,6 +36,8 @@ data class Athlete(
     val jersey: String,
     val positionName: String,
     val positionAbbreviation: String,
+    val displayWeight: String,
+    val displayHeight: String,
     val starter: Boolean,
     val didNotPlay: Boolean,
     val reason: String,

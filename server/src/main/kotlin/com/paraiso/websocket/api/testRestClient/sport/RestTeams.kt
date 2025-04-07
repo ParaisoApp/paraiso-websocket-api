@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import com.paraiso.websocket.api.messageTypes.sports.Team as TeamDomain
 
 @Serializable
-data class BBallTeams(
+data class RestTeams(
     val sports: List<Sport>
 )
 
@@ -30,11 +30,11 @@ data class Team(
     val name: String,
     val abbreviation: String,
     val displayName: String,
-    val shortDisplayName: String,
+    val shortDisplayName: String? = null,
     val seed: String? = null
 )
 
-fun BBallTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }
+fun RestTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }
 
 fun Team.toDomain(): TeamDomain = TeamDomain(
     id = id,
@@ -42,5 +42,5 @@ fun Team.toDomain(): TeamDomain = TeamDomain(
     name = name,
     abbreviation = abbreviation,
     displayName = displayName,
-    shortDisplayName = shortDisplayName
+    shortDisplayName = shortDisplayName ?: ""
 )
