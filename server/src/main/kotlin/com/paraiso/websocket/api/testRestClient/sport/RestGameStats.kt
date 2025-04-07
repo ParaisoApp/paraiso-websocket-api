@@ -50,7 +50,7 @@ data class AthleteBase(
     val athlete: RestAthlete,
     val starter: Boolean,
     val didNotPlay: Boolean,
-    val reason: String,
+    val reason: String? = null,
     val ejected: Boolean,
     val stats: List<String>
 )
@@ -95,7 +95,7 @@ fun AthleteBase.toDomain() = AthleteDomain(
     positionAbbreviation = athlete.position.abbreviation,
     starter = starter,
     didNotPlay = didNotPlay,
-    reason = reason,
+    reason = reason ?: "",
     ejected = ejected,
     stats = stats,
     displayHeight = "",
