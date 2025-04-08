@@ -11,58 +11,58 @@ data class TypeMapping<T>(
 
 @Serializable
 enum class MessageType {
-    @SerialName("msg")
+    @SerialName("MSG")
     MSG,
 
-    @SerialName("dm")
+    @SerialName("DM")
     DM,
 
-    @SerialName("vote")
+    @SerialName("VOTE")
     VOTE,
 
-    @SerialName("delete")
+    @SerialName("DELETE")
     DELETE,
 
-    @SerialName("user")
+    @SerialName("USER")
     USER,
 
-    @SerialName("login")
+    @SerialName("LOGIN")
     LOGIN,
 
-    @SerialName("userLogin")
+    @SerialName("USER_LOGIN")
     USER_LOGIN,
 
-    @SerialName("ban")
+    @SerialName("BAN")
     BAN,
 
-    @SerialName("userLeave")
+    @SerialName("USER_LEAVE")
     USER_LEAVE,
 
-    @SerialName("userList")
+    @SerialName("USER_LIST")
     USER_LIST,
 
-    @SerialName("scoreboard")
+    @SerialName("SCOREBOARD")
     SCOREBOARD,
 
-    @SerialName("teams")
+    @SerialName("TEAMS")
     TEAMS,
 
-    @SerialName("standings")
+    @SerialName("STANDINGS")
     STANDINGS,
 
-    @SerialName("leaders")
+    @SerialName("LEADERS")
     LEADERS,
 
-    @SerialName("boxScores")
+    @SerialName("BOX_SCORES")
     BOX_SCORES,
 
-    @SerialName("rosters")
+    @SerialName("ROSTERS")
     ROSTERS,
 
-    @SerialName("basic")
+    @SerialName("BASIC")
     BASIC,
 
-    @SerialName("route")
+    @SerialName("ROUTE")
     ROUTE,
 
     @SerialName("ping")
