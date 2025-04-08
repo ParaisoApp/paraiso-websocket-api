@@ -4,6 +4,7 @@ import com.paraiso.websocket.api.messageTypes.sports.AllStandings
 import com.paraiso.websocket.api.messageTypes.sports.FullTeam
 import com.paraiso.websocket.api.messageTypes.sports.Roster
 import com.paraiso.websocket.api.messageTypes.sports.Scoreboard
+import com.paraiso.websocket.api.messageTypes.sports.StatLeaders
 import com.paraiso.websocket.api.messageTypes.sports.Team
 import com.paraiso.websocket.api.testRestClient.sport.SportOperationAdapter
 import io.klogging.Klogging
@@ -21,6 +22,7 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
     var standings: AllStandings? = null
     var boxScores: List<FullTeam> = listOf()
     var rosters: List<Roster> = listOf()
+    var leaders: StatLeaders? = null
 
     suspend fun getStandings() {
         standings = sportOperationAdapter.getStandings()
@@ -31,6 +33,9 @@ class SportHandler(private val sportOperationAdapter: SportOperationAdapter) : K
             teams = teamsRes
             getRosters(teamsRes)
         }
+    }
+    suspend fun getLeaders() {
+        leaders = sportOperationAdapter.getLeaders()
     }
 
     private suspend fun getRosters(teamsRes: List<Team>) = coroutineScope {

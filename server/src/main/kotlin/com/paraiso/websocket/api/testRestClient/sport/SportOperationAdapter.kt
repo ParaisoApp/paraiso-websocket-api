@@ -13,6 +13,7 @@ import com.paraiso.websocket.api.messageTypes.sports.BoxScore as BoxScoreDomain
 import com.paraiso.websocket.api.messageTypes.sports.Roster as RosterDomain
 import com.paraiso.websocket.api.messageTypes.sports.Scoreboard as ScoreboardDomain
 import com.paraiso.websocket.api.messageTypes.sports.Team as TeamDomain
+import com.paraiso.websocket.api.messageTypes.sports.StatLeaders as StatLeadersDomain
 
 class SportOperationAdapter(
     private val apiConfig: ApiConfig
@@ -21,6 +22,7 @@ class SportOperationAdapter(
     companion object {
         private const val SEASON = 2025
         private const val REGULAR = 2
+        private const val LIMIT = 10
 
         // private const val PLAYOFFS = 1
         private const val EAST = 5
@@ -101,6 +103,23 @@ class SportOperationAdapter(
         try {
             val url = "${apiConfig.statsBaseUrl}/teams/$teamId/roster"
             val response: RestRoster = getHttpClient().use { httpClient ->
+                httpClient.get(url).let {
+                    if (it.status != HttpStatusCode.OK) {
+                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                    }
+                    it.body()
+                }
+            }
+            response.toDomain()
+        } catch (ex: Exception) {
+            logger.error("ex: $ex")
+            null
+        }
+    }
+    suspend fun getLeaders(): StatLeadersDomain? = withContext(dispatcher) {
+        try {
+            val url = "${apiConfig.coreApiBaseUrl}/seasons/${SEASON}/types/${REGULAR}/leaders?limit=${LIMIT}"
+            val response: RestLeaders = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }

@@ -50,6 +50,9 @@ enum class MessageType {
     @SerialName("standings")
     STANDINGS,
 
+    @SerialName("leaders")
+    LEADERS,
+
     @SerialName("boxScores")
     BOX_SCORES,
 

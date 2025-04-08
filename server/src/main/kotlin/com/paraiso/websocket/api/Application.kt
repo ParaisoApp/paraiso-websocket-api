@@ -29,6 +29,9 @@ fun main() {
     jobScope.launch {
         sportHandler.getTeams()
     }
+    jobScope.launch {
+        sportHandler.getLeaders()
+    }
 
     val handler = WebSocketHandler(sportHandler, apiConfig)
 

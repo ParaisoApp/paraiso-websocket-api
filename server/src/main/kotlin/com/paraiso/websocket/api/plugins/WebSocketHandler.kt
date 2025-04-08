@@ -200,6 +200,16 @@ class WebSocketHandler(private val sportHandler: SportHandler, private val apiCo
                         delay(5 * 1000)
                     }
                 }
+            },
+            launch {
+                while (isActive) {
+                    sportHandler.leaders?.let {
+                        session.sendTypedMessage(MessageType.LEADERS, it)
+                        delay(24 * 60 * 1000)
+                    } ?: run {
+                        delay(5 * 1000)
+                    }
+                }
             }
         )
     }
