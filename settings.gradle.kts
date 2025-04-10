@@ -1,2 +1,2 @@
 rootProject.name = "paraiso-websocket-api"
-include("server")
+include("server", "domain", "client")
