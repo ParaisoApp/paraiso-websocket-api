@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TypeMapping<T>(
-    val typeMapping: Map<com.paraiso.server.messageTypes.MessageType, @Contextual T>
+    val typeMapping: Map<MessageType, @Contextual T>
 )
 
 @Serializable

@@ -1,5 +1,6 @@
 package com.paraiso.server.messageTypes
 
+import com.paraiso.domain.util.Constants.UNKNOWN
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -8,8 +9,9 @@ import kotlinx.serialization.Serializable
 data class User(
     val id: String,
     val name: String,
-    val roles: com.paraiso.server.messageTypes.UserRole,
+    val roles: UserRole,
     val banned: Boolean,
+    val status: UserStatus,
     val websocket: WebSocketServerSession? = null
 ) { companion object }
 
@@ -31,11 +33,17 @@ enum class UserRole {
     GUEST
 }
 
-fun com.paraiso.server.messageTypes.User.Companion.createUnknown() =
-    _root_ide_package_.com.paraiso.server.messageTypes.User(
-        id = "UNKNOWN",
-        name = "UNKNOWN",
+fun User.Companion.createUnknown() =
+    User(
+        id = UNKNOWN,
+        name = UNKNOWN,
         banned = false,
-        roles = _root_ide_package_.com.paraiso.server.messageTypes.UserRole.GUEST,
-        websocket = null
+        roles = UserRole.GUEST,
+        websocket = null,
+        status = UserStatus.CONNECTED
     )
+
+enum class UserStatus {
+    CONNECTED,
+    DISCONNECTED
+}

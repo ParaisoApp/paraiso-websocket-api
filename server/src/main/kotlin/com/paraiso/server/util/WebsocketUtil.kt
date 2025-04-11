@@ -1,5 +1,7 @@
 package com.paraiso.server.util
 
+import com.paraiso.server.messageTypes.MessageType
+import com.paraiso.server.messageTypes.TypeMapping
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.sendSerialized
@@ -47,9 +49,9 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
         null
     }
 
-suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: com.paraiso.server.messageTypes.MessageType, data: T) =
-    sendSerialized<com.paraiso.server.messageTypes.TypeMapping<T>>(
-        com.paraiso.server.messageTypes.TypeMapping(
+suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
+    sendSerialized<TypeMapping<T>>(
+        TypeMapping(
             mapOf(messageType to data)
         )
     )
