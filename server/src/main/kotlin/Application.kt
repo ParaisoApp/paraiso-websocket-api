@@ -5,6 +5,7 @@ import com.paraiso.com.paraiso.api.auth.AuthController
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.auth.UserRole
 import com.paraiso.domain.sport.SportHandler
+import com.paraiso.domain.util.messageTypes.Login
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -115,22 +116,11 @@ fun Application.configureSockets(handler: WebSocketHandler) {
             route("auth") {
                 post {
                     // fake auth controller
-                    println(call.request.uri)
-                    authApi.getAuth(call.receive<String>())?.let { role ->
+                    authApi.getAuth(call.receive<Login>())?.let { role ->
                         call.respond(HttpStatusCode.OK, role)
                     }
                 }
             }
-        }
-    }
-}
-
-
-fun Application.authRoutes() {
-    val authController = AuthController()
-    routing {
-        route("paraiso_api/v1") {
-            authController.handleAuth(this)
         }
     }
 }

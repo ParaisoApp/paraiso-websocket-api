@@ -12,14 +12,14 @@ import io.ktor.server.routing.route
 
 class AuthController {
     private val authApi = AuthApi()
-    fun handleAuth(route: Route) {
-        route.route("auth") {
-            route.post {
-                // fake auth controller
-                authApi.getAuth(call.receive<String>())?.let { role ->
-                    call.respond(HttpStatusCode.OK, role)
-                }
-            }
-        }
-    }
+//    fun handleAuth(route: Route) {
+//        route.route("auth") {
+//            route.post {
+//                // fake auth controller
+//                authApi.getAuth(call.receive<String>())?.let { role ->
+//                    call.respond(HttpStatusCode.OK, role)
+//                }
+//            }
+//        }
+//    }
 }

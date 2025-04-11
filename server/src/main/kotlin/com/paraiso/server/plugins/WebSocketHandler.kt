@@ -224,7 +224,14 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                         MessageType.VOTE -> sendTypedMessage(type, message as VoteDomain)
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_LOGIN -> sendTypedMessage(type, message as UserDomain)
+                        MessageType.USER_LOGIN -> {
+                            val userLogin = message as? UserDomain
+                            if (sessionUser.id == userLogin?.id) {
+                                sendTypedMessage(MessageType.USER, userLogin)
+                            }else{
+                                sendTypedMessage(type, userLogin)
+                            }
+                        }
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         MessageType.BAN -> {
                             val ban = message as? BanDomain
@@ -291,20 +298,20 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                             ServerState.deleteFlowMut.emit(delete)
                         }
                     }
-                    MessageType.LOGIN -> {
-                        val login = Json.decodeFromString<LoginDomain>(messageWithType.value)
-                        if (login.password == serverConfig.admin) {
-                            sessionUser.copy(
-                                roles = UserRole.ADMIN,
-                                name = "Breeze"
-                            ).let { admin ->
-                                sessionUser = admin
-                                ServerState.userList[sessionUser.id] = admin.toDomain()
-                                sendTypedMessage(MessageType.USER, admin)
-                                ServerState.userLoginFlowMut.emit(admin.toDomain())
-                            }
-                        }
-                    }
+//                    MessageType.LOGIN -> {
+//                        val login = Json.decodeFromString<LoginDomain>(messageWithType.value)
+//                        if (login.password == serverConfig.admin) {
+//                            sessionUser.copy(
+//                                roles = UserRole.ADMIN,
+//                                name = "Breeze"
+//                            ).let { admin ->
+//                                sessionUser = admin
+//                                ServerState.userList[sessionUser.id] = admin.toDomain()
+//                                sendTypedMessage(MessageType.USER, admin)
+//                                ServerState.userLoginFlowMut.emit(admin.toDomain())
+//                            }
+//                        }
+//                    }
                     MessageType.BAN -> {
                         val ban = Json.decodeFromString<BanDomain>(messageWithType.value)
                         if (sessionUser.roles == UserRole.ADMIN) {
