@@ -1,7 +1,6 @@
 package com.paraiso.server.util
 
-import com.paraiso.server.messageTypes.MessageType
-import com.paraiso.server.messageTypes.TypeMapping
+import com.paraiso.domain.util.messageTypes.MessageType
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.sendSerialized
@@ -11,6 +10,7 @@ import io.ktor.websocket.readText
 import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import java.nio.charset.Charset
+import com.paraiso.domain.util.messageTypes.TypeMapping as TypeMappingDomain
 
 val safeList: Safelist = Safelist()
     .addTags(
@@ -50,8 +50,8 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     }
 
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
-    sendSerialized<TypeMapping<T>>(
-        TypeMapping(
+    sendSerialized<TypeMappingDomain<T>>(
+        TypeMappingDomain(
             mapOf(messageType to data)
         )
     )

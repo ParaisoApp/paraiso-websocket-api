@@ -2,7 +2,11 @@ package com.paraiso.server.plugins
 
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.server.application.Application
+import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.request.receive
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
@@ -20,6 +24,14 @@ fun Application.configureSockets(handler: WebSocketHandler) {
         masking = false
     }
     routing {
+        route("paraiso_api/v1/") {
+            route("/auth") {
+                post {
+                    // fake auth controller
+                    val password = call.receive<String>()
+                }
+            }
+        }
         webSocket("chat") {
             handler.handleUser(this)
         }

@@ -19,5 +19,5 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.example.Application")
+    mainClass.set("com.paraiso.Application")
 }

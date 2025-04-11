@@ -11,7 +11,7 @@ group = "com.paraiso"
 version = "0.0.1-SNAPSHOT"
 
 application {
-    mainClass.set("com.paraiso.server.Application")
+    mainClass.set("com.paraiso.Application")
 }
 
 java {

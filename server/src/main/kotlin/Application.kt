@@ -1,16 +1,27 @@
-package com.paraiso.server
+package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
+import com.paraiso.com.paraiso.api.auth.AuthController
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.server.plugins.WebSocketHandler
-import com.paraiso.server.plugins.configureSockets
+import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
+import io.ktor.server.websocket.webSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import java.time.Duration
 
 fun main() {
     val jobScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -43,4 +54,23 @@ fun main() {
             server.stop(1000, 2000)
         }
     )
+}
+
+fun Application.configureSockets(handler: WebSocketHandler) {
+    val authController = AuthController()
+    install(WebSockets) {
+        contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
+        pingPeriod = Duration.ofSeconds(30)
+        timeout = Duration.ofSeconds(45)
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
+    }
+    routing {
+        webSocket("chat") {
+            handler.handleUser(this)
+        }
+        route("paraiso_api/v1/") {
+            authController.handleAuth(this)
+        }
+    }
 }

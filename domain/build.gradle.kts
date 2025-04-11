@@ -6,3 +6,7 @@ plugins {
 dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 }
+
+application {
+    mainClass.set("com.paraiso.Application")
+}

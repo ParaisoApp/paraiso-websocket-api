@@ -1,9 +1,10 @@
 package com.paraiso.server.messageTypes
 
+import com.paraiso.domain.auth.UserRole
+import com.paraiso.domain.auth.UserStatus
 import com.paraiso.domain.util.Constants.UNKNOWN
-import io.ktor.server.websocket.WebSocketServerSession
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.auth.User as UserDomain
 
 @Serializable
 data class User(
@@ -12,27 +13,8 @@ data class User(
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
-    val lastSeen: Long,
-    val websocket: WebSocketServerSession? = null
+    val lastSeen: Long
 ) { companion object }
-
-@Serializable
-enum class UserRole {
-    @SerialName("ADMIN")
-    ADMIN,
-
-    @SerialName("SYSTEM")
-    SYSTEM,
-
-    @SerialName("MOD")
-    MOD,
-
-    @SerialName("USER")
-    USER,
-
-    @SerialName("GUEST")
-    GUEST
-}
 
 fun User.Companion.createUnknown() =
     User(
@@ -40,12 +22,22 @@ fun User.Companion.createUnknown() =
         name = UNKNOWN,
         banned = false,
         roles = UserRole.GUEST,
-        websocket = null,
         lastSeen = System.currentTimeMillis(),
         status = UserStatus.CONNECTED
     )
-
-enum class UserStatus {
-    CONNECTED,
-    DISCONNECTED
-}
+fun UserDomain.toResponse() = User(
+    id = id,
+    name = name,
+    banned = banned,
+    roles = roles,
+    lastSeen = lastSeen,
+    status = status
+)
+fun User.toDomain() = UserDomain(
+    id = id,
+    name = name,
+    banned = banned,
+    roles = roles,
+    lastSeen = lastSeen,
+    status = status
+)
