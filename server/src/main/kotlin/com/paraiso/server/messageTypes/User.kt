@@ -12,6 +12,7 @@ data class User(
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
+    val lastSeen: Long,
     val websocket: WebSocketServerSession? = null
 ) { companion object }
 
@@ -40,6 +41,7 @@ fun User.Companion.createUnknown() =
         banned = false,
         roles = UserRole.GUEST,
         websocket = null,
+        lastSeen = System.currentTimeMillis(),
         status = UserStatus.CONNECTED
     )
 

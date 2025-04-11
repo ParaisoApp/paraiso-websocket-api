@@ -76,7 +76,8 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                     banned = false,
                     roles = UserRole.GUEST,
                     websocket = session,
-                    status = UserStatus.CONNECTED
+                    status = UserStatus.CONNECTED,
+                    lastSeen = System.currentTimeMillis()
                 )
                 userList[id] = currentUser
                 session.joinChat(currentUser)
