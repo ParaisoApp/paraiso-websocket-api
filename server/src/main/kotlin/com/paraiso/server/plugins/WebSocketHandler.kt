@@ -32,7 +32,6 @@ import com.paraiso.domain.auth.User as UserDomain
 import com.paraiso.domain.util.messageTypes.Ban as BanDomain
 import com.paraiso.domain.util.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.util.messageTypes.DirectMessage as DirectMessageDomain
-import com.paraiso.domain.util.messageTypes.Login as LoginDomain
 import com.paraiso.domain.util.messageTypes.Message as MessageDomain
 import com.paraiso.domain.util.messageTypes.Route as RouteDomain
 import com.paraiso.domain.util.messageTypes.TypeMapping as TypeMappingDomain
@@ -228,7 +227,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                             val userLogin = message as? UserDomain
                             if (sessionUser.id == userLogin?.id) {
                                 sendTypedMessage(MessageType.USER, userLogin)
-                            }else{
+                            } else {
                                 sendTypedMessage(type, userLogin)
                             }
                         }

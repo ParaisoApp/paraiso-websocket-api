@@ -8,17 +8,6 @@ data class Scoreboard(
 )
 
 @Serializable
-data class Competition(
-    val id: String,
-    val name: String,
-    val shortName: String,
-    val date: String,
-    val teams: List<TeamGameStats>,
-    val venue: Venue,
-    val status: Status
-)
-
-@Serializable
 data class TeamGameStats(
     val team: Team,
     val homeAway: String,

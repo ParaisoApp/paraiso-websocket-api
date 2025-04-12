@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import com.paraiso.domain.sport.sports.AllStandings as AllStandingsDomain
 import com.paraiso.domain.sport.sports.BoxScore as BoxScoreDomain
 import com.paraiso.domain.sport.sports.Roster as RosterDomain
+import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.sports.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.sports.StatLeaders as StatLeadersDomain
 import com.paraiso.domain.sport.sports.Team as TeamDomain
@@ -133,7 +134,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
             null
         }
     }
-    override suspend fun getSchedule(teamId: String) = withContext(dispatcher) {
+    override suspend fun getSchedule(teamId: String): ScheduleDomain? = withContext(dispatcher) {
         try {
             val url = "${clientConfig.statsBaseUrl}/teams/$teamId/schedule?season=$SEASON"
             val response: RestSchedule = getHttpClient().use { httpClient ->
@@ -144,9 +145,10 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            println(response)
+            response.toDomain()
         } catch (ex: Exception) {
             logger.error("ex: $ex")
+            null
         }
     }
 }

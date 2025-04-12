@@ -3,7 +3,6 @@ package com.paraiso
 import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.com.paraiso.api.auth.AuthController
 import com.paraiso.domain.auth.AuthApi
-import com.paraiso.domain.auth.UserRole
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.util.messageTypes.Login
 import com.paraiso.server.plugins.WebSocketHandler
@@ -20,9 +19,7 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.receive
-import io.ktor.server.request.uri
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -112,7 +109,7 @@ fun Application.configureSockets(handler: WebSocketHandler) {
             handler.handleUser(this)
         }
         route("paraiso_api/v1") {
-            //authController.handleAuth(this)
+            // authController.handleAuth(this)
             route("auth") {
                 post {
                     // fake auth controller

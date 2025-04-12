@@ -7,14 +7,13 @@ import com.paraiso.domain.util.messageTypes.Login
 class AuthApi {
     suspend fun getAuth(login: Login): UserRole? {
         return if (login.password == ServerConfig.admin) {
-            ServerState.userList[login.userId]?.let{user ->
+            ServerState.userList[login.userId]?.let { user ->
                 user.copy(
                     roles = UserRole.ADMIN,
                     name = "Breeze"
-                ).let{admin ->
+                ).let { admin ->
                     ServerState.userList[login.userId] = admin
                     ServerState.userLoginFlowMut.emit(admin)
-
                 }
             }
             UserRole.ADMIN

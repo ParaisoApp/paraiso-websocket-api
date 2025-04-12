@@ -14,6 +14,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import com.paraiso.domain.sport.sports.Event as EventDomain
+import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
 
 @Serializable
 data class RestSchedule(
@@ -24,6 +26,7 @@ data class RestSchedule(
 
 @Serializable
 data class RestEvent(
+    val id: String,
     val name: String,
     val shortName: String,
     val date: String,
@@ -53,15 +56,10 @@ data class RestCompetitor(
 sealed class ScoreWrapper {
     @Serializable
     data class ScoreString(val value: String) : ScoreWrapper()
+
     @Serializable
     data class ScoreObject(val home: Int, val away: Int) : ScoreWrapper()
 }
-
-@Serializable
-data class RestScore(
-    val value: Double,
-    val displayValue: String
-)
 
 @Serializable
 data class RestSeason(
@@ -69,6 +67,19 @@ data class RestSeason(
     val type: Int,
     val name: String,
     val displayName: String
+)
+
+fun RestSchedule.toDomain() = ScheduleDomain(
+    team = team.toDomain(),
+    events = events.map { it.toDomain() }
+)
+
+fun RestEvent.toDomain() = EventDomain(
+    id = id,
+    name = name,
+    shortName = shortName,
+    date = date,
+    competitions = competitions.map { it.toDomain(date, name, shortName) }
 )
 
 object ScoreWrapperSerializer : KSerializer<ScoreWrapper> {

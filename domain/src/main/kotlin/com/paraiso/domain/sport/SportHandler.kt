@@ -3,6 +3,7 @@ package com.paraiso.domain.sport
 import com.paraiso.domain.sport.sports.AllStandings
 import com.paraiso.domain.sport.sports.FullTeam
 import com.paraiso.domain.sport.sports.Roster
+import com.paraiso.domain.sport.sports.Schedule
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.sport.sports.StatLeaders
 import com.paraiso.domain.sport.sports.Team
@@ -19,9 +20,10 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     var scoreboard: Scoreboard? = null
     var teams: List<Team> = emptyList()
     var standings: AllStandings? = null
-    var boxScores: List<FullTeam> = listOf()
-    var rosters: List<Roster> = listOf()
+    var boxScores: List<FullTeam> = emptyList()
+    var rosters: List<Roster> = emptyList()
     var leaders: StatLeaders? = null
+    var schedules: List<Schedule> = emptyList()
 
     suspend fun getStandings() {
         standings = sportOperation.getStandings()
@@ -31,8 +33,20 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         sportOperation.getTeams().let { teamsRes ->
             teams = teamsRes
             getRosters(teamsRes)
+            coroutineScope {
+                teamsRes.map { team ->
+                    async {
+                        sportOperation.getSchedule(team.id)
+                    }
+                }.awaitAll().filterNotNull().let{scheduleResults ->
+                    schedules = scheduleResults
+                    println(scheduleResults)
+                }
+            }
         }
-        sportOperation.getSchedule(teams.first().id)
+
+        val res = sportOperation.getSchedule(teams.first().id)
+        println(res)
     }
     suspend fun getLeaders() {
         leaders = sportOperation.getLeaders()
