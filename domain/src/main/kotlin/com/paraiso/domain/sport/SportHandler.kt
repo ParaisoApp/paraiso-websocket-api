@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.hours
 
 class SportHandler(private val sportOperation: SportOperation) : Klogging {
     var scoreboard: Scoreboard? = null
@@ -76,7 +77,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
 //                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
 //                                fetchAndMapGames(gameIds)
 //                            }
-                            if (!allStates.contains("pre") && !allStates.contains("in")) {
+                            if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
                                 // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                                 delay(60 * 60 * 1000)
                             }
