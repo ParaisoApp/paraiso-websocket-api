@@ -59,6 +59,9 @@ enum class MessageType {
     @SerialName("ROSTERS")
     ROSTERS,
 
+    @SerialName("SCHEDULE")
+    SCHEDULE,
+
     @SerialName("BASIC")
     BASIC,
 

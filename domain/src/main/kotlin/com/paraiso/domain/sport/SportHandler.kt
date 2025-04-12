@@ -40,7 +40,6 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                     }
                 }.awaitAll().filterNotNull().let{scheduleResults ->
                     schedules = scheduleResults
-                    println(scheduleResults)
                 }
             }
         }

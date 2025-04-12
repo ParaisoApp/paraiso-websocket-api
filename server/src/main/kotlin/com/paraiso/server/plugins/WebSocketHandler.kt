@@ -134,8 +134,19 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             launch {
                 while (isActive) {
                     if (sportHandler.rosters.isNotEmpty()) {
-                        val filterRosters = sportHandler.rosters.filter { it.team.id == content }
+                        val filterRosters = sportHandler.rosters.find { it.team.id == content }
                         session.sendTypedMessage(MessageType.ROSTERS, filterRosters)
+                        delay(24 * 60 * 1000)
+                    } else {
+                        delay(5 * 1000)
+                    }
+                }
+            },
+            launch {
+                while (isActive) {
+                    if (sportHandler.schedules.isNotEmpty()) {
+                        val filterRosters = sportHandler.schedules.find { it.team.id == content }
+                        session.sendTypedMessage(MessageType.SCHEDULE, filterRosters)
                         delay(24 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
