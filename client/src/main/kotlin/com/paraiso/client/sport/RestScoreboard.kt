@@ -49,7 +49,7 @@ data class Type(
 )
 
 fun RestScoreboard.toDomain() = Scoreboard(
-    competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, it.date) }
+    competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName) }
 )
 
 fun TeamYearStats.toDomain() = TeamYearStatsDomain(

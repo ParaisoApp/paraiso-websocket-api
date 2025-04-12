@@ -1,6 +1,5 @@
 package com.paraiso.client.sport
 
-import com.paraiso.domain.sport.sports.Competition
 import com.paraiso.domain.sport.sports.TeamGameStats
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.KSerializer
@@ -14,8 +13,9 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
-import com.paraiso.domain.sport.sports.Event as EventDomain
+import com.paraiso.domain.sport.sports.Competition as CompetitionDomain
 import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
+import com.paraiso.domain.sport.sports.Venue as VenueDomain
 
 @Serializable
 data class RestSchedule(
@@ -29,7 +29,6 @@ data class RestEvent(
     val id: String,
     val name: String,
     val shortName: String,
-    val date: String,
     val competitions: List<RestCompetition>
 )
 
@@ -37,6 +36,7 @@ data class RestEvent(
 data class RestCompetition(
     val id: String,
     val venue: Venue,
+    val date: String,
     val competitors: List<RestCompetitor>,
     val status: Status
 )
@@ -50,7 +50,7 @@ data class Venue(
 @Serializable
 data class Address(
     val city: String,
-    val state: String
+    val state: String? = null
 )
 
 @Serializable
@@ -82,18 +82,10 @@ data class RestSeason(
 
 fun RestSchedule.toDomain() = ScheduleDomain(
     team = team.toDomain(),
-    events = events.map { it.toDomain() }
+    events = events.map { it.competitions.first().toDomain(it.name, it.shortName) }
 )
 
-fun RestEvent.toDomain() = EventDomain(
-    id = id,
-    name = name,
-    shortName = shortName,
-    date = date,
-    competitions = competitions.map { it.toDomain(date, name, shortName) }
-)
-
-fun RestCompetition.toDomain(name: String, shortName: String, date: String) = Competition(
+fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomain(
     id = id,
     name = name,
     shortName = shortName,
@@ -113,10 +105,10 @@ fun RestCompetitor.toTeamDomain() = TeamGameStats(
     score = score?.value ?: "0"
 )
 
-fun Venue.toDomain() = com.paraiso.domain.sport.sports.Venue(
+fun Venue.toDomain() = VenueDomain(
     fullName = fullName,
     city = address.city,
-    state = address.state
+    state = address.state ?: UNKNOWN
 )
 
 object ScoreSerializer : KSerializer<RestScore> {

@@ -27,13 +27,6 @@ data class TeamYearStats(
 )
 
 @Serializable
-data class Venue(
-    val fullName: String,
-    val city: String,
-    val state: String
-)
-
-@Serializable
 data class Status(
     val clock: String,
     val period: Int,
