@@ -3,6 +3,7 @@ package com.paraiso.client.sport
 import com.paraiso.client.sport.returnTypes.RestGameStats
 import com.paraiso.client.sport.returnTypes.RestLeaders
 import com.paraiso.client.sport.returnTypes.RestRoster
+import com.paraiso.client.sport.returnTypes.RestScoreboard
 import com.paraiso.client.sport.returnTypes.RestStandingsContainer
 import com.paraiso.client.sport.returnTypes.RestTeams
 import com.paraiso.client.sport.returnTypes.toDomain
