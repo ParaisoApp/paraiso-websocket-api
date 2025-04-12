@@ -1,5 +1,8 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.sport.sports.Competition
+import com.paraiso.domain.sport.sports.TeamGameStats
+import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -8,11 +11,8 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import com.paraiso.domain.sport.sports.Event as EventDomain
 import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
@@ -42,24 +42,35 @@ data class RestCompetition(
 )
 
 @Serializable
+data class Venue(
+    val fullName: String,
+    val address: Address
+)
+
+@Serializable
+data class Address(
+    val city: String,
+    val state: String
+)
+
+@Serializable
 data class RestCompetitor(
     val homeAway: String,
     val team: RestTeam,
     val winner: Boolean? = null,
-    val score: ScoreWrapper? = null,
+    @Serializable(with = ScoreSerializer::class)
+    val score: RestScore,
     val statistics: List<TeamYearStats>? = null,
     val linescores: List<LineScore>? = null,
     val records: List<Record>? = null
 )
 
-@Serializable(with = ScoreWrapperSerializer::class)
-sealed class ScoreWrapper {
-    @Serializable
-    data class ScoreString(val value: String) : ScoreWrapper()
+@Serializable
+data class RestScore(
+    val value: String,
+    val displayValue: String
+)
 
-    @Serializable
-    data class ScoreObject(val home: Int, val away: Int) : ScoreWrapper()
-}
 
 @Serializable
 data class RestSeason(
@@ -82,36 +93,51 @@ fun RestEvent.toDomain() = EventDomain(
     competitions = competitions.map { it.toDomain(date, name, shortName) }
 )
 
-object ScoreWrapperSerializer : KSerializer<ScoreWrapper> {
+fun RestCompetition.toDomain(name: String, shortName: String, date: String) = Competition(
+    id = id,
+    name = name,
+    shortName = shortName,
+    date = date,
+    teams = competitors.map { it.toTeamDomain() },
+    venue = venue.toDomain(),
+    status = status.toDomain()
+)
+
+fun RestCompetitor.toTeamDomain() = TeamGameStats(
+    team = team.toDomain(),
+    homeAway = homeAway,
+    records = records?.map { it.toDomain() } ?: emptyList(),
+    winner = winner ?: false,
+    teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
+    lineScores = linescores?.map { it.value } ?: emptyList(),
+    score = score.value
+)
+
+fun Venue.toDomain() = com.paraiso.domain.sport.sports.Venue(
+    fullName = fullName,
+    city = address.city,
+    state = address.state
+)
+
+object ScoreSerializer : KSerializer<RestScore> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ScoreWrapper")
 
-    override fun deserialize(decoder: Decoder): ScoreWrapper {
+    override fun deserialize(decoder: Decoder): RestScore {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Expected JsonDecoder")
 
         return when (val element = jsonDecoder.decodeJsonElement()) {
-            is JsonPrimitive -> ScoreWrapper.ScoreString(element.content)
+            is JsonPrimitive -> RestScore(value = element.content, displayValue = UNKNOWN)
             is JsonObject -> {
-                val home = element["home"]?.jsonPrimitive?.intOrNull ?: 0
-                val away = element["away"]?.jsonPrimitive?.intOrNull ?: 0
-                ScoreWrapper.ScoreObject(home, away)
+                val value = element["value"]?.jsonPrimitive?.content ?: UNKNOWN
+                val displayValue = element["displayValue"]?.jsonPrimitive?.content ?: UNKNOWN
+                RestScore(value = value, displayValue = displayValue)
             }
             else -> throw SerializationException("Unknown type for score")
         }
     }
 
-    override fun serialize(encoder: Encoder, value: ScoreWrapper) {
-        val jsonEncoder = encoder as JsonEncoder
-
-        when (value) {
-            is ScoreWrapper.ScoreString -> jsonEncoder.encodeString(value.value)
-            is ScoreWrapper.ScoreObject -> {
-                val json = buildJsonObject {
-                    put("home", JsonPrimitive(value.home))
-                    put("away", JsonPrimitive(value.away))
-                }
-                jsonEncoder.encodeJsonElement(json)
-            }
-        }
+    override fun serialize(encoder: Encoder, value: RestScore) {
+        //no need to serialize
     }
 }

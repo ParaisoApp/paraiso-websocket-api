@@ -35,18 +35,6 @@ data class Record(
 )
 
 @Serializable
-data class Venue(
-    val fullName: String,
-    val address: Address
-)
-
-@Serializable
-data class Address(
-    val city: String,
-    val state: String
-)
-
-@Serializable
 data class Status(
     val displayClock: String,
     val period: Int,
@@ -64,26 +52,6 @@ fun RestScoreboard.toDomain() = Scoreboard(
     competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, it.date) }
 )
 
-fun RestCompetition.toDomain(name: String, shortName: String, date: String) = CompetitionDomain(
-    id = id,
-    name = name,
-    shortName = shortName,
-    date = date,
-    teams = competitors.map { it.toTeamDomain() },
-    venue = venue.toDomain(),
-    status = status.toDomain()
-)
-
-fun RestCompetitor.toTeamDomain() = TeamGameStatsDomain(
-    team = team.toDomain(),
-    homeAway = homeAway,
-    records = records?.map { it.toDomain() } ?: emptyList(),
-    winner = winner ?: false,
-    teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
-    lineScores = linescores?.map { it.value } ?: emptyList(),
-    score = score.toString()
-)
-
 fun TeamYearStats.toDomain() = TeamYearStatsDomain(
     name = name,
     abbreviation = abbreviation,
@@ -94,12 +62,6 @@ fun TeamYearStats.toDomain() = TeamYearStatsDomain(
 fun Record.toDomain() = RecordDomain(
     name = name,
     summary = summary
-)
-
-fun Venue.toDomain() = VenueDomain(
-    fullName = fullName,
-    city = address.city,
-    state = address.state
 )
 
 fun Status.toDomain(): StatusDomain {

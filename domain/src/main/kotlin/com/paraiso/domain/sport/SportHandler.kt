@@ -45,7 +45,6 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         }
 
         val res = sportOperation.getSchedule(teams.first().id)
-        println(res)
     }
     suspend fun getLeaders() {
         leaders = sportOperation.getLeaders()
