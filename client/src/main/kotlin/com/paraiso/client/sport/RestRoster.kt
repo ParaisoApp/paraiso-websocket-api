@@ -10,7 +10,7 @@ import com.paraiso.domain.sport.sports.Roster as RosterDomain
 data class RestRoster(
     val athletes: List<RestAthlete>,
     val coach: List<RestCoach>,
-    val team: Team
+    val team: RestTeam
 )
 
 @Serializable

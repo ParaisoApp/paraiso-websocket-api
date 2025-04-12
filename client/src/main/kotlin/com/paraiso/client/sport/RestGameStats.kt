@@ -21,7 +21,7 @@ data class BoxScore(
 
 @Serializable
 data class TeamWithStats(
-    val team: Team,
+    val team: RestTeam,
     val statistics: List<TeamStat>
 )
 
@@ -34,7 +34,7 @@ data class TeamStat(
 
 @Serializable
 data class Player(
-    val team: Team,
+    val team: RestTeam,
     val statistics: List<Statistic>
 )
 

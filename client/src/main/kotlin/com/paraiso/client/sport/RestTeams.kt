@@ -20,11 +20,11 @@ data class League(
 
 @Serializable
 data class TeamContainer(
-    val team: Team
+    val team: RestTeam
 )
 
 @Serializable
-data class Team(
+data class RestTeam(
     val id: String,
     val location: String,
     val name: String,
@@ -36,7 +36,7 @@ data class Team(
 
 fun RestTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }
 
-fun Team.toDomain(): TeamDomain = TeamDomain(
+fun RestTeam.toDomain(): TeamDomain = TeamDomain(
     id = id,
     location = location,
     name = name,

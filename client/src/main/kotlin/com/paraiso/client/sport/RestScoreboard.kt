@@ -34,7 +34,7 @@ data class Competition(
 @Serializable
 data class Competitor(
     val homeAway: String,
-    val team: Team,
+    val team: RestTeam,
     val winner: Boolean? = null,
     val score: String,
     val statistics: List<TeamYearStats>,

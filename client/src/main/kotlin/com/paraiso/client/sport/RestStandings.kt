@@ -35,7 +35,7 @@ data class Standings(
 
 @Serializable
 data class Entry(
-    val team: Team,
+    val team: RestTeam,
     val stats: List<BBallStandingsStat>
 )
 
