@@ -1,4 +1,4 @@
-package com.paraiso.client.sport.returnTypes
+package com.paraiso.client.sport
 
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.sports.Team as TeamDomain
@@ -20,11 +20,11 @@ data class League(
 
 @Serializable
 data class TeamContainer(
-    val team: RestTeam
+    val team: Team
 )
 
 @Serializable
-data class RestTeam(
+data class Team(
     val id: String,
     val location: String,
     val name: String,
@@ -36,7 +36,7 @@ data class RestTeam(
 
 fun RestTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }
 
-fun RestTeam.toDomain(): TeamDomain = TeamDomain(
+fun Team.toDomain(): TeamDomain = TeamDomain(
     id = id,
     location = location,
     name = name,

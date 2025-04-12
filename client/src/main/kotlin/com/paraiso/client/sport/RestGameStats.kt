@@ -1,4 +1,4 @@
-package com.paraiso.client.sport.returnTypes
+package com.paraiso.client.sport
 
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
@@ -21,7 +21,7 @@ data class BoxScore(
 
 @Serializable
 data class TeamWithStats(
-    val team: RestTeam,
+    val team: Team,
     val statistics: List<TeamStat>
 )
 
@@ -34,7 +34,7 @@ data class TeamStat(
 
 @Serializable
 data class Player(
-    val team: RestTeam,
+    val team: Team,
     val statistics: List<Statistic>
 )
 

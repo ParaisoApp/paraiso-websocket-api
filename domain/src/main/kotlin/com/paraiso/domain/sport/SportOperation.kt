@@ -15,5 +15,4 @@ interface SportOperation {
     suspend fun getTeams(): List<Team>
     suspend fun getRoster(teamId: String): Roster?
     suspend fun getLeaders(): StatLeaders?
-    suspend fun getSchedule(teamId: String): StatLeaders?
 }
