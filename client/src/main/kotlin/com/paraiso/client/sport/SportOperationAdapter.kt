@@ -1,5 +1,12 @@
 package com.paraiso.client.sport
 
+import com.paraiso.client.sport.returnTypes.RestGameStats
+import com.paraiso.client.sport.returnTypes.RestLeaders
+import com.paraiso.client.sport.returnTypes.RestRoster
+import com.paraiso.client.sport.returnTypes.RestScoreboard
+import com.paraiso.client.sport.returnTypes.RestStandingsContainer
+import com.paraiso.client.sport.returnTypes.RestTeams
+import com.paraiso.client.sport.returnTypes.toDomain
 import com.paraiso.client.util.BaseAdapter
 import com.paraiso.client.util.ClientConfig
 import com.paraiso.domain.sport.SportOperation
@@ -119,6 +126,23 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     override suspend fun getLeaders(): StatLeadersDomain? = withContext(dispatcher) {
         try {
             val url = "${clientConfig.coreApiBaseUrl}/seasons/$SEASON/types/$REGULAR/leaders?limit=$LIMIT"
+            val response: RestLeaders = getHttpClient().use { httpClient ->
+                httpClient.get(url).let {
+                    if (it.status != HttpStatusCode.OK) {
+                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                    }
+                    it.body()
+                }
+            }
+            response.toDomain()
+        } catch (ex: Exception) {
+            logger.error("ex: $ex")
+            null
+        }
+    }
+    override suspend fun getSchedule(teamId: String): StatLeadersDomain? = withContext(dispatcher) {
+        try {
+            val url = "${clientConfig.statsBaseUrl}/teams/$teamId/schedule?season=$SEASON"
             val response: RestLeaders = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {

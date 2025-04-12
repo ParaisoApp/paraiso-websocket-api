@@ -1,4 +1,4 @@
-package com.paraiso.client.sport
+package com.paraiso.client.sport.returnTypes
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName

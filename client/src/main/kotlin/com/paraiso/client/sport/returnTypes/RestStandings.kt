@@ -1,4 +1,4 @@
-package com.paraiso.client.sport
+package com.paraiso.client.sport.returnTypes
 
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.sports.AllStandings as AllStandingsDomain
@@ -35,7 +35,7 @@ data class Standings(
 
 @Serializable
 data class Entry(
-    val team: Team,
+    val team: RestTeam,
     val stats: List<BBallStandingsStat>
 )
 
