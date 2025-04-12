@@ -12,34 +12,7 @@ import com.paraiso.domain.sport.sports.Venue as VenueDomain
 
 @Serializable
 data class RestScoreboard(
-    val events: List<Event>
-)
-
-@Serializable
-data class Event(
-    val name: String,
-    val shortName: String,
-    val date: String,
-    val competitions: List<Competition>
-)
-
-@Serializable
-data class Competition(
-    val id: String,
-    val venue: Venue,
-    val competitors: List<Competitor>,
-    val status: Status
-)
-
-@Serializable
-data class Competitor(
-    val homeAway: String,
-    val team: RestTeam,
-    val winner: Boolean? = null,
-    val score: String,
-    val statistics: List<TeamYearStats>,
-    val linescores: List<LineScore>? = null,
-    val records: List<Record>
+    val events: List<RestEvent>
 )
 
 @Serializable
@@ -91,7 +64,7 @@ fun RestScoreboard.toDomain() = Scoreboard(
     competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, it.date) }
 )
 
-fun Competition.toDomain(name: String, shortName: String, date: String) = CompetitionDomain(
+fun RestCompetition.toDomain(name: String, shortName: String, date: String) = CompetitionDomain(
     id = id,
     name = name,
     shortName = shortName,
@@ -101,14 +74,14 @@ fun Competition.toDomain(name: String, shortName: String, date: String) = Compet
     status = status.toDomain()
 )
 
-fun Competitor.toTeamDomain() = TeamGameStatsDomain(
+fun RestCompetitor.toTeamDomain() = TeamGameStatsDomain(
     team = team.toDomain(),
     homeAway = homeAway,
-    records = records.map { it.toDomain() },
+    records = records?.map { it.toDomain() } ?: emptyList(),
     winner = winner ?: false,
-    teamYearStats = statistics.map { it.toDomain() },
+    teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
     lineScores = linescores?.map { it.value } ?: emptyList(),
-    score = score
+    score = score.toString()
 )
 
 fun TeamYearStats.toDomain() = TeamYearStatsDomain(

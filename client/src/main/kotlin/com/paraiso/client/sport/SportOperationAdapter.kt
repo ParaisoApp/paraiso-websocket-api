@@ -133,10 +133,10 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
             null
         }
     }
-    override suspend fun getSchedule(teamId: String): StatLeadersDomain? = withContext(dispatcher) {
+    override suspend fun getSchedule(teamId: String) = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.coreApiBaseUrl}/teams/$teamId/schedule?season=$SEASON"
-            val response: RestLeaders = getHttpClient().use { httpClient ->
+            val url = "${clientConfig.statsBaseUrl}/teams/$teamId/schedule?season=$SEASON"
+            val response: RestSchedule = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -144,10 +144,9 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            println(response)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
-            null
         }
     }
 }
