@@ -1,10 +1,11 @@
 package com.paraiso.server.plugins
 
+import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
+import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
+import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.domain.auth.UserRole
 import com.paraiso.domain.auth.UserStatus
 import com.paraiso.domain.sport.SportHandler
-import com.paraiso.domain.sport.sports.FullTeam
-import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.util.messageTypes.MessageType
 import com.paraiso.domain.util.messageTypes.SiteRoute
@@ -23,8 +24,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -41,6 +40,9 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
     companion object {
         private val serverConfig = ServerConfig()
     }
+    private val homeJobs = HomeJobs()
+    private val profileJobs = ProfileJobs()
+    private val sportJobs = SportJobs(sportHandler)
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
 
     suspend fun handleUser(session: WebSocketServerSession) {
@@ -69,156 +71,11 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
 
     private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
         when (route.route) {
-            SiteRoute.HOME -> homeJobs(session)
-            SiteRoute.PROFILE -> profileJobs(route.content, session)
-            SiteRoute.SPORT -> sportJobs(session)
-            SiteRoute.TEAM -> teamJobs(route.content, session)
+            SiteRoute.HOME -> homeJobs.homeJobs(session)
+            SiteRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
+            SiteRoute.SPORT -> sportJobs.sportJobs(session)
+            SiteRoute.TEAM -> sportJobs.teamJobs(route.content, session)
         }
-    }
-
-    private suspend fun homeJobs(session: WebSocketServerSession) = coroutineScope {
-        listOf(launch {})
-    }
-    private suspend fun profileJobs(content: String, session: WebSocketServerSession) = coroutineScope {
-        listOf(launch {})
-    }
-    private suspend fun teamJobs(content: String, session: WebSocketServerSession) = coroutineScope {
-        listOf(
-            launch {
-                var lastSentScoreboard: Scoreboard? = null
-                while (isActive) {
-                    val currentScoreboard = sportHandler.scoreboard
-                    currentScoreboard?.let { sb ->
-                        val filteredSb = currentScoreboard.copy(
-                            competitions = sb.competitions.filter { comp -> comp.teams.map { it.team.id }.contains(content) }
-                        )
-                        if (lastSentScoreboard != filteredSb) {
-                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb)
-                            lastSentScoreboard = filteredSb
-                        }
-                        delay(5 * 1000)
-                    } ?: run { delay(5 * 1000L) }
-                }
-            },
-            launch {
-                while (isActive) {
-                    if (sportHandler.teams.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(24 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000L)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
-                    val currentBoxScores = sportHandler.boxScores
-                    val currentScoreboard = sportHandler.scoreboard
-
-                    if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
-                        currentScoreboard.competitions.firstOrNull { comp ->
-                            comp.teams.map { it.team.id }.contains(content)
-                        }?.teams?.map { it.team.id }
-                            ?.let { teamIds ->
-                                currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
-                                    .let { filteredBoxScores ->
-                                        session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
-                                    }
-                            }
-                        delay(24 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000L)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
-                    if (sportHandler.rosters.isNotEmpty()) {
-                        val filterRosters = sportHandler.rosters.find { it.team.id == content }
-                        session.sendTypedMessage(MessageType.ROSTERS, filterRosters)
-                        delay(24 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
-                    if (sportHandler.schedules.isNotEmpty()) {
-                        val filterRosters = sportHandler.schedules.find { it.team.id == content }
-                        session.sendTypedMessage(MessageType.SCHEDULE, filterRosters)
-                        delay(24 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            }
-        )
-    }
-
-    private suspend fun sportJobs(session: WebSocketServerSession) = coroutineScope {
-        listOf(
-            launch {
-                var lastSentScoreboard: Scoreboard? = null
-                while (isActive) {
-                    if (sportHandler.scoreboard != null && lastSentScoreboard != sportHandler.scoreboard) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, sportHandler.scoreboard)
-                        lastSentScoreboard = sportHandler.scoreboard
-                    }
-                    delay(5 * 1000)
-                }
-            },
-            launch {
-                while (isActive) {
-                    if (sportHandler.teams.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(24 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
-                    sportHandler.standings?.let {
-                        session.sendTypedMessage(MessageType.STANDINGS, it)
-                        delay(24 * 60 * 1000)
-                    } ?: run {
-                        delay(5 * 1000)
-                    }
-                }
-            },
-            launch {
-                var lastSentBoxScores = listOf<FullTeam>()
-                while (isActive) {
-                    if (sportHandler.boxScores.isNotEmpty() && lastSentBoxScores != sportHandler.boxScores) {
-                        session.sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
-                        lastSentBoxScores = sportHandler.boxScores
-                    }
-                    delay(5 * 1000)
-                }
-            },
-            launch {
-                while (isActive) {
-                    if (sportHandler.rosters.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.ROSTERS, sportHandler.rosters)
-                        delay(24 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
-                    sportHandler.leaders?.let {
-                        session.sendTypedMessage(MessageType.LEADERS, it)
-                        delay(24 * 60 * 1000)
-                    } ?: run {
-                        delay(5 * 1000)
-                    }
-                }
-            }
-        )
     }
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {

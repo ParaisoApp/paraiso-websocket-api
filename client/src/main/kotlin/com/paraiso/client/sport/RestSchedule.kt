@@ -59,7 +59,7 @@ data class RestCompetitor(
     val team: RestTeam,
     val winner: Boolean? = null,
     @Serializable(with = ScoreSerializer::class)
-    val score: RestScore,
+    val score: RestScore? = null,
     val statistics: List<TeamYearStats>? = null,
     val linescores: List<LineScore>? = null,
     val records: List<Record>? = null
@@ -110,7 +110,7 @@ fun RestCompetitor.toTeamDomain() = TeamGameStats(
     winner = winner ?: false,
     teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
     lineScores = linescores?.map { it.value } ?: emptyList(),
-    score = score.value
+    score = score?.value ?: "0"
 )
 
 fun Venue.toDomain() = com.paraiso.domain.sport.sports.Venue(
