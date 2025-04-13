@@ -4,7 +4,7 @@ import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.com.paraiso.api.auth.AuthController
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.sport.SportHandler
-import com.paraiso.domain.util.messageTypes.Login
+import com.paraiso.domain.messageTypes.Login
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod

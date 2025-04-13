@@ -10,6 +10,7 @@ data class User(
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
+    val blockList: Set<String>,
     val lastSeen: Long
 ) { companion object }
 

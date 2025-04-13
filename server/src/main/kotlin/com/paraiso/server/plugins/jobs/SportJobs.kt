@@ -3,7 +3,7 @@ package com.paraiso.com.paraiso.server.plugins.jobs
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.sport.sports.FullTeam
 import com.paraiso.domain.sport.sports.Scoreboard
-import com.paraiso.domain.util.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope

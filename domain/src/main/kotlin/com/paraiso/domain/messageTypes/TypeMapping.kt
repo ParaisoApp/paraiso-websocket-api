@@ -1,4 +1,4 @@
-package com.paraiso.domain.util.messageTypes
+package com.paraiso.domain.messageTypes
 
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
@@ -34,6 +34,9 @@ enum class MessageType {
 
     @SerialName("BAN")
     BAN,
+
+    @SerialName("BLOCK")
+    BLOCK,
 
     @SerialName("USER_LEAVE")
     USER_LEAVE,

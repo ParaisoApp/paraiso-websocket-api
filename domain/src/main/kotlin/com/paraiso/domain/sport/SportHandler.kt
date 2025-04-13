@@ -30,7 +30,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     suspend fun getStandings() = coroutineScope {
         while (isActive) {
             standings = sportOperation.getStandings()
-            delay(12 * 60 * 60 * 1000)
+            delay(6 * 60 * 60 * 1000)
         }
     }
 
@@ -38,35 +38,40 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         while (isActive) {
             sportOperation.getTeams().let { teamsRes ->
                 teams = teamsRes
-                launch { getRosters(teamsRes) }
-                coroutineScope {
-                    teamsRes.map { team ->
-                        async {
-                            sportOperation.getSchedule(team.id)
-                        }
-                    }.awaitAll().filterNotNull().let{scheduleResults ->
-                        schedules = scheduleResults
-                    }
+                teamsRes.map { it.id }.let { teamIds ->
+                    launch { getRosters(teamIds) }
+                    launch { getSchedules(teamIds) }
                 }
             }
-            delay(12 * 60 * 60 * 1000)
+            delay(6 * 60 * 60 * 1000)
         }
     }
     suspend fun getLeaders() = coroutineScope {
         while (isActive) {
             leaders = sportOperation.getLeaders()
-            delay(12 * 60 * 60 * 1000)
+            delay(6 * 60 * 60 * 1000)
         }
     }
 
-    private suspend fun getRosters(teamsRes: List<Team>) = coroutineScope {
+    private suspend fun getSchedules(teamIds: List<String>) = coroutineScope {
         while (isActive) {
-            rosters = teamsRes.map { team ->
+            schedules = teamIds.map { teamId ->
                 async {
-                    sportOperation.getRoster(team.id)
+                    sportOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull()
-            delay(12 * 60 * 60 * 1000)
+            delay(6 * 60 * 60 * 1000)
+        }
+    }
+
+    private suspend fun getRosters(teamIds: List<String>) = coroutineScope {
+        while (isActive) {
+            rosters = teamIds.map { teamId ->
+                async {
+                    sportOperation.getRoster(teamId)
+                }
+            }.awaitAll().filterNotNull()
+            delay(6 * 60 * 60 * 1000)
         }
     }
     suspend fun buildScoreboard() {

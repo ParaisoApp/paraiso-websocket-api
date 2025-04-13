@@ -13,6 +13,7 @@ data class User(
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
+    val blockList: Set<String>,
     val lastSeen: Long
 ) { companion object }
 
@@ -23,6 +24,7 @@ fun User.Companion.createUnknown() =
         banned = false,
         roles = UserRole.GUEST,
         lastSeen = System.currentTimeMillis(),
+        blockList = emptySet(),
         status = UserStatus.CONNECTED
     )
 fun UserDomain.toResponse() = User(
@@ -31,6 +33,7 @@ fun UserDomain.toResponse() = User(
     banned = banned,
     roles = roles,
     lastSeen = lastSeen,
+    blockList = blockList,
     status = status
 )
 fun User.toDomain() = UserDomain(
@@ -39,5 +42,6 @@ fun User.toDomain() = UserDomain(
     banned = banned,
     roles = roles,
     lastSeen = lastSeen,
+    blockList = blockList,
     status = status
 )

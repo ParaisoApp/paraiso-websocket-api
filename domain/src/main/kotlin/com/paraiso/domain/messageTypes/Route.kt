@@ -1,4 +1,4 @@
-package com.paraiso.domain.util.messageTypes
+package com.paraiso.domain.messageTypes
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

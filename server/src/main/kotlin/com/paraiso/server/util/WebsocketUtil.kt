@@ -1,6 +1,6 @@
 package com.paraiso.server.util
 
-import com.paraiso.domain.util.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.MessageType
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.sendSerialized
@@ -10,7 +10,7 @@ import io.ktor.websocket.readText
 import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import java.nio.charset.Charset
-import com.paraiso.domain.util.messageTypes.TypeMapping as TypeMappingDomain
+import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 
 val safeList: Safelist = Safelist()
     .addTags(

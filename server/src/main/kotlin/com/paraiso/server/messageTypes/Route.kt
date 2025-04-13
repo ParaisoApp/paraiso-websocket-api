@@ -1,6 +1,6 @@
 package com.paraiso.server.messageTypes
 
-import com.paraiso.domain.util.messageTypes.SiteRoute
+import com.paraiso.domain.messageTypes.SiteRoute
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

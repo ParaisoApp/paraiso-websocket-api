@@ -1,11 +1,11 @@
 package com.paraiso.domain.util
 
 import com.paraiso.domain.auth.User
-import com.paraiso.domain.util.messageTypes.Ban
-import com.paraiso.domain.util.messageTypes.Delete
-import com.paraiso.domain.util.messageTypes.Message
-import com.paraiso.domain.util.messageTypes.MessageType
-import com.paraiso.domain.util.messageTypes.Vote
+import com.paraiso.domain.messageTypes.Ban
+import com.paraiso.domain.messageTypes.Delete
+import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.Vote
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 

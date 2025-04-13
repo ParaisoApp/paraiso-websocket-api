@@ -7,9 +7,9 @@ import com.paraiso.domain.auth.UserRole
 import com.paraiso.domain.auth.UserStatus
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.util.ServerState
-import com.paraiso.domain.util.messageTypes.MessageType
-import com.paraiso.domain.util.messageTypes.SiteRoute
-import com.paraiso.domain.util.messageTypes.randomGuestName
+import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.SiteRoute
+import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.server.messageTypes.User
 import com.paraiso.server.messageTypes.toDomain
 import com.paraiso.server.messageTypes.toResponse
@@ -28,18 +28,16 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import com.paraiso.domain.auth.User as UserDomain
-import com.paraiso.domain.util.messageTypes.Ban as BanDomain
-import com.paraiso.domain.util.messageTypes.Delete as DeleteDomain
-import com.paraiso.domain.util.messageTypes.DirectMessage as DirectMessageDomain
-import com.paraiso.domain.util.messageTypes.Message as MessageDomain
-import com.paraiso.domain.util.messageTypes.Route as RouteDomain
-import com.paraiso.domain.util.messageTypes.TypeMapping as TypeMappingDomain
-import com.paraiso.domain.util.messageTypes.Vote as VoteDomain
+import com.paraiso.domain.messageTypes.Ban as BanDomain
+import com.paraiso.domain.messageTypes.Delete as DeleteDomain
+import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
+import com.paraiso.domain.messageTypes.Message as MessageDomain
+import com.paraiso.domain.messageTypes.Route as RouteDomain
+import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
+import com.paraiso.domain.messageTypes.Vote as VoteDomain
+import com.paraiso.domain.messageTypes.Block as BlockDomain
 
-class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
-    companion object {
-        private val serverConfig = ServerConfig()
-    }
+class WebSocketHandler(sportHandler: SportHandler) : Klogging {
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
     private val sportJobs = SportJobs(sportHandler)
@@ -60,6 +58,7 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                     banned = false,
                     roles = UserRole.GUEST,
                     status = UserStatus.CONNECTED,
+                    blockList = emptySet(),
                     lastSeen = System.currentTimeMillis()
                 )
                 ServerState.userList[id] = currentUser.toDomain()
@@ -87,7 +86,12 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
             launch {
                 sharedFlow.collect { message ->
                     when (type) {
-                        MessageType.MSG -> sendTypedMessage(type, message as MessageDomain)
+                        MessageType.MSG -> {
+                            val newMessage = message as? MessageDomain
+                            if(!sessionUser.blockList.contains(newMessage?.userId)){
+                                sendTypedMessage(type, message as MessageDomain)
+                            }
+                        }
                         MessageType.VOTE -> sendTypedMessage(type, message as VoteDomain)
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
@@ -143,7 +147,10 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                                 userId = sessionUser.id
                             ).let { dmWithData ->
                                 launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                if (!sessionUser.banned) {
+                                if (
+                                    !sessionUser.banned &&
+                                    ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
+                                ) {
                                     userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                 }
                             }
@@ -165,26 +172,18 @@ class WebSocketHandler(private val sportHandler: SportHandler) : Klogging {
                             ServerState.deleteFlowMut.emit(delete)
                         }
                     }
-//                    MessageType.LOGIN -> {
-//                        val login = Json.decodeFromString<LoginDomain>(messageWithType.value)
-//                        if (login.password == serverConfig.admin) {
-//                            sessionUser.copy(
-//                                roles = UserRole.ADMIN,
-//                                name = "Breeze"
-//                            ).let { admin ->
-//                                sessionUser = admin
-//                                ServerState.userList[sessionUser.id] = admin.toDomain()
-//                                sendTypedMessage(MessageType.USER, admin)
-//                                ServerState.userLoginFlowMut.emit(admin.toDomain())
-//                            }
-//                        }
-//                    }
                     MessageType.BAN -> {
                         val ban = Json.decodeFromString<BanDomain>(messageWithType.value)
                         if (sessionUser.roles == UserRole.ADMIN) {
                             ServerState.banUserFlowMut.emit(ban)
                             ServerState.banList.add(ban.userId)
                         }
+                    }
+                    MessageType.BLOCK -> {
+                        val block = Json.decodeFromString<BlockDomain>(messageWithType.value)
+                        val updateBlockList = sessionUser.blockList.toMutableSet()
+                        updateBlockList.add(block.userId)
+                        ServerState.userList[sessionUser.id] = sessionUser.copy(blockList = updateBlockList).toDomain()
                     }
                     MessageType.ROUTE -> {
                         val route = Json.decodeFromString<RouteDomain>(messageWithType.value)

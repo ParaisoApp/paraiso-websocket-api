@@ -1,6 +1,6 @@
 package com.paraiso.server.messageTypes
 
-import com.paraiso.domain.util.messageTypes.PostType
+import com.paraiso.domain.messageTypes.PostType
 import kotlinx.serialization.Serializable
 
 @Serializable
