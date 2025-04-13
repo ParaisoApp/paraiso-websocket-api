@@ -13,6 +13,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
@@ -37,7 +38,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         while (isActive) {
             sportOperation.getTeams().let { teamsRes ->
                 teams = teamsRes
-                getRosters(teamsRes)
+                launch { getRosters(teamsRes) }
                 coroutineScope {
                     teamsRes.map { team ->
                         async {
