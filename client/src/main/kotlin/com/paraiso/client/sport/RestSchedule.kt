@@ -16,6 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import com.paraiso.domain.sport.sports.Competition as CompetitionDomain
 import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.sports.Venue as VenueDomain
+import com.paraiso.domain.sport.sports.Record as RecordDomain
 
 @Serializable
 data class RestSchedule(
@@ -62,7 +63,14 @@ data class RestCompetitor(
     val score: RestScore? = null,
     val statistics: List<TeamYearStats>? = null,
     val linescores: List<LineScore>? = null,
-    val records: List<Record>? = null
+    val records: List<Record>? = null,
+    val record: List<RestRecordYTD>? = null
+)
+
+@Serializable
+data class RestRecordYTD(
+    val description: String,
+    val displayValue: String
 )
 
 @Serializable
@@ -98,11 +106,16 @@ fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomai
 fun RestCompetitor.toTeamDomain() = TeamGameStats(
     team = team.toDomain(),
     homeAway = homeAway,
-    records = records?.map { it.toDomain() } ?: emptyList(),
+    records = records?.map { it.toDomain() } ?: record?.map { it.toDomain() } ?: emptyList(),
     winner = winner ?: false,
     teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
     lineScores = linescores?.map { it.value } ?: emptyList(),
     score = score?.value ?: "0"
+)
+
+fun RestRecordYTD.toDomain() = RecordDomain(
+    name = description,
+    summary = displayValue
 )
 
 fun Venue.toDomain() = VenueDomain(
