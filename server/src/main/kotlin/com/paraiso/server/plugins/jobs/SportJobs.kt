@@ -130,7 +130,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                 while (isActive) {
                     if (sportHandler.rosters.isNotEmpty()) {
                         val filterRosters = sportHandler.rosters.find { it.team.id == content }
-                        session.sendTypedMessage(MessageType.ROSTERS, filterRosters)
+                        session.sendTypedMessage(MessageType.ROSTERS, listOf(filterRosters))
                         delay(24 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
