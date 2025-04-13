@@ -110,7 +110,7 @@ fun RestCompetitor.toTeamDomain() = TeamGameStats(
     winner = winner ?: false,
     teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
     lineScores = linescores?.map { it.value } ?: emptyList(),
-    score = score?.value ?: "0"
+    score = score?.displayValue ?: "0"
 )
 
 fun RestRecordYTD.toDomain() = RecordDomain(
@@ -132,7 +132,7 @@ object ScoreSerializer : KSerializer<RestScore> {
             ?: throw SerializationException("Expected JsonDecoder")
 
         return when (val element = jsonDecoder.decodeJsonElement()) {
-            is JsonPrimitive -> RestScore(value = element.content, displayValue = UNKNOWN)
+            is JsonPrimitive -> RestScore(value = element.content, displayValue = element.content)
             is JsonObject -> {
                 val value = element["value"]?.jsonPrimitive?.content ?: UNKNOWN
                 val displayValue = element["displayValue"]?.jsonPrimitive?.content ?: UNKNOWN
