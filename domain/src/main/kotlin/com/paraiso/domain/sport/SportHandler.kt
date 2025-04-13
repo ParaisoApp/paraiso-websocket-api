@@ -26,35 +26,47 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     var leaders: StatLeaders? = null
     var schedules: List<Schedule> = emptyList()
 
-    suspend fun getStandings() {
-        standings = sportOperation.getStandings()
-    }
-
-    suspend fun getTeams() {
-        sportOperation.getTeams().let { teamsRes ->
-            teams = teamsRes
-            getRosters(teamsRes)
-            coroutineScope {
-                teamsRes.map { team ->
-                    async {
-                        sportOperation.getSchedule(team.id)
-                    }
-                }.awaitAll().filterNotNull().let{scheduleResults ->
-                    schedules = scheduleResults
-                }
-            }
+    suspend fun getStandings() = coroutineScope {
+        while (isActive) {
+            standings = sportOperation.getStandings()
+            delay(12 * 60 * 60 * 1000)
         }
     }
-    suspend fun getLeaders() {
-        leaders = sportOperation.getLeaders()
+
+    suspend fun getTeams() = coroutineScope {
+        while (isActive) {
+            sportOperation.getTeams().let { teamsRes ->
+                teams = teamsRes
+                getRosters(teamsRes)
+                coroutineScope {
+                    teamsRes.map { team ->
+                        async {
+                            sportOperation.getSchedule(team.id)
+                        }
+                    }.awaitAll().filterNotNull().let{scheduleResults ->
+                        schedules = scheduleResults
+                    }
+                }
+            }
+            delay(12 * 60 * 60 * 1000)
+        }
+    }
+    suspend fun getLeaders() = coroutineScope {
+        while (isActive) {
+            leaders = sportOperation.getLeaders()
+            delay(12 * 60 * 60 * 1000)
+        }
     }
 
     private suspend fun getRosters(teamsRes: List<Team>) = coroutineScope {
-        rosters = teamsRes.map { team ->
-            async {
-                sportOperation.getRoster(team.id)
-            }
-        }.awaitAll().filterNotNull()
+        while (isActive) {
+            rosters = teamsRes.map { team ->
+                async {
+                    sportOperation.getRoster(team.id)
+                }
+            }.awaitAll().filterNotNull()
+            delay(12 * 60 * 60 * 1000)
+        }
     }
     suspend fun buildScoreboard() {
         coroutineScope {
