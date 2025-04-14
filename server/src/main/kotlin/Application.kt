@@ -5,6 +5,7 @@ import com.paraiso.com.paraiso.api.auth.AuthController
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.messageTypes.Login
+import com.paraiso.domain.posts.PostsApi
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -20,6 +21,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -39,6 +41,9 @@ fun main() {
     val jobScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     val sportHandler = SportHandler(SportOperationAdapter())
+    val postsApi = PostsApi()
+    val authController = AuthController()
+    val authApi = AuthApi()
 
     jobScope.launch {
         sportHandler.buildScoreboard()
@@ -53,10 +58,10 @@ fun main() {
         sportHandler.getLeaders()
     }
 
-    val handler = WebSocketHandler(sportHandler)
+    val handler = WebSocketHandler(sportHandler, postsApi)
 
     val server = embeddedServer(Netty, port = 8080) {
-        configureSockets(handler)
+        configureSockets(handler, authApi, postsApi)
     }.start(wait = true)
 
     Runtime.getRuntime().addShutdownHook(
@@ -68,9 +73,7 @@ fun main() {
     )
 }
 
-fun Application.configureSockets(handler: WebSocketHandler) {
-    val authController = AuthController()
-    val authApi = AuthApi()
+fun Application.configureSockets(handler: WebSocketHandler, authApi: AuthApi, postsApi: PostsApi) {
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
         pingPeriod = Duration.ofSeconds(30)
@@ -116,6 +119,11 @@ fun Application.configureSockets(handler: WebSocketHandler) {
                     authApi.getAuth(call.receive<Login>())?.let { role ->
                         call.respond(HttpStatusCode.OK, role)
                     }
+                }
+            }
+            route("posts") {
+                get {
+                    call.respond(HttpStatusCode.OK, postsApi.getPosts())
                 }
             }
         }

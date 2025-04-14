@@ -10,6 +10,7 @@ import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
+import com.paraiso.domain.posts.PostsApi
 import com.paraiso.server.messageTypes.User
 import com.paraiso.server.messageTypes.toDomain
 import com.paraiso.server.messageTypes.toResponse
@@ -37,11 +38,12 @@ import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.messageTypes.Block as BlockDomain
 
-class WebSocketHandler(sportHandler: SportHandler) : Klogging {
+class WebSocketHandler(sportHandler: SportHandler, postsApi: PostsApi) : Klogging {
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
     private val sportJobs = SportJobs(sportHandler)
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
+    private val postsApiRef = postsApi
 
     suspend fun handleUser(session: WebSocketServerSession) {
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
@@ -136,6 +138,7 @@ class WebSocketHandler(sportHandler: SportHandler) : Klogging {
                                     sendTypedMessage(MessageType.MSG, messageWithData)
                                 } else {
                                     ServerState.messageFlowMut.emit(messageWithData)
+                                    postsApiRef.putPost(messageWithData)
                                 }
                             }
                         }
@@ -162,6 +165,7 @@ class WebSocketHandler(sportHandler: SportHandler) : Klogging {
                             sendTypedMessage(MessageType.VOTE, vote)
                         } else {
                             ServerState.voteFlowMut.emit(vote)
+                            postsApiRef.votePost(vote)
                         }
                     }
                     MessageType.DELETE -> {
