@@ -29,7 +29,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                 while (isActive) {
                     if (sportHandler.teams.isNotEmpty()) {
                         session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
                     }
@@ -39,7 +39,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                 while (isActive) {
                     sportHandler.standings?.let {
                         session.sendTypedMessage(MessageType.STANDINGS, it)
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } ?: run {
                         delay(5 * 1000)
                     }
@@ -59,7 +59,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                 while (isActive) {
                     if (sportHandler.rosters.isNotEmpty()) {
                         session.sendTypedMessage(MessageType.ROSTERS, sportHandler.rosters)
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
                     }
@@ -69,7 +69,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                 while (isActive) {
                     sportHandler.leaders?.let {
                         session.sendTypedMessage(MessageType.LEADERS, it)
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } ?: run {
                         delay(5 * 1000)
                     }
@@ -99,7 +99,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                 while (isActive) {
                     if (sportHandler.teams.isNotEmpty()) {
                         session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000L)
                     }
@@ -120,7 +120,8 @@ class SportJobs(private val sportHandler: SportHandler) {
                                         session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
                                     }
                             }
-                        delay(24 * 60 * 1000)
+                        //delay(5 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000L)
                     }
@@ -131,7 +132,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                     if (sportHandler.rosters.isNotEmpty()) {
                         val filterRosters = sportHandler.rosters.find { it.team.id == content }
                         session.sendTypedMessage(MessageType.ROSTERS, listOf(filterRosters))
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
                     }
@@ -142,7 +143,7 @@ class SportJobs(private val sportHandler: SportHandler) {
                     if (sportHandler.schedules.isNotEmpty()) {
                         val filterRosters = sportHandler.schedules.find { it.team.id == content }
                         session.sendTypedMessage(MessageType.SCHEDULE, filterRosters)
-                        delay(24 * 60 * 1000)
+                        delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
                     }
