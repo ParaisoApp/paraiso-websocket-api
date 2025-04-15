@@ -5,19 +5,19 @@ import com.paraiso.domain.util.ServerState
 
 class UsersApi {
     fun getUserList() =
-        ServerState.userList.values.map { user ->
+        ServerState.userList.values.associate { user ->
             val posts = mutableMapOf<String, Map<String, Boolean>>()
             val comments = mutableMapOf<String, Map<String, Boolean>>()
             ServerState.posts
                 .filterKeys { user.posts.contains(it) }
                 .values
                 .map { post ->
-                    if(post.type == PostType.SUB){
+                    if (post.type == PostType.SUB) {
                         posts[post.id] = post.votes
-                    }else{
+                    } else {
                         comments[post.id] = post.votes
                     }
                 }
-            user.toUserReturn(posts, comments)
+            user.id to user.toUserReturn(posts, comments)
         }
 }

@@ -41,9 +41,6 @@ enum class MessageType {
     @SerialName("USER_LEAVE")
     USER_LEAVE,
 
-    @SerialName("USER_LIST")
-    USER_LIST,
-
     @SerialName("SCOREBOARD")
     SCOREBOARD,
 

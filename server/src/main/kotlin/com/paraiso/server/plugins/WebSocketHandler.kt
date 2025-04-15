@@ -92,7 +92,6 @@ class WebSocketHandler(sportHandler: SportHandler, postsApi: PostsApi) : Kloggin
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         var sessionUser = user.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
-        sendTypedMessage(MessageType.USER_LIST, ServerState.userList.values.map { it.toResponse() })
 
         val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
             launch {
