@@ -5,6 +5,7 @@ import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
@@ -24,17 +25,18 @@ object ServerState {
         userId = SYSTEM,
         title = "NBA",
         content = EMPTY,
+        type = PostType.SUPER,
         media = EMPTY,
-        upVoted = emptySet(),
-        downVoted = emptySet(),
+        upvoted = emptyMap(),
+        downvoted = emptyMap(),
         parentId = SYSTEM,
         status = PostStatus.ACTIVE,
         data = EMPTY,
-        subPosts = emptySet(),
+        subPosts = mutableSetOf(),
         createdOn = Clock.System.now(),
         updatedOn = Clock.System.now(),
     )
-    val posts: MutableMap<String, Post> = mutableMapOf()
+    val posts: MutableMap<String, Post> = mutableMapOf(basePost.id to basePost)
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)

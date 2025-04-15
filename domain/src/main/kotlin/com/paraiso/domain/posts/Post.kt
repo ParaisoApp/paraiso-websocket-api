@@ -1,16 +1,19 @@
 package com.paraiso.domain.posts
 
-import com.paraiso.domain.util.Constants.UNKNOWN
+import com.paraiso.domain.messageTypes.PostType
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 data class Post(
-    val id: String?,
+    val id: String,
     val userId: String,
     val title: String,
     val content: String,
+    val type: PostType,
     val media: String?,
-    val upVoted: Set<String>,
-    val downVoted: Set<String>,
+    val upvoted: Map<String, Boolean>,
+    val downvoted: Map<String, Boolean>,
     val parentId: String,
     val status: PostStatus,
     val data: String?,
@@ -19,13 +22,56 @@ data class Post(
     val updatedOn: Instant
 ) { companion object }
 
-data class TreeNode(
-    val value: Post,
-    val children: MutableMap<String, TreeNode> = mutableMapOf()
-)
+@Serializable
+data class PostReturn(
+    val id: String,
+    val userId: String,
+    val title: String,
+    val content: String,
+    val type: PostType,
+    val media: String?,
+    val upvoted: Map<String, Boolean>,
+    val downvoted: Map<String, Boolean>,
+    val parentId: String,
+    val status: PostStatus,
+    val data: String?,
+    var subPosts: Map<String, PostReturn>,
+    val createdOn: Instant,
+    val updatedOn: Instant
+) { companion object }
 
+@Serializable
+enum class PostType {
+    SUPER,
+    SUB,
+    PROFILE,
+    COMMENT,
+    GAME
+}
+
+@Serializable
 enum class PostStatus {
+    @SerialName("ACTIVE")
     ACTIVE,
+    @SerialName("DELETED")
     DELETED,
+    @SerialName("ARCHIVED")
     ARCHIVED
 }
+
+fun Post.toPostReturn() = PostReturn(
+    id = id,
+    userId = userId,
+    title = title,
+    content = content,
+    type = type,
+    media = media,
+    upvoted = upvoted,
+    downvoted = downvoted,
+    parentId = parentId,
+    status = status,
+    data = data,
+    subPosts = emptyMap(),
+    createdOn = createdOn,
+    updatedOn = updatedOn
+)

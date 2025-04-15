@@ -9,7 +9,7 @@ import kotlinx.datetime.Clock
 class PostsApi {
     fun putPost(message: Message){
         message.id?.let{messageId ->
-            // if post already exists then we edit
+            // if post already exists then edit
             ServerState.posts[messageId]?.let{existingPost ->
                 ServerState.posts[messageId] = existingPost.copy(
                     title = message.title,
@@ -21,42 +21,61 @@ class PostsApi {
             } ?: run {
                 ServerState.posts[messageId] = message.toNewPost()
                 //update parent sub posts
-                ServerState.posts[message.replyId]?.let{existingParent ->
-                    ServerState.posts[message.replyId] = existingParent.copy(
-                        subPosts = existingParent.subPosts.plus(messageId)
+                ServerState.posts[message.replyId]?.let{parent ->
+                    ServerState.posts[message.replyId] = parent.copy(
+                        subPosts = parent.subPosts.plus(messageId),
+                        updatedOn = Clock.System.now()
                     )
                 }
             }
         }
     }
 
-    fun getPosts(): TreeNode{
-        TreeNode(value = ServerState.basePost).let { root ->
-            val queue = ArrayDeque(listOf(root))
-            while(queue.isNotEmpty()){
-                val nextNode = queue.removeFirst()
-                ServerState.posts.entries
-                    .filter{nextNode.value.subPosts.contains(it.key)}
-                    .sortedBy{it.value.createdOn}
-                    .take(100)
-                    .forEach{(key, value) ->
-                        TreeNode(value).let { newNode ->
-                            queue.addLast(newNode)
-                            nextNode.children[key] = newNode
+    fun getPosts(): PostReturn {
+        ServerState.posts[ServerState.basePost.id]?.let{ basePost ->
+            basePost.toPostReturn().let { root ->
+                val refQueue = ArrayDeque(listOf(basePost))
+                val returnQueue = ArrayDeque(listOf(root))
+                while(refQueue.isNotEmpty()){
+                    val nextRefNode = refQueue.removeFirst()
+                    val nextReturnNode = returnQueue.removeFirst()
+                    val children = ServerState.posts
+                        .filterKeys { nextRefNode.subPosts.contains(it) }
+                        .toList()
+                        .sortedBy { it.second.createdOn }
+                        .take(100).associate { (key, value) ->
+                            (key to value.toPostReturn()).also { (_, returnNode) ->
+                                returnQueue.addLast(returnNode)
+                                refQueue.addLast(value)
+                            }
                         }
-                    }
-
+                    nextReturnNode.subPosts = children
+                }
+                return root
             }
-            return root
         }
+        return ServerState.basePost.toPostReturn()
     }
 
     fun votePost(vote: Vote) {
-        ServerState.posts[vote.postId]?.let{post ->
+        ServerState.posts[vote.postId]?.let{ post ->
+            val (newUpvoted, newDownvoted) = if(vote.upvote){
+                val upvoted = if(post.upvoted.containsKey(vote.userId)){
+                    post.upvoted - vote.userId
+                } else {
+                    post.upvoted + (vote.userId to true)
+                }
+                Pair(upvoted, post.downvoted - vote.userId)
+            }else{
+                val downvoted = if(post.downvoted.containsKey(vote.userId)){
+                    post.downvoted - vote.userId
+                } else {
+                    post.downvoted + (vote.userId to true)
+                }
+                Pair(post.upvoted - vote.userId, downvoted)
+            }
             ServerState.posts[vote.postId] =
-                post.copy(upVoted = post.upVoted.plus(vote.userId), updatedOn = Clock.System.now())
-                    .takeIf { vote.upvote } ?:
-                    post.copy(upVoted = post.downVoted.plus(vote.userId), updatedOn = Clock.System.now())
+                post.copy(upvoted = newUpvoted, downvoted = newDownvoted, updatedOn = Clock.System.now())
         }
     }
 }

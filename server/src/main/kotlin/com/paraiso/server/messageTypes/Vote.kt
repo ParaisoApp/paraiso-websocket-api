@@ -11,12 +11,3 @@ data class Vote(
     val postId: String,
     val upvote: Boolean
 )
-
-@Serializable
-enum class PostType {
-    SUPER,
-    SUB,
-    PROFILE,
-    COMMENT,
-    GAME
-}
