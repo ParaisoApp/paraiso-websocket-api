@@ -11,10 +11,12 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.server.messageTypes.User
-import com.paraiso.server.messageTypes.toDomain
-import com.paraiso.server.messageTypes.toResponse
-import com.paraiso.server.util.ServerConfig
+import com.paraiso.com.paraiso.api.auth.User
+import com.paraiso.com.paraiso.api.auth.toDomain
+import com.paraiso.com.paraiso.api.auth.toResponse
+import com.paraiso.domain.auth.UserSettings
+import com.paraiso.domain.auth.initSettings
+import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
@@ -26,6 +28,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import com.paraiso.domain.auth.User as UserDomain
@@ -57,11 +60,18 @@ class WebSocketHandler(sportHandler: SportHandler, postsApi: PostsApi) : Kloggin
                 val currentUser = User(
                     id = id,
                     name = randomGuestName(),
-                    banned = false,
+                    posts = emptyMap(),
+                    comments = emptyMap(),
+                    replies = emptyMap(),
                     roles = UserRole.GUEST,
+                    banned = false,
                     status = UserStatus.CONNECTED,
                     blockList = emptySet(),
-                    lastSeen = System.currentTimeMillis()
+                    image = EMPTY,
+                    lastSeen = System.currentTimeMillis(),
+                    settings = UserSettings.initSettings(),
+                    createdOn = Clock.System.now(),
+                    updatedOn = Clock.System.now()
                 )
                 ServerState.userList[id] = currentUser.toDomain()
                 userToSocket[id] = session
