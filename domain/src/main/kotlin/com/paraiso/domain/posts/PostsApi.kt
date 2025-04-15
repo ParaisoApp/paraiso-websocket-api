@@ -27,11 +27,18 @@ class PostsApi {
                         updatedOn = Clock.System.now()
                     )
                 }
+                //update user posts
+                ServerState.userList[message.userId]?.let{user ->
+                    ServerState.userList[message.userId] = user.copy(
+                        posts = user.posts.plus(messageId),
+                        updatedOn = Clock.System.now()
+                    )
+                }
             }
         }
     }
 
-    fun getPosts(): PostReturn {
+    fun getPosts() =
         ServerState.posts[ServerState.basePost.id]?.let{ basePost ->
             basePost.toPostReturn().let { root ->
                 val refQueue = ArrayDeque(listOf(basePost))
@@ -51,31 +58,22 @@ class PostsApi {
                         }
                     nextReturnNode.subPosts = children
                 }
-                return root
+                root
             }
-        }
-        return ServerState.basePost.toPostReturn()
-    }
+        } ?: run { ServerState.basePost.toPostReturn() }
+
 
     fun votePost(vote: Vote) {
         ServerState.posts[vote.postId]?.let{ post ->
-            val (newUpvoted, newDownvoted) = if(vote.upvote){
-                val upvoted = if(post.upvoted.containsKey(vote.userId)){
-                    post.upvoted - vote.userId
+            post.votes.toMutableMap().let { mutableVoteMap ->
+                if(mutableVoteMap.containsKey(vote.userId)){
+                    mutableVoteMap.remove(vote.userId)
                 } else {
-                    post.upvoted + (vote.userId to true)
+                    mutableVoteMap[vote.userId] = vote.upvote
                 }
-                Pair(upvoted, post.downvoted - vote.userId)
-            }else{
-                val downvoted = if(post.downvoted.containsKey(vote.userId)){
-                    post.downvoted - vote.userId
-                } else {
-                    post.downvoted + (vote.userId to true)
-                }
-                Pair(post.upvoted - vote.userId, downvoted)
+                ServerState.posts[vote.postId] =
+                    post.copy(votes = mutableVoteMap.toMap(), updatedOn = Clock.System.now())
             }
-            ServerState.posts[vote.postId] =
-                post.copy(upvoted = newUpvoted, downvoted = newDownvoted, updatedOn = Clock.System.now())
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.paraiso.domain.util
 
-import com.paraiso.domain.auth.User
+import com.paraiso.domain.users.User
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
@@ -27,8 +27,7 @@ object ServerState {
         content = EMPTY,
         type = PostType.SUPER,
         media = EMPTY,
-        upvoted = emptyMap(),
-        downvoted = emptyMap(),
+        votes = emptyMap(),
         parentId = SYSTEM,
         status = PostStatus.ACTIVE,
         data = EMPTY,

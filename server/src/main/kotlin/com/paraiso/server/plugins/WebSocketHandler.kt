@@ -3,8 +3,8 @@ package com.paraiso.server.plugins
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
-import com.paraiso.domain.auth.UserRole
-import com.paraiso.domain.auth.UserStatus
+import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.messageTypes.MessageType
@@ -14,8 +14,8 @@ import com.paraiso.domain.posts.PostsApi
 import com.paraiso.com.paraiso.api.auth.User
 import com.paraiso.com.paraiso.api.auth.toDomain
 import com.paraiso.com.paraiso.api.auth.toResponse
-import com.paraiso.domain.auth.UserSettings
-import com.paraiso.domain.auth.initSettings
+import com.paraiso.domain.users.UserSettings
+import com.paraiso.domain.users.initSettings
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.UUID
-import com.paraiso.domain.auth.User as UserDomain
+import com.paraiso.domain.users.User as UserDomain
 import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain

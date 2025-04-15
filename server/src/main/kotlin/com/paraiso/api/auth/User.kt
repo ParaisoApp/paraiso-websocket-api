@@ -1,11 +1,11 @@
 package com.paraiso.com.paraiso.api.auth
 
-import com.paraiso.domain.auth.UserRole
-import com.paraiso.domain.auth.UserSettings
-import com.paraiso.domain.auth.UserStatus
+import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.users.UserSettings
+import com.paraiso.domain.users.UserStatus
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.auth.User as UserDomain
+import com.paraiso.domain.users.User as UserDomain
 
 @Serializable
 data class User(
@@ -44,7 +44,7 @@ fun UserDomain.toResponse() = User(
 fun User.toDomain() = UserDomain(
     id = id,
     name = name,
-    posts = emptyMap(),
+    posts = emptySet(),
     replies = replies,
     roles = roles,
     banned = banned,
