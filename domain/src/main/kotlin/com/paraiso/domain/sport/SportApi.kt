@@ -22,5 +22,5 @@ class SportApi {
 
     fun getLeaderCategories() = SportState.leaders?.categories?.map { it.displayName }
     fun getTeamRoster(teamId: String) = SportState.rosters.find { it.team.id == teamId }
-    fun getTeamSchedule(teamId: String) = SportState.rosters.find { it.team.id == teamId }
+    fun getTeamSchedule(teamId: String) = SportState.schedules.find { it.team.id == teamId }
 }
