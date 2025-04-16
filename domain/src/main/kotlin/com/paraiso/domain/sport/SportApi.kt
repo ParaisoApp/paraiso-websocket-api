@@ -3,7 +3,7 @@ package com.paraiso.domain.sport
 
 class SportApi {
     fun getTeams() = SportState.teams.associateBy { it.id }
-    fun getStandings() = SportState.standings
+    fun getStandings() = SportState.standings?.standingsGroups?.associate { it.confAbbr to it.standings }
     fun getRosters() = SportState.rosters
     //TODO fun getAthletes() = SportState.athletes
     fun getLeaders() = SportState.leaders

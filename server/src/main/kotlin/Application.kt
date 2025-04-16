@@ -144,6 +144,11 @@ fun Application.configureSockets(
                 get("/teams") {
                     call.respond(HttpStatusCode.OK, sportApi.getTeams())
                 }
+                get("/standings") {
+                    sportApi.getStandings()?.let{
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                }
             }
         }
     }
