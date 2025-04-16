@@ -44,9 +44,6 @@ enum class MessageType {
     @SerialName("SCOREBOARD")
     SCOREBOARD,
 
-    @SerialName("TEAMS")
-    TEAMS,
-
     @SerialName("STANDINGS")
     STANDINGS,
 

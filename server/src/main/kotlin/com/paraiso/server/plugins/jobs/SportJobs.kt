@@ -27,16 +27,6 @@ class SportJobs {
             },
             launch {
                 while (isActive) {
-                    if (SportState.teams.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.TEAMS, SportState.teams)
-                        delay(6 * 60 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
                     SportState.standings?.let {
                         session.sendTypedMessage(MessageType.STANDINGS, it)
                         delay(6 * 60 * 60 * 1000)
@@ -93,16 +83,6 @@ class SportJobs {
                         }
                         delay(5 * 1000)
                     } ?: run { delay(5 * 1000L) }
-                }
-            },
-            launch {
-                while (isActive) {
-                    if (SportState.teams.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.TEAMS, SportState.teams)
-                        delay(6 * 60 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000L)
-                    }
                 }
             },
             launch {

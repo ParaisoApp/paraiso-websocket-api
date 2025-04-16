@@ -6,6 +6,7 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.messageTypes.Login
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.sport.SportApi
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
@@ -45,6 +46,7 @@ fun main() {
     val postsApi = PostsApi()
     val authApi = AuthApi()
     val usersApi = UsersApi()
+    val sportApi = SportApi()
 
     jobScope.launch {
         sportHandler.buildScoreboard()
@@ -62,7 +64,7 @@ fun main() {
     val handler = WebSocketHandler(postsApi)
 
     val server = embeddedServer(Netty, port = 8080) {
-        configureSockets(handler, authApi, postsApi, usersApi)
+        configureSockets(handler, authApi, postsApi, usersApi, sportApi)
     }.start(wait = true)
 
     Runtime.getRuntime().addShutdownHook(
@@ -78,7 +80,8 @@ fun Application.configureSockets(
     handler: WebSocketHandler,
     authApi: AuthApi,
     postsApi: PostsApi,
-    usersApi: UsersApi
+    usersApi: UsersApi,
+    sportApi: SportApi
 ) {
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
@@ -135,6 +138,11 @@ fun Application.configureSockets(
             route("users") {
                 get {
                     call.respond(HttpStatusCode.OK, usersApi.getUserList())
+                }
+            }
+            route("sport") {
+                get("/teams") {
+                    call.respond(HttpStatusCode.OK, sportApi.getTeams())
                 }
             }
         }
