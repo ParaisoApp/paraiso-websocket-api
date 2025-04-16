@@ -59,7 +59,7 @@ fun main() {
         sportHandler.getLeaders()
     }
 
-    val handler = WebSocketHandler(sportHandler, postsApi)
+    val handler = WebSocketHandler(postsApi)
 
     val server = embeddedServer(Netty, port = 8080) {
         configureSockets(handler, authApi, postsApi, usersApi)

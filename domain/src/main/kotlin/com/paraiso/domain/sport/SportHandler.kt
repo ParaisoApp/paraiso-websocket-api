@@ -19,17 +19,10 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
 
 class SportHandler(private val sportOperation: SportOperation) : Klogging {
-    var scoreboard: Scoreboard? = null
-    var teams: List<Team> = emptyList()
-    var standings: AllStandings? = null
-    var boxScores: List<FullTeam> = emptyList()
-    var rosters: List<Roster> = emptyList()
-    var leaders: StatLeaders? = null
-    var schedules: List<Schedule> = emptyList()
 
     suspend fun getStandings() = coroutineScope {
         while (isActive) {
-            standings = sportOperation.getStandings()
+            SportState.standings = sportOperation.getStandings()
             delay(6 * 60 * 60 * 1000)
         }
     }
@@ -37,7 +30,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     suspend fun getTeams() = coroutineScope {
         while (isActive) {
             sportOperation.getTeams().let { teamsRes ->
-                teams = teamsRes
+                SportState.teams = teamsRes
                 teamsRes.map { it.id }.let { teamIds ->
                     launch { getRosters(teamIds) }
                     launch { getSchedules(teamIds) }
@@ -48,14 +41,14 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     }
     suspend fun getLeaders() = coroutineScope {
         while (isActive) {
-            leaders = sportOperation.getLeaders()
+            SportState.leaders = sportOperation.getLeaders()
             delay(6 * 60 * 60 * 1000)
         }
     }
 
     private suspend fun getSchedules(teamIds: List<String>) = coroutineScope {
         while (isActive) {
-            schedules = teamIds.map { teamId ->
+            SportState.schedules = teamIds.map { teamId ->
                 async {
                     sportOperation.getSchedule(teamId)
                 }
@@ -66,7 +59,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
 
     private suspend fun getRosters(teamIds: List<String>) = coroutineScope {
         while (isActive) {
-            rosters = teamIds.map { teamId ->
+            SportState.rosters = teamIds.map { teamId ->
                 async {
                     sportOperation.getRoster(teamId)
                 }
@@ -76,19 +69,19 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     }
     suspend fun buildScoreboard() {
         coroutineScope {
-            scoreboard = sportOperation.getScoreboard()
-            scoreboard?.competitions?.map { it.id }?.let { gameIds ->
+            SportState.scoreboard = sportOperation.getScoreboard()
+            SportState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
                 fetchAndMapGames(gameIds)
             }
             while (isActive) {
                 delay(10 * 1000)
-                scoreboard?.let { sb ->
+                SportState.scoreboard?.let { sb ->
                     sb.competitions.map { Triple(it.status.state, it.date, it.id) }.let { games ->
                         val earliestTime = games.minOf { Instant.parse(it.second) }
                         val allStates = games.map { it.first }.toSet()
                         // if current time is beyond the earliest start time start fetching the scoreboard
                         if (Clock.System.now() > earliestTime) {
-                            scoreboard = sportOperation.getScoreboard()
+                            SportState.scoreboard = sportOperation.getScoreboard()
 
                             // If boxscores already filled once then filter out games not in progress
 //                            DISABLE BOX SCORE UPDATES FOR NOW
@@ -116,7 +109,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
             }
         }.awaitAll().filterNotNull().also { newBoxScores ->
             // map result to teams
-            boxScores = newBoxScores.flatMap { it.teams }
+            SportState.boxScores = newBoxScores.flatMap { it.teams }
         }
     }
 }

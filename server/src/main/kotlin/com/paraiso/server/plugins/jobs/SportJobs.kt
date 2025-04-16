@@ -1,9 +1,9 @@
 package com.paraiso.com.paraiso.server.plugins.jobs
 
-import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.sport.sports.FullTeam
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.sport.SportState
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope
@@ -11,24 +11,24 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class SportJobs(private val sportHandler: SportHandler) {
+class SportJobs {
 
     suspend fun sportJobs(session: WebSocketServerSession) = coroutineScope {
         listOf(
             launch {
                 var lastSentScoreboard: Scoreboard? = null
                 while (isActive) {
-                    if (sportHandler.scoreboard != null && lastSentScoreboard != sportHandler.scoreboard) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, sportHandler.scoreboard)
-                        lastSentScoreboard = sportHandler.scoreboard
+                    if (SportState.scoreboard != null && lastSentScoreboard != SportState.scoreboard) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, SportState.scoreboard)
+                        lastSentScoreboard = SportState.scoreboard
                     }
                     delay(5 * 1000)
                 }
             },
             launch {
                 while (isActive) {
-                    if (sportHandler.teams.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
+                    if (SportState.teams.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.TEAMS, SportState.teams)
                         delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
@@ -37,7 +37,7 @@ class SportJobs(private val sportHandler: SportHandler) {
             },
             launch {
                 while (isActive) {
-                    sportHandler.standings?.let {
+                    SportState.standings?.let {
                         session.sendTypedMessage(MessageType.STANDINGS, it)
                         delay(6 * 60 * 60 * 1000)
                     } ?: run {
@@ -48,17 +48,17 @@ class SportJobs(private val sportHandler: SportHandler) {
             launch {
                 var lastSentBoxScores = listOf<FullTeam>()
                 while (isActive) {
-                    if (sportHandler.boxScores.isNotEmpty() && lastSentBoxScores != sportHandler.boxScores) {
-                        session.sendTypedMessage(MessageType.BOX_SCORES, sportHandler.boxScores)
-                        lastSentBoxScores = sportHandler.boxScores
+                    if (SportState.boxScores.isNotEmpty() && lastSentBoxScores != SportState.boxScores) {
+                        session.sendTypedMessage(MessageType.BOX_SCORES, SportState.boxScores)
+                        lastSentBoxScores = SportState.boxScores
                     }
                     delay(5 * 1000)
                 }
             },
             launch {
                 while (isActive) {
-                    if (sportHandler.rosters.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.ROSTERS, sportHandler.rosters)
+                    if (SportState.rosters.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.ROSTERS, SportState.rosters)
                         delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000)
@@ -67,7 +67,7 @@ class SportJobs(private val sportHandler: SportHandler) {
             },
             launch {
                 while (isActive) {
-                    sportHandler.leaders?.let {
+                    SportState.leaders?.let {
                         session.sendTypedMessage(MessageType.LEADERS, it)
                         delay(6 * 60 * 60 * 1000)
                     } ?: run {
@@ -82,7 +82,7 @@ class SportJobs(private val sportHandler: SportHandler) {
             launch {
                 var lastSentScoreboard: Scoreboard? = null
                 while (isActive) {
-                    val currentScoreboard = sportHandler.scoreboard
+                    val currentScoreboard = SportState.scoreboard
                     currentScoreboard?.let { sb ->
                         val filteredSb = currentScoreboard.copy(
                             competitions = sb.competitions.filter { comp -> comp.teams.map { it.team.id }.contains(content) }
@@ -97,8 +97,8 @@ class SportJobs(private val sportHandler: SportHandler) {
             },
             launch {
                 while (isActive) {
-                    if (sportHandler.teams.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.TEAMS, sportHandler.teams)
+                    if (SportState.teams.isNotEmpty()) {
+                        session.sendTypedMessage(MessageType.TEAMS, SportState.teams)
                         delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000L)
@@ -107,8 +107,8 @@ class SportJobs(private val sportHandler: SportHandler) {
             },
             launch {
                 while (isActive) {
-                    val currentBoxScores = sportHandler.boxScores
-                    val currentScoreboard = sportHandler.scoreboard
+                    val currentBoxScores = SportState.boxScores
+                    val currentScoreboard = SportState.scoreboard
 
                     if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
                         currentScoreboard.competitions.firstOrNull { comp ->
@@ -129,8 +129,8 @@ class SportJobs(private val sportHandler: SportHandler) {
             },
             launch {
                 while (isActive) {
-                    if (sportHandler.rosters.isNotEmpty()) {
-                        val filterRosters = sportHandler.rosters.find { it.team.id == content }
+                    if (SportState.rosters.isNotEmpty()) {
+                        val filterRosters = SportState.rosters.find { it.team.id == content }
                         session.sendTypedMessage(MessageType.ROSTERS, listOf(filterRosters))
                         delay(6 * 60 * 60 * 1000)
                     } else {
@@ -140,8 +140,8 @@ class SportJobs(private val sportHandler: SportHandler) {
             },
             launch {
                 while (isActive) {
-                    if (sportHandler.schedules.isNotEmpty()) {
-                        val filterRosters = sportHandler.schedules.find { it.team.id == content }
+                    if (SportState.schedules.isNotEmpty()) {
+                        val filterRosters = SportState.schedules.find { it.team.id == content }
                         session.sendTypedMessage(MessageType.SCHEDULE, filterRosters)
                         delay(6 * 60 * 60 * 1000)
                     } else {

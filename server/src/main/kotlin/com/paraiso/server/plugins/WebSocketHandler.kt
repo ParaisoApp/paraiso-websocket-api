@@ -41,10 +41,10 @@ import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.messageTypes.Block as BlockDomain
 
-class WebSocketHandler(sportHandler: SportHandler, postsApi: PostsApi) : Klogging {
+class WebSocketHandler(postsApi: PostsApi) : Klogging {
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
-    private val sportJobs = SportJobs(sportHandler)
+    private val sportJobs = SportJobs()
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
     private val postsApiRef = postsApi
 
