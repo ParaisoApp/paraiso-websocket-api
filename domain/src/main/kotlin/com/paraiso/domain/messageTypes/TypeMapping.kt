@@ -47,9 +47,6 @@ enum class MessageType {
     @SerialName("BOX_SCORES")
     BOX_SCORES,
 
-    @SerialName("ROSTERS")
-    ROSTERS,
-
     @SerialName("SCHEDULE")
     SCHEDULE,
 

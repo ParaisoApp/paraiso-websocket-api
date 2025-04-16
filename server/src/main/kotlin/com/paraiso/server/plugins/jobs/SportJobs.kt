@@ -79,17 +79,6 @@ class SportJobs {
             },
             launch {
                 while (isActive) {
-                    if (SportState.rosters.isNotEmpty()) {
-                        val filterRosters = SportState.rosters.find { it.team.id == content }
-                        session.sendTypedMessage(MessageType.ROSTERS, listOf(filterRosters))
-                        delay(6 * 60 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            },
-            launch {
-                while (isActive) {
                     if (SportState.schedules.isNotEmpty()) {
                         val filterRosters = SportState.schedules.find { it.team.id == content }
                         session.sendTypedMessage(MessageType.SCHEDULE, filterRosters)

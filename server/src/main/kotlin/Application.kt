@@ -147,17 +147,27 @@ fun Application.configureSockets(
                 get("/standings") {
                     sportApi.getStandings()?.let{
                         call.respond(HttpStatusCode.OK, it)
-                    }
+                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/leaders") {
                     sportApi.getLeaders()?.let{
                         call.respond(HttpStatusCode.OK, it)
-                    }
+                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/leader_cats") {
                     sportApi.getLeaderCategories()?.let{
                         call.respond(HttpStatusCode.OK, it)
-                    }
+                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                }
+                get("/team_roster") {
+                    sportApi.getTeamRoster(call.request.queryParameters["team_id"] ?: "")?.let{
+                        call.respond(HttpStatusCode.OK, it)
+                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                }
+                get("/team_schedule") {
+                    sportApi.getTeamSchedule(call.request.queryParameters["team_id"] ?: "")?.let{
+                        call.respond(HttpStatusCode.OK, it)
+                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
                 }
             }
         }
