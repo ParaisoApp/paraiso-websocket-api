@@ -44,16 +44,6 @@ class SportJobs {
                         delay(5 * 1000)
                     }
                 }
-            },
-            launch {
-                while (isActive) {
-                    SportState.leaders?.let {
-                        session.sendTypedMessage(MessageType.LEADERS, it)
-                        delay(6 * 60 * 60 * 1000)
-                    } ?: run {
-                        delay(5 * 1000)
-                    }
-                }
             }
         )
     }

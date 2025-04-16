@@ -149,6 +149,16 @@ fun Application.configureSockets(
                         call.respond(HttpStatusCode.OK, it)
                     }
                 }
+                get("/leaders") {
+                    sportApi.getLeaders()?.let{
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                }
+                get("/leader_cats") {
+                    sportApi.getLeaderCategories()?.let{
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                }
             }
         }
     }

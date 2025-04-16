@@ -21,3 +21,10 @@ data class CategoryLeader(
     val value: Double,
     val displayValue: String
 )
+
+@Serializable
+data class LeaderReturn(
+    val athleteName: String,
+    val leaderStat: Double,
+    val teamAbbr: String
+)

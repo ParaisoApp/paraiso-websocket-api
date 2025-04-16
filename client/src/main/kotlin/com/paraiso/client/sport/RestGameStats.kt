@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.sports.Athlete as AthleteDomain
@@ -88,6 +89,7 @@ fun Statistic.toDomain() = StatTypesDomain(
 
 fun AthleteBase.toDomain() = AthleteDomain(
     id = athlete.id,
+    teamAbbr = EMPTY,
     displayName = athlete.displayName,
     shortName = athlete.shortName,
     jersey = athlete.jersey ?: UNKNOWN,
@@ -95,9 +97,9 @@ fun AthleteBase.toDomain() = AthleteDomain(
     positionAbbreviation = athlete.position.abbreviation,
     starter = starter,
     didNotPlay = didNotPlay,
-    reason = reason ?: "",
+    reason = reason ?: EMPTY,
     ejected = ejected,
     stats = stats,
-    displayHeight = "",
-    displayWeight = ""
+    displayHeight = EMPTY,
+    displayWeight = EMPTY
 )

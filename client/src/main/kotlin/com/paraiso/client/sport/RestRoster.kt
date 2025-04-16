@@ -33,13 +33,14 @@ data class RestCoach(
 )
 
 fun RestRoster.toDomain() = RosterDomain(
-    athletes = athletes.map { it.toDomain() },
+    athletes = athletes.map { it.toDomain(team.abbreviation) },
     coach = coach.firstOrNull()?.toDomain() ?: CoachDomain.createUnknown(),
     team = team.toDomain()
 )
 
-fun RestAthlete.toDomain() = AthleteDomain(
+fun RestAthlete.toDomain(teamAbbr: String) = AthleteDomain(
     id = id,
+    teamAbbr = teamAbbr,
     displayName = displayName,
     shortName = shortName,
     displayWeight = displayWeight ?: "",
