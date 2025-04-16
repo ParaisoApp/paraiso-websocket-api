@@ -35,16 +35,6 @@ class SportJobs {
                     delay(5 * 1000)
                 }
             },
-            launch {
-                while (isActive) {
-                    if (SportState.rosters.isNotEmpty()) {
-                        session.sendTypedMessage(MessageType.ROSTERS, SportState.rosters)
-                        delay(6 * 60 * 60 * 1000)
-                    } else {
-                        delay(5 * 1000)
-                    }
-                }
-            }
         )
     }
     suspend fun teamJobs(content: String, session: WebSocketServerSession) = coroutineScope {
