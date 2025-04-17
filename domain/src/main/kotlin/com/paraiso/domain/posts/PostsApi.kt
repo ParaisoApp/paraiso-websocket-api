@@ -58,7 +58,13 @@ class PostsApi {
                         }
                     nextReturnNode.subPosts = children
                 }
-                root
+                root.also {rootRef ->
+                    rootRef.subPosts = rootRef.subPosts.plus(
+                        ServerState.sportPosts.entries.filter { entry ->
+                            entry.value.parentId == root.id
+                        }.associate { it.key to it.value.toPostReturn() }
+                    )
+                }
             }
         } ?: run { ServerState.basePost.toPostReturn() }
 

@@ -36,6 +36,7 @@ object ServerState {
         updatedOn = Clock.System.now(),
     )
     val posts: MutableMap<String, Post> = mutableMapOf(basePost.id to basePost)
+    val sportPosts: MutableMap<String, Post> = mutableMapOf()
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)

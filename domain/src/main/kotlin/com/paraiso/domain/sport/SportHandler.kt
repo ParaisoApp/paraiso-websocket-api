@@ -1,5 +1,8 @@
 package com.paraiso.domain.sport
 
+import com.paraiso.domain.messageTypes.PostType
+import com.paraiso.domain.posts.Post
+import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.sport.sports.AllStandings
 import com.paraiso.domain.sport.sports.FullTeam
 import com.paraiso.domain.sport.sports.Roster
@@ -7,6 +10,8 @@ import com.paraiso.domain.sport.sports.Schedule
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.sport.sports.StatLeaders
 import com.paraiso.domain.sport.sports.Team
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -16,54 +21,89 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import java.util.UUID
 import kotlin.time.Duration.Companion.hours
 
 class SportHandler(private val sportOperation: SportOperation) : Klogging {
 
     suspend fun getStandings() = coroutineScope {
         while (isActive) {
-            SportState.standings = sportOperation.getStandings()
+            sportOperation.getStandings().also { standingsRes ->
+                if(standingsRes != SportState.standings) SportState.standings = standingsRes
+            }
             delay(6 * 60 * 60 * 1000)
         }
     }
 
     suspend fun getTeams() = coroutineScope {
+        sportOperation.getTeams().also { teamsRes ->
+            teamsRes.map { it.id }.let { teamIds ->
+                launch { getRosters(teamIds) }
+                launch { getSchedules(teamIds) }
+            }
+        }
         while (isActive) {
-            sportOperation.getTeams().let { teamsRes ->
-                SportState.teams = teamsRes
-                teamsRes.map { it.id }.let { teamIds ->
-                    launch { getRosters(teamIds) }
-                    launch { getSchedules(teamIds) }
-                }
+            sportOperation.getTeams().also { teamsRes ->
+                if(teamsRes != SportState.teams) SportState.teams = teamsRes
             }
             delay(6 * 60 * 60 * 1000)
         }
     }
     suspend fun getLeaders() = coroutineScope {
         while (isActive) {
-            SportState.leaders = sportOperation.getLeaders()
+            sportOperation.getLeaders().also { leadersRes ->
+                if(leadersRes != SportState.leaders) SportState.leaders = leadersRes
+            }
             delay(6 * 60 * 60 * 1000)
         }
     }
 
     private suspend fun getSchedules(teamIds: List<String>) = coroutineScope {
         while (isActive) {
-            SportState.schedules = teamIds.map { teamId ->
+            teamIds.map { teamId ->
                 async {
                     sportOperation.getSchedule(teamId)
                 }
-            }.awaitAll().filterNotNull()
+            }.awaitAll().filterNotNull().also { schedulesRes ->
+                if(schedulesRes != SportState.schedules) SportState.schedules = schedulesRes
+                if(
+                    !ServerState.posts.map { it.key }
+                        .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
+                ){
+                    ServerState.sportPosts.putAll(
+                        schedulesRes.flatMap { it.events }.associate { competition ->
+                            competition.id to Post(
+                                id = competition.id,
+                                userId = "-1",
+                                title = competition.shortName,
+                                content = "${competition.date}-${competition.shortName}",
+                                type = PostType.GAME,
+                                media = Constants.EMPTY,
+                                votes = emptyMap(),
+                                parentId = ServerState.basePost.id,
+                                status = PostStatus.ACTIVE,
+                                data = "${competition.date}-${competition.shortName}",
+                                subPosts = mutableSetOf(),
+                                createdOn = Clock.System.now(),
+                                updatedOn = Clock.System.now()
+                            )
+                        }
+                    )
+                }
+            }
             delay(6 * 60 * 60 * 1000)
         }
     }
 
     private suspend fun getRosters(teamIds: List<String>) = coroutineScope {
         while (isActive) {
-            SportState.rosters = teamIds.map { teamId ->
+            teamIds.map { teamId ->
                 async {
                     sportOperation.getRoster(teamId)
                 }
-            }.awaitAll().filterNotNull()
+            }.awaitAll().filterNotNull().also { rostersRes ->
+                if(rostersRes != SportState.rosters) SportState.rosters = rostersRes
+            }
             delay(6 * 60 * 60 * 1000)
         }
     }
