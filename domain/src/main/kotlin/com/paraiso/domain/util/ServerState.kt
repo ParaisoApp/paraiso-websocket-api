@@ -20,22 +20,7 @@ object ServerState {
     val userList: MutableMap<String, User> = mutableMapOf()
     val banList: MutableSet<String> = mutableSetOf()
 
-    val basePost = Post(
-        id = UUID.randomUUID().toString(),
-        userId = SYSTEM,
-        title = "NBA",
-        content = EMPTY,
-        type = PostType.SUPER,
-        media = EMPTY,
-        votes = emptyMap(),
-        parentId = SYSTEM,
-        status = PostStatus.ACTIVE,
-        data = EMPTY,
-        subPosts = mutableSetOf(),
-        createdOn = Clock.System.now(),
-        updatedOn = Clock.System.now(),
-    )
-    val posts: MutableMap<String, Post> = mutableMapOf(basePost.id to basePost)
+    val posts: MutableMap<String, Post> = mutableMapOf()
     val sportPosts: MutableMap<String, Post> = mutableMapOf()
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)

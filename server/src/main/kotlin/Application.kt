@@ -132,7 +132,10 @@ fun Application.configureSockets(
             }
             route("posts") {
                 get {
-                    call.respond(HttpStatusCode.OK, postsApi.getPosts())
+                    postsApi.getPosts(call.request.queryParameters["basePostId"] ?: "").let{
+                        call.respond(HttpStatusCode.OK, it)
+
+                    }
                 }
             }
             route("users") {
@@ -160,12 +163,12 @@ fun Application.configureSockets(
                     } ?: run{ call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/team_roster") {
-                    sportApi.getTeamRoster(call.request.queryParameters["team_id"] ?: "")?.let{
+                    sportApi.getTeamRoster(call.request.queryParameters["teamId"] ?: "")?.let{
                         call.respond(HttpStatusCode.OK, it)
                     } ?: run{ call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/team_schedule") {
-                    sportApi.getTeamSchedule(call.request.queryParameters["team_id"] ?: "")?.let{
+                    sportApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let{
                         call.respond(HttpStatusCode.OK, it)
                     } ?: run{ call.respond(HttpStatusCode.NotFound) }
                 }

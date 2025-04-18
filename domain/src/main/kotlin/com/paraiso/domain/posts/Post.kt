@@ -1,9 +1,12 @@
 package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.PostType
+import com.paraiso.domain.util.Constants
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 data class Post(
     val id: String,
@@ -71,4 +74,20 @@ fun Post.toPostReturn() = PostReturn(
     subPosts = emptyMap(),
     createdOn = createdOn,
     updatedOn = updatedOn
+)
+
+fun generateBasePost(basePostId: String, subPosts: Set<String>) = Post(
+    id = basePostId,
+    userId = Constants.SYSTEM,
+    title = basePostId,
+    content = Constants.EMPTY,
+    type = PostType.SUPER,
+    media = Constants.EMPTY,
+    votes = emptyMap(),
+    parentId = Constants.SYSTEM,
+    status = PostStatus.ACTIVE,
+    data = Constants.EMPTY,
+    subPosts = subPosts,
+    createdOn = Clock.System.now(),
+    updatedOn = Clock.System.now(),
 )

@@ -7,6 +7,11 @@ import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 
 class PostsApi {
+
+    companion object {
+        const val RETRIEVE_LIM = 100
+    }
+
     fun putPost(message: Message){
         message.id?.let{messageId ->
             // if post already exists then edit
@@ -38,35 +43,43 @@ class PostsApi {
         }
     }
 
-    fun getPosts() =
-        ServerState.posts[ServerState.basePost.id]?.let{ basePost ->
-            basePost.toPostReturn().let { root ->
-                val refQueue = ArrayDeque(listOf(basePost))
-                val returnQueue = ArrayDeque(listOf(root))
-                while(refQueue.isNotEmpty()){
-                    val nextRefNode = refQueue.removeFirst()
-                    val nextReturnNode = returnQueue.removeFirst()
-                    val children = ServerState.posts
-                        .filterKeys { nextRefNode.subPosts.contains(it) }
-                        .toList()
-                        .sortedBy { it.second.createdOn }
-                        .take(100).associate { (key, value) ->
-                            (key to value.toPostReturn()).also { (_, returnNode) ->
-                                returnQueue.addLast(returnNode)
-                                refQueue.addLast(value)
+    fun getPosts(basePostId: String) =
+        // grab 100 most recent posts at given super level
+        ServerState.posts.filter { it.value.parentId == basePostId }
+            .entries.take(RETRIEVE_LIM).sortedBy{it.value.createdOn}
+            .map { it.key }.toSet()
+            .let{ subPosts ->
+            generateBasePost(basePostId, subPosts).let { basePost ->
+                println(ServerState.posts)
+                basePost.toPostReturn().let { root ->
+                    val refQueue = ArrayDeque(listOf(basePost))
+                    val returnQueue = ArrayDeque(listOf(root))
+                    while(refQueue.isNotEmpty()){
+                        val nextRefNode = refQueue.removeFirst()
+                        val nextReturnNode = returnQueue.removeFirst()
+                        val children = ServerState.posts
+                            .filterKeys { nextRefNode.subPosts.contains(it) }
+                            .toList().take(RETRIEVE_LIM)
+                            .sortedBy { it.second.createdOn }
+                            .associate { (key, value) ->
+                                (key to value.toPostReturn()).also { (_, returnNode) ->
+                                    returnQueue.addLast(returnNode)
+                                    refQueue.addLast(value)
+                                }
                             }
-                        }
-                    nextReturnNode.subPosts = children
-                }
-                root.also {rootRef ->
-                    rootRef.subPosts = rootRef.subPosts.plus(
-                        ServerState.sportPosts.entries.filter { entry ->
-                            entry.value.parentId == root.id
-                        }.associate { it.key to it.value.toPostReturn() }
-                    )
+                        nextReturnNode.subPosts = children
+                    }
+                    root.also {rootRef ->
+                        println(ServerState.sportPosts)
+                        rootRef.subPosts = rootRef.subPosts.plus(
+                            ServerState.sportPosts.entries.filter { entry ->
+                                entry.value.parentId == root.id
+                            }.associate { it.key to it.value.toPostReturn() }
+                        )
+                    }
                 }
             }
-        } ?: run { ServerState.basePost.toPostReturn() }
+        }
 
 
     fun votePost(vote: Vote) {
