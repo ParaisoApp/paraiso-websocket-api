@@ -3,6 +3,7 @@ package com.paraiso.domain.sport
 import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.sport.sports.Competition
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
@@ -62,23 +63,25 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
-                    ServerState.sportPosts.putAll(
-                        schedulesRes.flatMap { it.events }.associate { competition ->
-                            competition.id to Post(
-                                id = competition.id,
-                                userId = "-1",
-                                title = competition.shortName,
-                                content = "${competition.date}-${competition.shortName}",
-                                type = PostType.GAME,
-                                media = Constants.EMPTY,
-                                votes = emptyMap(),
-                                parentId = "NBA", // TODO make enum
-                                status = PostStatus.ACTIVE,
-                                data = "TEAM-${schedulesRes.firstOrNull()?.team?.id}",
-                                subPosts = mutableSetOf(),
-                                createdOn = Clock.System.now(),
-                                updatedOn = Clock.System.now()
-                            )
+                    ServerState.sportPosts.putAll(schedulesRes.associate { it.team.id to it.events }
+                        .flatMap { (key, values) ->
+                            values.map { competition ->
+                                competition.id to Post(
+                                    id = "${competition.id}-TEAM-$key",
+                                    userId = "-1",
+                                    title = competition.shortName,
+                                    content = "${competition.date}-${competition.shortName}",
+                                    type = PostType.GAME,
+                                    media = Constants.EMPTY,
+                                    votes = emptyMap(),
+                                    parentId = "NBA", // TODO make enum
+                                    status = PostStatus.ACTIVE,
+                                    data = "TEAM-$key",
+                                    subPosts = mutableSetOf(),
+                                    createdOn = Clock.System.now(),
+                                    updatedOn = Clock.System.now()
+                                )
+                            }
                         }
                     )
                 }
