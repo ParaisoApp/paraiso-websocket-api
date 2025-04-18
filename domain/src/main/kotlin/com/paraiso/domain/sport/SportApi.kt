@@ -2,7 +2,6 @@ package com.paraiso.domain.sport
 
 import com.paraiso.domain.sport.sports.LeaderReturn
 
-
 class SportApi {
     fun getTeams() = SportState.teams.associateBy { it.id }
     fun getStandings() = SportState.standings?.standingsGroups?.associate { it.confAbbr to it.standings }

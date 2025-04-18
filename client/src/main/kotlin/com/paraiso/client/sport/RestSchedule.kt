@@ -14,9 +14,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import com.paraiso.domain.sport.sports.Competition as CompetitionDomain
+import com.paraiso.domain.sport.sports.Record as RecordDomain
 import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.sports.Venue as VenueDomain
-import com.paraiso.domain.sport.sports.Record as RecordDomain
 
 @Serializable
 data class RestSchedule(
@@ -78,7 +78,6 @@ data class RestScore(
     val value: String,
     val displayValue: String
 )
-
 
 @Serializable
 data class RestSeason(
@@ -143,6 +142,6 @@ object ScoreSerializer : KSerializer<RestScore> {
     }
 
     override fun serialize(encoder: Encoder, value: RestScore) {
-        //no need to serialize
+        // no need to serialize
     }
 }

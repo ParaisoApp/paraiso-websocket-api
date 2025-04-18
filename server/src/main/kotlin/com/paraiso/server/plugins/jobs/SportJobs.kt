@@ -1,9 +1,9 @@
 package com.paraiso.com.paraiso.server.plugins.jobs
 
-import com.paraiso.domain.sport.sports.FullTeam
-import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.SportState
+import com.paraiso.domain.sport.sports.FullTeam
+import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope
@@ -34,7 +34,7 @@ class SportJobs {
                     }
                     delay(5 * 1000)
                 }
-            },
+            }
         )
     }
     suspend fun teamJobs(content: String, session: WebSocketServerSession) = coroutineScope {
@@ -70,13 +70,13 @@ class SportJobs {
                                         session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
                                     }
                             }
-                        //delay(5 * 1000)
+                        // delay(5 * 1000)
                         delay(6 * 60 * 60 * 1000)
                     } else {
                         delay(5 * 1000L)
                     }
                 }
-            },
+            }
         )
     }
 }

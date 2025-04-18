@@ -1,20 +1,14 @@
 package com.paraiso.domain.util
 
-import com.paraiso.domain.users.User
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
-import com.paraiso.domain.posts.PostStatus
-import com.paraiso.domain.util.Constants.EMPTY
-import com.paraiso.domain.util.Constants.SYSTEM
+import com.paraiso.domain.users.User
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.datetime.Clock
-import java.util.UUID
 
 object ServerState {
     val userList: MutableMap<String, User> = mutableMapOf()

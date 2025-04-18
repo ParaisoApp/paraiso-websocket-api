@@ -1,12 +1,11 @@
 package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
-import com.paraiso.com.paraiso.api.auth.AuthController
 import com.paraiso.domain.auth.AuthApi
-import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.messageTypes.Login
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.sport.SportApi
+import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
@@ -135,8 +134,8 @@ fun Application.configureSockets(
                 get {
                     postsApi.getPosts(
                         call.request.queryParameters["id"] ?: "",
-                        call.request.queryParameters["name"] ?: "",
-                    ).let{
+                        call.request.queryParameters["name"] ?: ""
+                    ).let {
                         call.respond(HttpStatusCode.OK, it)
                     }
                 }
@@ -158,29 +157,29 @@ fun Application.configureSockets(
                     call.respond(HttpStatusCode.OK, sportApi.getTeams())
                 }
                 get("/standings") {
-                    sportApi.getStandings()?.let{
+                    sportApi.getStandings()?.let {
                         call.respond(HttpStatusCode.OK, it)
-                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                    } ?: run { call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/leaders") {
-                    sportApi.getLeaders()?.let{
+                    sportApi.getLeaders()?.let {
                         call.respond(HttpStatusCode.OK, it)
-                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                    } ?: run { call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/leader_cats") {
-                    sportApi.getLeaderCategories()?.let{
+                    sportApi.getLeaderCategories()?.let {
                         call.respond(HttpStatusCode.OK, it)
-                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                    } ?: run { call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/team_roster") {
-                    sportApi.getTeamRoster(call.request.queryParameters["teamId"] ?: "")?.let{
+                    sportApi.getTeamRoster(call.request.queryParameters["teamId"] ?: "")?.let {
                         call.respond(HttpStatusCode.OK, it)
-                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                    } ?: run { call.respond(HttpStatusCode.NotFound) }
                 }
                 get("/team_schedule") {
-                    sportApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let{
+                    sportApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let {
                         call.respond(HttpStatusCode.OK, it)
-                    } ?: run{ call.respond(HttpStatusCode.NotFound) }
+                    } ?: run { call.respond(HttpStatusCode.NotFound) }
                 }
             }
         }

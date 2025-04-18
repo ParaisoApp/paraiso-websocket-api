@@ -41,5 +41,5 @@ fun Message.toNewPost() = Post(
     data = "",
     subPosts = emptySet(),
     createdOn = Clock.System.now(),
-    updatedOn = Clock.System.now(),
+    updatedOn = Clock.System.now()
 )

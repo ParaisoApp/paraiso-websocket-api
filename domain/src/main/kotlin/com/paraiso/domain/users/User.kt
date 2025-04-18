@@ -98,6 +98,7 @@ enum class UserRole {
 enum class UserStatus {
     @SerialName("CONNECTED")
     CONNECTED,
+
     @SerialName("DISCONNECTED")
     DISCONNECTED
 }

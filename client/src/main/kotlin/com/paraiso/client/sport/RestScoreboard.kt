@@ -3,12 +3,9 @@ package com.paraiso.client.sport
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.sports.Competition as CompetitionDomain
 import com.paraiso.domain.sport.sports.Record as RecordDomain
 import com.paraiso.domain.sport.sports.Status as StatusDomain
-import com.paraiso.domain.sport.sports.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.sports.TeamYearStats as TeamYearStatsDomain
-import com.paraiso.domain.sport.sports.Venue as VenueDomain
 
 @Serializable
 data class RestScoreboard(

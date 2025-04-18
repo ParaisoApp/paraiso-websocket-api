@@ -6,7 +6,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 data class Post(
     val id: String,
@@ -54,8 +53,10 @@ enum class PostType {
 enum class PostStatus {
     @SerialName("ACTIVE")
     ACTIVE,
+
     @SerialName("DELETED")
     DELETED,
+
     @SerialName("ARCHIVED")
     ARCHIVED
 }
@@ -89,5 +90,5 @@ fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<Str
     data = Constants.EMPTY,
     subPosts = subPosts,
     createdOn = Clock.System.now(),
-    updatedOn = Clock.System.now(),
+    updatedOn = Clock.System.now()
 )

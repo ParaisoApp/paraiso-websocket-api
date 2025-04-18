@@ -3,13 +3,6 @@ package com.paraiso.domain.sport
 import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
-import com.paraiso.domain.sport.sports.AllStandings
-import com.paraiso.domain.sport.sports.FullTeam
-import com.paraiso.domain.sport.sports.Roster
-import com.paraiso.domain.sport.sports.Schedule
-import com.paraiso.domain.sport.sports.Scoreboard
-import com.paraiso.domain.sport.sports.StatLeaders
-import com.paraiso.domain.sport.sports.Team
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
@@ -21,7 +14,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import java.util.UUID
 import kotlin.time.Duration.Companion.hours
 
 class SportHandler(private val sportOperation: SportOperation) : Klogging {
@@ -29,7 +21,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     suspend fun getStandings() = coroutineScope {
         while (isActive) {
             sportOperation.getStandings().also { standingsRes ->
-                if(standingsRes != SportState.standings) SportState.standings = standingsRes
+                if (standingsRes != SportState.standings) SportState.standings = standingsRes
             }
             delay(6 * 60 * 60 * 1000)
         }
@@ -44,7 +36,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         }
         while (isActive) {
             sportOperation.getTeams().also { teamsRes ->
-                if(teamsRes != SportState.teams) SportState.teams = teamsRes
+                if (teamsRes != SportState.teams) SportState.teams = teamsRes
             }
             delay(6 * 60 * 60 * 1000)
         }
@@ -52,7 +44,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     suspend fun getLeaders() = coroutineScope {
         while (isActive) {
             sportOperation.getLeaders().also { leadersRes ->
-                if(leadersRes != SportState.leaders) SportState.leaders = leadersRes
+                if (leadersRes != SportState.leaders) SportState.leaders = leadersRes
             }
             delay(6 * 60 * 60 * 1000)
         }
@@ -65,11 +57,11 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                     sportOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                if(schedulesRes != SportState.schedules) SportState.schedules = schedulesRes
-                if(
+                if (schedulesRes != SportState.schedules) SportState.schedules = schedulesRes
+                if (
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
-                ){
+                ) {
                     ServerState.sportPosts.putAll(
                         schedulesRes.flatMap { it.events }.associate { competition ->
                             competition.id to Post(
@@ -80,9 +72,9 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                 type = PostType.GAME,
                                 media = Constants.EMPTY,
                                 votes = emptyMap(),
-                                parentId = "NBA", //TODO make enum
+                                parentId = "NBA", // TODO make enum
                                 status = PostStatus.ACTIVE,
-                                data = "${competition.date}-${competition.shortName}",
+                                data = "TEAM-${schedulesRes.firstOrNull()?.team?.id}",
                                 subPosts = mutableSetOf(),
                                 createdOn = Clock.System.now(),
                                 updatedOn = Clock.System.now()
@@ -102,7 +94,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                     sportOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                if(rostersRes != SportState.rosters) SportState.rosters = rostersRes
+                if (rostersRes != SportState.rosters) SportState.rosters = rostersRes
             }
             delay(6 * 60 * 60 * 1000)
         }

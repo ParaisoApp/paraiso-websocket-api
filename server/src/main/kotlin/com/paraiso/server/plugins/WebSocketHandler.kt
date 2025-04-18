@@ -1,22 +1,21 @@
 package com.paraiso.server.plugins
 
+import com.paraiso.com.paraiso.api.auth.User
+import com.paraiso.com.paraiso.api.auth.toDomain
+import com.paraiso.com.paraiso.api.auth.toResponse
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
-import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserStatus
-import com.paraiso.domain.sport.SportHandler
-import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.com.paraiso.api.auth.User
-import com.paraiso.com.paraiso.api.auth.toDomain
-import com.paraiso.com.paraiso.api.auth.toResponse
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
+import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.initSettings
 import com.paraiso.domain.util.Constants.EMPTY
+import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
@@ -31,15 +30,15 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.UUID
-import com.paraiso.domain.users.User as UserDomain
 import com.paraiso.domain.messageTypes.Ban as BanDomain
+import com.paraiso.domain.messageTypes.Block as BlockDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
-import com.paraiso.domain.messageTypes.Block as BlockDomain
+import com.paraiso.domain.users.User as UserDomain
 
 class WebSocketHandler(postsApi: PostsApi) : Klogging {
     private val homeJobs = HomeJobs()
@@ -99,7 +98,7 @@ class WebSocketHandler(postsApi: PostsApi) : Klogging {
                     when (type) {
                         MessageType.MSG -> {
                             val newMessage = message as? MessageDomain
-                            if(!sessionUser.blockList.contains(newMessage?.userId)){
+                            if (!sessionUser.blockList.contains(newMessage?.userId)) {
                                 sendTypedMessage(type, message as MessageDomain)
                             }
                         }

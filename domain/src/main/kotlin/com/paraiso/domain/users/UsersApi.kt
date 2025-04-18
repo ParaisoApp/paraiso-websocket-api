@@ -22,7 +22,7 @@ class UsersApi {
         }
 
     fun setSettings(userId: String, settings: UserSettings) =
-        ServerState.userList[userId]?.let{ user ->
+        ServerState.userList[userId]?.let { user ->
             ServerState.userList[userId] = user.copy(settings = settings)
         }
 }
