@@ -4,8 +4,14 @@ import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.util.ServerState
 
 class UsersApi {
+    fun getUserById(userId: String) =
+        ServerState.userList[userId]?.let { user -> buildUser(user) }
+
     fun getUserList() =
-        ServerState.userList.values.associate { user ->
+        ServerState.userList.values.associate { user -> user.id to buildUser(user) }
+
+    private fun buildUser(user: User) =
+        user.let {
             val posts = mutableMapOf<String, Map<String, Boolean>>()
             val comments = mutableMapOf<String, Map<String, Boolean>>()
             ServerState.posts
@@ -18,8 +24,9 @@ class UsersApi {
                         comments[post.id] = post.votes
                     }
                 }
-            user.id to user.toUserReturn(posts, comments)
+            user.toUserReturn(posts, comments)
         }
+
 
     fun setSettings(userId: String, settings: UserSettings) =
         ServerState.userList[userId]?.let { user ->

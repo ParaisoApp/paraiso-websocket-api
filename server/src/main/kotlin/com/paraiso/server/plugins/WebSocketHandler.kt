@@ -13,6 +13,7 @@ import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
+import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.initSettings
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.ServerState
@@ -40,18 +41,19 @@ import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.users.User as UserDomain
 
-class WebSocketHandler(postsApi: PostsApi) : Klogging {
+class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
     private val sportJobs = SportJobs()
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
     private val postsApiRef = postsApi
+    private val usersApiRef = usersApi
 
     suspend fun handleUser(session: WebSocketServerSession) {
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
             session.joinChat(
                 currentUser.toResponse().copy(
-                    status = UserStatus.DISCONNECTED
+                    status = UserStatus.CONNECTED
                 )
             )
         } ?: run {
@@ -90,7 +92,7 @@ class WebSocketHandler(postsApi: PostsApi) : Klogging {
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         var sessionUser = user.copy()
-        sendTypedMessage(MessageType.USER, sessionUser)
+        sendTypedMessage(MessageType.USER, usersApiRef.getUserById(sessionUser.id))
 
         val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
             launch {
