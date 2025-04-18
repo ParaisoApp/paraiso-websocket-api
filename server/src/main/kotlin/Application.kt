@@ -132,9 +132,11 @@ fun Application.configureSockets(
             }
             route("posts") {
                 get {
-                    postsApi.getPosts(call.request.queryParameters["basePostId"] ?: "").let{
+                    postsApi.getPosts(
+                        call.request.queryParameters["id"] ?: "",
+                        call.request.queryParameters["name"] ?: "",
+                    ).let{
                         call.respond(HttpStatusCode.OK, it)
-
                     }
                 }
             }

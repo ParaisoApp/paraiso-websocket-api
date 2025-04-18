@@ -43,14 +43,13 @@ class PostsApi {
         }
     }
 
-    fun getPosts(basePostId: String) =
+    fun getPosts(basePostId: String, basePostName: String) =
         // grab 100 most recent posts at given super level
         ServerState.posts.filter { it.value.parentId == basePostId }
             .entries.take(RETRIEVE_LIM).sortedBy{it.value.createdOn}
             .map { it.key }.toSet()
             .let{ subPosts ->
-            generateBasePost(basePostId, subPosts).let { basePost ->
-                println(ServerState.posts)
+            generateBasePost(basePostId, basePostName, subPosts).let { basePost ->
                 basePost.toPostReturn().let { root ->
                     val refQueue = ArrayDeque(listOf(basePost))
                     val returnQueue = ArrayDeque(listOf(root))
@@ -70,7 +69,6 @@ class PostsApi {
                         nextReturnNode.subPosts = children
                     }
                     root.also {rootRef ->
-                        println(ServerState.sportPosts)
                         rootRef.subPosts = rootRef.subPosts.plus(
                             ServerState.sportPosts.entries.filter { entry ->
                                 entry.value.parentId == root.id

@@ -76,10 +76,10 @@ fun Post.toPostReturn() = PostReturn(
     updatedOn = updatedOn
 )
 
-fun generateBasePost(basePostId: String, subPosts: Set<String>) = Post(
+fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<String>) = Post(
     id = basePostId,
     userId = Constants.SYSTEM,
-    title = basePostId,
+    title = basePostName,
     content = Constants.EMPTY,
     type = PostType.SUPER,
     media = Constants.EMPTY,
