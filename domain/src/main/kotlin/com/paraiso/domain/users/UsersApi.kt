@@ -20,4 +20,9 @@ class UsersApi {
                 }
             user.id to user.toUserReturn(posts, comments)
         }
+
+    fun setSettings(userId: String, settings: UserSettings) =
+        ServerState.userList[userId]?.let{ user ->
+            ServerState.userList[userId] = user.copy(settings = settings)
+        }
 }
