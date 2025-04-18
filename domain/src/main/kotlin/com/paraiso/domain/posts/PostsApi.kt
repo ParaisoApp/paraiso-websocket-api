@@ -69,7 +69,6 @@ class PostsApi {
                             nextReturnNode.subPosts = children
                         }
                         root.also { rootRef ->
-                            println(ServerState.sportPosts)
                             rootRef.subPosts = rootRef.subPosts.plus(
                                 ServerState.sportPosts.entries.filter { entry ->
                                     entry.value.parentId == root.id || entry.value.data == basePostId

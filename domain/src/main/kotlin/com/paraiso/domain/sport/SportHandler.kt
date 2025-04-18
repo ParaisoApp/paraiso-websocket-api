@@ -4,7 +4,9 @@ import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.sport.sports.Competition
+import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
@@ -66,15 +68,15 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                     ServerState.sportPosts.putAll(schedulesRes.associate { it.team.id to it.events }
                         .flatMap { (key, values) ->
                             values.map { competition ->
-                                competition.id to Post(
+                                "${competition.id}-TEAM-$key" to Post(
                                     id = "${competition.id}-TEAM-$key",
-                                    userId = "-1",
+                                    userId = SYSTEM,
                                     title = competition.shortName,
                                     content = "${competition.date}-${competition.shortName}",
                                     type = PostType.GAME,
                                     media = Constants.EMPTY,
                                     votes = emptyMap(),
-                                    parentId = "NBA", // TODO make enum
+                                    parentId = "TEAM-$key", // TODO make enum
                                     status = PostStatus.ACTIVE,
                                     data = "TEAM-$key",
                                     subPosts = mutableSetOf(),
@@ -104,9 +106,12 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     }
     suspend fun buildScoreboard() {
         coroutineScope {
-            SportState.scoreboard = sportOperation.getScoreboard()
-            SportState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
-                fetchAndMapGames(gameIds)
+            sportOperation.getScoreboard()?.let { scoreboard ->
+                fillGamePosts(scoreboard)
+                SportState.scoreboard = scoreboard
+                SportState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
+                    fetchAndMapGames(gameIds)
+                }
             }
             while (isActive) {
                 delay(10 * 1000)
@@ -116,24 +121,54 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         val allStates = games.map { it.first }.toSet()
                         // if current time is beyond the earliest start time start fetching the scoreboard
                         if (Clock.System.now() > earliestTime) {
-                            SportState.scoreboard = sportOperation.getScoreboard()
+                            sportOperation.getScoreboard()?.let { scoreboard ->
+                                fillGamePosts(scoreboard)
+                                SportState.scoreboard = scoreboard
 
-                            // If boxscores already filled once then filter out games not in progress
+                                // If boxscores already filled once then filter out games not in progress
 //                            DISABLE BOX SCORE UPDATES FOR NOW
 //                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
 //                                fetchAndMapGames(gameIds)
 //                            }
-                            if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
-                                // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
-                                delay(60 * 60 * 1000)
+                                if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
+                                    // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
+                                    delay(60 * 60 * 1000)
+                                }
+
                             }
                             // else if current time is before the earliest time, delay until the earliest time
                         } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
                             delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
+                        } else{
+                            delay(1 * 60 * 1000)//delay one minute (game start not always in sync with clock)
                         }
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun fillGamePosts(scoreboard: Scoreboard) = coroutineScope {
+        if(SportState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }){
+            ServerState.sportPosts.putAll(
+                scoreboard.competitions.associate { competition ->
+                    competition.id to Post(
+                        id = competition.id,
+                        userId = SYSTEM,
+                        title = competition.shortName,
+                        content = "${competition.date}-${competition.shortName}",
+                        type = PostType.GAME,
+                        media = Constants.EMPTY,
+                        votes = emptyMap(),
+                        parentId = "NBA", // TODO make enum
+                        status = PostStatus.ACTIVE,
+                        data = "${competition.date}-${competition.shortName}",
+                        subPosts = mutableSetOf(),
+                        createdOn = Clock.System.now(),
+                        updatedOn = Clock.System.now()
+                    )
+                }
+            )
         }
     }
 
