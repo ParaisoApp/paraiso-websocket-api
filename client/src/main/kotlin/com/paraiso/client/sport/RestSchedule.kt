@@ -9,6 +9,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -64,6 +65,7 @@ data class RestCompetitor(
     val statistics: List<TeamYearStats>? = null,
     val linescores: List<LineScore>? = null,
     val records: List<Record>? = null,
+    @Serializable(with = RecordSerializer::class)
     val record: List<RestRecordYTD>? = null
 )
 
@@ -142,6 +144,40 @@ object ScoreSerializer : KSerializer<RestScore> {
     }
 
     override fun serialize(encoder: Encoder, value: RestScore) {
+        // no need to serialize
+    }
+}
+
+object RecordSerializer : KSerializer<List<RestRecordYTD>> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("RecordWrapper")
+
+    override fun deserialize(decoder: Decoder): List<RestRecordYTD> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("Expected JsonDecoder")
+
+        return when(val jsonElement = jsonDecoder.decodeJsonElement()){
+            is JsonPrimitive -> listOf(
+                    RestRecordYTD(
+                        description = jsonElement.content,
+                        displayValue = jsonElement.content
+                    )
+                )
+            is JsonArray -> {
+                jsonElement.mapNotNull {element ->
+                    if(element is JsonObject){
+                        RestRecordYTD(
+                            element["description"]?.jsonPrimitive?.content ?: "UNKNOWN",
+                            element["displayValue"]?.jsonPrimitive?.content ?: "UNKNOWN"
+                        )
+                    } else null
+                }
+            }
+
+            else -> emptyList()
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: List<RestRecordYTD>) {
         // no need to serialize
     }
 }
