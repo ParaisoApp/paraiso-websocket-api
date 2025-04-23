@@ -42,10 +42,15 @@ data class PostReturn(
 
 @Serializable
 enum class PostType {
+    @SerialName("SUPER")
     SUPER,
+    @SerialName("SUB")
     SUB,
+    @SerialName("PROFILE")
     PROFILE,
+    @SerialName("COMMENT")
     COMMENT,
+    @SerialName("GAME")
     GAME
 }
 
@@ -59,6 +64,29 @@ enum class PostStatus {
 
     @SerialName("ARCHIVED")
     ARCHIVED
+}
+@Serializable
+enum class SortType {
+    @SerialName("NEW")
+    NEW,
+    @SerialName("HOT")
+    HOT,
+    @SerialName("TOP")
+    TOP
+}
+
+@Serializable
+enum class Range {
+    @SerialName("DAY")
+    DAY,
+    @SerialName("WEEK")
+    WEEK,
+    @SerialName("MONTH")
+    MONTH,
+    @SerialName("YEAR")
+    YEAR,
+    @SerialName("ALL")
+    ALL
 }
 
 fun Post.toPostReturn() = PostReturn(

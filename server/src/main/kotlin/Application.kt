@@ -4,6 +4,8 @@ import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.Login
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.posts.Range
+import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.sport.SportApi
 import com.paraiso.domain.sport.SportHandler
 import com.paraiso.domain.users.UserSettings
@@ -134,7 +136,9 @@ fun Application.configureSockets(
                 get {
                     postsApi.getPosts(
                         call.request.queryParameters["id"] ?: "",
-                        call.request.queryParameters["name"] ?: ""
+                        call.request.queryParameters["name"] ?: "",
+                        call.request.queryParameters["range"]?.let{ Range.valueOf(it) } ?: Range.DAY,
+                        call.request.queryParameters["sort"]?.let{ SortType.valueOf(it) } ?: SortType.NEW
                     ).let {
                         call.respond(HttpStatusCode.OK, it)
                     }

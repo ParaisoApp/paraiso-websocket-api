@@ -5,11 +5,14 @@ import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.days
 
 class PostsApi {
 
     companion object {
-        const val RETRIEVE_LIM = 100
+        const val RETRIEVE_LIM = 50
+        const val TIME_WEIGHTING = 10000000000
     }
 
     fun putPost(message: Message) {
@@ -43,41 +46,80 @@ class PostsApi {
         }
     }
 
-    fun getPosts(basePostId: String, basePostName: String) =
+    fun getPosts(basePostId: String, basePostName: String, rangeModifier: Range, sortType: SortType) =
         // grab 100 most recent posts at given super level
-        ServerState.posts.filter { it.value.parentId == basePostId }
-            .entries.take(RETRIEVE_LIM).sortedBy { it.value.createdOn }
-            .map { it.key }.toSet()
-            .let { subPosts ->
-                generateBasePost(basePostId, basePostName, subPosts).let { basePost ->
-                    basePost.toPostReturn().let { root ->
-                        val refQueue = ArrayDeque(listOf(basePost))
-                        val returnQueue = ArrayDeque(listOf(root))
-                        while (refQueue.isNotEmpty()) {
-                            val nextRefNode = refQueue.removeFirst()
-                            val nextReturnNode = returnQueue.removeFirst()
-                            val children = ServerState.posts
-                                .filterKeys { nextRefNode.subPosts.contains(it) }
-                                .toList().take(RETRIEVE_LIM)
-                                .sortedBy { it.second.createdOn }
-                                .associate { (key, value) ->
-                                    (key to value.toPostReturn()).also { (_, returnNode) ->
-                                        returnQueue.addLast(returnNode)
-                                        refQueue.addLast(value)
-                                    }
-                                }
-                            nextReturnNode.subPosts = children
+        getRange(rangeModifier, sortType).let{range ->
+            ServerState.posts.filter { it.value.parentId == basePostId && it.value.createdOn > range }
+                .entries.take(RETRIEVE_LIM).sortedBy { getSort(it, sortType) } // get sort by
+                .map { it.key }.toSet()// generate base post and post tree off of given inputs
+                .let { subPosts -> generatePostTree(basePostId, basePostName, subPosts, range, sortType) }
+        }
+
+    private fun generatePostTree(
+        basePostId: String,
+        basePostName: String,
+        subPosts: Set<String>,
+        range: Instant,
+        sortType: SortType
+    ) =
+        generateBasePost(basePostId, basePostName, subPosts).let { basePost ->
+            basePost.toPostReturn().let { root -> // build tree with bfs
+                val refQueue = ArrayDeque(listOf(basePost))
+                val returnQueue = ArrayDeque(listOf(root))
+                while (refQueue.isNotEmpty()) {
+                    val nextRefNode = refQueue.removeFirst()
+                    val nextReturnNode = returnQueue.removeFirst()
+                    val children = ServerState.posts
+                        .filterKeys { nextRefNode.subPosts.contains(it) }
+                        .asSequence()
+                        .filter { it.value.createdOn > range }
+                        .toList().take(RETRIEVE_LIM)
+                        .sortedBy { getSort(it, sortType) }
+                        .associate { (key, value) ->
+                            (key to value.toPostReturn()).also { (_, returnNode) ->
+                                returnQueue.addLast(returnNode)
+                                refQueue.addLast(value)
+                            }
                         }
-                        root.also { rootRef ->
-                            rootRef.subPosts = rootRef.subPosts.plus(
-                                ServerState.sportPosts.entries.filter { entry ->
-                                    entry.value.parentId == root.id || entry.value.data == basePostId
-                                }.associate { it.key to it.value.toPostReturn() }
-                            )
-                        }
+                    nextReturnNode.subPosts = children
+                }
+                root.also { rootRef -> // generate relevant sport posts
+                    rootRef.subPosts = rootRef.subPosts.plus(
+                        ServerState.sportPosts.entries.filter { entry ->
+                            entry.value.parentId == root.id || entry.value.data == basePostId
+                        }.associate { it.key to it.value.toPostReturn() }
+                    )
+                }
+            }
+        }
+
+    private fun getRange(rangeModifier: Range, sortType: SortType) =
+        Instant.fromEpochMilliseconds(Long.MIN_VALUE)
+            .takeIf { rangeModifier == Range.ALL || sortType == SortType.NEW } ?:
+        Clock.System.now().let{clock ->
+            when(rangeModifier){
+                Range.DAY -> clock.minus(1.days)
+                Range.WEEK -> clock.minus(7.days)
+                Range.MONTH -> clock.minus(30.days)
+                Range.YEAR -> clock.minus(365.days)
+                else -> Instant.fromEpochMilliseconds(Long.MIN_VALUE)
+            }
+        }
+
+    private fun getSort(entry: Map.Entry<String, Post>, sortType: SortType) =
+        entry.value.createdOn.toEpochMilliseconds().let{created ->
+            if(sortType == SortType.NEW){
+                created
+            }else{
+                entry.value.votes.values.filter { it }.size.toLong().let{votes ->
+                    if(sortType == SortType.HOT) {
+                        (created / TIME_WEIGHTING) * votes
+                    }else{
+                        votes
                     }
                 }
             }
+        }
 
     fun votePost(vote: Vote) {
         ServerState.posts[vote.postId]?.let { post ->
