@@ -67,26 +67,26 @@ enum class PostStatus {
 }
 @Serializable
 enum class SortType {
-    @SerialName("NEW")
-    NEW,
-    @SerialName("HOT")
-    HOT,
-    @SerialName("TOP")
-    TOP
+    @SerialName("New")
+    New,
+    @SerialName("Hot")
+    Hot,
+    @SerialName("Top")
+    Top
 }
 
 @Serializable
 enum class Range {
-    @SerialName("DAY")
-    DAY,
-    @SerialName("WEEK")
-    WEEK,
-    @SerialName("MONTH")
-    MONTH,
-    @SerialName("YEAR")
-    YEAR,
-    @SerialName("ALL")
-    ALL
+    @SerialName("Day")
+    Day,
+    @SerialName("Week")
+    Week,
+    @SerialName("Month")
+    Month,
+    @SerialName("Year")
+    Year,
+    @SerialName("All")
+    All
 }
 
 fun Post.toPostReturn() = PostReturn(

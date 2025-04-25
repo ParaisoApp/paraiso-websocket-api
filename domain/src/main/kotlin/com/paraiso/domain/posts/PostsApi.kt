@@ -95,24 +95,24 @@ class PostsApi {
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
         Instant.fromEpochMilliseconds(Long.MIN_VALUE)
-            .takeIf { rangeModifier == Range.ALL || sortType == SortType.NEW } ?:
+            .takeIf { rangeModifier == Range.All || sortType == SortType.New } ?:
         Clock.System.now().let{clock ->
             when(rangeModifier){
-                Range.DAY -> clock.minus(1.days)
-                Range.WEEK -> clock.minus(7.days)
-                Range.MONTH -> clock.minus(30.days)
-                Range.YEAR -> clock.minus(365.days)
+                Range.Day -> clock.minus(1.days)
+                Range.Week -> clock.minus(7.days)
+                Range.Month -> clock.minus(30.days)
+                Range.Year -> clock.minus(365.days)
                 else -> Instant.fromEpochMilliseconds(Long.MIN_VALUE)
             }
         }
 
     private fun getSort(entry: Map.Entry<String, Post>, sortType: SortType) =
         entry.value.createdOn.toEpochMilliseconds().let{created ->
-            if(sortType == SortType.NEW){
+            if(sortType == SortType.New){
                 created
             }else{
                 entry.value.votes.values.filter { it }.size.toLong().let{votes ->
-                    if(sortType == SortType.HOT) {
+                    if(sortType == SortType.Hot) {
                         (created / TIME_WEIGHTING) * votes
                     }else{
                         votes
