@@ -111,7 +111,7 @@ class PostsApi {
             if(sortType == SortType.New){
                 created
             }else{
-                entry.value.votes.values.filter { it }.size.toLong().let{votes ->
+                entry.value.votes.values.sumOf {bool -> 1.takeIf { bool } ?: -1 }.toLong().let{ votes ->
                     if(sortType == SortType.Hot) {
                         (created / TIME_WEIGHTING) * votes
                     }else{
