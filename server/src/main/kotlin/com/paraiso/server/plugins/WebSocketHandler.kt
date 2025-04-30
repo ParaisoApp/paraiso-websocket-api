@@ -98,10 +98,11 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
         }
     }
 
-    private fun validateMessage(blockList: Set<String>, postType: PostType, userId: String) =
-        !blockList.contains(userId) &&
-        sessionState.filterTypes.postTypes.contains(postType) && // post type exists in filters
-            sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
+    private fun validateMessage(sessionUserId: String, blockList: Set<String>, postType: PostType, userId: String) =
+        sessionUserId == userId || // message is from the cur user or
+            (!blockList.contains(userId) && // user isnt in cur user's blocklist
+            sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
+            sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST))
 
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {
@@ -114,7 +115,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     when (type) {
                         MessageType.MSG -> {
                             (message as? MessageDomain)?.let{ newMessage ->
-                                if (validateMessage(sessionUser.blockList, newMessage.type, newMessage.userId)) {
+                                if (validateMessage(sessionUser.id, sessionUser.blockList, newMessage.type, newMessage.userId)) {
                                     sendTypedMessage(type, newMessage)
                                 }
                             }
