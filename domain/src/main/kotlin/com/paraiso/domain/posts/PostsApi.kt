@@ -1,9 +1,9 @@
 package com.paraiso.domain.posts
 
+import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
-import com.paraiso.domain.users.FilterTypes
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

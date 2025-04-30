@@ -24,12 +24,6 @@ data class User(
 ) { companion object }
 
 @Serializable
-data class FilterTypes(
-    val postTypes: Set<PostType>,
-    val userRoles: Set<UserRole>
-) { companion object }
-
-@Serializable
 data class UserSettings(
     val theme: Int,
     val accent: Int,

@@ -3,12 +3,12 @@ package com.paraiso
 import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.Login
+import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.Range
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.sport.SportApi
 import com.paraiso.domain.sport.SportHandler
-import com.paraiso.domain.users.FilterTypes
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler

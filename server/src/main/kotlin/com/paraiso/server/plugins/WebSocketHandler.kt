@@ -10,10 +10,8 @@ import com.paraiso.com.paraiso.server.util.SessionState
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
-import com.paraiso.domain.posts.FilterType
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
@@ -43,6 +41,7 @@ import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
+import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
 import com.paraiso.domain.users.User as UserDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
@@ -101,8 +100,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
 
     private fun validateMessage(blockList: Set<String>, postType: PostType, userId: String) =
         !blockList.contains(userId) &&
-        sessionState.postTypes.contains(postType) && // post type exists in filters
-            sessionState.userTypes.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
+        sessionState.filterTypes.postTypes.contains(postType) && // post type exists in filters
+            sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
 
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {
@@ -122,7 +121,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                         MessageType.VOTE -> {
                             (message as? VoteDomain)?.let { newVote ->
-                                if (sessionState.postTypes.contains(newVote.type)) {
+                                if (sessionState.filterTypes.postTypes.contains(newVote.type)) {
                                     sendTypedMessage(type, newVote)
                                 }
                             }
@@ -192,12 +191,18 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.VOTE -> {
-                        val vote = Json.decodeFromString<VoteDomain>(messageWithType.value).copy(userId = sessionUser.id)
-                        if (sessionUser.banned) {
-                            sendTypedMessage(MessageType.VOTE, vote)
-                        } else {
-                            ServerState.voteFlowMut.emit(vote)
-                            postsApiRef.votePost(vote)
+                        Json.decodeFromString<VoteDomain>(messageWithType.value).copy(userId = sessionUser.id).let{vote ->
+                            if (sessionUser.banned) {
+                                sendTypedMessage(MessageType.VOTE, vote)
+                            } else {
+                                ServerState.voteFlowMut.emit(vote)
+                                postsApiRef.votePost(vote)
+                            }
+                        }
+                    }
+                    MessageType.FILTER_TYPES -> {
+                        Json.decodeFromString<FilterTypesDomain>(messageWithType.value).let{newFilterTypes ->
+                            sessionState.filterTypes = newFilterTypes
                         }
                     }
                     MessageType.DELETE -> {
