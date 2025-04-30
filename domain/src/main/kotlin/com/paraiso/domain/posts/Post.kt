@@ -76,6 +76,18 @@ enum class SortType {
 }
 
 @Serializable
+enum class FilterType {
+    @SerialName("Posts")
+    Posts,
+    @SerialName("Comments")
+    Comments,
+    @SerialName("Users")
+    Users,
+    @SerialName("Guests")
+    Guests
+}
+
+@Serializable
 enum class Range {
     @SerialName("Day")
     Day,

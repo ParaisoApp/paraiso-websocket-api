@@ -6,10 +6,13 @@ import com.paraiso.com.paraiso.api.auth.toResponse
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
+import com.paraiso.com.paraiso.server.util.SessionState
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
+import com.paraiso.domain.posts.FilterType
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
@@ -42,12 +45,17 @@ import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.users.User as UserDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
+    //jobs
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
     private val sportJobs = SportJobs()
+    //users
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
-    private val postsApiRef = postsApi
     private val usersApiRef = usersApi
+    //posts
+    private val postsApiRef = postsApi
+    //session state
+    private val sessionState = SessionState()
 
     suspend fun handleUser(session: WebSocketServerSession) {
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
