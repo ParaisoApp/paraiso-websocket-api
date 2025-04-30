@@ -2,6 +2,7 @@ package com.paraiso.domain.messageTypes
 
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable

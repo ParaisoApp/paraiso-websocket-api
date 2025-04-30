@@ -3,6 +3,7 @@ package com.paraiso.domain.posts
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
+import com.paraiso.domain.users.FilterTypes
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -46,11 +47,15 @@ class PostsApi {
         }
     }
 
-    fun getPosts(basePostId: String, basePostName: String, rangeModifier: Range, sortType: SortType) =
+    fun getPosts(basePostId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let{range ->
-            ServerState.posts.filter { it.value.parentId == basePostId && it.value.createdOn > range }
-                .entries.take(RETRIEVE_LIM).sortedBy { getSort(it, sortType) } // get sort by
+            ServerState.posts.filter {
+                it.value.parentId == basePostId &&
+                    it.value.createdOn > range &&
+                    filters.postTypes.contains(it.value.type) &&
+                    filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
+            }.entries.take(RETRIEVE_LIM).sortedBy { getSort(it, sortType) } // get sort by
                 .map { it.key }.toSet()// generate base post and post tree off of given inputs
                 .let { subPosts -> generatePostTree(basePostId, basePostName, subPosts, range, sortType) }
         }

@@ -1,9 +1,8 @@
 package com.paraiso.domain.sport
 
-import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
-import com.paraiso.domain.sport.sports.Competition
+import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.SYSTEM

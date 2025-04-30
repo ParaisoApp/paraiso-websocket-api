@@ -1,6 +1,6 @@
 package com.paraiso.domain.users
 
-import com.paraiso.domain.messageTypes.PostType
+import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.util.ServerState
 
 class UsersApi {

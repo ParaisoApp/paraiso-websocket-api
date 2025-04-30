@@ -8,6 +8,7 @@ import com.paraiso.domain.posts.Range
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.sport.SportApi
 import com.paraiso.domain.sport.SportHandler
+import com.paraiso.domain.users.FilterTypes
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
@@ -133,12 +134,13 @@ fun Application.configureSockets(
                 }
             }
             route("posts") {
-                get {
+                post {
                     postsApi.getPosts(
                         call.request.queryParameters["id"] ?: "",
                         call.request.queryParameters["name"] ?: "",
                         call.request.queryParameters["range"]?.let{ Range.valueOf(it) } ?: Range.Day,
-                        call.request.queryParameters["sort"]?.let{ SortType.valueOf(it) } ?: SortType.New
+                        call.request.queryParameters["sort"]?.let{ SortType.valueOf(it) } ?: SortType.New,
+                        call.receive<FilterTypes>()
                     ).let {
                         call.respond(HttpStatusCode.OK, it)
                     }

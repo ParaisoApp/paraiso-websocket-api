@@ -11,6 +11,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.domain.posts.FilterType
+import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.users.UserRole
@@ -98,6 +99,12 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
         }
     }
 
+    private fun validateMessage(blockList: Set<String>, postType: PostType, userId: String) =
+        !blockList.contains(userId) &&
+        sessionState.postTypes.contains(postType) && // post type exists in filters
+            sessionState.userTypes.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
+
+
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         var sessionUser = user.copy()
         sendTypedMessage(MessageType.USER, usersApiRef.getUserById(sessionUser.id))
@@ -107,12 +114,19 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                 sharedFlow.collect { message ->
                     when (type) {
                         MessageType.MSG -> {
-                            val newMessage = message as? MessageDomain
-                            if (!sessionUser.blockList.contains(newMessage?.userId)) {
-                                sendTypedMessage(type, message as MessageDomain)
+                            (message as? MessageDomain)?.let{ newMessage ->
+                                if (validateMessage(sessionUser.blockList, newMessage.type, newMessage.userId)) {
+                                    sendTypedMessage(type, newMessage)
+                                }
                             }
                         }
-                        MessageType.VOTE -> sendTypedMessage(type, message as VoteDomain)
+                        MessageType.VOTE -> {
+                            (message as? VoteDomain)?.let { newVote ->
+                                if (sessionState.postTypes.contains(newVote.type)) {
+                                    sendTypedMessage(type, newVote)
+                                }
+                            }
+                        }
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_LOGIN -> {

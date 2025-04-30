@@ -1,5 +1,7 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.posts.FilterType
+import com.paraiso.domain.posts.PostType
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -19,6 +21,12 @@ data class User(
     val settings: UserSettings,
     val createdOn: Instant,
     val updatedOn: Instant
+) { companion object }
+
+@Serializable
+data class FilterTypes(
+    val postTypes: Set<PostType>,
+    val userRoles: Set<UserRole>
 ) { companion object }
 
 @Serializable

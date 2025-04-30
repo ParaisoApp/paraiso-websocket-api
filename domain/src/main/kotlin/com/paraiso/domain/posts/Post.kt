@@ -1,6 +1,5 @@
 package com.paraiso.domain.posts
 
-import com.paraiso.domain.messageTypes.PostType
 import com.paraiso.domain.util.Constants
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
