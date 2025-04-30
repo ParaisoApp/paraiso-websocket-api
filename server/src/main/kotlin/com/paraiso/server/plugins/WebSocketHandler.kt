@@ -187,6 +187,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                                     ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
                                 ) {
                                     userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+                                    usersApiRef.putDM(dmWithData)
                                 }
                             }
                         }

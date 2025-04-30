@@ -1,7 +1,6 @@
 package com.paraiso.domain.users
 
-import com.paraiso.domain.posts.FilterType
-import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.messageTypes.DirectMessage
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,6 +11,7 @@ data class User(
     val name: String,
     val posts: Set<String>,
     val replies: Set<String>,
+    val chats: Map<String, List<DirectMessage>>,
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,

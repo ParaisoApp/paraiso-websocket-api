@@ -18,13 +18,14 @@ class PostsApi {
 
     fun putPost(message: Message) {
         message.id?.let { messageId ->
+            val now = Clock.System.now()
             // if post already exists then edit
             ServerState.posts[messageId]?.let { existingPost ->
                 ServerState.posts[messageId] = existingPost.copy(
                     title = message.title,
                     content = message.content,
                     media = message.media,
-                    updatedOn = Clock.System.now()
+                    updatedOn = now
                 )
                 // otherwise create a new post
             } ?: run {
@@ -32,23 +33,23 @@ class PostsApi {
                 // update parent sub posts
                 ServerState.posts[message.replyId]?.let { parent ->
                     ServerState.posts[message.replyId] = parent.copy(
-                        subPosts = parent.subPosts.plus(messageId),
-                        updatedOn = Clock.System.now()
+                        subPosts = parent.subPosts + messageId,
+                        updatedOn = now
                     )
                 }
                 // update user posts
                 ServerState.userList[message.userId]?.let { user ->
                     ServerState.userList[message.userId] = user.copy(
-                        posts = user.posts.plus(messageId),
-                        updatedOn = Clock.System.now()
+                        posts = user.posts + messageId,
+                        updatedOn = now
                     )
                 }
                 // update user post replies
                 if(message.userId != message.userReceiveId){
                     ServerState.userList[message.userReceiveId]?.let { user ->
                         ServerState.userList[message.userReceiveId] = user.copy(
-                            replies = user.replies.plus(messageId),
-                            updatedOn = Clock.System.now()
+                            replies = user.replies + messageId,
+                            updatedOn = now
                         )
                     }
                 }
@@ -59,12 +60,13 @@ class PostsApi {
     fun getPosts(basePostId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let{range ->
-            ServerState.posts.filter {
+            ServerState.posts.asSequence().filter {
                 it.value.parentId == basePostId &&
-                    it.value.createdOn > range &&
-                    filters.postTypes.contains(it.value.type) &&
-                    filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
-            }.entries.take(RETRIEVE_LIM).sortedBy { getSort(it, sortType) } // get sort by
+                        it.value.createdOn > range &&
+                        filters.postTypes.contains(it.value.type) &&
+                        filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
+            }.sortedBy { getSort(it, sortType) } // get and apply sort by
+                .take(RETRIEVE_LIM)
                 .map { it.key }.toSet()// generate base post and post tree off of given inputs
                 .let { subPosts -> generatePostTree(basePostId, basePostName, subPosts, range, sortType) }
         }
@@ -84,31 +86,31 @@ class PostsApi {
                     val nextRefNode = refQueue.removeFirst()
                     val nextReturnNode = returnQueue.removeFirst()
                     val children = ServerState.posts
-                        .filterKeys { nextRefNode.subPosts.contains(it) }
+                        .filterKeys { it in nextRefNode.subPosts }
                         .asSequence()
                         .filter { it.value.createdOn > range }
-                        .toList().take(RETRIEVE_LIM)
                         .sortedBy { getSort(it, sortType) }
-                        .associate { (key, value) ->
-                            (key to value.toPostReturn()).also { (_, returnNode) ->
-                                returnQueue.addLast(returnNode)
-                                refQueue.addLast(value)
+                        .take(RETRIEVE_LIM)
+                        .associate { (id, post) ->
+                            (id to post.toPostReturn()).also { (_, returnPost) ->
+                                returnQueue.addLast(returnPost)
+                                refQueue.addLast(post)
                             }
                         }
                     nextReturnNode.subPosts = children
                 }
                 root.also { rootRef -> // generate relevant sport posts
                     rootRef.subPosts = rootRef.subPosts.plus(
-                        ServerState.sportPosts.entries.filter { entry ->
-                            entry.value.parentId == root.id || entry.value.data == basePostId
-                        }.associate { it.key to it.value.toPostReturn() }
+                        ServerState.sportPosts
+                            .filter { (_, post) -> post.parentId == root.id || post.data == basePostId }
+                            .mapValues { it.value.toPostReturn() }
                     )
                 }
             }
         }
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
-        Instant.fromEpochMilliseconds(Long.MIN_VALUE)
+        Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking at new posts or range is set to all
             .takeIf { rangeModifier == Range.All || sortType == SortType.New } ?:
         Clock.System.now().let{clock ->
             when(rangeModifier){
