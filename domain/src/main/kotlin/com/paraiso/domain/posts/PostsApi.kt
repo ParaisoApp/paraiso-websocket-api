@@ -43,6 +43,15 @@ class PostsApi {
                         updatedOn = Clock.System.now()
                     )
                 }
+                // update user post replies
+                if(message.userId != message.userReceiveId){
+                    ServerState.userList[message.userReceiveId]?.let { user ->
+                        ServerState.userList[message.userReceiveId] = user.copy(
+                            replies = user.replies.plus(messageId),
+                            updatedOn = Clock.System.now()
+                        )
+                    }
+                }
             }
         }
     }
