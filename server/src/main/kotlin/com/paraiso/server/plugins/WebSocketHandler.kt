@@ -58,13 +58,14 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
     private val sessionState = SessionState()
 
     suspend fun handleUser(session: WebSocketServerSession) {
+        //check cookies to see if existing user
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
             session.joinChat(
                 currentUser.toResponse().copy(
                     status = UserStatus.CONNECTED
                 )
             )
-        } ?: run {
+        } ?: run {// otherwise generate guest
             UUID.randomUUID().toString().let { id ->
                 val currentUser = User(
                     id = id,
@@ -83,7 +84,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     updatedOn = Clock.System.now()
                 )
                 ServerState.userList[id] = currentUser.toDomain()
-                userToSocket[id] = session
+                userToSocket[id] = session // map userid to socket
                 session.joinChat(currentUser)
             }
         }

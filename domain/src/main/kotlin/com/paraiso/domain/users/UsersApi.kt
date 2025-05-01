@@ -11,7 +11,9 @@ class UsersApi {
         ServerState.userList[userId]?.let { user -> buildUser(user) }
 
     fun getUserList() =
-        ServerState.userList.values.associate { user -> user.id to buildUser(user) }
+        ServerState.userList.values
+            .filter { it.status !=  UserStatus.DISCONNECTED}
+            .associate { user -> user.id to buildUser(user) }
 
     private fun buildUser(user: User) =
         user.let {
