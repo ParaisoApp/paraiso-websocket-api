@@ -155,21 +155,23 @@ object RecordSerializer : KSerializer<List<RestRecordYTD>> {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Expected JsonDecoder")
 
-        return when(val jsonElement = jsonDecoder.decodeJsonElement()){
+        return when (val jsonElement = jsonDecoder.decodeJsonElement()) {
             is JsonPrimitive -> listOf(
-                    RestRecordYTD(
-                        description = jsonElement.content,
-                        displayValue = jsonElement.content
-                    )
+                RestRecordYTD(
+                    description = jsonElement.content,
+                    displayValue = jsonElement.content
                 )
+            )
             is JsonArray -> {
-                jsonElement.mapNotNull {element ->
-                    if(element is JsonObject){
+                jsonElement.mapNotNull { element ->
+                    if (element is JsonObject) {
                         RestRecordYTD(
                             element["description"]?.jsonPrimitive?.content ?: "UNKNOWN",
                             element["displayValue"]?.jsonPrimitive?.content ?: "UNKNOWN"
                         )
-                    } else null
+                    } else {
+                        null
+                    }
                 }
             }
 

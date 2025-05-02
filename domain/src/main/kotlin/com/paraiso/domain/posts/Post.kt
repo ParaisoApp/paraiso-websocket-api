@@ -1,5 +1,6 @@
 package com.paraiso.domain.posts
 
+import com.paraiso.domain.users.UserReturn
 import com.paraiso.domain.util.Constants
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -26,6 +27,7 @@ data class Post(
 data class PostReturn(
     val id: String,
     val userId: String,
+    val user: UserReturn?,
     val title: String,
     val content: String,
     val type: PostType,
@@ -43,12 +45,16 @@ data class PostReturn(
 enum class PostType {
     @SerialName("SUPER")
     SUPER,
+
     @SerialName("SUB")
     SUB,
+
     @SerialName("PROFILE")
     PROFILE,
+
     @SerialName("COMMENT")
     COMMENT,
+
     @SerialName("GAME")
     GAME
 }
@@ -64,12 +70,15 @@ enum class PostStatus {
     @SerialName("ARCHIVED")
     ARCHIVED
 }
+
 @Serializable
 enum class SortType {
     @SerialName("New")
     New,
+
     @SerialName("Hot")
     Hot,
+
     @SerialName("Top")
     Top
 }
@@ -78,10 +87,13 @@ enum class SortType {
 enum class FilterType {
     @SerialName("Posts")
     Posts,
+
     @SerialName("Comments")
     Comments,
+
     @SerialName("Users")
     Users,
+
     @SerialName("Guests")
     Guests
 }
@@ -90,19 +102,24 @@ enum class FilterType {
 enum class Range {
     @SerialName("Day")
     Day,
+
     @SerialName("Week")
     Week,
+
     @SerialName("Month")
     Month,
+
     @SerialName("Year")
     Year,
+
     @SerialName("All")
     All
 }
 
-fun Post.toPostReturn() = PostReturn(
+fun Post.toPostReturn(user: UserReturn?) = PostReturn(
     id = id,
     userId = userId,
+    user = user,
     title = title,
     content = content,
     type = type,

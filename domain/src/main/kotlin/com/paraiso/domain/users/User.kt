@@ -1,6 +1,11 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.util.Constants.EMPTY
+import com.paraiso.domain.util.Constants.SYSTEM
+import com.paraiso.domain.util.ServerState
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -30,6 +35,12 @@ data class UserSettings(
     val toolTips: Boolean,
     val postSubmit: Boolean
 ) { companion object }
+
+@Serializable
+data class UserChat(
+    val user: UserReturn?,
+    val dmMap: Map<String, DirectMessage>
+)
 
 @Serializable
 data class UserReturn(
@@ -70,6 +81,26 @@ fun User.toUserReturn(
         updatedOn = updatedOn
     )
 
+fun UserReturn.Companion.systemUser() =
+    Clock.System.now().let { now ->
+        UserReturn(
+            id = SYSTEM,
+            name = SYSTEM,
+            posts = emptyMap(),
+            comments = emptyMap(),
+            replies = emptyMap(),
+            roles = UserRole.SYSTEM,
+            banned = false,
+            status = UserStatus.CONNECTED,
+            blockList = emptySet(),
+            image = EMPTY,
+            lastSeen = now.toEpochMilliseconds(),
+            settings = UserSettings.initSettings(),
+            createdOn = now,
+            updatedOn = now
+        )
+    }
+
 fun UserSettings.Companion.initSettings() =
     UserSettings(
         theme = 0,
@@ -77,6 +108,23 @@ fun UserSettings.Companion.initSettings() =
         toolTips = true,
         postSubmit = true
     )
+
+fun buildUser(user: User) =
+    user.let {
+        val posts = mutableMapOf<String, Map<String, Boolean>>()
+        val comments = mutableMapOf<String, Map<String, Boolean>>()
+        ServerState.posts
+            .filterKeys { user.posts.contains(it) }
+            .values
+            .map { post ->
+                if (post.type == PostType.SUB) {
+                    posts[post.id] = post.votes
+                } else {
+                    comments[post.id] = post.votes
+                }
+            }
+        user.toUserReturn(posts, comments)
+    }
 
 @Serializable
 enum class UserRole {

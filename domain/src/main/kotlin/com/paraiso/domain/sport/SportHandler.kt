@@ -64,26 +64,27 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
-                    ServerState.sportPosts.putAll(schedulesRes.associate { it.team.id to it.events }
-                        .flatMap { (key, values) ->
-                            values.map { competition ->
-                                "${competition.id}-TEAM-$key" to Post(
-                                    id = "${competition.id}-TEAM-$key",
-                                    userId = SYSTEM,
-                                    title = competition.shortName,
-                                    content = "${competition.date}-${competition.shortName}",
-                                    type = PostType.GAME,
-                                    media = Constants.EMPTY,
-                                    votes = emptyMap(),
-                                    parentId = "TEAM-$key", // TODO make enum
-                                    status = PostStatus.ACTIVE,
-                                    data = "TEAM-$key",
-                                    subPosts = mutableSetOf(),
-                                    createdOn = Clock.System.now(),
-                                    updatedOn = Clock.System.now()
-                                )
+                    ServerState.sportPosts.putAll(
+                        schedulesRes.associate { it.team.id to it.events }
+                            .flatMap { (key, values) ->
+                                values.map { competition ->
+                                    "${competition.id}-TEAM-$key" to Post(
+                                        id = "${competition.id}-TEAM-$key",
+                                        userId = SYSTEM,
+                                        title = competition.shortName,
+                                        content = "${competition.date}-${competition.shortName}",
+                                        type = PostType.GAME,
+                                        media = Constants.EMPTY,
+                                        votes = emptyMap(),
+                                        parentId = "TEAM-$key", // TODO make enum
+                                        status = PostStatus.ACTIVE,
+                                        data = "TEAM-$key",
+                                        subPosts = mutableSetOf(),
+                                        createdOn = Clock.System.now(),
+                                        updatedOn = Clock.System.now()
+                                    )
+                                }
                             }
-                        }
                     )
                 }
             }
@@ -133,13 +134,12 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                     // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                                     delay(60 * 60 * 1000)
                                 }
-
                             }
                             // else if current time is before the earliest time, delay until the earliest time
                         } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
                             delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
-                        } else{
-                            delay(1 * 60 * 1000)//delay one minute (game start not always in sync with clock)
+                        } else {
+                            delay(1 * 60 * 1000) // delay one minute (game start not always in sync with clock)
                         }
                     }
                 }
@@ -148,7 +148,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     }
 
     private suspend fun fillGamePosts(scoreboard: Scoreboard) = coroutineScope {
-        if(SportState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }){
+        if (SportState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
             ServerState.sportPosts.putAll(
                 scoreboard.competitions.associate { competition ->
                     competition.id to Post(

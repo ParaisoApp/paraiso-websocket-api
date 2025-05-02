@@ -4,6 +4,9 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
+import com.paraiso.domain.users.UserReturn
+import com.paraiso.domain.users.buildUser
+import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -45,7 +48,7 @@ class PostsApi {
                     )
                 }
                 // update user post replies
-                if(message.userId != message.userReceiveId){
+                if (message.userId != message.userReceiveId) {
                     ServerState.userList[message.userReceiveId]?.let { user ->
                         ServerState.userList[message.userReceiveId] = user.copy(
                             replies = user.replies + messageId,
@@ -59,15 +62,15 @@ class PostsApi {
 
     fun getPosts(basePostId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
-        getRange(rangeModifier, sortType).let{range ->
+        getRange(rangeModifier, sortType).let { range ->
             ServerState.posts.asSequence().filter {
                 it.value.parentId == basePostId &&
-                        it.value.createdOn > range &&
-                        filters.postTypes.contains(it.value.type) &&
-                        filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
+                    it.value.createdOn > range &&
+                    filters.postTypes.contains(it.value.type) &&
+                    filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
-                .map { it.key }.toSet()// generate base post and post tree off of given inputs
+                .map { it.key }.toSet() // generate base post and post tree off of given inputs
                 .let { subPosts -> generatePostTree(basePostId, basePostName, subPosts, range, sortType) }
         }
 
@@ -79,7 +82,7 @@ class PostsApi {
         sortType: SortType
     ) =
         generateBasePost(basePostId, basePostName, subPosts).let { basePost ->
-            basePost.toPostReturn().let { root -> // build tree with bfs
+            basePost.toPostReturn(UserReturn.systemUser()).let { root -> // build tree with bfs
                 val refQueue = ArrayDeque(listOf(basePost))
                 val returnQueue = ArrayDeque(listOf(root))
                 while (refQueue.isNotEmpty()) {
@@ -92,7 +95,13 @@ class PostsApi {
                         .sortedBy { getSort(it, sortType) }
                         .take(RETRIEVE_LIM)
                         .associate { (id, post) ->
-                            (id to post.toPostReturn()).also { (_, returnPost) ->
+                            (
+                                id to post.toPostReturn(
+                                    ServerState.userList[post.userId]?.let { user ->
+                                        buildUser(user)
+                                    }
+                                )
+                                ).also { (_, returnPost) ->
                                 returnQueue.addLast(returnPost)
                                 refQueue.addLast(post)
                             }
@@ -103,7 +112,13 @@ class PostsApi {
                     rootRef.subPosts = rootRef.subPosts.plus(
                         ServerState.sportPosts
                             .filter { (_, post) -> post.parentId == root.id || post.data == basePostId }
-                            .mapValues { it.value.toPostReturn() }
+                            .mapValues {
+                                it.value.toPostReturn(
+                                    ServerState.userList[it.value.userId]?.let { user ->
+                                        buildUser(user)
+                                    }
+                                )
+                            }
                     )
                 }
             }
@@ -111,9 +126,9 @@ class PostsApi {
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
         Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking at new posts or range is set to all
-            .takeIf { rangeModifier == Range.All || sortType == SortType.New } ?:
-        Clock.System.now().let{clock ->
-            when(rangeModifier){
+            .takeIf { rangeModifier == Range.All || sortType == SortType.New }
+            ?: Clock.System.now().let { clock ->
+            when (rangeModifier) {
                 Range.Day -> clock.minus(1.days)
                 Range.Week -> clock.minus(7.days)
                 Range.Month -> clock.minus(30.days)
@@ -123,14 +138,14 @@ class PostsApi {
         }
 
     private fun getSort(entry: Map.Entry<String, Post>, sortType: SortType) =
-        entry.value.createdOn.toEpochMilliseconds().let{created ->
-            if(sortType == SortType.New){
+        entry.value.createdOn.toEpochMilliseconds().let { created ->
+            if (sortType == SortType.New) {
                 created
-            }else{
-                entry.value.votes.values.sumOf {bool -> 1.takeIf { bool } ?: -1 }.toLong().let{ votes ->
-                    if(sortType == SortType.Hot) {
+            } else {
+                entry.value.votes.values.sumOf { bool -> 1.takeIf { bool } ?: -1 }.toLong().let { votes ->
+                    if (sortType == SortType.Hot) {
                         (created / TIME_WEIGHTING) * votes
-                    }else{
+                    } else {
                         votes
                     }
                 }

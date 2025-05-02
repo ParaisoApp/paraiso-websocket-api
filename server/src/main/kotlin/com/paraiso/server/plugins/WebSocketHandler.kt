@@ -37,35 +37,38 @@ import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Block as BlockDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
+import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
-import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
 import com.paraiso.domain.users.User as UserDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
-    //jobs
+    // jobs
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
     private val sportJobs = SportJobs()
-    //users
+
+    // users
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
     private val usersApiRef = usersApi
-    //posts
+
+    // posts
     private val postsApiRef = postsApi
-    //session state
+
+    // session state
     private val sessionState = SessionState()
 
     suspend fun handleUser(session: WebSocketServerSession) {
-        //check cookies to see if existing user
+        // check cookies to see if existing user
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
             session.joinChat(
                 currentUser.toResponse().copy(
                     status = UserStatus.CONNECTED
                 )
             )
-        } ?: run {// otherwise generate guest
+        } ?: run { // otherwise generate guest
             UUID.randomUUID().toString().let { id ->
                 val currentUser = User(
                     id = id,
@@ -101,10 +104,11 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
 
     private fun validateMessage(sessionUserId: String, blockList: Set<String>, postType: PostType, userId: String) =
         sessionUserId == userId || // message is from the cur user or
-            (!blockList.contains(userId) && // user isnt in cur user's blocklist
-            sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
-            sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST))
-
+            (
+                !blockList.contains(userId) && // user isnt in cur user's blocklist
+                    sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
+                    sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
+                )
 
     private suspend fun WebSocketServerSession.joinChat(user: User) {
         var sessionUser = user.copy()
@@ -115,7 +119,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                 sharedFlow.collect { message ->
                     when (type) {
                         MessageType.MSG -> {
-                            (message as? MessageDomain)?.let{ newMessage ->
+                            (message as? MessageDomain)?.let { newMessage ->
                                 if (validateMessage(sessionUser.id, sessionUser.blockList, newMessage.type, newMessage.userId)) {
                                     sendTypedMessage(type, newMessage)
                                 }
@@ -194,7 +198,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.VOTE -> {
-                        Json.decodeFromString<VoteDomain>(messageWithType.value).copy(userId = sessionUser.id).let{vote ->
+                        Json.decodeFromString<VoteDomain>(messageWithType.value).copy(userId = sessionUser.id).let { vote ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.VOTE, vote)
                             } else {
@@ -204,7 +208,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.FILTER_TYPES -> {
-                        Json.decodeFromString<FilterTypesDomain>(messageWithType.value).let{newFilterTypes ->
+                        Json.decodeFromString<FilterTypesDomain>(messageWithType.value).let { newFilterTypes ->
                             sessionState.filterTypes = newFilterTypes
                         }
                     }

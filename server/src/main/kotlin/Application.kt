@@ -2,8 +2,8 @@ package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.domain.auth.AuthApi
-import com.paraiso.domain.messageTypes.Login
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.messageTypes.Login
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.Range
 import com.paraiso.domain.posts.SortType
@@ -138,8 +138,8 @@ fun Application.configureSockets(
                     postsApi.getPosts(
                         call.request.queryParameters["id"] ?: "",
                         call.request.queryParameters["name"] ?: "",
-                        call.request.queryParameters["range"]?.let{ Range.valueOf(it) } ?: Range.Day,
-                        call.request.queryParameters["sort"]?.let{ SortType.valueOf(it) } ?: SortType.New,
+                        call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.Day,
+                        call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.New,
                         call.receive<FilterTypes>()
                     ).let {
                         call.respond(HttpStatusCode.OK, it)
@@ -149,6 +149,12 @@ fun Application.configureSockets(
             route("users") {
                 get {
                     call.respond(HttpStatusCode.OK, usersApi.getUserList())
+                }
+                get("/chat") {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        usersApi.getUserChat(call.request.queryParameters["userId"] ?: "")
+                    )
                 }
                 post {
                     usersApi.setSettings(
