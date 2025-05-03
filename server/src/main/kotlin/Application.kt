@@ -153,7 +153,7 @@ fun Application.configureSockets(
                 get("/chat") {
                     call.respond(
                         HttpStatusCode.OK,
-                        usersApi.getUserChat(call.request.queryParameters["userId"] ?: "")
+                        usersApi.getUserChat(call.request.queryParameters["id"] ?: "")
                     )
                 }
                 post {
