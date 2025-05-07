@@ -60,28 +60,28 @@ class PostsApi {
         }
     }
 
-    fun getPosts(basePostId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
+    fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
-            ServerState.posts.asSequence().filter {
-                it.value.parentId == basePostId &&
+            ServerState.posts.asSequence().filter {// check for base post or user if profile nav
+                (it.value.parentId == postSearchId || it.value.userId == postSearchId.removePrefix("USER-")) &&
                     it.value.createdOn > range &&
                     filters.postTypes.contains(it.value.type) &&
                     filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
-                .let { subPosts -> generatePostTree(basePostId, basePostName, subPosts, range, sortType) }
+                .let { subPosts -> generatePostTree(postSearchId, basePostName, subPosts, range, sortType) }
         }
 
     private fun generatePostTree(
-        basePostId: String,
+        postSearchId: String,
         basePostName: String,
         subPosts: Set<String>,
         range: Instant,
         sortType: SortType
     ) =
-        generateBasePost(basePostId, basePostName, subPosts).let { basePost ->
+        generateBasePost(postSearchId, basePostName, subPosts).let { basePost ->
             basePost.toPostReturn(UserReturn.systemUser()).let { root -> // build tree with bfs
                 val refQueue = ArrayDeque(listOf(basePost))
                 val returnQueue = ArrayDeque(listOf(root))
@@ -111,7 +111,7 @@ class PostsApi {
                 root.also { rootRef -> // generate relevant sport posts
                     rootRef.subPosts = rootRef.subPosts.plus(
                         ServerState.sportPosts
-                            .filter { (_, post) -> post.parentId == root.id || post.data == basePostId }
+                            .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
                             .mapValues {
                                 it.value.toPostReturn(
                                     ServerState.userList[it.value.userId]?.let { user ->
