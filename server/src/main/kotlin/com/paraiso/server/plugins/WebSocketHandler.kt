@@ -81,7 +81,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     status = UserStatus.CONNECTED,
                     blockList = emptySet(),
                     image = EMPTY,
-                    lastSeen = 0L,
+                    lastSeen = System.currentTimeMillis(),
                     settings = UserSettings.initSettings(),
                     createdOn = Clock.System.now(),
                     updatedOn = Clock.System.now()
