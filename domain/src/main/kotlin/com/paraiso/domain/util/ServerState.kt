@@ -9,13 +9,14 @@ import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.User
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.util.concurrent.ConcurrentHashMap
 
 object ServerState {
-    val userList: MutableMap<String, User> = mutableMapOf()
+    val userList: ConcurrentHashMap<String, User> = ConcurrentHashMap()
     val banList: MutableSet<String> = mutableSetOf()
 
-    val posts: MutableMap<String, Post> = mutableMapOf()
-    val sportPosts: MutableMap<String, Post> = mutableMapOf()
+    val posts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
+    val sportPosts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)

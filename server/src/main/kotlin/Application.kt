@@ -1,6 +1,7 @@
 package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
+import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Login
@@ -46,6 +47,7 @@ fun main() {
     val jobScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     val sportHandler = SportHandler(SportOperationAdapter())
+    val serverHandler = ServerHandler()
     val postsApi = PostsApi()
     val authApi = AuthApi()
     val usersApi = UsersApi()
@@ -62,6 +64,9 @@ fun main() {
     }
     jobScope.launch {
         sportHandler.getLeaders()
+    }
+    jobScope.launch {
+        serverHandler.cleanUserList()
     }
 
     val handler = WebSocketHandler(usersApi, postsApi)

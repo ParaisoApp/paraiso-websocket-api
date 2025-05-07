@@ -81,7 +81,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     status = UserStatus.CONNECTED,
                     blockList = emptySet(),
                     image = EMPTY,
-                    lastSeen = System.currentTimeMillis(),
+                    lastSeen = 0L,
                     settings = UserSettings.initSettings(),
                     createdOn = Clock.System.now(),
                     updatedOn = Clock.System.now()
@@ -252,7 +252,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             ServerState.userLeaveFlowMut.emit(sessionUser.id)
             ServerState.userList[sessionUser.id]?.let { disconnectUser ->
                 ServerState.userList[sessionUser.id] = disconnectUser.copy(
-                    status = UserStatus.DISCONNECTED
+                    status = UserStatus.DISCONNECTED,
+                    lastSeen = System.currentTimeMillis()
                 )
             }
             userToSocket[sessionUser.id]?.close()
