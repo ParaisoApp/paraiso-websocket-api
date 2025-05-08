@@ -167,15 +167,18 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                 when (messageWithType?.key) {
                     MessageType.MSG -> {
                         Json.decodeFromString<MessageDomain>(messageWithType.value).let { message ->
-                            message.copy(
-                                id = UUID.randomUUID().toString(),
-                                userId = sessionUser.id
-                            ).let { messageWithData ->
-                                if (sessionUser.banned) {
-                                    sendTypedMessage(MessageType.MSG, messageWithData)
-                                } else {
-                                    ServerState.messageFlowMut.emit(messageWithData)
-                                    postsApiRef.putPost(messageWithData)
+                            UUID.randomUUID().toString().let { messageId ->
+                                message.copy(
+                                    id = messageId,
+                                    userId = sessionUser.id,
+                                    rootId = messageId.takeIf { message.rootId == "-1" } ?: message.rootId
+                                ).let { messageWithData ->
+                                    if (sessionUser.banned) {
+                                        sendTypedMessage(MessageType.MSG, messageWithData)
+                                    } else {
+                                        ServerState.messageFlowMut.emit(messageWithData)
+                                        postsApiRef.putPost(messageWithData)
+                                    }
                                 }
                             }
                         }

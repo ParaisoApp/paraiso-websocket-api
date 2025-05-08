@@ -17,6 +17,7 @@ data class Message(
     val type: PostType,
     val media: String,
     val replyId: String,
+    val rootId: String,
     val editId: String
 )
 
@@ -38,6 +39,7 @@ fun Message.toNewPost() = Post(
     media = media,
     votes = mapOf(userId to true),
     parentId = replyId,
+    rootId = rootId,
     status = PostStatus.ACTIVE,
     data = "",
     subPosts = emptySet(),

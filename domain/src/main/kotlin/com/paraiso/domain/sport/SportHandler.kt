@@ -77,6 +77,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                         media = Constants.EMPTY,
                                         votes = emptyMap(),
                                         parentId = "TEAM-$key", // TODO make enum
+                                        rootId = "${competition.id}-TEAM-$key",
                                         status = PostStatus.ACTIVE,
                                         data = "TEAM-$key",
                                         subPosts = mutableSetOf(),
@@ -159,7 +160,8 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         type = PostType.GAME,
                         media = Constants.EMPTY,
                         votes = emptyMap(),
-                        parentId = "NBA", // TODO make enum
+                        parentId = "NBA",
+                        rootId = competition.id,
                         status = PostStatus.ACTIVE,
                         data = "${competition.date}-${competition.shortName}",
                         subPosts = mutableSetOf(),
