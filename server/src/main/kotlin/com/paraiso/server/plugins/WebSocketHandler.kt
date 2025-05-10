@@ -138,9 +138,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                             val userLogin = message as? UserDomain
                             if (sessionUser.id == userLogin?.id) {
                                 sendTypedMessage(MessageType.USER, userLogin)
-                            } else {
-                                sendTypedMessage(type, userLogin)
                             }
+                            sendTypedMessage(type, userLogin)
                         }
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         MessageType.BAN -> {
