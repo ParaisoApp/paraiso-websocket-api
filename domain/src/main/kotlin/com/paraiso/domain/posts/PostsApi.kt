@@ -155,7 +155,7 @@ class PostsApi {
     fun votePost(vote: Vote) {
         ServerState.posts[vote.postId]?.let { post ->
             post.votes.toMutableMap().let { mutableVoteMap ->
-                if (mutableVoteMap.containsKey(vote.userId)) {
+                if (mutableVoteMap.containsKey(vote.userId) && mutableVoteMap[vote.userId] == vote.upvote) {
                     mutableVoteMap.remove(vote.userId)
                 } else {
                     mutableVoteMap[vote.userId] = vote.upvote
