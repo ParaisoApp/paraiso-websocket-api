@@ -1,6 +1,10 @@
 package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
+import com.paraiso.com.paraiso.api.auth.authController
+import com.paraiso.com.paraiso.api.posts.postsController
+import com.paraiso.com.paraiso.api.sports.sportsController
+import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.FilterTypes
@@ -47,12 +51,6 @@ fun main() {
     val jobScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     val sportHandler = SportHandler(SportOperationAdapter())
-    val serverHandler = ServerHandler()
-    val postsApi = PostsApi()
-    val authApi = AuthApi()
-    val usersApi = UsersApi()
-    val sportApi = SportApi()
-
     jobScope.launch {
         sportHandler.buildScoreboard()
     }
@@ -65,14 +63,23 @@ fun main() {
     jobScope.launch {
         sportHandler.getLeaders()
     }
+
     jobScope.launch {
-        serverHandler.cleanUserList()
+        ServerHandler().cleanUserList()
     }
 
+    val postsApi = PostsApi()
+    val usersApi = UsersApi()
     val handler = WebSocketHandler(usersApi, postsApi)
 
     val server = embeddedServer(Netty, port = 8080) {
-        configureSockets(handler, authApi, postsApi, usersApi, sportApi)
+        configureSockets(
+            handler,
+            postsApi,
+            usersApi,
+            AuthApi(),
+            SportApi()
+        )
     }.start(wait = true)
 
     Runtime.getRuntime().addShutdownHook(
@@ -86,9 +93,9 @@ fun main() {
 
 fun Application.configureSockets(
     handler: WebSocketHandler,
-    authApi: AuthApi,
     postsApi: PostsApi,
     usersApi: UsersApi,
+    authApi: AuthApi,
     sportApi: SportApi
 ) {
     install(WebSockets) {
@@ -129,76 +136,10 @@ fun Application.configureSockets(
             handler.handleUser(this)
         }
         route("paraiso_api/v1") {
-            // authController.handleAuth(this)
-            route("auth") {
-                post {
-                    // fake auth controller
-                    authApi.getAuth(call.receive<Login>())?.let { role ->
-                        call.respond(HttpStatusCode.OK, role)
-                    }
-                }
-            }
-            route("posts") {
-                post {
-                    postsApi.getPosts(
-                        call.request.queryParameters["id"] ?: "",
-                        call.request.queryParameters["name"] ?: "",
-                        call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.Day,
-                        call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.New,
-                        call.receive<FilterTypes>()
-                    ).let {
-                        call.respond(HttpStatusCode.OK, it)
-                    }
-                }
-            }
-            route("users") {
-                get {
-                    call.respond(HttpStatusCode.OK, usersApi.getUserList())
-                }
-                get("/chat") {
-                    call.respond(
-                        HttpStatusCode.OK,
-                        usersApi.getUserChat(call.request.queryParameters["id"] ?: "")
-                    )
-                }
-                post {
-                    usersApi.setSettings(
-                        call.request.queryParameters["id"] ?: "",
-                        call.receive<UserSettings>()
-                    )
-                    call.respond(HttpStatusCode.OK)
-                }
-            }
-            route("sport") {
-                get("/teams") {
-                    call.respond(HttpStatusCode.OK, sportApi.getTeams())
-                }
-                get("/standings") {
-                    sportApi.getStandings()?.let {
-                        call.respond(HttpStatusCode.OK, it)
-                    } ?: run { call.respond(HttpStatusCode.NotFound) }
-                }
-                get("/leaders") {
-                    sportApi.getLeaders()?.let {
-                        call.respond(HttpStatusCode.OK, it)
-                    } ?: run { call.respond(HttpStatusCode.NotFound) }
-                }
-                get("/leader_cats") {
-                    sportApi.getLeaderCategories()?.let {
-                        call.respond(HttpStatusCode.OK, it)
-                    } ?: run { call.respond(HttpStatusCode.NotFound) }
-                }
-                get("/team_roster") {
-                    sportApi.getTeamRoster(call.request.queryParameters["teamId"] ?: "")?.let {
-                        call.respond(HttpStatusCode.OK, it)
-                    } ?: run { call.respond(HttpStatusCode.NotFound) }
-                }
-                get("/team_schedule") {
-                    sportApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let {
-                        call.respond(HttpStatusCode.OK, it)
-                    } ?: run { call.respond(HttpStatusCode.NotFound) }
-                }
-            }
+            authController(authApi)
+            postsController(postsApi)
+            usersController(usersApi)
+            sportsController(sportApi)
         }
     }
 }

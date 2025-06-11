@@ -1,3 +1,29 @@
 package com.paraiso.com.paraiso.api.posts
 
-class PostsController
+import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.posts.Range
+import com.paraiso.domain.posts.SortType
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.call
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+
+fun Route.postsController(postsApi: PostsApi) {
+    route("posts") {
+        post {
+            postsApi.getPosts(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["name"] ?: "",
+                call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.Day,
+                call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.New,
+                call.receive<FilterTypes>()
+            ).let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+    }
+}
