@@ -20,6 +20,13 @@ import kotlin.time.Duration.Companion.hours
 
 class SportHandler(private val sportOperation: SportOperation) : Klogging {
 
+    suspend fun bootJobs() = coroutineScope {
+        launch { buildScoreboard() }
+        launch { getStandings() }
+        launch { getTeams() }
+        launch { getLeaders() }
+    }
+
     suspend fun getStandings() = coroutineScope {
         while (isActive) {
             sportOperation.getStandings().also { standingsRes ->
@@ -127,7 +134,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                 SportState.scoreboard = scoreboard
 
                                 // If boxscores already filled once then filter out games not in progress
-//                            DISABLE BOX SCORE UPDATES FOR NOW
+//                            TODO DISABLE BOX SCORE UPDATES FOR NOW
 //                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
 //                                fetchAndMapGames(gameIds)
 //                            }

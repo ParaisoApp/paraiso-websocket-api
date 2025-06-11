@@ -41,29 +41,22 @@ import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
 
 fun main() {
-    val jobScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    val job = Job()
+    val jobScope = CoroutineScope(Dispatchers.Default + job)
 
-    val sportHandler = SportHandler(SportOperationAdapter())
     jobScope.launch {
-        sportHandler.buildScoreboard()
+        SportHandler(SportOperationAdapter()).bootJobs()
     }
-    jobScope.launch {
-        sportHandler.getStandings()
-    }
-    jobScope.launch {
-        sportHandler.getTeams()
-    }
-    jobScope.launch {
-        sportHandler.getLeaders()
-    }
-
     jobScope.launch {
         ServerHandler().cleanUserList()
     }
@@ -85,7 +78,9 @@ fun main() {
     Runtime.getRuntime().addShutdownHook(
         Thread {
             println("Shutting down server...")
-            jobScope.cancel() // Cancel background jobs
+            runBlocking {
+                job.cancelAndJoin() // Cancel background jobs
+            }
             server.stop(1000, 2000)
         }
     )
