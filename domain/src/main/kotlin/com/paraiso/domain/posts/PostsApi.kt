@@ -63,8 +63,12 @@ class PostsApi {
     fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
-            ServerState.posts.asSequence().filter {// check for base post or user if profile nav
-                (it.value.parentId == postSearchId || it.value.userId == postSearchId.removePrefix("USER-")) &&
+            ServerState.posts.asSequence().filter {
+                ( // check for base post or user if profile nav
+                    it.value.parentId == postSearchId ||
+                    it.value.userId == postSearchId.removePrefix("USER-") ||
+                    postSearchId == "HOME" // search from all posts if on homepage
+                ) &&
                     it.value.createdOn > range &&
                     filters.postTypes.contains(it.value.type) &&
                     filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
