@@ -18,8 +18,8 @@ fun Route.postsController(postsApi: PostsApi) {
             postsApi.getPosts(
                 call.request.queryParameters["id"] ?: "",
                 call.request.queryParameters["name"] ?: "",
-                call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.Day,
-                call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.New,
+                call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
+                call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
                 call.receive<FilterTypes>()
             ).let {
                 call.respond(HttpStatusCode.OK, it)

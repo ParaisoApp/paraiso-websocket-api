@@ -16,5 +16,5 @@ class SessionState {
             UserRole.GUEST
         )
     )
-    val sortType = SortType.New
+    val sortType = SortType.NEW
 }
