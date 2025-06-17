@@ -5,12 +5,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Route(
-    val route: SiteRoute,
+    val route: SocketRoute,
     val content: String
 )
 
 @Serializable
-enum class SiteRoute {
+enum class SocketRoute {
     @SerialName("HOME")
     HOME,
 

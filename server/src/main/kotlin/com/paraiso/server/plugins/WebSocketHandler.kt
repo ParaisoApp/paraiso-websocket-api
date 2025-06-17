@@ -8,7 +8,7 @@ import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.messageTypes.SiteRoute
+import com.paraiso.domain.messageTypes.SocketRoute
 import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
@@ -95,10 +95,10 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
 
     private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
         when (route.route) {
-            SiteRoute.HOME -> homeJobs.homeJobs(session)
-            SiteRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
-            SiteRoute.SPORT -> sportJobs.sportJobs(session)
-            SiteRoute.TEAM -> sportJobs.teamJobs(route.content, session)
+            SocketRoute.HOME -> homeJobs.homeJobs(session)
+            SocketRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
+            SocketRoute.SPORT -> sportJobs.sportJobs(session)
+            SocketRoute.TEAM -> sportJobs.teamJobs(route.content, session)
         }
     }
 
