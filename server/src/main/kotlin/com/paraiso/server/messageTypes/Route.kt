@@ -1,17 +1,17 @@
 package com.paraiso.server.messageTypes
 
-import com.paraiso.domain.messageTypes.SocketRoute
+import com.paraiso.domain.messageTypes.SiteRoute
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Route(
-    val route: SocketRoute,
+    val route: SiteRoute,
     val content: String
 )
 
 @Serializable
-enum class SocketRoute {
+enum class SiteRoute {
     @SerialName("HOME")
     HOME,
 
