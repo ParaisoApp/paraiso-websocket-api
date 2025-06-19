@@ -19,7 +19,7 @@ data class Message(
     val replyId: String,
     val rootId: String,
     val editId: String,
-    val route: SiteRoute
+    val route: String
 )
 
 @Serializable
