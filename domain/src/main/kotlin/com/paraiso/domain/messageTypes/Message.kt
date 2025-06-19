@@ -18,7 +18,8 @@ data class Message(
     val media: String,
     val replyId: String,
     val rootId: String,
-    val editId: String
+    val editId: String,
+    val route: SiteRoute
 )
 
 @Serializable
@@ -43,6 +44,7 @@ fun Message.toNewPost() = Post(
     status = PostStatus.ACTIVE,
     data = "",
     subPosts = emptySet(),
+    route = route,
     createdOn = Clock.System.now(),
     updatedOn = Clock.System.now()
 )

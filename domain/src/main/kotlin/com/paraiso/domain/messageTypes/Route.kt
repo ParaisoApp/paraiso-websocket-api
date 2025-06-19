@@ -21,5 +21,26 @@ enum class SiteRoute {
     SPORT,
 
     @SerialName("TEAM")
-    TEAM
+    TEAM,
+
+    @SerialName("FOOTBALL")
+    FOOTBALL,
+
+    @SerialName("BASKETBALL")
+    BASKETBALL,
+
+    @SerialName("HOCKEY")
+    HOCKEY,
+
+    @SerialName("BASEBALL")
+    BASEBALL,
+
+    @SerialName("SOCCER")
+    SOCCER,
+
+    @SerialName("TENNIS")
+    TENNIS,
+
+    @SerialName("GOLF")
+    GOLF
 }

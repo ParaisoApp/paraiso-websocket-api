@@ -99,6 +99,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             SiteRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
             SiteRoute.SPORT -> sportJobs.sportJobs(session)
             SiteRoute.TEAM -> sportJobs.teamJobs(route.content, session)
+            else -> TODO()
         }
     }
 

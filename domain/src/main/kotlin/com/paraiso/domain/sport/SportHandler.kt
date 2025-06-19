@@ -1,5 +1,6 @@
 package com.paraiso.domain.sport
 
+import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
@@ -88,6 +89,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                         status = PostStatus.ACTIVE,
                                         data = "TEAM-$key",
                                         subPosts = mutableSetOf(),
+                                        route = SiteRoute.TEAM,
                                         createdOn = Clock.System.now(),
                                         updatedOn = Clock.System.now()
                                     )
@@ -167,11 +169,12 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         type = PostType.GAME,
                         media = Constants.EMPTY,
                         votes = emptyMap(),
-                        parentId = "NBA",
+                        parentId = SiteRoute.BASKETBALL.toString(),
                         rootId = competition.id,
                         status = PostStatus.ACTIVE,
                         data = "${competition.date}-${competition.shortName}",
                         subPosts = mutableSetOf(),
+                        route = SiteRoute.BASKETBALL,
                         createdOn = Clock.System.now(),
                         updatedOn = Clock.System.now()
                     )
