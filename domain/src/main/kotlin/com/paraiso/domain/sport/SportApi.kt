@@ -3,6 +3,7 @@ package com.paraiso.domain.sport
 import com.paraiso.domain.sport.sports.LeaderReturn
 
 class SportApi {
+    fun getTeamByAbbr(teamAbbr: String) = SportState.teams.find { it.abbreviation ==  teamAbbr}
     fun getTeams() = SportState.teams.associateBy { it.id }
     fun getStandings() = SportState.standings?.standingsGroups?.associate { it.confAbbr to it.standings }
     fun getLeaders() = SportState.rosters.flatMap { it.athletes }.associateBy { it.id }.let { athletes ->

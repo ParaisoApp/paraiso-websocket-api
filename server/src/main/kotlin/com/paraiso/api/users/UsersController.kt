@@ -23,6 +23,11 @@ fun Route.usersController(usersApi: UsersApi) {
                 usersApi.getUserChat(call.request.queryParameters["id"] ?: "")
             )
         }
+        get("/findByName") {
+            usersApi.getUserByName(call.request.queryParameters["userName"] ?: "")?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
         post {
             usersApi.setSettings(
                 call.request.queryParameters["id"] ?: "",

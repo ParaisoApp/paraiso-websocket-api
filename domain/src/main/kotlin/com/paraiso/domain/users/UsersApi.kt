@@ -10,6 +10,9 @@ class UsersApi {
     fun getUserById(userId: String) =
         ServerState.userList[userId]?.let { user -> buildUser(user) }
 
+    fun getUserByName(userName: String) =
+        ServerState.userList.values.find { it.name == userName }?.let { user -> buildUser(user) }
+
     fun getUserList() =
         ServerState.userList.values
             .filter { it.status != UserStatus.DISCONNECTED }

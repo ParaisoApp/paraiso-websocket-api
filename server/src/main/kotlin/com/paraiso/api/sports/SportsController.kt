@@ -21,27 +21,32 @@ fun Route.sportsController(sportApi: SportApi) {
         get("/standings") {
             sportApi.getStandings()?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NotFound) }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/leaders") {
             sportApi.getLeaders()?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NotFound) }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/leader_cats") {
             sportApi.getLeaderCategories()?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NotFound) }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
+        get("/findTeamByAbbr") {
+            sportApi.getTeamByAbbr(call.request.queryParameters["teamAbbr"] ?: "")?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/team_roster") {
             sportApi.getTeamRoster(call.request.queryParameters["teamId"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NotFound) }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/team_schedule") {
             sportApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NotFound) }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
     }
 }

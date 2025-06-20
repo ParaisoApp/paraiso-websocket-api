@@ -2,6 +2,7 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerState
@@ -86,6 +87,26 @@ fun UserReturn.Companion.systemUser() =
         UserReturn(
             id = SYSTEM,
             name = SYSTEM,
+            posts = emptyMap(),
+            comments = emptyMap(),
+            replies = emptyMap(),
+            roles = UserRole.SYSTEM,
+            banned = false,
+            status = UserStatus.CONNECTED,
+            blockList = emptySet(),
+            image = EMPTY,
+            lastSeen = now.toEpochMilliseconds(),
+            settings = UserSettings.initSettings(),
+            createdOn = now,
+            updatedOn = now
+        )
+    }
+
+fun UserReturn.Companion.unknownUser() =
+    Clock.System.now().let { now ->
+        UserReturn(
+            id = Constants.UNKNOWN,
+            name = Constants.UNKNOWN,
             posts = emptyMap(),
             comments = emptyMap(),
             replies = emptyMap(),
