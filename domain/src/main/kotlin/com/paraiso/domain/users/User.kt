@@ -34,7 +34,8 @@ data class UserSettings(
     val theme: Int,
     val accent: Int,
     val toolTips: Boolean,
-    val postSubmit: Boolean
+    val postSubmit: Boolean,
+    val showPostUserName: Boolean
 ) { companion object }
 
 @Serializable
@@ -127,7 +128,8 @@ fun UserSettings.Companion.initSettings() =
         theme = 0,
         accent = 0,
         toolTips = true,
-        postSubmit = true
+        postSubmit = true,
+        showPostUserName = true
     )
 
 fun buildUser(user: User) =
