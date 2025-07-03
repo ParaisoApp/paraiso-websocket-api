@@ -2,6 +2,7 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UserReturn
@@ -63,15 +64,18 @@ class PostsApi {
     fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
-            ServerState.posts.asSequence().filter {
+            ServerState.posts.asSequence().filter {post ->
                 ( // check for base post or user if profile nav
-                    it.value.parentId == postSearchId ||
-                    it.value.userId == postSearchId.removePrefix("USER-") ||
-                    postSearchId == "HOME" // search from all posts if on homepage
+                    post.value.parentId == postSearchId ||
+                    post.value.userId == postSearchId.removePrefix("USER-") ||
+                        (
+                            postSearchId == SiteRoute.HOME.name && // search from all posts if on homepage
+                            enumValues<SiteRoute>().any{ it.name == post.value.parentId }
+                        )
                 ) &&
-                    it.value.createdOn > range &&
-                    filters.postTypes.contains(it.value.type) &&
-                    filters.userRoles.contains(ServerState.userList[it.value.userId]?.roles)
+                    post.value.createdOn > range &&
+                    filters.postTypes.contains(post.value.type) &&
+                    filters.userRoles.contains(ServerState.userList[post.value.userId]?.roles)
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
