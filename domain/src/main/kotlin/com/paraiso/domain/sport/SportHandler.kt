@@ -169,7 +169,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         type = PostType.GAME,
                         media = Constants.EMPTY,
                         votes = emptyMap(),
-                        parentId = SiteRoute.BASKETBALL.toString(),
+                        parentId = SiteRoute.BASKETBALL.name,
                         rootId = competition.id,
                         status = PostStatus.ACTIVE,
                         data = "${competition.date}-${competition.shortName}",
