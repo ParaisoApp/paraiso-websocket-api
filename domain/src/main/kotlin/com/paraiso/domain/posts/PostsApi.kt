@@ -61,11 +61,15 @@ class PostsApi {
         }
     }
 
+    //return fully updated root post (for update or load of root post to post tree)
     fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         ServerState.posts[postSearchId]?.rootId?.let{ rootPostId ->
             ServerState.posts[rootPostId]?.let{rootPost ->
                 generatePostTree(
                     rootPost,
+                    ServerState.userList[rootPost.userId]?.let { user ->
+                        buildUser(user)
+                    } ?: UserReturn.systemUser(),
                     postSearchId,
                     getRange(rangeModifier, sortType),
                     sortType,
@@ -96,6 +100,7 @@ class PostsApi {
                 .let { subPosts ->
                     generatePostTree(
                         generateBasePost(postSearchId, basePostName, subPosts),
+                        UserReturn.systemUser(),
                         postSearchId,
                         range,
                         sortType,
@@ -106,12 +111,13 @@ class PostsApi {
 
     private fun generatePostTree(
         basePost: Post,
+        baseUser: UserReturn,
         postSearchId: String,
         range: Instant,
         sortType: SortType,
         filters: FilterTypes
     ) =
-        basePost.toPostReturn(UserReturn.systemUser()).let { root -> // build tree with bfs
+        basePost.toPostReturn(baseUser).let { root -> // build tree with bfs
             val refQueue = ArrayDeque(listOf(basePost))
             val returnQueue = ArrayDeque(listOf(root))
             while (refQueue.isNotEmpty()) {
@@ -126,7 +132,7 @@ class PostsApi {
                         filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
                     }.sortedBy { getSort(it, sortType) }
                     .take(RETRIEVE_LIM)
-                    .associate { (id, post) ->
+                    .associateTo( LinkedHashMap() ) { (id, post) ->
                         (
                             id to post.toPostReturn(
                                 ServerState.userList[post.userId]?.let { user ->
@@ -173,6 +179,7 @@ class PostsApi {
             if (sortType == SortType.NEW) {
                 created
             } else {
+                //sortedByAscending so take inverse
                 entry.value.votes.values.sumOf { bool -> 1.takeIf { bool } ?: -1 }.toLong().let { votes ->
                     if (sortType == SortType.HOT) {
                         (created / TIME_WEIGHTING) * votes
