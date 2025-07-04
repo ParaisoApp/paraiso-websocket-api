@@ -25,5 +25,15 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
+        post("getById") {
+            postsApi.getPostById(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
+                call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
+                call.receive<FilterTypes>()
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
     }
 }

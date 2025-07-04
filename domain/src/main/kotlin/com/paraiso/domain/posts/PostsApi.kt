@@ -61,74 +61,97 @@ class PostsApi {
         }
     }
 
+    fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
+        ServerState.posts[postSearchId]?.rootId?.let{ rootPostId ->
+            ServerState.posts[rootPostId]?.let{rootPost ->
+                generatePostTree(
+                    rootPost,
+                    postSearchId,
+                    getRange(rangeModifier, sortType),
+                    sortType,
+                    filters
+                )
+            }
+        }
+
+
     fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
-            ServerState.posts.asSequence().filter {post ->
+            ServerState.posts.asSequence().filter {(_, post) ->
                 ( // check for base post or user if profile nav
-                    post.value.parentId == postSearchId ||
-                    post.value.userId == postSearchId.removePrefix("USER-") ||
+                    post.parentId == postSearchId ||
+                    post.userId == postSearchId.removePrefix("USER-") ||
                         (
                             postSearchId == SiteRoute.HOME.name && // search from all posts if on homepage
-                            enumValues<SiteRoute>().any{ it.name == post.value.parentId }
+                            enumValues<SiteRoute>().any{ it.name == post.parentId }
                         )
                 ) &&
-                    post.value.createdOn > range &&
-                    filters.postTypes.contains(post.value.type) &&
-                    filters.userRoles.contains(ServerState.userList[post.value.userId]?.roles)
+                    post.createdOn > range &&
+                    filters.postTypes.contains(post.type) &&
+                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
-                .let { subPosts -> generatePostTree(postSearchId, basePostName, subPosts, range, sortType) }
+                .let { subPosts ->
+                    generatePostTree(
+                        generateBasePost(postSearchId, basePostName, subPosts),
+                        postSearchId,
+                        range,
+                        sortType,
+                        filters
+                    )
+                }
         }
 
     private fun generatePostTree(
+        basePost: Post,
         postSearchId: String,
-        basePostName: String,
-        subPosts: Set<String>,
         range: Instant,
-        sortType: SortType
+        sortType: SortType,
+        filters: FilterTypes
     ) =
-        generateBasePost(postSearchId, basePostName, subPosts).let { basePost ->
-            basePost.toPostReturn(UserReturn.systemUser()).let { root -> // build tree with bfs
-                val refQueue = ArrayDeque(listOf(basePost))
-                val returnQueue = ArrayDeque(listOf(root))
-                while (refQueue.isNotEmpty()) {
-                    val nextRefNode = refQueue.removeFirst()
-                    val nextReturnNode = returnQueue.removeFirst()
-                    val children = ServerState.posts
-                        .filterKeys { it in nextRefNode.subPosts }
-                        .asSequence()
-                        .filter { it.value.createdOn > range }
-                        .sortedBy { getSort(it, sortType) }
-                        .take(RETRIEVE_LIM)
-                        .associate { (id, post) ->
-                            (
-                                id to post.toPostReturn(
-                                    ServerState.userList[post.userId]?.let { user ->
-                                        buildUser(user)
-                                    }
-                                )
-                                ).also { (_, returnPost) ->
-                                returnQueue.addLast(returnPost)
-                                refQueue.addLast(post)
-                            }
+        basePost.toPostReturn(UserReturn.systemUser()).let { root -> // build tree with bfs
+            val refQueue = ArrayDeque(listOf(basePost))
+            val returnQueue = ArrayDeque(listOf(root))
+            while (refQueue.isNotEmpty()) {
+                val nextRefNode = refQueue.removeFirst()
+                val nextReturnNode = returnQueue.removeFirst()
+                val children = ServerState.posts
+                    .filterKeys { it in nextRefNode.subPosts }
+                    .asSequence()
+                    .filter { (_, post) ->
+                        post.createdOn > range  &&
+                        filters.postTypes.contains(post.type) &&
+                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
+                    }.sortedBy { getSort(it, sortType) }
+                    .take(RETRIEVE_LIM)
+                    .associate { (id, post) ->
+                        (
+                            id to post.toPostReturn(
+                                ServerState.userList[post.userId]?.let { user ->
+                                    buildUser(user)
+                                }
+                            )
+                            ).also { (_, returnPost) ->
+                            returnQueue.addLast(returnPost)
+                            refQueue.addLast(post)
                         }
-                    nextReturnNode.subPosts = children
-                }
-                root.also { rootRef -> // generate relevant sport posts
-                    rootRef.subPosts = rootRef.subPosts.plus(
-                        ServerState.sportPosts
-                            .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
-                            .mapValues {
-                                it.value.toPostReturn(
-                                    ServerState.userList[it.value.userId]?.let { user ->
-                                        buildUser(user)
-                                    }
-                                )
-                            }
-                    )
-                }
+                    }
+                nextReturnNode.subPosts = children
+            }
+            root.also { rootRef -> // generate relevant sport posts
+                rootRef.subPosts = rootRef.subPosts.plus(
+                    ServerState.sportPosts
+                        .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
+                        .mapValues {
+                            it.value.toPostReturn(
+                                ServerState.userList[it.value.userId]?.let { user ->
+                                    buildUser(user)
+                                }
+                            )
+                        }
+                )
             }
         }
 
