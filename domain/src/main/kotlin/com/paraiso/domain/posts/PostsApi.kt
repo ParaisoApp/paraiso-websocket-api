@@ -63,19 +63,17 @@ class PostsApi {
 
     //return fully updated root post (for update or load of root post to post tree)
     fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
-        ServerState.posts[postSearchId]?.rootId?.let{ rootPostId ->
-            ServerState.posts[rootPostId]?.let{rootPost ->
-                generatePostTree(
-                    rootPost,
-                    ServerState.userList[rootPost.userId]?.let { user ->
-                        buildUser(user)
-                    } ?: UserReturn.systemUser(),
-                    postSearchId,
-                    getRange(rangeModifier, sortType),
-                    sortType,
-                    filters
-                )
-            }
+        ServerState.posts[postSearchId]?.let{ post ->
+            generatePostTree(
+                post,
+                ServerState.userList[post.userId]?.let { user ->
+                    buildUser(user)
+                } ?: UserReturn.systemUser(),
+                postSearchId,
+                getRange(rangeModifier, sortType),
+                sortType,
+                filters
+            )
         }
 
 
