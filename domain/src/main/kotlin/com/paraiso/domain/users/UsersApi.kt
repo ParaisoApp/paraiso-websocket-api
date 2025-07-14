@@ -1,6 +1,7 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
@@ -56,6 +57,40 @@ class UsersApi {
         }
         ServerState.userList[dm.userReceiveId]?.let { user ->
             updateChatForUser(dm, user, dm.userId, now) // update chat for receiving user
+        }
+    }
+
+    fun follow(follow: Follow) {
+        val now = Clock.System.now()
+        // add session user to followers list of input user
+        ServerState.userList[follow.userId]?.let { user ->
+            user.followers.toMutableSet().apply {
+                if(user.followers.contains(follow.sessionUserId)){
+                    remove(follow.sessionUserId)
+                } else {
+                    add(follow.sessionUserId)
+                }
+            }.let { updatedFollowing ->
+                ServerState.userList[user.id] = user.copy(
+                    following = updatedFollowing,
+                    updatedOn = now
+                )
+            }
+        }
+        // add input user to following of session user
+        ServerState.userList[follow.sessionUserId]?.let { sessionUser ->
+            sessionUser.following.toMutableSet().apply {
+                if(sessionUser.following.contains(follow.userId)){
+                    remove(follow.userId)
+                } else {
+                    add(follow.userId)
+                }
+            }.let { updatedFollowing ->
+                ServerState.userList[sessionUser.id] = sessionUser.copy(
+                    following = updatedFollowing,
+                    updatedOn = now
+                )
+            }
         }
     }
 }

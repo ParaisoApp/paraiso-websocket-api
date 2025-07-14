@@ -20,6 +20,9 @@ enum class MessageType {
     @SerialName("VOTE")
     VOTE,
 
+    @SerialName("FOLLOW")
+    FOLLOW,
+
     @SerialName("FILTER_TYPES")
     FILTER_TYPES,
 

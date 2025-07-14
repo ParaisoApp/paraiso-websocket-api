@@ -7,6 +7,7 @@ import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
+import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
@@ -42,6 +43,7 @@ import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
+import com.paraiso.domain.messageTypes.Follow as FollowDomain
 import com.paraiso.domain.users.User as UserDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
@@ -76,6 +78,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     posts = emptyMap(),
                     comments = emptyMap(),
                     replies = emptyMap(),
+                    followers = emptyMap(),
+                    following = emptyMap(),
                     roles = UserRole.GUEST,
                     banned = false,
                     status = UserStatus.CONNECTED,
@@ -133,6 +137,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                                 }
                             }
                         }
+                        MessageType.FOLLOW -> sendTypedMessage(type, message as FollowDomain)
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_LOGIN -> {
@@ -197,6 +202,16 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                                     userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                     usersApiRef.putDM(dmWithData)
                                 }
+                            }
+                        }
+                    }
+                    MessageType.FOLLOW -> {
+                        Json.decodeFromString<FollowDomain>(messageWithType.value).copy(sessionUserId = sessionUser.id).let { follow ->
+                            if (sessionUser.banned) {
+                                sendTypedMessage(MessageType.FOLLOW, follow)
+                            } else {
+                                ServerState.followFlowMut.emit(follow)
+                                usersApiRef.follow(follow)
                             }
                         }
                     }

@@ -17,6 +17,8 @@ data class User(
     val name: String,
     val posts: Set<String>,
     val replies: Set<String>,
+    val followers: Set<String>,
+    val following: Set<String>,
     val chats: Map<String, List<DirectMessage>>,
     val roles: UserRole,
     val banned: Boolean,
@@ -51,6 +53,8 @@ data class UserReturn(
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
     val replies: Map<String, Boolean>,
+    val followers: Map<String, Boolean>,
+    val following: Map<String, Boolean>,
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
@@ -72,6 +76,8 @@ fun User.toUserReturn(
         posts = posts,
         comments = comments,
         replies = replies.associateWith { true },
+        followers = followers.associateWith { true },
+        following = following.associateWith { true },
         roles = roles,
         banned = banned,
         status = status,
@@ -91,26 +97,8 @@ fun UserReturn.Companion.systemUser() =
             posts = emptyMap(),
             comments = emptyMap(),
             replies = emptyMap(),
-            roles = UserRole.SYSTEM,
-            banned = false,
-            status = UserStatus.CONNECTED,
-            blockList = emptySet(),
-            image = EMPTY,
-            lastSeen = now.toEpochMilliseconds(),
-            settings = UserSettings.initSettings(),
-            createdOn = now,
-            updatedOn = now
-        )
-    }
-
-fun UserReturn.Companion.unknownUser() =
-    Clock.System.now().let { now ->
-        UserReturn(
-            id = Constants.UNKNOWN,
-            name = Constants.UNKNOWN,
-            posts = emptyMap(),
-            comments = emptyMap(),
-            replies = emptyMap(),
+            followers = emptyMap(),
+            following = emptyMap(),
             roles = UserRole.SYSTEM,
             banned = false,
             status = UserStatus.CONNECTED,
