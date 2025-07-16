@@ -147,7 +147,7 @@ fun User.buildUser(): UserResponse {
     val posts = mutableMapOf<String, Map<String, Boolean>>()
     val comments = mutableMapOf<String, Map<String, Boolean>>()
     ServerState.posts
-        .filterKeys { posts.contains(it) }
+        .filterValues { it.userId == id }
         .values
         .map { post ->
             if (post.type == PostType.SUB) {
