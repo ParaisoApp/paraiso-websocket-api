@@ -62,31 +62,31 @@ class UsersApi {
 
     fun follow(follow: Follow) {
         val now = Clock.System.now()
-        // add session user to followers list of input user
-        ServerState.userList[follow.userId]?.let { user ->
-            user.followers.toMutableSet().apply {
-                if(user.followers.contains(follow.sessionUserId)){
-                    remove(follow.sessionUserId)
+        // add follower to followers list of followee user
+        ServerState.userList[follow.followeeId]?.let { followee ->
+            followee.followers.toMutableSet().apply {
+                if(followee.followers.contains(follow.followerId)){
+                    remove(follow.followerId)
                 } else {
-                    add(follow.sessionUserId)
+                    add(follow.followerId)
                 }
             }.let { updatedFollowing ->
-                ServerState.userList[user.id] = user.copy(
+                ServerState.userList[followee.id] = followee.copy(
                     following = updatedFollowing,
                     updatedOn = now
                 )
             }
         }
-        // add input user to following of session user
-        ServerState.userList[follow.sessionUserId]?.let { sessionUser ->
-            sessionUser.following.toMutableSet().apply {
-                if(sessionUser.following.contains(follow.userId)){
-                    remove(follow.userId)
+        // add followee to following list of follower user
+        ServerState.userList[follow.followerId]?.let { follower ->
+            follower.following.toMutableSet().apply {
+                if(follower.following.contains(follow.followeeId)){
+                    remove(follow.followeeId)
                 } else {
-                    add(follow.userId)
+                    add(follow.followeeId)
                 }
             }.let { updatedFollowing ->
-                ServerState.userList[sessionUser.id] = sessionUser.copy(
+                ServerState.userList[follower.id] = follower.copy(
                     following = updatedFollowing,
                     updatedOn = now
                 )

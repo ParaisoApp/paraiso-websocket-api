@@ -206,7 +206,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.FOLLOW -> {
-                        Json.decodeFromString<FollowDomain>(messageWithType.value).copy(sessionUserId = sessionUser.id).let { follow ->
+                        Json.decodeFromString<FollowDomain>(messageWithType.value).copy(followerId = sessionUser.id).let { follow ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.FOLLOW, follow)
                             } else {
