@@ -6,7 +6,7 @@ import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UserResponse
-import com.paraiso.domain.users.buildUser
+import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
@@ -66,7 +66,7 @@ class PostsApi {
         ServerState.posts[postSearchId]?.let{ post ->
             generatePostTree(
                 post,
-                ServerState.userList[post.userId]?.buildUser() ?: UserResponse.systemUser(),
+                ServerState.userList[post.userId]?.buildUserResponse() ?: UserResponse.systemUser(),
                 postSearchId,
                 getRange(rangeModifier, sortType),
                 sortType,
@@ -131,7 +131,7 @@ class PostsApi {
                     .associateTo( LinkedHashMap() ) { (id, post) ->
                         (
                             id to post.toPostReturn(
-                                ServerState.userList[post.userId]?.buildUser()
+                                ServerState.userList[post.userId]?.buildUserResponse()
                             )
                             ).also { (_, returnPost) ->
                             returnQueue.addLast(returnPost)
@@ -146,7 +146,7 @@ class PostsApi {
                         .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
                         .mapValues {
                             it.value.toPostReturn(
-                                ServerState.userList[it.value.userId]?.buildUser()
+                                ServerState.userList[it.value.userId]?.buildUserResponse()
                             )
                         }
                 )

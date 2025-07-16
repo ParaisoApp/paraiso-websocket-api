@@ -143,7 +143,7 @@ fun UserSettings.Companion.initSettings() =
         showPostUserName = true
     )
 
-fun User.buildUser(): UserResponse {
+fun User.buildUserResponse(): UserResponse {
     val posts = mutableMapOf<String, Map<String, Boolean>>()
     val comments = mutableMapOf<String, Map<String, Boolean>>()
     ServerState.posts

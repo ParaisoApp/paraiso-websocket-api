@@ -9,15 +9,15 @@ import kotlinx.datetime.Instant
 
 class UsersApi {
     fun getUserById(userId: String) =
-        ServerState.userList[userId]?.buildUser()
+        ServerState.userList[userId]?.buildUserResponse()
 
     fun getUserByName(userName: String) =
-        ServerState.userList.values.find { it.name == userName }?.buildUser()
+        ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
     fun getUserList() =
         ServerState.userList.values
             .filter { it.status != UserStatus.DISCONNECTED }
-            .associate { user -> user.id to user.buildUser() }
+            .associate { user -> user.id to user.buildUserResponse() }
 
     fun setSettings(userId: String, settings: UserSettings) =
         ServerState.userList[userId]?.let { user ->
@@ -33,7 +33,7 @@ class UsersApi {
                 .asSequence()
                 .associate { chat ->
                     chat.key to UserChat(
-                        ServerState.userList[chat.key]?.buildUser(),
+                        ServerState.userList[chat.key]?.buildUserResponse(),
                         chat.value.associateBy { it.id ?: UNKNOWN }
                     )
                 }

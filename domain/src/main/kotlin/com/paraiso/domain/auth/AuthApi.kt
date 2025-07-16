@@ -2,6 +2,7 @@ package com.paraiso.domain.auth
 
 import com.paraiso.domain.messageTypes.Login
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.util.ServerConfig
 import com.paraiso.domain.util.ServerState
 
@@ -14,7 +15,7 @@ class AuthApi {
                     name = "Breeze"
                 ).let { admin ->
                     ServerState.userList[login.userId] = admin
-                    ServerState.userLoginFlowMut.emit(admin)
+                    ServerState.userLoginFlowMut.emit(admin.buildUserResponse())
                 }
             }
             UserRole.ADMIN

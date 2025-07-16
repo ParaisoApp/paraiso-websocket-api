@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.User
+import com.paraiso.domain.users.UserResponse
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import java.util.concurrent.ConcurrentHashMap
@@ -23,7 +24,7 @@ object ServerState {
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)
     val followFlowMut = MutableSharedFlow<Follow>(replay = 0)
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
-    val userLoginFlowMut = MutableSharedFlow<User>(replay = 0)
+    val userLoginFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
     val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
     val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
 

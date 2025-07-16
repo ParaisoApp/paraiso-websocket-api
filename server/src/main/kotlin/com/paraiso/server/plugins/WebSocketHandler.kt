@@ -14,10 +14,9 @@ import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
-import com.paraiso.domain.users.buildUser
+import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.initSettings
 import com.paraiso.domain.users.toUser
-import com.paraiso.domain.users.toUserResponse
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.findCorrectConversion
@@ -44,7 +43,7 @@ import com.paraiso.domain.messageTypes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.messageTypes.Follow as FollowDomain
-import com.paraiso.domain.users.User as UserDomain
+import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
     // jobs
@@ -65,7 +64,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
     suspend fun handleUser(session: WebSocketServerSession) {
         // check cookies to see if existing user
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
-            currentUser.buildUser().copy(
+            currentUser.buildUserResponse().copy(
                 status = UserStatus.CONNECTED
             ).let { reconnectUser ->
                 ServerState.userList[reconnectUser.id] = reconnectUser.toUser()
@@ -120,7 +119,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
 
     private suspend fun WebSocketServerSession.joinChat(user: UserResponse) {
         var sessionUser = user.copy()
-        sendTypedMessage(MessageType.USER, usersApiRef.getUserById(sessionUser.id))
+        sendTypedMessage(MessageType.USER, sessionUser)
 
         val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
             launch {
@@ -143,13 +142,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         MessageType.FOLLOW -> sendTypedMessage(type, message as FollowDomain)
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_LOGIN -> {
-                            val userLogin = message as? UserDomain
-                            if (sessionUser.id == userLogin?.id) {
-                                sendTypedMessage(MessageType.USER, userLogin)
-                            }
-                            sendTypedMessage(type, userLogin)
-                        }
+                        MessageType.USER_LOGIN -> sendTypedMessage(type, message as UserResponseDomain)
                         MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
                         MessageType.BAN -> {
                             val ban = message as? BanDomain
@@ -165,7 +158,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             }
         }
 
-        ServerState.userLoginFlowMut.emit(sessionUser.toUser())
+        ServerState.userLoginFlowMut.emit(sessionUser)
         // holds the active jobs for given route
         var activeJobs: Job? = null
         try {
