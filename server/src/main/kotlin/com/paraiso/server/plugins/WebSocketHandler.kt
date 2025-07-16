@@ -216,7 +216,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.VOTE -> {
-                        Json.decodeFromString<VoteDomain>(messageWithType.value).copy(userId = sessionUser.id).let { vote ->
+                        Json.decodeFromString<VoteDomain>(messageWithType.value).copy(voterId = sessionUser.id).let { vote ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.VOTE, vote)
                             } else {

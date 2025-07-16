@@ -191,10 +191,10 @@ class PostsApi {
     fun votePost(vote: Vote) {
         ServerState.posts[vote.postId]?.let { post ->
             post.votes.toMutableMap().let { mutableVoteMap ->
-                if (mutableVoteMap.containsKey(vote.userId) && mutableVoteMap[vote.userId] == vote.upvote) {
-                    mutableVoteMap.remove(vote.userId)
+                if (mutableVoteMap.containsKey(vote.voterId) && mutableVoteMap[vote.voterId] == vote.upvote) {
+                    mutableVoteMap.remove(vote.voterId)
                 } else {
-                    mutableVoteMap[vote.userId] = vote.upvote
+                    mutableVoteMap[vote.voterId] = vote.upvote
                 }
                 ServerState.posts[vote.postId] =
                     post.copy(votes = mutableVoteMap.toMap(), updatedOn = Clock.System.now())
