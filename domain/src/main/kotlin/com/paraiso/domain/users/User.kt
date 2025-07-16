@@ -42,16 +42,17 @@ data class UserSettings(
 
 @Serializable
 data class UserChat(
-    val user: UserReturn?,
+    val user: UserResponse?,
     val dmMap: Map<String, DirectMessage>
 )
 
 @Serializable
-data class UserReturn(
+data class UserResponse(
     val id: String,
     val name: String,
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
+    val chats: Map<String, List<DirectMessage>>,
     val replies: Map<String, Boolean>,
     val followers: Map<String, Boolean>,
     val following: Map<String, Boolean>,
@@ -66,15 +67,16 @@ data class UserReturn(
     val updatedOn: Instant
 ) { companion object }
 
-fun User.toUserReturn(
+fun User.toUserResponse(
     posts: Map<String, Map<String, Boolean>>,
     comments: Map<String, Map<String, Boolean>>
 ) =
-    UserReturn(
+    UserResponse(
         id = id,
         name = name,
         posts = posts,
         comments = comments,
+        chats = chats,
         replies = replies.associateWith { true },
         followers = followers.associateWith { true },
         following = following.associateWith { true },
@@ -89,14 +91,35 @@ fun User.toUserReturn(
         updatedOn = updatedOn
     )
 
-fun UserReturn.Companion.systemUser() =
+fun UserResponse.toUser() =
+    User(
+        id = id,
+        name = name,
+        posts = posts.keys + comments.keys,
+        replies = replies.keys,
+        followers = followers.keys,
+        following = following.keys,
+        chats = chats,
+        roles = roles,
+        banned = banned,
+        status = status,
+        blockList = blockList,
+        image = image,
+        lastSeen = lastSeen,
+        settings = settings,
+        createdOn = createdOn,
+        updatedOn = updatedOn
+    )
+
+fun UserResponse.Companion.systemUser() =
     Clock.System.now().let { now ->
-        UserReturn(
+        UserResponse(
             id = SYSTEM,
             name = SYSTEM,
             posts = emptyMap(),
             comments = emptyMap(),
             replies = emptyMap(),
+            chats = emptyMap(),
             followers = emptyMap(),
             following = emptyMap(),
             roles = UserRole.SYSTEM,
@@ -120,22 +143,21 @@ fun UserSettings.Companion.initSettings() =
         showPostUserName = true
     )
 
-fun buildUser(user: User) =
-    user.let {
-        val posts = mutableMapOf<String, Map<String, Boolean>>()
-        val comments = mutableMapOf<String, Map<String, Boolean>>()
-        ServerState.posts
-            .filterKeys { user.posts.contains(it) }
-            .values
-            .map { post ->
-                if (post.type == PostType.SUB) {
-                    posts[post.id] = post.votes
-                } else {
-                    comments[post.id] = post.votes
-                }
+fun User.buildUser(): UserResponse {
+    val posts = mutableMapOf<String, Map<String, Boolean>>()
+    val comments = mutableMapOf<String, Map<String, Boolean>>()
+    ServerState.posts
+        .filterKeys { posts.contains(it) }
+        .values
+        .map { post ->
+            if (post.type == PostType.SUB) {
+                posts[post.id] = post.votes
+            } else {
+                comments[post.id] = post.votes
             }
-        user.toUserReturn(posts, comments)
-    }
+        }
+    return this.toUserResponse(posts, comments)
+}
 
 @Serializable
 enum class UserRole {

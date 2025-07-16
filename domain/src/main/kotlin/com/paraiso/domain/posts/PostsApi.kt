@@ -5,7 +5,7 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
-import com.paraiso.domain.users.UserReturn
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.buildUser
 import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.ServerState
@@ -66,9 +66,7 @@ class PostsApi {
         ServerState.posts[postSearchId]?.let{ post ->
             generatePostTree(
                 post,
-                ServerState.userList[post.userId]?.let { user ->
-                    buildUser(user)
-                } ?: UserReturn.systemUser(),
+                ServerState.userList[post.userId]?.buildUser() ?: UserResponse.systemUser(),
                 postSearchId,
                 getRange(rangeModifier, sortType),
                 sortType,
@@ -98,7 +96,7 @@ class PostsApi {
                 .let { subPosts ->
                     generatePostTree(
                         generateBasePost(postSearchId, basePostName, subPosts),
-                        UserReturn.systemUser(),
+                        UserResponse.systemUser(),
                         postSearchId,
                         range,
                         sortType,
@@ -109,7 +107,7 @@ class PostsApi {
 
     private fun generatePostTree(
         basePost: Post,
-        baseUser: UserReturn,
+        baseUser: UserResponse,
         postSearchId: String,
         range: Instant,
         sortType: SortType,
@@ -133,9 +131,7 @@ class PostsApi {
                     .associateTo( LinkedHashMap() ) { (id, post) ->
                         (
                             id to post.toPostReturn(
-                                ServerState.userList[post.userId]?.let { user ->
-                                    buildUser(user)
-                                }
+                                ServerState.userList[post.userId]?.buildUser()
                             )
                             ).also { (_, returnPost) ->
                             returnQueue.addLast(returnPost)
@@ -150,9 +146,7 @@ class PostsApi {
                         .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
                         .mapValues {
                             it.value.toPostReturn(
-                                ServerState.userList[it.value.userId]?.let { user ->
-                                    buildUser(user)
-                                }
+                                ServerState.userList[it.value.userId]?.buildUser()
                             )
                         }
                 )

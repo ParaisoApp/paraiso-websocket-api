@@ -1,23 +1,23 @@
 package com.paraiso.server.plugins
 
-import com.paraiso.com.paraiso.api.auth.User
-import com.paraiso.com.paraiso.api.auth.toDomain
-import com.paraiso.com.paraiso.api.auth.toResponse
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
-import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.users.buildUser
 import com.paraiso.domain.users.initSettings
+import com.paraiso.domain.users.toUser
+import com.paraiso.domain.users.toUserResponse
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.findCorrectConversion
@@ -65,19 +65,22 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
     suspend fun handleUser(session: WebSocketServerSession) {
         // check cookies to see if existing user
         ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
-            session.joinChat(
-                currentUser.toResponse().copy(
-                    status = UserStatus.CONNECTED
-                )
-            )
+            currentUser.buildUser().copy(
+                status = UserStatus.CONNECTED
+            ).let { reconnectUser ->
+                ServerState.userList[reconnectUser.id] = reconnectUser.toUser()
+                userToSocket[reconnectUser.id] = session // map userid to socket
+                session.joinChat(reconnectUser)
+            }
         } ?: run { // otherwise generate guest
             UUID.randomUUID().toString().let { id ->
-                val currentUser = User(
+                val currentUser = UserResponse(
                     id = id,
                     name = randomGuestName(),
                     posts = emptyMap(),
                     comments = emptyMap(),
                     replies = emptyMap(),
+                    chats = emptyMap(),
                     followers = emptyMap(),
                     following = emptyMap(),
                     roles = UserRole.GUEST,
@@ -90,7 +93,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     createdOn = Clock.System.now(),
                     updatedOn = Clock.System.now()
                 )
-                ServerState.userList[id] = currentUser.toDomain()
+                ServerState.userList[id] = currentUser.toUser()
                 userToSocket[id] = session // map userid to socket
                 session.joinChat(currentUser)
             }
@@ -115,7 +118,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
                 )
 
-    private suspend fun WebSocketServerSession.joinChat(user: User) {
+    private suspend fun WebSocketServerSession.joinChat(user: UserResponse) {
         var sessionUser = user.copy()
         sendTypedMessage(MessageType.USER, usersApiRef.getUserById(sessionUser.id))
 
@@ -162,7 +165,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             }
         }
 
-        ServerState.userLoginFlowMut.emit(sessionUser.toDomain())
+        ServerState.userLoginFlowMut.emit(sessionUser.toUser())
         // holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -249,7 +252,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         val block = Json.decodeFromString<BlockDomain>(messageWithType.value)
                         val updateBlockList = sessionUser.blockList.toMutableSet()
                         updateBlockList.add(block.userId)
-                        ServerState.userList[sessionUser.id] = sessionUser.copy(blockList = updateBlockList).toDomain()
+                        ServerState.userList[sessionUser.id] = sessionUser.copy(blockList = updateBlockList).toUser()
                     }
                     MessageType.ROUTE -> {
                         val route = Json.decodeFromString<RouteDomain>(messageWithType.value)

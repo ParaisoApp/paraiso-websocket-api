@@ -1,7 +1,6 @@
 package com.paraiso.domain.posts
 
-import com.paraiso.domain.messageTypes.SiteRoute
-import com.paraiso.domain.users.UserReturn
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.Constants
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -30,7 +29,7 @@ data class Post(
 data class PostReturn(
     val id: String,
     val userId: String,
-    val user: UserReturn?,
+    val user: UserResponse?,
     val title: String,
     val content: String,
     val type: PostType,
@@ -121,7 +120,7 @@ enum class Range {
     ALL
 }
 
-fun Post.toPostReturn(user: UserReturn?) = PostReturn(
+fun Post.toPostReturn(user: UserResponse?) = PostReturn(
     id = id,
     userId = userId,
     user = user,
