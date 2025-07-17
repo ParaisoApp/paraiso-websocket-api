@@ -32,7 +32,7 @@ class UsersApi {
             user.chats
                 .asSequence()
                 .associate { chat ->
-                    chat.key to UserChat(
+                    "user-${chat.key}" to UserChat(
                         ServerState.userList[chat.key]?.buildUserResponse(),
                         chat.value.associateBy { it.id ?: UNKNOWN }
                     )
