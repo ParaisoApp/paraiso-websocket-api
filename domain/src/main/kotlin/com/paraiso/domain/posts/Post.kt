@@ -39,7 +39,7 @@ data class PostReturn(
     val rootId: String,
     val status: PostStatus,
     val data: String?,
-    var subPosts: Map<String, PostReturn>,
+    var subPosts: Map<String, Boolean>,
     val route: String,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -133,7 +133,7 @@ fun Post.toPostReturn(user: UserResponse?) = PostReturn(
     rootId = rootId,
     status = status,
     data = data,
-    subPosts = emptyMap(),
+    subPosts = subPosts.associateWith { true },
     route = route,
     createdOn = createdOn,
     updatedOn = updatedOn
