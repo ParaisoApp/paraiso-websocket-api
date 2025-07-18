@@ -113,44 +113,41 @@ class PostsApi {
         sortType: SortType,
         filters: FilterTypes
     ) =
-        basePost.toPostReturn(baseUser).let { root -> // build tree with bfs
-            val refQueue = ArrayDeque(listOf(basePost))
-            val returnQueue = ArrayDeque(listOf(root))
-            while (refQueue.isNotEmpty()) {
-                val nextRefNode = refQueue.removeFirst()
-                val nextReturnNode = returnQueue.removeFirst()
-                val children = ServerState.posts
-                    .filterKeys { it in nextRefNode.subPosts }
-                    .asSequence()
-                    .filter { (_, post) ->
-                        post.createdOn > range  &&
-                        filters.postTypes.contains(post.type) &&
-                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
-                    }.sortedBy { getSort(it, sortType) }
-                    .take(RETRIEVE_LIM)
-                    .associateTo( LinkedHashMap() ) { (id, post) ->
-                        (
-                            id to post.toPostReturn(
-                                ServerState.userList[post.userId]?.buildUserResponse()
-                            )
-                            ).also { (_, returnPost) ->
-                            returnQueue.addLast(returnPost)
-                            refQueue.addLast(post)
+        LinkedHashMap<String, PostReturn>().let { returnPosts ->
+            basePost.toPostReturn(baseUser).let { root -> // build tree with bfs
+                returnPosts[root.id] = root
+                val refQueue = ArrayDeque(listOf(basePost))
+                while (refQueue.isNotEmpty()) {
+                    val nextRefNode = refQueue.removeFirst()
+                    ServerState.posts
+                        .filterKeys { it in nextRefNode.subPosts }
+                        .asSequence()
+                        .filter { (_, post) ->
+                            post.createdOn > range &&
+                                    filters.postTypes.contains(post.type) &&
+                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
+                        }.sortedBy { getSort(it, sortType) }
+                        .take(RETRIEVE_LIM)
+                        .associateTo(LinkedHashMap()) { (id, post) ->
+                            (
+                                    id to post.toPostReturn(
+                                        ServerState.userList[post.userId]?.buildUserResponse()
+                                    )
+                                    ).also { (_, returnPost) ->
+                                    returnPosts[returnPost.id] = returnPost
+                                    refQueue.addLast(post)
+                                }
                         }
+                }
+                ServerState.sportPosts
+                    .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
+                    .forEach {
+                        returnPosts[it.key] = it.value.toPostReturn(
+                            ServerState.userList[it.value.userId]?.buildUserResponse()
+                        )
                     }
-                nextReturnNode.subPosts = children
             }
-            root.also { rootRef -> // generate relevant sport posts
-                rootRef.subPosts = rootRef.subPosts.plus(
-                    ServerState.sportPosts
-                        .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
-                        .mapValues {
-                            it.value.toPostReturn(
-                                ServerState.userList[it.value.userId]?.buildUserResponse()
-                            )
-                        }
-                )
-            }
+            returnPosts
         }
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
