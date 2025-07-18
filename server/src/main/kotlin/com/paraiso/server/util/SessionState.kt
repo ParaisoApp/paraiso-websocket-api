@@ -12,6 +12,7 @@ class SessionState {
             PostType.SUB
         ),
         userRoles = setOf(
+            UserRole.FOLLOWING,
             UserRole.USER,
             UserRole.GUEST
         )

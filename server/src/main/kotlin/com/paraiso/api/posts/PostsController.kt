@@ -20,7 +20,8 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.request.queryParameters["name"] ?: "",
                 call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
                 call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
-                call.receive<FilterTypes>()
+                call.receive<FilterTypes>(),
+                call.request.queryParameters["userId"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
@@ -30,7 +31,8 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.request.queryParameters["id"] ?: "",
                 call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
                 call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
-                call.receive<FilterTypes>()
+                call.receive<FilterTypes>(),
+                call.request.queryParameters["userId"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }

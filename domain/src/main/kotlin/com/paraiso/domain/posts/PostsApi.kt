@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.ServerState
@@ -62,7 +63,7 @@ class PostsApi {
     }
 
     //return fully updated root post (for update or load of root post to post tree)
-    fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
+    fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         ServerState.posts[postSearchId]?.let{ post ->
             generatePostTree(
                 post,
@@ -75,7 +76,7 @@ class PostsApi {
         }
 
 
-    fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes) =
+    fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
             ServerState.posts.asSequence().filter {(_, post) ->
@@ -89,7 +90,8 @@ class PostsApi {
                 ) &&
                     post.createdOn > range &&
                     filters.postTypes.contains(post.type) &&
-                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
+                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                        filters.userRoles.contains(UserRole.FOLLOWING)
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs

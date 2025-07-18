@@ -170,6 +170,9 @@ enum class UserRole {
     @SerialName("MOD")
     MOD,
 
+    @SerialName("FOLLOWING")
+    FOLLOWING,
+
     @SerialName("USER")
     USER,
 
