@@ -65,14 +65,14 @@ class UsersApi {
         // add follower to followers list of followee user
         ServerState.userList[follow.followeeId]?.let { followee ->
             followee.followers.toMutableSet().apply {
-                if(followee.followers.contains(follow.followerId)){
+                if (followee.followers.contains(follow.followerId)) {
                     remove(follow.followerId)
                 } else {
                     add(follow.followerId)
                 }
-            }.let { updatedFollowing ->
+            }.let { updatedFollowers ->
                 ServerState.userList[followee.id] = followee.copy(
-                    following = updatedFollowing,
+                    followers = updatedFollowers,
                     updatedOn = now
                 )
             }
@@ -80,7 +80,7 @@ class UsersApi {
         // add followee to following list of follower user
         ServerState.userList[follow.followerId]?.let { follower ->
             follower.following.toMutableSet().apply {
-                if(follower.following.contains(follow.followeeId)){
+                if (follower.following.contains(follow.followeeId)) {
                     remove(follow.followeeId)
                 } else {
                     add(follow.followeeId)

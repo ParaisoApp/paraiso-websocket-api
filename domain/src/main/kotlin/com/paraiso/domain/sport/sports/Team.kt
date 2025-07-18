@@ -19,5 +19,5 @@ fun Team.Companion.unknownTeam() = Team(
     name = Constants.UNKNOWN,
     abbreviation = Constants.UNKNOWN,
     displayName = Constants.UNKNOWN,
-    shortDisplayName = Constants.UNKNOWN,
+    shortDisplayName = Constants.UNKNOWN
 )

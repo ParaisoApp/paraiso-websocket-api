@@ -62,36 +62,35 @@ class PostsApi {
         }
     }
 
-    //return fully updated root post (for update or load of root post to post tree)
+    // return fully updated root post (for update or load of root post to post tree)
     fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
-        ServerState.posts[postSearchId]?.let{ post ->
+        ServerState.posts[postSearchId]?.let { post ->
             generatePostTree(
                 post,
                 ServerState.userList[post.userId]?.buildUserResponse() ?: UserResponse.systemUser(),
                 postSearchId,
                 getRange(rangeModifier, sortType),
                 sortType,
-                filters
+                filters,
+                userId
             )
         }
-
 
     fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
-            ServerState.posts.asSequence().filter {(_, post) ->
+            val userFollowing = ServerState.userList[userId]?.following ?: setOf()
+            ServerState.posts.asSequence().filter { (_, post) ->
                 ( // check for base post or user if profile nav
                     post.parentId == postSearchId ||
-                    post.userId == postSearchId.removePrefix("USER-") ||
+                        post.userId == postSearchId.removePrefix("USER-") ||
                         (
                             postSearchId == SiteRoute.HOME.name && // search from all posts if on homepage
-                            enumValues<SiteRoute>().any{ it.name == post.parentId }
-                        )
-                ) &&
+                                enumValues<SiteRoute>().any { it.name == post.parentId }
+                            )
+                    ) &&
                     post.createdOn > range &&
-                    filters.postTypes.contains(post.type) &&
-                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                        filters.userRoles.contains(UserRole.FOLLOWING)
+                    filters.postTypes.contains(post.type) && (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) || (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
@@ -102,7 +101,8 @@ class PostsApi {
                         postSearchId,
                         range,
                         sortType,
-                        filters
+                        filters,
+                        userId
                     )
                 }
         }
@@ -113,10 +113,12 @@ class PostsApi {
         postSearchId: String,
         range: Instant,
         sortType: SortType,
-        filters: FilterTypes
+        filters: FilterTypes,
+        userId: String
     ) =
         LinkedHashMap<String, PostReturn>().let { returnPosts ->
             basePost.toPostReturn(baseUser).let { root -> // build tree with bfs
+                val userFollowing = ServerState.userList[userId]?.following ?: setOf()
                 returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
                 while (refQueue.isNotEmpty()) {
@@ -126,19 +128,20 @@ class PostsApi {
                         .asSequence()
                         .filter { (_, post) ->
                             post.createdOn > range &&
-                                    filters.postTypes.contains(post.type) &&
-                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles)
+                                filters.postTypes.contains(post.type) &&
+                                    (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
                         }.sortedBy { getSort(it, sortType) }
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->
                             (
-                                    id to post.toPostReturn(
-                                        ServerState.userList[post.userId]?.buildUserResponse()
-                                    )
-                                    ).also { (_, returnPost) ->
-                                    returnPosts[returnPost.id] = returnPost
-                                    refQueue.addLast(post)
-                                }
+                                id to post.toPostReturn(
+                                    ServerState.userList[post.userId]?.buildUserResponse()
+                                )
+                                ).also { (_, returnPost) ->
+                                returnPosts[returnPost.id] = returnPost
+                                refQueue.addLast(post)
+                            }
                         }
                 }
                 ServerState.sportPosts
@@ -156,21 +159,21 @@ class PostsApi {
         Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking at new posts or range is set to all
             .takeIf { rangeModifier == Range.ALL || sortType == SortType.NEW }
             ?: Clock.System.now().let { clock ->
-            when (rangeModifier) {
-                Range.DAY -> clock.minus(1.days)
-                Range.WEEK -> clock.minus(7.days)
-                Range.MONTH -> clock.minus(30.days)
-                Range.YEAR -> clock.minus(365.days)
-                else -> Instant.fromEpochMilliseconds(Long.MIN_VALUE)
+                when (rangeModifier) {
+                    Range.DAY -> clock.minus(1.days)
+                    Range.WEEK -> clock.minus(7.days)
+                    Range.MONTH -> clock.minus(30.days)
+                    Range.YEAR -> clock.minus(365.days)
+                    else -> Instant.fromEpochMilliseconds(Long.MIN_VALUE)
+                }
             }
-        }
 
     private fun getSort(entry: Map.Entry<String, Post>, sortType: SortType) =
         entry.value.createdOn.toEpochMilliseconds().let { created ->
             if (sortType == SortType.NEW) {
                 created
             } else {
-                //sortedByAscending so take inverse
+                // sortedByAscending so take inverse
                 entry.value.votes.values.sumOf { bool -> 1.takeIf { bool } ?: -1 }.toLong().let { votes ->
                     if (sortType == SortType.HOT) {
                         (created / TIME_WEIGHTING) * votes

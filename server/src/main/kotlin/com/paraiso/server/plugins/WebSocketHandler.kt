@@ -38,11 +38,11 @@ import com.paraiso.domain.messageTypes.Block as BlockDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
+import com.paraiso.domain.messageTypes.Follow as FollowDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
-import com.paraiso.domain.messageTypes.Follow as FollowDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
