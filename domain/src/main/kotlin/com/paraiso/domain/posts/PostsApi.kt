@@ -113,7 +113,7 @@ class PostsApi {
         sortType: SortType,
         filters: FilterTypes
     ) =
-        mutableMapOf<String, PostReturn>().let { returnPosts ->
+        LinkedHashMap<String, PostReturn>().let { returnPosts ->
             basePost.toPostReturn(baseUser).let { root -> // build tree with bfs
                 returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
