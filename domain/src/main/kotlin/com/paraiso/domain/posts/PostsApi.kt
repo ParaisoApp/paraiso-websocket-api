@@ -129,8 +129,10 @@ class PostsApi {
                         .filter { (_, post) ->
                             post.createdOn > range &&
                                 filters.postTypes.contains(post.type) &&
-                                    (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
+                                (
+                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                                    )
                         }.sortedBy { getSort(it, sortType) }
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->

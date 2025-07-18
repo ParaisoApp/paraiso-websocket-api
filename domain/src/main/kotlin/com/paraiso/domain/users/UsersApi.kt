@@ -1,6 +1,7 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
@@ -14,10 +15,17 @@ class UsersApi {
     fun getUserByName(userName: String) =
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
-    fun getUserList() =
-        ServerState.userList.values
-            .filter { it.status != UserStatus.DISCONNECTED }
-            .associate { user -> user.id to user.buildUserResponse() }
+    fun getUserList(filters: FilterTypes, userId: String) =
+        ServerState.userList[userId]?.following?.let{followingList ->
+            ServerState.userList.values
+                .filter {user ->
+                    user.status != UserStatus.DISCONNECTED &&
+                        (
+                            filters.userRoles.contains(user.roles) ||
+                            (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
+                        )
+                }.associate { user -> user.id to user.buildUserResponse() }
+        }
 
     fun setSettings(userId: String, settings: UserSettings) =
         ServerState.userList[userId]?.let { user ->

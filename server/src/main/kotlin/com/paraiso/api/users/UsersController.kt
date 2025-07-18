@@ -1,5 +1,6 @@
 package com.paraiso.com.paraiso.api.users
 
+import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
 import io.ktor.http.HttpStatusCode
@@ -13,8 +14,14 @@ import io.ktor.server.routing.route
 
 fun Route.usersController(usersApi: UsersApi) {
     route("users") {
-        get {
-            call.respond(HttpStatusCode.OK, usersApi.getUserList())
+        post {
+            usersApi.getUserList(
+                call.receive<FilterTypes>(),
+                call.request.queryParameters["id"] ?: ""
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+
         }
         get("/chat") {
             call.respond(
@@ -27,7 +34,7 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        post {
+        post("/settings") {
             usersApi.setSettings(
                 call.request.queryParameters["id"] ?: "",
                 call.receive<UserSettings>()
