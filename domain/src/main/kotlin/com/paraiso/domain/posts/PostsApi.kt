@@ -1,5 +1,6 @@
 package com.paraiso.domain.posts
 
+import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.SiteRoute
@@ -90,7 +91,9 @@ class PostsApi {
                             )
                     ) &&
                     post.createdOn > range &&
-                    filters.postTypes.contains(post.type) && (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) || (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
+                    post.status != PostStatus.DELETED &&
+                    filters.postTypes.contains(post.type) &&
+                        (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) || (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
@@ -128,6 +131,7 @@ class PostsApi {
                         .asSequence()
                         .filter { (_, post) ->
                             post.createdOn > range &&
+                                post.status != PostStatus.DELETED &&
                                 filters.postTypes.contains(post.type) &&
                                 (
                                     filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
@@ -197,6 +201,12 @@ class PostsApi {
                 ServerState.posts[vote.postId] =
                     post.copy(votes = mutableVoteMap.toMap(), updatedOn = Clock.System.now())
             }
+        }
+    }
+    fun deletePost(delete: Delete) {
+        ServerState.posts[delete.postId]?.let { post ->
+            ServerState.posts[delete.postId] =
+                post.copy(status = PostStatus.DELETED, updatedOn = Clock.System.now())
         }
     }
 }

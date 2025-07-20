@@ -228,11 +228,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     }
                     MessageType.DELETE -> {
                         val delete = Json.decodeFromString<DeleteDomain>(messageWithType.value).copy(userId = sessionUser.id)
-                        if (sessionUser.banned) {
-                            sendTypedMessage(MessageType.DELETE, delete)
-                        } else {
-                            ServerState.deleteFlowMut.emit(delete)
-                        }
+                        ServerState.deleteFlowMut.emit(delete)
+                        postsApiRef.deletePost(delete)
                     }
                     MessageType.BAN -> {
                         val ban = Json.decodeFromString<BanDomain>(messageWithType.value)
