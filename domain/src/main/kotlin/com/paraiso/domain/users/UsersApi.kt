@@ -16,14 +16,14 @@ class UsersApi {
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
     fun getUserList(filters: FilterTypes, userId: String) =
-        ServerState.userList[userId]?.following?.let{followingList ->
+        ServerState.userList[userId]?.following?.let { followingList ->
             ServerState.userList.values
-                .filter {user ->
+                .filter { user ->
                     user.status != UserStatus.DISCONNECTED &&
                         (
                             filters.userRoles.contains(user.roles) ||
-                            (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
-                        )
+                                (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
+                            )
                 }.associate { user -> user.id to user.buildUserResponse() }
         }
 
@@ -34,6 +34,16 @@ class UsersApi {
                 updatedOn = Clock.System.now()
             )
         }
+
+    fun getFollowingById(userId: String) =
+        ServerState.userList.values.filter {
+            it.following.contains(userId)
+        }.map { it.buildUserResponse() }
+
+    fun getFollowersById(userId: String) =
+        ServerState.userList.values.filter {
+            it.followers.contains(userId)
+        }.map { it.buildUserResponse() }
 
     fun getUserChat(userId: String) =
         ServerState.userList[userId]?.let { user ->

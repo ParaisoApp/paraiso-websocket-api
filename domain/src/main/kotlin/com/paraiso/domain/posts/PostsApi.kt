@@ -10,6 +10,7 @@ import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.systemUser
+import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -77,23 +78,33 @@ class PostsApi {
             )
         }
 
-    fun getPosts(postSearchId: String, basePostName: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
+    fun getPosts(
+        postSearchId: String,
+        basePostName: String,
+        rangeModifier: Range,
+        sortType: SortType,
+        filters: FilterTypes,
+        userId: String
+    ) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
             val userFollowing = ServerState.userList[userId]?.following ?: setOf()
             ServerState.posts.asSequence().filter { (_, post) ->
                 ( // check for base post or user if profile nav
                     post.parentId == postSearchId ||
-                        post.userId == postSearchId.removePrefix("USER-") ||
+                        post.userId == postSearchId.removePrefix(USER_PREFIX) ||
                         (
                             postSearchId == SiteRoute.HOME.name && // search from all posts if on homepage
-                                enumValues<SiteRoute>().any { it.name == post.parentId }
+                                ( // this includes all SiteRoutes and all Profile posts
+                                    enumValues<SiteRoute>().any { it.name == post.parentId } ||
+                                        post.parentId.startsWith(USER_PREFIX)
+                                    )
                             )
                     ) &&
                     post.createdOn > range &&
                     post.status != PostStatus.DELETED &&
                     filters.postTypes.contains(post.type) &&
-                        (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) || (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
+                    (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) || (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs

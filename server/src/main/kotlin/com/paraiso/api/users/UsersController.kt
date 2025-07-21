@@ -21,7 +21,6 @@ fun Route.usersController(usersApi: UsersApi) {
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
-
         }
         get("/chat") {
             call.respond(
@@ -30,9 +29,24 @@ fun Route.usersController(usersApi: UsersApi) {
             )
         }
         get("/findByName") {
-            usersApi.getUserByName(call.request.queryParameters["userName"] ?: "")?.let {
+            usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
+        get("/findById") {
+            usersApi.getUserById(call.request.queryParameters["id"] ?: "")?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
+        get("/findFollowingById") {
+            usersApi.getFollowingById(call.request.queryParameters["id"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+        get("/findFollowersById") {
+            usersApi.getFollowersById(call.request.queryParameters["id"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
         }
         post("/settings") {
             usersApi.setSettings(
