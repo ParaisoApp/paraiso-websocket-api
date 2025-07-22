@@ -59,7 +59,7 @@ class UsersApi {
 
     private fun updateChatForUser(dm: DirectMessage, user: User, otherUserId: String, now: Instant) {
         user.chats.toMutableMap().apply {
-            put(otherUserId, getOrDefault(otherUserId, emptyList()) + dm)
+            put(otherUserId, getOrDefault(otherUserId, emptySet()) + dm)
         }.let { updatedChats ->
             ServerState.userList[user.id] = user.copy(
                 chats = updatedChats,

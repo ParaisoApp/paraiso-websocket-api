@@ -28,7 +28,8 @@ data class DirectMessage(
     val userId: String,
     val userReceiveId: String,
     val content: String,
-    val media: String
+    val media: String,
+    val viewed: Boolean
 )
 
 fun Message.toNewPost() = Post(
