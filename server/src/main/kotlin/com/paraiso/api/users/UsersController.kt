@@ -23,10 +23,13 @@ fun Route.usersController(usersApi: UsersApi) {
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/chat") {
-            call.respond(
-                HttpStatusCode.OK,
-                usersApi.getUserChat(call.request.queryParameters["id"] ?: "")
-            )
+            usersApi.getOrPutUserChat(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["userId"] ?: "",
+                call.request.queryParameters["otherUserId"] ?: ""
+            ).let {
+                call.respond(HttpStatusCode.OK, it)
+            }
         }
         get("/findByName") {
             usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
@@ -64,9 +67,8 @@ fun Route.usersController(usersApi: UsersApi) {
         }
         post("/markChatRead") {
             usersApi.markUserChatRead(
+                call.request.queryParameters["userChatId"] ?: "",
                 call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["chatId"] ?: "",
-                call.request.queryParameters["dmId"] ?: "",
             )
             call.respond(HttpStatusCode.OK)
         }

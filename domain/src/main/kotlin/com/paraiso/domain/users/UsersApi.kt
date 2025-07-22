@@ -7,6 +7,7 @@ import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import java.util.UUID
 
 class UsersApi {
     fun getUserById(userId: String) =
@@ -44,39 +45,56 @@ class UsersApi {
         ServerState.userList.values.filter {
             it.followers.contains(userId)
         }.map { it.buildUserResponse() }
-
-    fun getUserChat(userId: String) =
-        ServerState.userList[userId]?.let { user ->
-            user.chats
-                .asSequence()
-                .associate { chat ->
-                    chat.key to UserChat(
-                        ServerState.userList[chat.key]?.buildUserResponse(),
-                        chat.value.associateBy { it.id ?: UNKNOWN }
+    fun getOrPutUserChat(chatId: String, userId: String, otherUserId: String) =
+        ServerState.userChatList[chatId]?.toReturn() ?: run {
+            Clock.System.now().let { now ->
+                val user = ServerState.userList[userId]
+                val otherUser = ServerState.userList[otherUserId]
+                if(user != null && otherUser != null){
+                    ServerState.userChatList[chatId] = UserChat(
+                        id = UUID.randomUUID().toString(),
+                        users = setOf(user, otherUser),
+                        dms = emptySet(),
+                        createdOn = now,
+                        updatedOn = now
                     )
                 }
-        } ?: emptyMap()
+            }
+        }
 
-    private fun updateChatForUser(dm: DirectMessage, user: User, otherUserId: String, now: Instant) {
-        user.chats.toMutableMap().apply {
-            put(otherUserId, getOrDefault(otherUserId, emptySet()) + dm)
-        }.let { updatedChats ->
-            ServerState.userList[user.id] = user.copy(
-                chats = updatedChats,
-                updatedOn = now
-            )
+    private fun updateChatForUser(
+        dm: DirectMessage,
+        userId: String,
+        otherUserId: String,
+        isUser: Boolean,
+        now: Instant
+    ) =
+        ServerState.userList[userId]?.let{ user ->
+            user.chats.toMutableMap().let { mutableChat ->
+                mutableChat[otherUserId] = ChatRef(
+                    mostRecentDm = dm,
+                    viewed = !isUser
+                )
+                ServerState.userList[userId] = user.copy(
+                    chats = mutableChat,
+                    updatedOn = now
+                )
+            }
         }
-    }
 
-    fun putDM(dm: DirectMessage) {
-        val now = Clock.System.now()
-        ServerState.userList[dm.userId]?.let { user ->
-            updateChatForUser(dm, user, dm.userReceiveId, now) // update chat for sending user
+    fun putDM(dm: DirectMessage) =
+        Clock.System.now().let{ now ->
+            updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) // update chat for receiving user
+            updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) // update chat for receiving user
+            ServerState.userChatList[dm.chatId]?.let{chat ->
+                ServerState.userChatList[dm.chatId] = chat.copy(
+                    dms = chat.dms + dm.copy(
+                        createdOn = now
+                    ),
+                    updatedOn = now
+                )
+            }
         }
-        ServerState.userList[dm.userReceiveId]?.let { user ->
-            updateChatForUser(dm, user, dm.userId, now) // update chat for receiving user
-        }
-    }
 
     fun markReplyRead(userId: String, replyId: String) =
         // update user post replies
@@ -91,20 +109,19 @@ class UsersApi {
             }
         }
 
-    fun markUserChatRead(userId: String, chatId: String, dmId: String) =
-        // update user post replies
-        ServerState.userList[userId]?.let { user ->
-            val now = Clock.System.now()
+    fun markUserChatRead(userChatId: String, userId: String) =
+        ServerState.userList[userId]?.let{user ->
+            //grab chats and make mutable
             user.chats.toMutableMap().let { mutableChats ->
-                user.chats[chatId]?.find { it.id == dmId }?.let{foundDm ->
-                    user.chats[chatId]?.toMutableSet()?.let {mutableDms ->
-                        mutableDms.add(foundDm.copy(viewed = true))
-                        mutableChats[userId] = mutableDms
-                        ServerState.userList[userId] = user.copy(
-                            chats = mutableChats,
-                            updatedOn = now
-                        )
-                    }
+                //find chat and set to true
+                mutableChats[userChatId]?.let{chatViewed ->
+                    mutableChats[userChatId] = chatViewed.copy(
+                        viewed = true
+                    )
+                    //update user
+                    ServerState.userList[userId] = user.copy(
+                        chats = mutableChats
+                    )
                 }
             }
         }

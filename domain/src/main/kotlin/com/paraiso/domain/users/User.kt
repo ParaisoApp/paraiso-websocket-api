@@ -18,7 +18,7 @@ data class User(
     val replies: Map<String, Boolean>,
     val followers: Set<String>,
     val following: Set<String>,
-    val chats: Map<String, Set<DirectMessage>>,
+    val chats: Map<String, ChatRef>,
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
@@ -31,6 +31,12 @@ data class User(
 ) { companion object }
 
 @Serializable
+data class ChatRef(
+    val mostRecentDm: DirectMessage,
+    val viewed: Boolean
+) { companion object }
+
+@Serializable
 data class UserSettings(
     val theme: Int,
     val accent: Int,
@@ -40,18 +46,12 @@ data class UserSettings(
 ) { companion object }
 
 @Serializable
-data class UserChat(
-    val user: UserResponse?,
-    val dmMap: Map<String, DirectMessage>
-)
-
-@Serializable
 data class UserResponse(
     val id: String,
     val name: String,
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
-    val chats: Map<String, Set<DirectMessage>>,
+    val chats: Map<String, ChatRef>,
     val replies: Map<String, Boolean>,
     val followers: Map<String, Boolean>,
     val following: Map<String, Boolean>,

@@ -5,6 +5,7 @@ import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -25,11 +26,12 @@ data class Message(
 @Serializable
 data class DirectMessage(
     val id: String? = null,
+    val chatId: String,
     val userId: String,
     val userReceiveId: String,
     val content: String,
     val media: String,
-    val viewed: Boolean
+    val createdOn: Instant? = null
 )
 
 fun Message.toNewPost() = Post(
