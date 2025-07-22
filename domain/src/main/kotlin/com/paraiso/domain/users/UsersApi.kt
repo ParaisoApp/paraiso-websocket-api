@@ -78,6 +78,37 @@ class UsersApi {
         }
     }
 
+    fun markReplyRead(userId: String, replyId: String) =
+        // update user post replies
+        ServerState.userList[userId]?.let { user ->
+            val now = Clock.System.now()
+            user.replies.toMutableMap().let{ mutableReplies ->
+                mutableReplies[replyId] = true
+                ServerState.userList[userId] = user.copy(
+                    replies = mutableReplies,
+                    updatedOn = now
+                )
+            }
+        }
+
+    fun markUserChatRead(userId: String, chatId: String, dmId: String) =
+        // update user post replies
+        ServerState.userList[userId]?.let { user ->
+            val now = Clock.System.now()
+            user.chats.toMutableMap().let { mutableChats ->
+                user.chats[chatId]?.find { it.id == dmId }?.let{foundDm ->
+                    user.chats[chatId]?.toMutableSet()?.let {mutableDms ->
+                        mutableDms.add(foundDm.copy(viewed = true))
+                        mutableChats[userId] = mutableDms
+                        ServerState.userList[userId] = user.copy(
+                            chats = mutableChats,
+                            updatedOn = now
+                        )
+                    }
+                }
+            }
+        }
+
     fun follow(follow: Follow) {
         val now = Clock.System.now()
         // add follower to followers list of followee user

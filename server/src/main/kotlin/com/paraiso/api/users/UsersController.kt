@@ -55,5 +55,20 @@ fun Route.usersController(usersApi: UsersApi) {
             )
             call.respond(HttpStatusCode.OK)
         }
+        post("/settings") {
+            usersApi.setSettings(
+                call.request.queryParameters["id"] ?: "",
+                call.receive<UserSettings>()
+            )
+            call.respond(HttpStatusCode.OK)
+        }
+        post("/markChatRead") {
+            usersApi.markUserChatRead(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["chatId"] ?: "",
+                call.request.queryParameters["dmId"] ?: "",
+            )
+            call.respond(HttpStatusCode.OK)
+        }
     }
 }

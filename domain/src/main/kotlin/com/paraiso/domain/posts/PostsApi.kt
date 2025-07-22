@@ -204,37 +204,6 @@ class PostsApi {
             }
         }
 
-    fun markReplyRead(userId: String, replyId: String) =
-        // update user post replies
-        ServerState.userList[userId]?.let { user ->
-            val now = Clock.System.now()
-            user.replies.toMutableMap().let{ mutableReplies ->
-                mutableReplies[replyId] = true
-                ServerState.userList[userId] = user.copy(
-                    replies = mutableReplies,
-                    updatedOn = now
-                )
-            }
-        }
-
-    fun markUserChatRead(userId: String, userChatId: String, dmId: String) =
-        // update user post replies
-        ServerState.userList[userId]?.let { user ->
-            val now = Clock.System.now()
-            user.chats.toMutableMap().let { mutableChats ->
-                user.chats[userChatId]?.find { it.id == dmId }?.let{foundDm ->
-                    user.chats[userChatId]?.toMutableSet()?.let {mutableDms ->
-                        mutableDms.add(foundDm.copy(viewed = true))
-                        mutableChats[userId] = mutableDms
-                        ServerState.userList[userId] = user.copy(
-                            chats = mutableChats,
-                            updatedOn = now
-                        )
-                    }
-                }
-            }
-        }
-
     fun votePost(vote: Vote) =
         ServerState.posts[vote.postId]?.let { post ->
             post.votes.toMutableMap().let { mutableVoteMap ->
