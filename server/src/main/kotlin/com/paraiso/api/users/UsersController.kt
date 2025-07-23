@@ -27,9 +27,9 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.request.queryParameters["id"] ?: "",
                 call.request.queryParameters["userId"] ?: "",
                 call.request.queryParameters["otherUserId"] ?: ""
-            ).let {
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
-            }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/findByName") {
             usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {

@@ -33,6 +33,7 @@ data class User(
 @Serializable
 data class ChatRef(
     val mostRecentDm: DirectMessage,
+    val chatId: String,
     val viewed: Boolean
 ) { companion object }
 

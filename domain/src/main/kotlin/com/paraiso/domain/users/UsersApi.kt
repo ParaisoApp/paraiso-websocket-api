@@ -45,19 +45,26 @@ class UsersApi {
         ServerState.userList.values.filter {
             it.followers.contains(userId)
         }.map { it.buildUserResponse() }
+
     fun getOrPutUserChat(chatId: String, userId: String, otherUserId: String) =
         ServerState.userChatList[chatId]?.toReturn() ?: run {
             Clock.System.now().let { now ->
                 val user = ServerState.userList[userId]
                 val otherUser = ServerState.userList[otherUserId]
                 if(user != null && otherUser != null){
-                    ServerState.userChatList[chatId] = UserChat(
-                        id = UUID.randomUUID().toString(),
-                        users = setOf(user, otherUser),
-                        dms = emptySet(),
-                        createdOn = now,
-                        updatedOn = now
-                    )
+                    UUID.randomUUID().toString().let { newChatId ->
+                        val newUserChat = UserChat(
+                            id = newChatId,
+                            users = setOf(user, otherUser),
+                            dms = emptySet(),
+                            createdOn = now,
+                            updatedOn = now
+                        )
+                        ServerState.userChatList[newChatId] = newUserChat
+                        newUserChat.toReturn()
+                    }
+                }else{
+                    null
                 }
             }
         }
@@ -73,6 +80,7 @@ class UsersApi {
             user.chats.toMutableMap().let { mutableChat ->
                 mutableChat[otherUserId] = ChatRef(
                     mostRecentDm = dm,
+                    chatId = dm.chatId,
                     viewed = !isUser
                 )
                 ServerState.userList[userId] = user.copy(
@@ -86,6 +94,8 @@ class UsersApi {
         Clock.System.now().let{ now ->
             updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) // update chat for receiving user
             updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) // update chat for receiving user
+            val test = ServerState.userChatList[dm.chatId]
+            println(test)
             ServerState.userChatList[dm.chatId]?.let{chat ->
                 ServerState.userChatList[dm.chatId] = chat.copy(
                     dms = chat.dms + dm.copy(
