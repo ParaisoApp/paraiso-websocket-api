@@ -17,7 +17,7 @@ class UsersApi {
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
     fun getUserByPartial(search: String) =
-        ServerState.userList.values.filter { it.name.contains(search) }.map { it.buildUserResponse() }
+        ServerState.userList.values.filter { it.name.lowercase().contains(search.lowercase()) }.map { it.buildUserResponse() }
 
     fun getUserList(filters: FilterTypes, userId: String) =
         ServerState.userList[userId]?.following?.let { followingList ->

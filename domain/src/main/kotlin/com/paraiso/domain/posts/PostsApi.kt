@@ -83,7 +83,7 @@ class PostsApi {
 
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {
-            it.title.contains(search) || it.content.contains(search)
+            it.title.lowercase().contains(search.lowercase()) || it.content.lowercase().contains(search.lowercase())
         }.let{ foundPosts ->
             foundPosts.map { foundPost ->
                 ServerState.userList[foundPost.userId]?.let{foundUser ->
