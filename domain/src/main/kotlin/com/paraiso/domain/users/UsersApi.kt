@@ -95,7 +95,6 @@ class UsersApi {
             updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) // update chat for receiving user
             updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) // update chat for receiving user
             val test = ServerState.userChatList[dm.chatId]
-            println(test)
             ServerState.userChatList[dm.chatId]?.let{chat ->
                 ServerState.userChatList[dm.chatId] = chat.copy(
                     dms = chat.dms + dm.copy(
