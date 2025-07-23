@@ -68,7 +68,7 @@ class PostsApi {
     }
 
     // return fully updated root post (for update or load of root post to post tree)
-    fun getPostById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
+    fun getById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         ServerState.posts[postSearchId]?.let { post ->
             generatePostTree(
                 post,
@@ -79,6 +79,19 @@ class PostsApi {
                 filters,
                 userId
             )
+        }
+
+    fun getByPartial(search: String) =
+        ServerState.posts.values.filter {
+            it.title.contains(search) || it.content.contains(search)
+        }.let{ foundPosts ->
+            foundPosts.map { foundPost ->
+                ServerState.userList[foundPost.userId]?.let{foundUser ->
+                    foundPost.toPostReturn(foundUser.buildUserResponse())
+                } ?: run{
+                    foundPost.toPostReturn(UserResponse.systemUser())
+                }
+            }
         }
 
     fun getPosts(

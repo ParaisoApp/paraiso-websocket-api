@@ -32,22 +32,27 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        get("/findByName") {
+        get("/getByName") {
             usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        get("/findById") {
+        get("/getById") {
             usersApi.getUserById(call.request.queryParameters["id"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        get("/findFollowingById") {
+        get("/getByPartial") {
+            usersApi.getUserByPartial(call.request.queryParameters["search"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+        get("/getFollowingById") {
             usersApi.getFollowingById(call.request.queryParameters["id"] ?: "").let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
-        get("/findFollowersById") {
+        get("/getFollowersById") {
             usersApi.getFollowersById(call.request.queryParameters["id"] ?: "").let {
                 call.respond(HttpStatusCode.OK, it)
             }
