@@ -67,6 +67,12 @@ data class UserResponse(
     val updatedOn: Instant
 ) { companion object }
 
+@Serializable
+data class UserNotifs(
+    val replyIds: Set<String>,
+    val userChatIds: Set<String>,
+) { companion object }
+
 fun User.toUserResponse(
     posts: Map<String, Map<String, Boolean>>,
     comments: Map<String, Map<String, Boolean>>

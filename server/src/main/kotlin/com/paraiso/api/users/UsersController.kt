@@ -1,6 +1,7 @@
 package com.paraiso.com.paraiso.api.users
 
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.users.UserNotifs
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
 import io.ktor.http.HttpStatusCode
@@ -65,10 +66,10 @@ fun Route.usersController(usersApi: UsersApi) {
             )
             call.respond(HttpStatusCode.OK)
         }
-        post("/markChatRead") {
-            usersApi.markUserChatRead(
-                call.request.queryParameters["userChatId"] ?: "",
+        post("/markNotifsRead") {
+            usersApi.markNotifsRead(
                 call.request.queryParameters["id"] ?: "",
+                call.receive<UserNotifs>(),
             )
             call.respond(HttpStatusCode.OK)
         }

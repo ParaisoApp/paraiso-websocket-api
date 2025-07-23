@@ -106,31 +106,28 @@ class UsersApi {
             }
         }
 
-    fun markReplyRead(userId: String, replyId: String) =
-        // update user post replies
-        ServerState.userList[userId]?.let { user ->
-            val now = Clock.System.now()
-            user.replies.toMutableMap().let{ mutableReplies ->
-                mutableReplies[replyId] = true
-                ServerState.userList[userId] = user.copy(
-                    replies = mutableReplies,
-                    updatedOn = now
-                )
-            }
-        }
-
-    fun markUserChatRead(userChatId: String, userId: String) =
+    fun markNotifsRead(userId: String, userNotifs: UserNotifs) =
         ServerState.userList[userId]?.let{user ->
+            val now = Clock.System.now()
             //grab chats and make mutable
-            user.chats.toMutableMap().let { mutableChats ->
+            user.chats.filter { userNotifs.userChatIds.contains(it.key) }.toMutableMap().let { mutableChats ->
                 //find chat and set to true
-                mutableChats[userChatId]?.let{chatViewed ->
-                    mutableChats[userChatId] = chatViewed.copy(
+                mutableChats.map {
+                    mutableChats[it.key] = it.value.copy(
                         viewed = true
                     )
+                }
+                //grab chats and make mutable
+                user.replies.filter { userNotifs.replyIds.contains(it.key) }.toMutableMap().let { mutableReplies ->
+                    //find chat and set to true
+                    mutableReplies.map {
+                        mutableReplies[it.key] = true
+                    }
                     //update user
                     ServerState.userList[userId] = user.copy(
-                        chats = mutableChats
+                        chats = mutableChats,
+                        replies = mutableReplies,
+                        updatedOn = now
                     )
                 }
             }
