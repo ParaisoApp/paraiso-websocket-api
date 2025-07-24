@@ -20,6 +20,7 @@ class PostsApi {
 
     companion object {
         const val RETRIEVE_LIM = 50
+        const val PARTIAL_RETRIEVE_LIM = 5
         const val TIME_WEIGHTING = 10000000000
     }
 
@@ -84,7 +85,7 @@ class PostsApi {
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {
             it.title.lowercase().contains(search.lowercase()) || it.content.lowercase().contains(search.lowercase())
-        }.let{ foundPosts ->
+        }.take(PARTIAL_RETRIEVE_LIM).let{ foundPosts ->
             foundPosts.map { foundPost ->
                 ServerState.userList[foundPost.userId]?.let{foundUser ->
                     foundPost.toPostReturn(foundUser.buildUserResponse())

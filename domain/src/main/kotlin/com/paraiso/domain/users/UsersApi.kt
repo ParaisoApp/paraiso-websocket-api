@@ -3,6 +3,7 @@ package com.paraiso.domain.users
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
@@ -10,6 +11,10 @@ import kotlinx.datetime.Instant
 import java.util.UUID
 
 class UsersApi {
+
+    companion object {
+        const val PARTIAL_RETRIEVE_LIM = 5
+    }
     fun getUserById(userId: String) =
         ServerState.userList[userId]?.buildUserResponse()
 
@@ -17,7 +22,10 @@ class UsersApi {
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
     fun getUserByPartial(search: String) =
-        ServerState.userList.values.filter { it.name.lowercase().contains(search.lowercase()) }.map { it.buildUserResponse() }
+        ServerState.userList.values
+            .filter { it.name.lowercase().contains(search.lowercase()) }
+            .take(PARTIAL_RETRIEVE_LIM)
+            .map { it.buildUserResponse() }
 
     fun getUserList(filters: FilterTypes, userId: String) =
         ServerState.userList[userId]?.following?.let { followingList ->
