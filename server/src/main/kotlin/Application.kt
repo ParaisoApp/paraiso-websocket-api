@@ -2,11 +2,13 @@ package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.com.paraiso.api.auth.authController
+import com.paraiso.com.paraiso.api.metadata.metadataController
 import com.paraiso.com.paraiso.api.posts.postsController
 import com.paraiso.com.paraiso.api.sports.sportsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.domain.auth.AuthApi
+import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.sport.SportApi
 import com.paraiso.domain.sport.SportHandler
@@ -22,7 +24,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
@@ -59,7 +60,8 @@ fun main() {
             postsApi,
             usersApi,
             AuthApi(),
-            SportApi()
+            SportApi(),
+            MetadataApi()
         )
     }.start(wait = true)
 
@@ -79,7 +81,8 @@ fun Application.configureSockets(
     postsApi: PostsApi,
     usersApi: UsersApi,
     authApi: AuthApi,
-    sportApi: SportApi
+    sportApi: SportApi,
+    metadataApi: MetadataApi
 ) {
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
@@ -123,6 +126,7 @@ fun Application.configureSockets(
             postsController(postsApi)
             usersController(usersApi)
             sportsController(sportApi)
+            metadataController(metadataApi)
         }
     }
 }

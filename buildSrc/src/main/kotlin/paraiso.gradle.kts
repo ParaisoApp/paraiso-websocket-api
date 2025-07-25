@@ -29,6 +29,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
     implementation("io.klogging:klogging-jvm:0.5.11")
     implementation("ch.qos.logback:logback-classic:1.2.3")
+    // xss filter and scraping
+    implementation("org.jsoup:jsoup:1.17.2")
 }
 
 tasks.withType<KotlinCompile> {
