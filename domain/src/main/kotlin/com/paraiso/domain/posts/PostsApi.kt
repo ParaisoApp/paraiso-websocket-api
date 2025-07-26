@@ -33,6 +33,7 @@ class PostsApi {
                     title = message.title,
                     content = message.content,
                     media = message.media,
+                    data = message.data,
                     updatedOn = now
                 )
                 // otherwise create a new post

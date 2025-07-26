@@ -45,7 +45,7 @@ class MetadataApi {
                 meta("property", "og:video", doc),
                 meta("name", "twitter:player", doc),
                 doc.select("video source").firstOrNull()?.absUrl("src"),
-                doc.select("iframe").firstOrNull()?.absUrl("src")
+                doc.select("iframe").firstOrNull()?.absUrl("src"),
             )
         }
 
