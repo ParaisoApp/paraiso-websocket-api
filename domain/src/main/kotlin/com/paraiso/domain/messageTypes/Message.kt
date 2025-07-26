@@ -17,6 +17,7 @@ data class Message(
     val content: String,
     val type: PostType,
     val media: String,
+    val data: String,
     val replyId: String,
     val rootId: String,
     val editId: String,
