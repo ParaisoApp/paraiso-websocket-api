@@ -6,6 +6,8 @@ import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.util.UUID
@@ -101,12 +103,11 @@ class UsersApi {
             }
         }
 
-    fun putDM(dm: DirectMessage) =
-        Clock.System.now().let{ now ->
-            updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) // update chat for receiving user
-            updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) // update chat for receiving user
-            val test = ServerState.userChatList[dm.chatId]
-            ServerState.userChatList[dm.chatId]?.let{chat ->
+    suspend fun putDM(dm: DirectMessage) = coroutineScope {
+        Clock.System.now().let { now ->
+            launch{ updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) } // update chat for receiving user
+            launch { updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) } // update chat for receiving user
+            ServerState.userChatList[dm.chatId]?.let { chat ->
                 ServerState.userChatList[dm.chatId] = chat.copy(
                     dms = chat.dms + dm.copy(
                         createdOn = now
@@ -115,6 +116,7 @@ class UsersApi {
                 )
             }
         }
+    }
 
     fun markNotifsRead(userId: String, userNotifs: UserNotifs) =
         ServerState.userList[userId]?.let{user ->
@@ -143,21 +145,23 @@ class UsersApi {
             }
         }
 
-    fun follow(follow: Follow) {
+    suspend fun follow(follow: Follow) = coroutineScope {
         val now = Clock.System.now()
         // add follower to followers list of followee user
-        ServerState.userList[follow.followeeId]?.let { followee ->
-            followee.followers.toMutableSet().apply {
-                if (followee.followers.contains(follow.followerId)) {
-                    remove(follow.followerId)
-                } else {
-                    add(follow.followerId)
+        launch {
+            ServerState.userList[follow.followeeId]?.let { followee ->
+                followee.followers.toMutableSet().apply {
+                    if (followee.followers.contains(follow.followerId)) {
+                        remove(follow.followerId)
+                    } else {
+                        add(follow.followerId)
+                    }
+                }.let { updatedFollowers ->
+                    ServerState.userList[followee.id] = followee.copy(
+                        followers = updatedFollowers,
+                        updatedOn = now
+                    )
                 }
-            }.let { updatedFollowers ->
-                ServerState.userList[followee.id] = followee.copy(
-                    followers = updatedFollowers,
-                    updatedOn = now
-                )
             }
         }
         // add followee to following list of follower user
