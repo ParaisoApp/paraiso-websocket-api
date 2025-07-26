@@ -19,6 +19,7 @@ import com.paraiso.domain.users.initSettings
 import com.paraiso.domain.users.toUser
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.ServerState
+import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
@@ -163,29 +164,30 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
         var activeJobs: Job? = null
         try {
             incoming.consumeEach { frame ->
-                val messageWithType = converter?.findCorrectConversion<TypeMappingDomain<String>>(frame)
-                    ?.typeMapping?.entries?.first()
-                when (messageWithType?.key) {
+                val messageType = determineMessageType(frame)
+                when (messageType) {
                     MessageType.MSG -> {
-                        Json.decodeFromString<MessageDomain>(messageWithType.value).let { message ->
-                            UUID.randomUUID().toString().let { messageId ->
-                                message.copy(
-                                    id = messageId,
-                                    userId = sessionUser.id,
-                                    rootId = messageId.takeIf { message.rootId == "-1" } ?: message.rootId
-                                ).let { messageWithData ->
-                                    if (sessionUser.banned) {
-                                        sendTypedMessage(MessageType.MSG, messageWithData)
-                                    } else {
-                                        ServerState.messageFlowMut.emit(messageWithData)
-                                        postsApiRef.putPost(messageWithData)
+                        converter?.findCorrectConversion<TypeMappingDomain<MessageDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { message ->
+                                UUID.randomUUID().toString().let { messageId ->
+                                    message.copy(
+                                        id = messageId,
+                                        userId = sessionUser.id,
+                                        rootId = messageId.takeIf { message.rootId == "-1" } ?: message.rootId
+                                    ).let { messageWithData ->
+                                        if (sessionUser.banned) {
+                                            sendTypedMessage(MessageType.MSG, messageWithData)
+                                        } else {
+                                            ServerState.messageFlowMut.emit(messageWithData)
+                                            postsApiRef.putPost(messageWithData)
+                                        }
                                     }
                                 }
-                            }
                         }
                     }
                     MessageType.DM -> {
-                        Json.decodeFromString<DirectMessageDomain>(messageWithType.value).let { dm ->
+                        converter?.findCorrectConversion<TypeMappingDomain<DirectMessageDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { dm ->
                             dm.copy(
                                 id = UUID.randomUUID().toString(),
                                 userId = sessionUser.id
@@ -202,7 +204,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.FOLLOW -> {
-                        Json.decodeFromString<FollowDomain>(messageWithType.value).copy(followerId = sessionUser.id).let { follow ->
+                        converter?.findCorrectConversion<TypeMappingDomain<FollowDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.FOLLOW, follow)
                             } else {
@@ -212,7 +215,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.VOTE -> {
-                        Json.decodeFromString<VoteDomain>(messageWithType.value).copy(voterId = sessionUser.id).let { vote ->
+                        converter?.findCorrectConversion<TypeMappingDomain<VoteDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.VOTE, vote)
                             } else {
@@ -222,37 +226,47 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         }
                     }
                     MessageType.FILTER_TYPES -> {
-                        Json.decodeFromString<FilterTypesDomain>(messageWithType.value).let { newFilterTypes ->
+                        converter?.findCorrectConversion<TypeMappingDomain<FilterTypesDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
                             sessionState.filterTypes = newFilterTypes
                         }
                     }
                     MessageType.DELETE -> {
-                        val delete = Json.decodeFromString<DeleteDomain>(messageWithType.value).copy(userId = sessionUser.id)
-                        ServerState.deleteFlowMut.emit(delete)
-                        postsApiRef.deletePost(delete)
+                        converter?.findCorrectConversion<TypeMappingDomain<DeleteDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let{delete ->
+                                ServerState.deleteFlowMut.emit(delete)
+                                postsApiRef.deletePost(delete)
+                            }
                     }
                     MessageType.BAN -> {
-                        val ban = Json.decodeFromString<BanDomain>(messageWithType.value)
-                        if (sessionUser.roles == UserRole.ADMIN) {
-                            ServerState.banUserFlowMut.emit(ban)
-                            ServerState.banList.add(ban.userId)
-                        }
+                        converter?.findCorrectConversion<TypeMappingDomain<BanDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { ban ->
+                                if (sessionUser.roles == UserRole.ADMIN) {
+                                    ServerState.banUserFlowMut.emit(ban)
+                                    ServerState.banList.add(ban.userId)
+                                }
+                            }
                     }
                     MessageType.BLOCK -> {
-                        val block = Json.decodeFromString<BlockDomain>(messageWithType.value)
-                        val updateBlockList = sessionUser.blockList.toMutableSet()
-                        updateBlockList.add(block.userId)
-                        ServerState.userList[sessionUser.id] = sessionUser.copy(blockList = updateBlockList).toUser()
+                        converter?.findCorrectConversion<TypeMappingDomain<BlockDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { block ->
+                                val updateBlockList = sessionUser.blockList.toMutableSet()
+                                updateBlockList.add(block.userId)
+                                ServerState.userList[sessionUser.id] =
+                                    sessionUser.copy(blockList = updateBlockList).toUser()
+                            }
                     }
                     MessageType.ROUTE -> {
-                        val route = Json.decodeFromString<RouteDomain>(messageWithType.value)
-                        activeJobs?.cancelAndJoin()
-                        val session = this
-                        activeJobs = launch {
-                            handleRoute(route, session)
-                        }
+                        converter?.findCorrectConversion<TypeMappingDomain<RouteDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { route ->
+                                activeJobs?.cancelAndJoin()
+                                val session = this
+                                activeJobs = launch {
+                                    handleRoute(route, session)
+                                }
+                            }
                     }
-                    else -> logger.error { "Invalid message type received $messageWithType" }
+                    else -> logger.error { "Invalid message type received $frame" }
                 }
             }
         } catch (ex: Exception) {
