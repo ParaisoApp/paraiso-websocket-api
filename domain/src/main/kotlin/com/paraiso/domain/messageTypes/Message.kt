@@ -35,20 +35,23 @@ data class DirectMessage(
     val createdOn: Instant? = null
 )
 
-fun Message.toNewPost() = Post(
-    id = id ?: UNKNOWN,
-    userId = userId,
-    title = title,
-    content = content,
-    type = type,
-    media = media,
-    votes = mapOf(userId to true),
-    parentId = replyId,
-    rootId = rootId,
-    status = PostStatus.ACTIVE,
-    data = "",
-    subPosts = emptySet(),
-    route = route,
-    createdOn = Clock.System.now(),
-    updatedOn = Clock.System.now()
-)
+fun Message.toNewPost() =
+    Clock.System.now().let{now ->
+        Post(
+            id = id ?: UNKNOWN,
+            userId = userId,
+            title = title,
+            content = content,
+            type = type,
+            media = media,
+            votes = mapOf(userId to true),
+            parentId = replyId,
+            rootId = rootId,
+            status = PostStatus.ACTIVE,
+            data = data,
+            subPosts = emptySet(),
+            route = route,
+            createdOn = now,
+            updatedOn = now
+        )
+    }
