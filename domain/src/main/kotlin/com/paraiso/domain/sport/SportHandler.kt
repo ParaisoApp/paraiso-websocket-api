@@ -89,6 +89,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                         status = PostStatus.ACTIVE,
                                         data = "TEAM-$key",
                                         subPosts = mutableSetOf(),
+                                        count = 0,
                                         route = Constants.EMPTY,
                                         createdOn = Clock.System.now(),
                                         updatedOn = Clock.System.now()
@@ -174,6 +175,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         status = PostStatus.ACTIVE,
                         data = "${competition.date}-${competition.shortName}",
                         subPosts = mutableSetOf(),
+                        count = 0,
                         route = Constants.EMPTY,
                         createdOn = Clock.System.now(),
                         updatedOn = Clock.System.now()

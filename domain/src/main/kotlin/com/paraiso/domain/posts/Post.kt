@@ -20,6 +20,7 @@ data class Post(
     val status: PostStatus,
     val data: String?,
     val subPosts: Set<String>,
+    val count: Int,
     val route: String,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -40,6 +41,7 @@ data class PostReturn(
     val status: PostStatus,
     val data: String?,
     var subPosts: Map<String, Boolean>,
+    val count: Int,
     val route: String,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -134,6 +136,7 @@ fun Post.toPostReturn(user: UserResponse?) = PostReturn(
     status = status,
     data = data,
     subPosts = subPosts.associateWith { true },
+    count = count,
     route = route,
     createdOn = createdOn,
     updatedOn = updatedOn
@@ -152,6 +155,7 @@ fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<Str
     status = PostStatus.ACTIVE,
     data = Constants.EMPTY,
     subPosts = subPosts,
+    count = 0,
     route = Constants.EMPTY,
     createdOn = Clock.System.now(),
     updatedOn = Clock.System.now()

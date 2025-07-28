@@ -12,6 +12,8 @@ import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
@@ -24,7 +26,7 @@ class PostsApi {
         const val TIME_WEIGHTING = 10000000000
     }
 
-    fun putPost(message: Message) {
+    suspend fun putPost(message: Message) = coroutineScope {
         message.id?.let { messageId ->
             val now = Clock.System.now()
             // if post already exists then edit
@@ -42,9 +44,16 @@ class PostsApi {
                 // update parent sub posts
                 ServerState.posts[message.replyId]?.let { parent ->
                     ServerState.posts[message.replyId] = parent.copy(
+                        count = parent.count + 1,
                         subPosts = parent.subPosts + messageId,
                         updatedOn = now
                     )
+                    launch{
+                        //update grandparent sub post counts - increment to add
+                        ServerState.posts[parent.parentId]?.let { grandParent ->
+                            updateCounts(grandParent, now, increment = 1)
+                        }
+                    }
                 }
                 // update user posts
                 ServerState.userList[message.userId]?.let { user ->
@@ -69,6 +78,17 @@ class PostsApi {
         }
     }
 
+    fun updateCounts(post: Post, now: Instant, increment: Int) {
+        ServerState.posts[post.id] = post.copy(
+            count = post.count + (1 * increment),
+            updatedOn = now
+        )
+        if (post.rootId == post.id) return
+        ServerState.posts[post.parentId]?.let {parent ->
+            updateCounts(parent, now, increment)
+        }
+    }
+
     // return fully updated root post (for update or load of root post to post tree)
     fun getById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         ServerState.posts[postSearchId]?.let { post ->
@@ -83,6 +103,7 @@ class PostsApi {
             )
         }
 
+    //search by partial for autocomplete
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {
             it.title.lowercase().contains(search.lowercase()) || it.content.lowercase().contains(search.lowercase())
@@ -233,7 +254,13 @@ class PostsApi {
         }
     fun deletePost(delete: Delete) =
         ServerState.posts[delete.postId]?.let { post ->
-            ServerState.posts[delete.postId] =
-                post.copy(status = PostStatus.DELETED, updatedOn = Clock.System.now())
+            Clock.System.now().let{now ->
+                ServerState.posts[delete.postId] =
+                    post.copy(status = PostStatus.DELETED, updatedOn = now)
+                //update parent sub post counts - decrement to subtract
+                ServerState.posts[post.parentId]?.let { parent ->
+                    updateCounts(parent, now, increment = -1)
+                }
+            }
         }
 }

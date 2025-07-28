@@ -50,6 +50,7 @@ fun Message.toNewPost() =
             status = PostStatus.ACTIVE,
             data = data,
             subPosts = emptySet(),
+            count = 0,
             route = route,
             createdOn = now,
             updatedOn = now
