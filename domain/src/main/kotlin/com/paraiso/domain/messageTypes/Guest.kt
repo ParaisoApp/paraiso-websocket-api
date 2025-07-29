@@ -8,4 +8,3 @@ data class UserInfo(
     val name: String?
 )
 
-fun randomGuestName() = "Guest ${(Math.random() * 10000).toInt()}"

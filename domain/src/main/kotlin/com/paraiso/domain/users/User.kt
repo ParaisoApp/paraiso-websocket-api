@@ -14,6 +14,10 @@ import kotlinx.serialization.Serializable
 data class User(
     val id: String,
     val name: String,
+    val fullName: String,
+    val email: String,
+    val about: String,
+    val birthday: Instant,
     val posts: Set<String>,
     val replies: Map<String, Boolean>,
     val followers: Set<String>,
@@ -50,6 +54,10 @@ data class UserSettings(
 data class UserResponse(
     val id: String,
     val name: String,
+    val fullName: String,
+    val email: String,
+    val about: String,
+    val birthday: Instant,
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
     val chats: Map<String, ChatRef>,
@@ -80,6 +88,10 @@ fun User.toUserResponse(
     UserResponse(
         id = id,
         name = name,
+        fullName = fullName,
+        email = email,
+        about = about,
+        birthday = birthday,
         posts = posts,
         comments = comments,
         chats = chats,
@@ -101,6 +113,10 @@ fun UserResponse.toUser() =
     User(
         id = id,
         name = name,
+        fullName = fullName,
+        email = email,
+        about = about,
+        birthday = birthday,
         posts = posts.keys + comments.keys,
         replies = replies,
         followers = followers.keys,
@@ -122,6 +138,10 @@ fun UserResponse.Companion.systemUser() =
         UserResponse(
             id = SYSTEM,
             name = SYSTEM,
+            fullName = SYSTEM,
+            email = SYSTEM,
+            about = SYSTEM,
+            birthday = now,
             posts = emptyMap(),
             comments = emptyMap(),
             replies = emptyMap(),
@@ -129,6 +149,37 @@ fun UserResponse.Companion.systemUser() =
             followers = emptyMap(),
             following = emptyMap(),
             roles = UserRole.SYSTEM,
+            banned = false,
+            status = UserStatus.CONNECTED,
+            blockList = emptySet(),
+            image = EMPTY,
+            lastSeen = now.toEpochMilliseconds(),
+            settings = UserSettings.initSettings(),
+            createdOn = now,
+            updatedOn = now
+        )
+    }
+
+fun randomGuestName() = "Guest ${(Math.random() * 10000).toInt()}"
+
+fun UserResponse.Companion.newUser(
+    id: String,
+) =
+    Clock.System.now().let { now ->
+        UserResponse(
+            id = id,
+            name = randomGuestName(),
+            fullName = EMPTY,
+            email = EMPTY,
+            about = EMPTY,
+            birthday = now,
+            posts = emptyMap(),
+            comments = emptyMap(),
+            replies = emptyMap(),
+            chats = emptyMap(),
+            followers = emptyMap(),
+            following = emptyMap(),
+            roles = UserRole.GUEST,
             banned = false,
             status = UserStatus.CONNECTED,
             blockList = emptySet(),

@@ -6,18 +6,15 @@ import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
-import com.paraiso.domain.messageTypes.randomGuestName
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.buildUserResponse
-import com.paraiso.domain.users.initSettings
+import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toUser
-import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.findCorrectConversion
@@ -31,8 +28,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.serialization.json.Json
 import java.util.UUID
 import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Block as BlockDomain
@@ -74,25 +69,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             }
         } ?: run { // otherwise generate guest
             UUID.randomUUID().toString().let { id ->
-                val currentUser = UserResponse(
-                    id = id,
-                    name = randomGuestName(),
-                    posts = emptyMap(),
-                    comments = emptyMap(),
-                    replies = emptyMap(),
-                    chats = emptyMap(),
-                    followers = emptyMap(),
-                    following = emptyMap(),
-                    roles = UserRole.GUEST,
-                    banned = false,
-                    status = UserStatus.CONNECTED,
-                    blockList = emptySet(),
-                    image = EMPTY,
-                    lastSeen = System.currentTimeMillis(),
-                    settings = UserSettings.initSettings(),
-                    createdOn = Clock.System.now(),
-                    updatedOn = Clock.System.now()
-                )
+                val currentUser = UserResponse.newUser(id)
                 ServerState.userList[id] = currentUser.toUser()
                 userToSocket[id] = session // map userid to socket
                 session.joinChat(currentUser)
