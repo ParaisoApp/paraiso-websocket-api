@@ -47,7 +47,10 @@ data class UserSettings(
     val accent: Int,
     val toolTips: Boolean,
     val postSubmit: Boolean,
-    val openMenus: Boolean
+    val openMenus: Boolean,
+    val showEmail: Boolean,
+    val showName: Boolean,
+    val showBirthday: Boolean
 ) { companion object }
 
 @Serializable
@@ -197,7 +200,10 @@ fun UserSettings.Companion.initSettings() =
         accent = 0,
         toolTips = true,
         postSubmit = true,
-        openMenus = true
+        openMenus = true,
+        showEmail = false,
+        showName = true,
+        showBirthday = true
     )
 
 fun User.buildUserResponse(): UserResponse {
