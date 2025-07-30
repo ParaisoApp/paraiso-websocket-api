@@ -17,7 +17,7 @@ data class User(
     val fullName: String,
     val email: String,
     val about: String,
-    val location: Location,
+    val location: UserLocation,
     val birthday: Instant,
     val posts: Set<String>,
     val replies: Map<String, Boolean>,
@@ -28,7 +28,7 @@ data class User(
     val banned: Boolean,
     val status: UserStatus,
     val blockList: Set<String>,
-    val image: String,
+    val image: UserImage,
     val lastSeen: Long,
     val settings: UserSettings,
     val createdOn: Instant,
@@ -56,10 +56,18 @@ data class UserSettings(
 ) { companion object }
 
 @Serializable
-data class Location(
+data class UserLocation(
     val city: String,
     val state: String,
     val country: String,
+) { companion object }
+
+@Serializable
+data class UserImage(
+    val url: String,
+    val posX: String,
+    val posY: String,
+    val scale: String
 ) { companion object }
 
 @Serializable
@@ -69,7 +77,7 @@ data class UserResponse(
     val fullName: String,
     val email: String,
     val about: String,
-    val location: Location,
+    val location: UserLocation,
     val birthday: Instant,
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
@@ -81,7 +89,7 @@ data class UserResponse(
     val banned: Boolean,
     val status: UserStatus,
     val blockList: Set<String>,
-    val image: String,
+    val image: UserImage,
     val lastSeen: Long,
     val settings: UserSettings,
     val createdOn: Instant,
@@ -156,7 +164,7 @@ fun UserResponse.Companion.systemUser() =
             fullName = SYSTEM,
             email = SYSTEM,
             about = SYSTEM,
-            location = Location.initLocation(),
+            location = UserLocation.initLocation(),
             birthday = now,
             posts = emptyMap(),
             comments = emptyMap(),
@@ -168,7 +176,7 @@ fun UserResponse.Companion.systemUser() =
             banned = false,
             status = UserStatus.CONNECTED,
             blockList = emptySet(),
-            image = EMPTY,
+            image = UserImage.initImage(),
             lastSeen = now.toEpochMilliseconds(),
             settings = UserSettings.initSettings(),
             createdOn = now,
@@ -188,7 +196,7 @@ fun UserResponse.Companion.newUser(
             fullName = EMPTY,
             email = EMPTY,
             about = EMPTY,
-            location = Location.initLocation(),
+            location = UserLocation.initLocation(),
             birthday = now,
             posts = emptyMap(),
             comments = emptyMap(),
@@ -200,7 +208,7 @@ fun UserResponse.Companion.newUser(
             banned = false,
             status = UserStatus.CONNECTED,
             blockList = emptySet(),
-            image = EMPTY,
+            image = UserImage.initImage(),
             lastSeen = now.toEpochMilliseconds(),
             settings = UserSettings.initSettings(),
             createdOn = now,
@@ -221,11 +229,19 @@ fun UserSettings.Companion.initSettings() =
         showBirthday = true
     )
 
-fun Location.Companion.initLocation() =
-    Location(
+fun UserLocation.Companion.initLocation() =
+    UserLocation(
         city = EMPTY,
         state = EMPTY,
         country = EMPTY,
+    )
+
+fun UserImage.Companion.initImage() =
+    UserImage(
+        url = EMPTY,
+        posX = EMPTY,
+        posY = EMPTY,
+        scale = EMPTY
     )
 
 fun User.buildUserResponse(): UserResponse {
