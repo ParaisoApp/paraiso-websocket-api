@@ -65,9 +65,9 @@ data class UserLocation(
 @Serializable
 data class UserImage(
     val url: String,
-    val posX: String,
-    val posY: String,
-    val scale: String
+    val posX: Int,
+    val posY: Int,
+    val scale: Float
 ) { companion object }
 
 @Serializable
@@ -239,9 +239,9 @@ fun UserLocation.Companion.initLocation() =
 fun UserImage.Companion.initImage() =
     UserImage(
         url = EMPTY,
-        posX = EMPTY,
-        posY = EMPTY,
-        scale = EMPTY
+        posX = 0,
+        posY = 0,
+        scale = 1f
     )
 
 fun User.buildUserResponse(): UserResponse {
