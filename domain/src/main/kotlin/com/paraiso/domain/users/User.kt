@@ -17,6 +17,7 @@ data class User(
     val fullName: String,
     val email: String,
     val about: String,
+    val location: Location,
     val birthday: Instant,
     val posts: Set<String>,
     val replies: Map<String, Boolean>,
@@ -50,7 +51,15 @@ data class UserSettings(
     val openMenus: Boolean,
     val showEmail: Boolean,
     val showName: Boolean,
+    val showLocation: Boolean,
     val showBirthday: Boolean
+) { companion object }
+
+@Serializable
+data class Location(
+    val city: String,
+    val state: String,
+    val country: String,
 ) { companion object }
 
 @Serializable
@@ -60,6 +69,7 @@ data class UserResponse(
     val fullName: String,
     val email: String,
     val about: String,
+    val location: Location,
     val birthday: Instant,
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
@@ -94,6 +104,7 @@ fun User.toUserResponse(
         fullName = fullName,
         email = email,
         about = about,
+        location = location,
         birthday = birthday,
         posts = posts,
         comments = comments,
@@ -119,6 +130,7 @@ fun UserResponse.toUser() =
         fullName = fullName,
         email = email,
         about = about,
+        location = location,
         birthday = birthday,
         posts = posts.keys + comments.keys,
         replies = replies,
@@ -144,6 +156,7 @@ fun UserResponse.Companion.systemUser() =
             fullName = SYSTEM,
             email = SYSTEM,
             about = SYSTEM,
+            location = Location.initLocation(),
             birthday = now,
             posts = emptyMap(),
             comments = emptyMap(),
@@ -175,6 +188,7 @@ fun UserResponse.Companion.newUser(
             fullName = EMPTY,
             email = EMPTY,
             about = EMPTY,
+            location = Location.initLocation(),
             birthday = now,
             posts = emptyMap(),
             comments = emptyMap(),
@@ -203,7 +217,15 @@ fun UserSettings.Companion.initSettings() =
         openMenus = true,
         showEmail = false,
         showName = true,
+        showLocation = true,
         showBirthday = true
+    )
+
+fun Location.Companion.initLocation() =
+    Location(
+        city = EMPTY,
+        state = EMPTY,
+        country = EMPTY,
     )
 
 fun User.buildUserResponse(): UserResponse {
