@@ -20,11 +20,9 @@ class UsersApi {
     fun getUserById(userId: String) =
         ServerState.userList[userId]?.buildUserResponse()
 
-    fun getUserByName(userName: String): UserResponse? {
-        println(ServerState.userList.values)
-        println(ServerState.userList.values.find { it.name == userName })
-        return ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
-    }
+    fun getUserByName(userName: String): UserResponse? =
+        ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
+
 
     fun saveUser(user: UserResponse) {
         ServerState.userList[user.id] = user.copy(
