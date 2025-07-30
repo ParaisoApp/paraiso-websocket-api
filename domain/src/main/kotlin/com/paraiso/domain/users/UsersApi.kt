@@ -23,6 +23,11 @@ class UsersApi {
     fun getUserByName(userName: String) =
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
+    fun saveUser(user: UserResponse) {
+        ServerState.userList[user.id] = user.copy(
+            updatedOn = Clock.System.now()
+        ).toUser()
+    }
     fun getUserByPartial(search: String) =
         ServerState.userList.values
             .filter { it.name.lowercase().contains(search.lowercase()) }

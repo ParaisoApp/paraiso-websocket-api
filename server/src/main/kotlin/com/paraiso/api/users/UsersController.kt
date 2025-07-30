@@ -2,6 +2,7 @@ package com.paraiso.com.paraiso.api.users
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.users.UserNotifs
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
 import io.ktor.http.HttpStatusCode
@@ -16,6 +17,13 @@ import io.ktor.server.routing.route
 fun Route.usersController(usersApi: UsersApi) {
     route("users") {
         post {
+            usersApi.saveUser(
+                call.receive<UserResponse>()
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
+        post("/userList") {
             usersApi.getUserList(
                 call.receive<FilterTypes>(),
                 call.request.queryParameters["id"] ?: ""
