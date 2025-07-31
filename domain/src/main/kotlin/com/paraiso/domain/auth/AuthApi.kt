@@ -15,7 +15,7 @@ class AuthApi {
                     name = "Breeze"
                 ).let { admin ->
                     ServerState.userList[login.userId] = admin
-                    ServerState.userLoginFlowMut.emit(admin.buildUserResponse())
+                    ServerState.userUpdateFlowMut.emit(admin.buildUserResponse())
                 }
             }
             UserRole.ADMIN

@@ -8,13 +8,13 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toUser
+import com.paraiso.domain.users.toUserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.findCorrectConversion
@@ -28,6 +28,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import java.util.UUID
 import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Block as BlockDomain
@@ -69,7 +70,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             }
         } ?: run { // otherwise generate guest
             UUID.randomUUID().toString().let { id ->
-                val currentUser = UserResponse.newUser(id)
+                val currentUser = UserResponseDomain.newUser(id)
                 ServerState.userList[id] = currentUser.toUser()
                 userToSocket[id] = session // map userid to socket
                 session.joinChat(currentUser)
@@ -95,7 +96,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
                 )
 
-    private suspend fun WebSocketServerSession.joinChat(user: UserResponse) {
+    private suspend fun WebSocketServerSession.joinChat(user: UserResponseDomain) {
         var sessionUser = user.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
@@ -120,8 +121,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         MessageType.FOLLOW -> sendTypedMessage(type, message as FollowDomain)
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_LOGIN -> sendTypedMessage(type, message as UserResponseDomain)
-                        MessageType.USER_LEAVE -> sendTypedMessage(type, message as String)
+                        MessageType.USER_UPDATE -> sendTypedMessage(type, message as UserResponseDomain)
                         MessageType.BAN -> {
                             val ban = message as? BanDomain
                             ban?.let { bannedMsg ->
@@ -136,7 +136,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
             }
         }
 
-        ServerState.userLoginFlowMut.emit(sessionUser)
+        ServerState.userUpdateFlowMut.emit(sessionUser)
         // holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -202,6 +202,13 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                             }
                         }
                     }
+                    MessageType.USER_UPDATE -> {
+                        converter?.findCorrectConversion<TypeMappingDomain<UserResponseDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let{userUpdate ->
+                                ServerState.userUpdateFlowMut.emit(userUpdate)
+                                usersApiRef.saveUser(userUpdate)
+                            }
+                    }
                     MessageType.FILTER_TYPES -> {
                         converter?.findCorrectConversion<TypeMappingDomain<FilterTypesDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
@@ -251,12 +258,13 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            ServerState.userLeaveFlowMut.emit(sessionUser.id)
-            ServerState.userList[sessionUser.id]?.let { disconnectUser ->
-                ServerState.userList[sessionUser.id] = disconnectUser.copy(
-                    status = UserStatus.DISCONNECTED,
-                    lastSeen = System.currentTimeMillis()
-                )
+            ServerState.userList[sessionUser.id]?.copy(
+                status = UserStatus.DISCONNECTED,
+                lastSeen = System.currentTimeMillis(),
+                updatedOn = Clock.System.now()
+            )?.let { userDisconnected ->
+                ServerState.userUpdateFlowMut.emit(userDisconnected.buildUserResponse())
+                ServerState.userList[sessionUser.id] = userDisconnected
             }
             userToSocket[sessionUser.id]?.close()
         }

@@ -26,8 +26,7 @@ object ServerState {
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)
     val followFlowMut = MutableSharedFlow<Follow>(replay = 0)
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
-    val userLoginFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
-    val userLeaveFlowMut = MutableSharedFlow<String>(replay = 0)
+    val userUpdateFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
     val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
 
     val flowList = listOf( // convert to immutable for send to client
@@ -35,8 +34,7 @@ object ServerState {
         Pair(MessageType.VOTE, voteFlowMut.asSharedFlow()),
         Pair(MessageType.FOLLOW, followFlowMut.asSharedFlow()),
         Pair(MessageType.DELETE, deleteFlowMut.asSharedFlow()),
-        Pair(MessageType.USER_LOGIN, userLoginFlowMut.asSharedFlow()),
-        Pair(MessageType.USER_LEAVE, userLeaveFlowMut.asSharedFlow()),
+        Pair(MessageType.USER_UPDATE, userUpdateFlowMut.asSharedFlow()),
         Pair(MessageType.BAN, banUserFlowMut.asSharedFlow())
     )
 }

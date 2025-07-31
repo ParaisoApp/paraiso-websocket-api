@@ -32,17 +32,14 @@ enum class MessageType {
     @SerialName("USER")
     USER,
 
-    @SerialName("USER_LOGIN")
-    USER_LOGIN,
+    @SerialName("USER_UPDATE")
+    USER_UPDATE,
 
     @SerialName("BAN")
     BAN,
 
     @SerialName("BLOCK")
     BLOCK,
-
-    @SerialName("USER_LEAVE")
-    USER_LEAVE,
 
     @SerialName("SCOREBOARD")
     SCOREBOARD,
