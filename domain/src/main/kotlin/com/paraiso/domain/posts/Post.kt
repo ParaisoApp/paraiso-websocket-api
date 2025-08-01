@@ -142,7 +142,7 @@ fun Post.toPostReturn() = PostReturn(
 
 fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<String>) = Post(
     id = basePostId,
-    userId = Constants.SYSTEM,
+    userId = Constants.SYSTEM_ID,
     title = basePostName,
     content = Constants.EMPTY,
     type = PostType.SUPER,

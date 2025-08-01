@@ -7,6 +7,7 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.SYSTEM
+import com.paraiso.domain.util.Constants.SYSTEM_ID
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
@@ -78,7 +79,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                 values.map { competition ->
                                     "${competition.id}-TEAM-$key" to Post(
                                         id = "${competition.id}-TEAM-$key",
-                                        userId = SYSTEM,
+                                        userId = SYSTEM_ID,
                                         title = competition.shortName,
                                         content = "${competition.date}-${competition.shortName}",
                                         type = PostType.GAME,
@@ -164,7 +165,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                 scoreboard.competitions.associate { competition ->
                     competition.id to Post(
                         id = competition.id,
-                        userId = SYSTEM,
+                        userId = SYSTEM_ID,
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,
