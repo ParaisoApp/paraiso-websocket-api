@@ -94,7 +94,6 @@ class PostsApi {
         ServerState.posts[postSearchId]?.let { post ->
             generatePostTree(
                 post,
-                ServerState.userList[post.userId]?.buildUserResponse() ?: UserResponse.systemUser(),
                 postSearchId,
                 getRange(rangeModifier, sortType),
                 sortType,
@@ -109,11 +108,7 @@ class PostsApi {
             it.title.lowercase().contains(search.lowercase()) || it.content.lowercase().contains(search.lowercase())
         }.take(PARTIAL_RETRIEVE_LIM).let{ foundPosts ->
             foundPosts.map { foundPost ->
-                ServerState.userList[foundPost.userId]?.let{foundUser ->
-                    foundPost.toPostReturn(foundUser.buildUserResponse())
-                } ?: run{
-                    foundPost.toPostReturn(UserResponse.systemUser())
-                }
+                foundPost.toPostReturn()
             }
         }
 
@@ -150,7 +145,6 @@ class PostsApi {
                 .let { subPosts ->
                     generatePostTree(
                         generateBasePost(postSearchId, basePostName, subPosts),
-                        UserResponse.systemUser(),
                         postSearchId,
                         range,
                         sortType,
@@ -162,7 +156,6 @@ class PostsApi {
 
     private fun generatePostTree(
         basePost: Post,
-        baseUser: UserResponse,
         postSearchId: String,
         range: Instant,
         sortType: SortType,
@@ -170,7 +163,7 @@ class PostsApi {
         userId: String
     ) =
         LinkedHashMap<String, PostReturn>().let { returnPosts ->
-            basePost.toPostReturn(baseUser).let { root -> // build tree with bfs
+            basePost.toPostReturn().let { root -> // build tree with bfs
                 val userFollowing = ServerState.userList[userId]?.following ?: setOf()
                 returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
@@ -191,9 +184,7 @@ class PostsApi {
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->
                             (
-                                id to post.toPostReturn(
-                                    ServerState.userList[post.userId]?.buildUserResponse()
-                                )
+                                id to post.toPostReturn()
                                 ).also { (_, returnPost) ->
                                 returnPosts[returnPost.id] = returnPost
                                 refQueue.addLast(post)
@@ -203,9 +194,7 @@ class PostsApi {
                 ServerState.sportPosts
                     .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
                     .forEach {
-                        returnPosts[it.key] = it.value.toPostReturn(
-                            ServerState.userList[it.value.userId]?.buildUserResponse()
-                        )
+                        returnPosts[it.key] = it.value.toPostReturn()
                     }
             }
             returnPosts

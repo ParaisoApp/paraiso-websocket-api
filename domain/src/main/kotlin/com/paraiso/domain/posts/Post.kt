@@ -30,7 +30,6 @@ data class Post(
 data class PostReturn(
     val id: String,
     val userId: String,
-    val user: UserResponse?,
     val title: String,
     val content: String,
     val type: PostType,
@@ -122,10 +121,9 @@ enum class Range {
     ALL
 }
 
-fun Post.toPostReturn(user: UserResponse?) = PostReturn(
+fun Post.toPostReturn() = PostReturn(
     id = id,
     userId = userId,
-    user = user,
     title = title,
     content = content,
     type = type,
