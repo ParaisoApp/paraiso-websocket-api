@@ -11,9 +11,9 @@ import io.ktor.server.routing.route
 fun Route.metadataController(metadataApi: MetadataApi) {
     route("metadata") {
         get {
-            metadataApi.getMetadata(call.request.queryParameters["url"] ?: "").let {
+            metadataApi.getMetadata(call.request.queryParameters["url"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            }
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
     }
 }
