@@ -127,13 +127,7 @@ class PostsApi {
                 ( // check for base post or user if profile nav
                     post.parentId == postSearchId ||
                         post.userId == postSearchId.removePrefix(USER_PREFIX) ||
-                        (
-                            postSearchId == SiteRoute.HOME.name && // search from all posts if on homepage
-                                ( // this includes all SiteRoutes and all Profile posts
-                                    enumValues<SiteRoute>().any { it.name == post.parentId } ||
-                                        post.parentId.startsWith(USER_PREFIX)
-                                    )
-                            )
+                        (postSearchId == SiteRoute.HOME.name && post.rootId == post.id)
                     ) &&
                     post.createdOn > range &&
                     post.status != PostStatus.DELETED &&

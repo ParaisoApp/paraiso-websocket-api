@@ -6,4 +6,5 @@ object Constants {
     const val SYSTEM = "SYSTEM"
     const val EMPTY = ""
     const val USER_PREFIX = "USER-"
+    const val TEAM_PREFIX = "TEAM-"
 }
