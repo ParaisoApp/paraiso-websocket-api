@@ -13,6 +13,8 @@ import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import java.nio.charset.Charset
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
+import com.paraiso.domain.messageTypes.Message as MessageDomain
+import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 
 val safeList: Safelist = Safelist()
     .addTags(
@@ -69,6 +71,29 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
         println(e)
         null
     }
+fun cleanMessage(
+    message: MessageDomain
+): MessageDomain =
+    message.copy(
+        title = Jsoup.clean(
+            message.title,
+            safeList
+        ),
+        content = Jsoup.clean(
+            message.content,
+            safeList
+        )
+    )
+
+fun cleanDirectMessage(
+    dm: DirectMessageDomain
+): DirectMessageDomain =
+    dm.copy(
+        content = Jsoup.clean(
+            dm.content,
+            safeList
+        )
+    )
 
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
     sendSerialized<TypeMappingDomain<T>>(

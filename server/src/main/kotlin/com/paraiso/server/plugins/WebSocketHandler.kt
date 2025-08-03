@@ -16,6 +16,8 @@ import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toUser
 import com.paraiso.domain.users.toUserResponse
 import com.paraiso.domain.util.ServerState
+import com.paraiso.server.util.cleanDirectMessage
+import com.paraiso.server.util.cleanMessage
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
@@ -147,7 +149,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         converter?.findCorrectConversion<TypeMappingDomain<MessageDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 UUID.randomUUID().toString().let { messageId ->
-                                    message.copy(
+                                    cleanMessage(message).copy(
                                         id = messageId,
                                         userId = sessionUser.id,
                                         rootId = messageId.takeIf { message.rootId == "-1" } ?: message.rootId
@@ -165,7 +167,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     MessageType.DM -> {
                         converter?.findCorrectConversion<TypeMappingDomain<DirectMessageDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
-                            dm.copy(
+                            cleanDirectMessage(dm).copy(
                                 id = UUID.randomUUID().toString(),
                                 userId = sessionUser.id
                             ).let { dmWithData ->

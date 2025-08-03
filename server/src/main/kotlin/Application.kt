@@ -1,12 +1,14 @@
 package com.paraiso
 
 import com.paraiso.client.sport.SportOperationAdapter
+import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
 import com.paraiso.com.paraiso.api.posts.postsController
 import com.paraiso.com.paraiso.api.sports.sportsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
+import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
@@ -57,6 +59,7 @@ fun main() {
     val server = embeddedServer(Netty, port = 8080) {
         configureSockets(
             handler,
+            AdminApi(),
             postsApi,
             usersApi,
             AuthApi(),
@@ -78,6 +81,7 @@ fun main() {
 
 fun Application.configureSockets(
     handler: WebSocketHandler,
+    adminApi: AdminApi,
     postsApi: PostsApi,
     usersApi: UsersApi,
     authApi: AuthApi,
@@ -127,6 +131,7 @@ fun Application.configureSockets(
             usersController(usersApi)
             sportsController(sportApi)
             metadataController(metadataApi)
+            adminController(adminApi)
         }
     }
 }

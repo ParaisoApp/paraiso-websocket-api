@@ -19,9 +19,7 @@ fun Route.usersController(usersApi: UsersApi) {
         post {
             usersApi.saveUser(
                 call.receive<UserResponse>()
-            )?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+            )
         }
         post("/userList") {
             usersApi.getUserList(
