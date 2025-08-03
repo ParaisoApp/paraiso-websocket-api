@@ -16,16 +16,22 @@ class AdminApi {
     fun getUserReports() =
         ServerState.userReports.map {
             ServerState.userList[it.key]?.let{user ->
-                user.buildUserResponse() to it.value
+                UserReport(
+                    user.buildUserResponse(),
+                    it.value
+                )
             } ?: run { null }
-        }.filterNotNull().toMap()
+        }.filterNotNull()
 
     fun getPostReports() =
         ServerState.postReports.map {
             ServerState.posts[it.key]?.let{post ->
-                post.toPostReturn() to it.value
+                PostReport(
+                    post.toPostReturn(),
+                    it.value
+                )
             } ?: run { null }
-        }.filterNotNull().toMap()
+        }.filterNotNull()
 
     fun reportUser(sessionUserId: String, report: Report) {
         ServerState.userReports[report.id]?.toMutableSet()?.let{ mutableReports ->

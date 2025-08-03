@@ -3,7 +3,6 @@ package com.paraiso.domain.users
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.util.Constants.EMPTY
-import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
