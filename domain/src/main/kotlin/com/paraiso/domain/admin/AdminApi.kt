@@ -6,6 +6,8 @@ import com.paraiso.domain.posts.toPostReturn
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.util.ServerState
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 class AdminApi {
@@ -14,31 +16,32 @@ class AdminApi {
         const val PARTIAL_RETRIEVE_LIM = 5
     }
     fun getUserReports() =
-        ServerState.userReports.map {
-            ServerState.userList[it.key]?.let{user ->
-                UserReport(
-                    user.buildUserResponse(),
-                    it.value
-                )
-            } ?: run { null }
-        }.filterNotNull()
+        ServerState.userReports.values.sortedBy { it.updatedOn }
 
     fun getPostReports() =
-        ServerState.postReports.map {
-            ServerState.posts[it.key]?.let{post ->
-                PostReport(
-                    post.toPostReturn(),
-                    it.value
-                )
-            } ?: run { null }
-        }.filterNotNull()
+        ServerState.postReports.values.sortedBy { it.updatedOn }
 
-    fun reportUser(sessionUserId: String, report: Report) {
-        ServerState.userReports[report.id]?.toMutableSet()?.let{ mutableReports ->
-            mutableReports.add(sessionUserId)
-            ServerState.userReports[report.id] = mutableReports
-        } ?: run {
-            ServerState.userReports[report.id] = setOf(sessionUserId)
+    suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
+        val now = Clock.System.now()
+        launch {
+            ServerState.userReports[report.id]?.let { userReport ->
+                userReport.reportedBy.toMutableSet().let { mutableReports ->
+                    mutableReports.add(sessionUserId)
+                    ServerState.userReports[report.id] = userReport.copy(
+                        reportedBy = mutableReports,
+                        updatedOn = now
+                    )
+                }
+            } ?: run {
+                ServerState.userList[report.id]?.let { user ->
+                    ServerState.userReports[report.id] = UserReport(
+                        user = user.buildUserResponse(),
+                        reportedBy = setOf(sessionUserId),
+                        createdOn = now,
+                        updatedOn = now
+                    )
+                }
+            }
         }
         ServerState.userList.values.filter {
             it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
@@ -47,32 +50,46 @@ class AdminApi {
                 mutableReports[report.id] = false
                 ServerState.userList[user.id] = user.copy(
                     userReports = mutableReports,
-                    updatedOn = Clock.System.now()
+                    updatedOn = now
                 )
             }
         }
     }
 
-    fun reportPost(sessionUserId: String, report: Report)
-        {
-            ServerState.postReports[report.id]?.toMutableSet()?.let{ mutableReports ->
-                mutableReports.add(sessionUserId)
-                ServerState.postReports[report.id] = mutableReports
+    suspend fun reportPost(sessionUserId: String, report: Report) = coroutineScope {
+        val now = Clock.System.now()
+        launch {
+            ServerState.postReports[report.id]?.let{ postReport ->
+                postReport.reportedBy.toMutableSet().let { mutableReports ->
+                    mutableReports.add(sessionUserId)
+                    ServerState.postReports[report.id] = postReport.copy(
+                        reportedBy = mutableReports,
+                        updatedOn = now
+                    )
+                }
             } ?: run {
-                ServerState.postReports[report.id] = setOf(sessionUserId)
-            }
-
-            ServerState.userList.values.filter {
-                it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
-            }.forEach { user ->
-                user.postReports.toMutableMap().let { mutableReports ->
-                    mutableReports[report.id] = false
-                    ServerState.userList[user.id] = user.copy(
-                        postReports = mutableReports,
-                        updatedOn = Clock.System.now()
+                ServerState.posts[report.id]?.let { post ->
+                    ServerState.postReports[report.id] = PostReport(
+                        post = post.toPostReturn(),
+                        reportedBy = setOf(sessionUserId),
+                        createdOn = now,
+                        updatedOn = now
                     )
                 }
             }
+        }
+
+        ServerState.userList.values.filter {
+            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
+        }.forEach { user ->
+            user.postReports.toMutableMap().let { mutableReports ->
+                mutableReports[report.id] = false
+                ServerState.userList[user.id] = user.copy(
+                    postReports = mutableReports,
+                    updatedOn = Clock.System.now()
+                )
+            }
+        }
 
         }
 

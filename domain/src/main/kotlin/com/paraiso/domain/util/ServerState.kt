@@ -1,5 +1,7 @@
 package com.paraiso.domain.util
 
+import com.paraiso.domain.admin.PostReport
+import com.paraiso.domain.admin.UserReport
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Follow
@@ -19,8 +21,8 @@ object ServerState {
     val userList: ConcurrentHashMap<String, User> = ConcurrentHashMap()
     val userChatList: ConcurrentHashMap<String, UserChat> = ConcurrentHashMap()
     val banList: MutableSet<String> = mutableSetOf()
-    val userReports: MutableMap<String, Set<String>> = mutableMapOf()
-    val postReports: MutableMap<String, Set<String>> = mutableMapOf()
+    val userReports: ConcurrentHashMap<String, UserReport> = ConcurrentHashMap()
+    val postReports: ConcurrentHashMap<String, PostReport> = ConcurrentHashMap()
 
     val posts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
     val sportPosts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
