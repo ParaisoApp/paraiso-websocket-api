@@ -23,6 +23,8 @@ data class User(
     val replies: Map<String, Boolean>,
     val followers: Set<String>,
     val following: Set<String>,
+    val userReports: Map<String, Boolean>,
+    val postReports: Map<String, Boolean>,
     val chats: Map<String, ChatRef>,
     val roles: UserRole,
     val banned: Boolean,
@@ -85,6 +87,8 @@ data class UserResponse(
     val replies: Map<String, Boolean>,
     val followers: Map<String, Boolean>,
     val following: Map<String, Boolean>,
+    val userReports: Map<String, Boolean>,
+    val postReports: Map<String, Boolean>,
     val roles: UserRole,
     val banned: Boolean,
     val status: UserStatus,
@@ -100,6 +104,12 @@ data class UserResponse(
 data class UserNotifs(
     val replyIds: Set<String>,
     val userChatIds: Set<String>,
+) { companion object }
+
+@Serializable
+data class UserReportNotifs(
+    val userIds: Set<String>,
+    val postIds: Set<String>,
 ) { companion object }
 
 fun User.toUserResponse(
@@ -120,6 +130,8 @@ fun User.toUserResponse(
         replies = replies,
         followers = followers.associateWith { true },
         following = following.associateWith { true },
+        userReports = userReports,
+        postReports = postReports,
         roles = roles,
         banned = banned,
         status = status,
@@ -144,6 +156,8 @@ fun UserResponse.toUser() =
         replies = replies,
         followers = followers.keys,
         following = following.keys,
+        userReports = userReports,
+        postReports = postReports,
         chats = chats,
         roles = roles,
         banned = banned,
@@ -155,34 +169,6 @@ fun UserResponse.toUser() =
         createdOn = createdOn,
         updatedOn = updatedOn
     )
-
-fun UserResponse.Companion.systemUser() =
-    Clock.System.now().let { now ->
-        UserResponse(
-            id = SYSTEM,
-            name = SYSTEM,
-            fullName = SYSTEM,
-            email = SYSTEM,
-            about = SYSTEM,
-            location = UserLocation.initLocation(),
-            birthday = now,
-            posts = emptyMap(),
-            comments = emptyMap(),
-            replies = emptyMap(),
-            chats = emptyMap(),
-            followers = emptyMap(),
-            following = emptyMap(),
-            roles = UserRole.SYSTEM,
-            banned = false,
-            status = UserStatus.CONNECTED,
-            blockList = emptySet(),
-            image = UserImage.initImage(),
-            lastSeen = now.toEpochMilliseconds(),
-            settings = UserSettings.initSettings(),
-            createdOn = now,
-            updatedOn = now
-        )
-    }
 
 fun randomGuestName() = "Guest ${(Math.random() * 10000).toInt()}"
 
@@ -204,6 +190,8 @@ fun UserResponse.Companion.newUser(
             chats = emptyMap(),
             followers = emptyMap(),
             following = emptyMap(),
+            userReports = emptyMap(),
+            postReports = emptyMap(),
             roles = UserRole.GUEST,
             banned = false,
             status = UserStatus.CONNECTED,

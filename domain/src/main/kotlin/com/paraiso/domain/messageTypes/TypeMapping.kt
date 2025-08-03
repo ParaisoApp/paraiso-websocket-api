@@ -53,6 +53,12 @@ enum class MessageType {
     @SerialName("ROUTE")
     ROUTE,
 
+    @SerialName("REPORT_USER")
+    REPORT_USER,
+
+    @SerialName("REPORT_POST")
+    REPORT_POST,
+
     @SerialName("ping")
     PING,
 

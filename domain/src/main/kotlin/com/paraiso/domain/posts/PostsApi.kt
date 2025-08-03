@@ -6,10 +6,7 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
-import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.buildUserResponse
-import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope

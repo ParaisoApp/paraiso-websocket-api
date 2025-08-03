@@ -2,6 +2,7 @@ package com.paraiso.com.paraiso.api.users
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.users.UserNotifs
+import com.paraiso.domain.users.UserReportNotifs
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersApi
@@ -81,6 +82,13 @@ fun Route.usersController(usersApi: UsersApi) {
             usersApi.markNotifsRead(
                 call.request.queryParameters["id"] ?: "",
                 call.receive<UserNotifs>(),
+            )
+            call.respond(HttpStatusCode.OK)
+        }
+        post("/markReportNotifsRead") {
+            usersApi.markReportNotifsRead(
+                call.request.queryParameters["id"] ?: "",
+                call.receive<UserReportNotifs>(),
             )
             call.respond(HttpStatusCode.OK)
         }

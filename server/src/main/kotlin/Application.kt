@@ -54,12 +54,13 @@ fun main() {
 
     val postsApi = PostsApi()
     val usersApi = UsersApi()
-    val handler = WebSocketHandler(usersApi, postsApi)
+    val adminApi = AdminApi()
+    val handler = WebSocketHandler(usersApi, postsApi, adminApi)
 
     val server = embeddedServer(Netty, port = 8080) {
         configureSockets(
             handler,
-            AdminApi(),
+            adminApi,
             postsApi,
             usersApi,
             AuthApi(),

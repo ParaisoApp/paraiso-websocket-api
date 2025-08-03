@@ -1,11 +1,13 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.messageTypes.Block
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -29,6 +31,17 @@ class UsersApi {
             updatedOn = Clock.System.now()
         ).toUser()
     }
+
+    fun updateBlockList(sessionUserId: String, block: Block) {
+        ServerState.userList[sessionUserId]?.let { sessionUser ->
+            sessionUser.blockList.toMutableSet().let { mutableBlockList ->
+                mutableBlockList.add(block.userId)
+                ServerState.userList[sessionUser.id] =
+                    sessionUser.copy(blockList = mutableBlockList)
+            }
+        }
+    }
+
     fun getUserByPartial(search: String) =
         ServerState.userList.values
             .filter { it.name.lowercase().contains(search.lowercase()) }
@@ -124,32 +137,74 @@ class UsersApi {
         }
     }
 
-    fun markNotifsRead(userId: String, userNotifs: UserNotifs) =
+    suspend fun markNotifsRead(userId: String, userNotifs: UserNotifs) = coroutineScope {
         ServerState.userList[userId]?.let{user ->
-            val now = Clock.System.now()
             //grab chats and make mutable
-            user.chats.filter { userNotifs.userChatIds.contains(it.key) }.toMutableMap().let { mutableChats ->
-                //find chat and set to true
-                mutableChats.map {
-                    mutableChats[it.key] = it.value.copy(
-                        viewed = true
-                    )
-                }
-                //grab chats and make mutable
-                user.replies.filter { userNotifs.replyIds.contains(it.key) }.toMutableMap().let { mutableReplies ->
-                    //find chat and set to true
-                    mutableReplies.map {
-                        mutableReplies[it.key] = true
+            val userChats = async {
+                user.chats.filter { userNotifs.userChatIds.contains(it.key) }
+                    .toMutableMap().let { mutableChats ->
+                        //find chat and set to viewed
+                        mutableChats.map {
+                            mutableChats[it.key] = it.value.copy(
+                                viewed = true
+                            )
+                        }
+                        mutableChats
                     }
-                    //update user
-                    ServerState.userList[userId] = user.copy(
-                        chats = mutableChats,
-                        replies = mutableReplies,
-                        updatedOn = now
-                    )
-                }
             }
+            //grab replies and make mutable
+            val replies =  async {
+                user.replies.filter { userNotifs.replyIds.contains(it.key) }
+                    .toMutableMap().let { mutableReplies ->
+                        //find reply and set to viewed
+                        mutableReplies.map {
+                            mutableReplies[it.key] = true
+                        }
+                        mutableReplies
+                    }
+            }
+            //update user
+            ServerState.userList[userId] = user.copy(
+                chats = userChats.await(),
+                replies = replies.await(),
+                updatedOn = Clock.System.now()
+            )
         }
+    }
+
+    suspend fun markReportNotifsRead(userId: String, userReportNotifs: UserReportNotifs) = coroutineScope {
+        ServerState.userList[userId]?.let{ user ->
+            //grab user reports and make mutable
+            val userReports = async {
+                user.userReports.filter { userReportNotifs.userIds.contains(it.key) }
+                    .toMutableMap().let { mutableUserReports ->
+                        //find user report and set to viewed
+                        mutableUserReports.map {
+                            mutableUserReports[it.key] = true
+                        }
+                        mutableUserReports
+                    }
+            }
+            //grab post reports and make mutable
+            val postReports = async {
+                user.postReports.filter { userReportNotifs.postIds.contains(it.key) }
+                    .toMutableMap().let { mutablePostReports ->
+                        //find post report and set to viewed
+                        mutablePostReports.map {
+                            mutablePostReports[it.key] = true
+                        }
+                        mutablePostReports
+                    }
+            }
+
+            //update user
+            ServerState.userList[userId] = user.copy(
+                userReports = userReports.await(),
+                postReports = postReports.await(),
+                updatedOn = Clock.System.now()
+            )
+        }
+    }
 
     suspend fun follow(follow: Follow) = coroutineScope {
         val now = Clock.System.now()

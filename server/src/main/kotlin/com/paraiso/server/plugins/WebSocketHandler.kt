@@ -4,6 +4,7 @@ import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
+import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.posts.PostType
@@ -34,6 +35,7 @@ import kotlinx.datetime.Clock
 import java.util.UUID
 import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Block as BlockDomain
+import com.paraiso.domain.messageTypes.Report as ReportDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
@@ -44,7 +46,7 @@ import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
-class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
+class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminApi) : Klogging {
     // jobs
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
@@ -56,6 +58,9 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
 
     // posts
     private val postsApiRef = postsApi
+
+    // admin
+    private val adminApiRef = adminApi
 
     // session state
     private val sessionState = SessionState()
@@ -124,6 +129,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                         MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_UPDATE -> sendTypedMessage(type, message as UserResponseDomain)
+                        MessageType.REPORT_USER -> sendTypedMessage(type, message as ReportDomain)
+                        MessageType.REPORT_POST -> sendTypedMessage(type, message as ReportDomain)
                         MessageType.BAN -> {
                             val ban = message as? BanDomain
                             ban?.let { bannedMsg ->
@@ -157,8 +164,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)
                                         } else {
+                                            launch { postsApiRef.putPost(messageWithData) }
                                             ServerState.messageFlowMut.emit(messageWithData)
-                                            postsApiRef.putPost(messageWithData)
                                         }
                                     }
                                 }
@@ -176,8 +183,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                                     !sessionUser.banned &&
                                     ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
                                 ) {
+                                    launch { usersApiRef.putDM(dmWithData) }
                                     userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
-                                    usersApiRef.putDM(dmWithData)
                                 }
                             }
                         }
@@ -188,8 +195,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.FOLLOW, follow)
                             } else {
+                                launch { usersApiRef.follow(follow) }
                                 ServerState.followFlowMut.emit(follow)
-                                usersApiRef.follow(follow)
                             }
                         }
                     }
@@ -199,16 +206,16 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.VOTE, vote)
                             } else {
+                                launch { postsApiRef.votePost(vote) }
                                 ServerState.voteFlowMut.emit(vote)
-                                postsApiRef.votePost(vote)
                             }
                         }
                     }
                     MessageType.USER_UPDATE -> {
                         converter?.findCorrectConversion<TypeMappingDomain<UserResponseDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let{userUpdate ->
+                                launch { usersApiRef.saveUser(userUpdate) }
                                 ServerState.userUpdateFlowMut.emit(userUpdate)
-                                usersApiRef.saveUser(userUpdate)
                             }
                     }
                     MessageType.FILTER_TYPES -> {
@@ -220,26 +227,37 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi) : Klogging {
                     MessageType.DELETE -> {
                         converter?.findCorrectConversion<TypeMappingDomain<DeleteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let{delete ->
+                                launch { postsApiRef.deletePost(delete) }
                                 ServerState.deleteFlowMut.emit(delete)
-                                postsApiRef.deletePost(delete)
                             }
                     }
                     MessageType.BAN -> {
                         converter?.findCorrectConversion<TypeMappingDomain<BanDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { ban ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
+                                    launch { adminApiRef.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
-                                    ServerState.banList.add(ban.userId)
                                 }
                             }
                     }
                     MessageType.BLOCK -> {
                         converter?.findCorrectConversion<TypeMappingDomain<BlockDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { block ->
-                                val updateBlockList = sessionUser.blockList.toMutableSet()
-                                updateBlockList.add(block.userId)
-                                ServerState.userList[sessionUser.id] =
-                                    sessionUser.copy(blockList = updateBlockList).toUser()
+                                usersApiRef.updateBlockList(sessionUser.id, block)
+                            }
+                    }
+                    MessageType.REPORT_USER -> {
+                        converter?.findCorrectConversion<TypeMappingDomain<ReportDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
+                                launch { adminApiRef.reportUser(sessionUser.id, reportUser) }
+                                ServerState.reportUserFlowMut.emit(reportUser)
+                            }
+                    }
+                    MessageType.REPORT_POST -> {
+                        converter?.findCorrectConversion<TypeMappingDomain<ReportDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
+                                launch { adminApiRef.reportPost(sessionUser.id, reportPost) }
+                                ServerState.reportPostFlowMut.emit(reportPost)
                             }
                     }
                     MessageType.ROUTE -> {
