@@ -75,7 +75,7 @@ class PostsApi {
         }
     }
 
-    fun updateCounts(post: Post, now: Instant, increment: Int) {
+    private fun updateCounts(post: Post, now: Instant, increment: Int) {
         ServerState.posts[post.id] = post.copy(
             count = post.count + (1 * increment),
             updatedOn = now
@@ -129,7 +129,10 @@ class PostsApi {
                     post.createdOn > range &&
                     post.status != PostStatus.DELETED &&
                     filters.postTypes.contains(post.type) &&
-                    (filters.userRoles.contains(ServerState.userList[post.userId]?.roles) || (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId)))
+                    (
+                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                    )
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
