@@ -244,14 +244,30 @@ class UsersApi {
 
     fun toggleBlockUser(userId: String, userBlockId: String){
         ServerState.userList[userId]?.let{ user ->
-            user.blockList.toMutableSet().let { mutableBlockList ->
-                if(mutableBlockList.contains(userBlockId)){
-                    mutableBlockList.remove(userBlockId)
+            user.blockList.toMutableSet().let { mutableBlockSet ->
+                if(mutableBlockSet.contains(userBlockId)){
+                    mutableBlockSet.remove(userBlockId)
                 }else{
-                    mutableBlockList.add(userBlockId)
+                    mutableBlockSet.add(userBlockId)
                 }
                 ServerState.userList[userId] = user.copy(
-                    blockList = mutableBlockList,
+                    blockList = mutableBlockSet,
+                    updatedOn = Clock.System.now()
+                )
+            }
+        }
+    }
+
+    fun toggleFollowRoute(userId: String, route: String){
+        ServerState.userList[userId]?.let{ user ->
+            user.routeFollowing.toMutableSet().let { mutableRouteFollowSet ->
+                if(mutableRouteFollowSet.contains(route)){
+                    mutableRouteFollowSet.remove(route)
+                }else{
+                    mutableRouteFollowSet.add(route)
+                }
+                ServerState.userList[userId] = user.copy(
+                    routeFollowing = mutableRouteFollowSet,
                     updatedOn = Clock.System.now()
                 )
             }

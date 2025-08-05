@@ -106,5 +106,12 @@ fun Route.usersController(usersApi: UsersApi) {
             )
             call.respond(HttpStatusCode.OK)
         }
+        post("/toggleFollowRoute") {
+            usersApi.toggleFollowRoute(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["route"] ?: ""
+            )
+            call.respond(HttpStatusCode.OK)
+        }
     }
 }
