@@ -95,7 +95,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
         }
     }
 
-    private fun validateMessage(sessionUserId: String, blockList: Set<String>, postType: PostType, userId: String) =
+    private fun validateMessage(sessionUserId: String, blockList: Map<String, Boolean>, postType: PostType, userId: String) =
         sessionUserId == userId || // message is from the cur user or
             (
                 !blockList.contains(userId) && // user isnt in cur user's blocklist

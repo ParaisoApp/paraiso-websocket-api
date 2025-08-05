@@ -241,4 +241,20 @@ class UsersApi {
             }
         }
     }
+
+    fun toggleBlockUser(userId: String, userBlockId: String){
+        ServerState.userList[userId]?.let{ user ->
+            user.blockList.toMutableSet().let { mutableBlockList ->
+                if(mutableBlockList.contains(userBlockId)){
+                    mutableBlockList.remove(userBlockId)
+                }else{
+                    mutableBlockList.add(userBlockId)
+                }
+                ServerState.userList[userId] = user.copy(
+                    blockList = mutableBlockList,
+                    updatedOn = Clock.System.now()
+                )
+            }
+        }
+    }
 }
