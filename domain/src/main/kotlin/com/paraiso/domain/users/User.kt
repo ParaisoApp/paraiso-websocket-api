@@ -16,7 +16,7 @@ data class User(
     val fullName: String,
     val email: String,
     val about: String,
-    val location: UserLocation,
+    val location: Location,
     val birthday: Instant,
     val posts: Set<String>,
     val replies: Map<String, Boolean>,
@@ -58,13 +58,6 @@ data class UserSettings(
 ) { companion object }
 
 @Serializable
-data class UserLocation(
-    val city: String,
-    val state: String,
-    val country: String,
-) { companion object }
-
-@Serializable
 data class UserImage(
     val url: String,
     val posX: Int,
@@ -79,7 +72,7 @@ data class UserResponse(
     val fullName: String,
     val email: String,
     val about: String,
-    val location: UserLocation,
+    val location: Location,
     val birthday: Instant,
     val posts: Map<String, Map<String, Boolean>>,
     val comments: Map<String, Map<String, Boolean>>,
@@ -185,7 +178,7 @@ fun UserResponse.Companion.newUser(
             fullName = EMPTY,
             email = EMPTY,
             about = EMPTY,
-            location = UserLocation.initLocation(),
+            location = Location.initLocation(),
             birthday = now,
             posts = emptyMap(),
             comments = emptyMap(),
@@ -219,13 +212,6 @@ fun UserSettings.Companion.initSettings() =
         showName = true,
         showLocation = true,
         showBirthday = true
-    )
-
-fun UserLocation.Companion.initLocation() =
-    UserLocation(
-        city = EMPTY,
-        state = EMPTY,
-        country = EMPTY,
     )
 
 fun UserImage.Companion.initImage() =
