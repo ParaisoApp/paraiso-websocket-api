@@ -6,8 +6,10 @@ import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.sport.sports.Scoreboard
 import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.Constants.SYSTEM_ID
+import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
@@ -77,8 +79,8 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         schedulesRes.associate { it.team.id to it.events }
                             .flatMap { (key, values) ->
                                 values.map { competition ->
-                                    "${competition.id}-TEAM-$key" to Post(
-                                        id = "${competition.id}-TEAM-$key",
+                                    "$TEAM_PREFIX${competition.id}-$key" to Post(
+                                        id = "$TEAM_PREFIX${competition.id}-$key",
                                         userId = SYSTEM_ID,
                                         title = competition.shortName,
                                         content = "${competition.date}-${competition.shortName}",
@@ -163,8 +165,8 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         if (SportState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
             ServerState.sportPosts.putAll(
                 scoreboard.competitions.associate { competition ->
-                    competition.id to Post(
-                        id = competition.id,
+                    "$GAME_PREFIX${competition.id}" to Post(
+                        id = "$GAME_PREFIX${competition.id}",
                         userId = SYSTEM_ID,
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",

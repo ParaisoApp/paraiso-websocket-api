@@ -7,4 +7,5 @@ object Constants {
     const val EMPTY = ""
     const val USER_PREFIX = "USER-"
     const val TEAM_PREFIX = "TEAM-"
+    const val GAME_PREFIX = "GAME-"
 }
