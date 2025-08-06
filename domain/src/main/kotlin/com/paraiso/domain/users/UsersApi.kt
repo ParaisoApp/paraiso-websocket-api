@@ -260,14 +260,14 @@ class UsersApi {
 
     fun toggleFollowRoute(userId: String, route: String){
         ServerState.userList[userId]?.let{ user ->
-            user.routeFollowing.toMutableSet().let { mutableRouteFollowSet ->
-                if(mutableRouteFollowSet.contains(route)){
-                    mutableRouteFollowSet.remove(route)
+            user.routeFavorite.toMutableSet().let { mutableRouteFavoriteSet ->
+                if(mutableRouteFavoriteSet.contains(route)){
+                    mutableRouteFavoriteSet.remove(route)
                 }else{
-                    mutableRouteFollowSet.add(route)
+                    mutableRouteFavoriteSet.add(route)
                 }
                 ServerState.userList[userId] = user.copy(
-                    routeFollowing = mutableRouteFollowSet,
+                    routeFavorite = mutableRouteFavoriteSet,
                     updatedOn = Clock.System.now()
                 )
             }
