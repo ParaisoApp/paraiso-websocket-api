@@ -76,7 +76,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
                     ServerState.sportPosts.putAll(
-                        schedulesRes.associate { it.team.id to it.events }
+                        schedulesRes.associate { it.team.abbreviation to it.events }
                             .flatMap { (key, values) ->
                                 values.map { competition ->
                                     "$TEAM_PREFIX${competition.id}-$key" to Post(
@@ -87,8 +87,8 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                                         type = PostType.GAME,
                                         media = Constants.EMPTY,
                                         votes = emptyMap(),
-                                        parentId = "TEAM-$key", // TODO make enum
-                                        rootId = "${competition.id}-TEAM-$key",
+                                        parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
+                                        rootId = "$TEAM_PREFIX${competition.id}-$key",
                                         status = PostStatus.ACTIVE,
                                         data = "TEAM-$key",
                                         subPosts = mutableSetOf(),
@@ -174,7 +174,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
                         media = Constants.EMPTY,
                         votes = emptyMap(),
                         parentId = SiteRoute.BASKETBALL.name,
-                        rootId = competition.id,
+                        rootId = "$GAME_PREFIX${competition.id}",
                         status = PostStatus.ACTIVE,
                         data = "${competition.date}-${competition.shortName}",
                         subPosts = mutableSetOf(),

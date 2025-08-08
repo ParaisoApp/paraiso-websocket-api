@@ -186,7 +186,7 @@ class PostsApi {
                         }
                 }
                 ServerState.sportPosts
-                    .filter { (_, post) -> post.parentId == root.id || post.data == postSearchId }
+                    .filter { (_, post) -> post.parentId.lowercase() == root.id.lowercase() || post.data == postSearchId }
                     .forEach {
                         returnPosts[it.key] = it.value.toPostReturn()
                     }
