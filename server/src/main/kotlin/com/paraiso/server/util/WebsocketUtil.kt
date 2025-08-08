@@ -1,6 +1,8 @@
 package com.paraiso.server.util
 
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.users.Country
+import com.paraiso.domain.users.UserResponse
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.sendSerialized
@@ -15,6 +17,7 @@ import java.nio.charset.Charset
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
+import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 val safeList: Safelist = Safelist()
     .addTags(
@@ -48,20 +51,6 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
     frame: Frame
 ): T? =
     try {
-        val cleanFrame = when (frame) {
-            is Frame.Text -> {
-                val rawText = frame.readText()
-
-                val safeHtml = Jsoup.clean(
-                    rawText,
-                    safeList
-                )
-
-                Frame.Text(safeHtml)
-            }
-            else -> frame
-        }
-
         this.deserialize(
             Charset.defaultCharset(),
             typeInfo<T>(),
@@ -92,6 +81,48 @@ fun cleanDirectMessage(
         content = Jsoup.clean(
             dm.content,
             safeList
+        )
+    )
+
+fun cleanUser(
+    user: UserResponseDomain
+): UserResponseDomain =
+    user.copy(
+        name = Jsoup.clean(
+            user.name,
+            safeList
+        ),
+        fullName = Jsoup.clean(
+            user.fullName,
+            safeList
+        ),
+        email = Jsoup.clean(
+            user.email,
+            safeList
+        ),
+        image = user.image.copy(
+          url = Jsoup.clean(
+              user.image.url,
+              safeList
+          )
+        ),
+        about = Jsoup.clean(
+            user.about,
+            safeList
+        ),
+        location = user.location.copy(
+            city = Jsoup.clean(
+                user.location.city,
+                safeList
+            ),
+            state = Jsoup.clean(
+                user.location.state,
+                safeList
+            ),
+            country = Country(
+                name = user.location.country.name,
+                code = user.location.country.code,
+            )
         )
     )
 

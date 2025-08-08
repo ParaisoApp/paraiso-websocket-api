@@ -19,6 +19,7 @@ import com.paraiso.domain.users.toUserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.cleanDirectMessage
 import com.paraiso.server.util.cleanMessage
+import com.paraiso.server.util.cleanUser
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
@@ -214,8 +215,10 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                     MessageType.USER_UPDATE -> {
                         converter?.findCorrectConversion<TypeMappingDomain<UserResponseDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let{userUpdate ->
-                                launch { usersApiRef.saveUser(userUpdate) }
-                                ServerState.userUpdateFlowMut.emit(userUpdate)
+                                cleanUser(userUpdate).let{cleanedUser ->
+                                    launch { usersApiRef.saveUser(cleanedUser) }
+                                    ServerState.userUpdateFlowMut.emit(cleanedUser)
+                                }
                             }
                     }
                     MessageType.FILTER_TYPES -> {
