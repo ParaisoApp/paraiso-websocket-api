@@ -5,7 +5,9 @@ import com.paraiso.domain.sport.data.LeaderReturn
 class FBallApi {
     fun getTeamByAbbr(teamAbbr: String) = FBallState.teams.find { it.abbreviation == teamAbbr }
     fun getTeams() = FBallState.teams.associateBy { it.id }
-    fun getStandings() = FBallState.standings?.standingsGroups?.associate { it.confAbbr to it.standings }
+    fun getStandings() = FBallState.standings?.standingsGroups?.flatMap { confGroup ->
+        confGroup.subGroups
+    }?.associate { it.divName to it.standings }
     fun getLeaders() = FBallState.rosters.flatMap { it.athletes }.associateBy { it.id }.let { athletes ->
         FBallState.leaders?.categories?.associate {
             it.displayName to it.leaders.mapNotNull { leader ->
