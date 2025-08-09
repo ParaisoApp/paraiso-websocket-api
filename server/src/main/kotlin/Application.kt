@@ -1,6 +1,7 @@
 package com.paraiso
 
 import com.paraiso.client.sport.adapters.BBallOperationAdapter
+import com.paraiso.client.sport.adapters.FBallOperationAdapter
 import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
@@ -16,6 +17,7 @@ import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
+import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
@@ -49,6 +51,9 @@ fun main() {
 
     jobScope.launch {
         BBallHandler(BBallOperationAdapter()).bootJobs()
+    }
+    jobScope.launch {
+        FBallHandler(FBallOperationAdapter()).bootJobs()
     }
     jobScope.launch {
         ServerHandler().cleanUserList()
