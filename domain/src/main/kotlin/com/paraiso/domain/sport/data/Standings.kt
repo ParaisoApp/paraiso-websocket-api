@@ -11,6 +11,14 @@ data class AllStandings(
 data class StandingsGroup(
     val confName: String,
     val confAbbr: String,
+    val standings: List<Standings>,
+    val subGroups: List<StandingsSubGroup>
+)
+
+@Serializable
+data class StandingsSubGroup(
+    val divName: String,
+    val divAbbr: String,
     val standings: List<Standings>
 )
 

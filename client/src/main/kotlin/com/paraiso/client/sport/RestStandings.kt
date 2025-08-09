@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
 import com.paraiso.domain.sport.data.Standings as StandingsDomain
 import com.paraiso.domain.sport.data.StandingsGroup as StandingsGroupDomain
+import com.paraiso.domain.sport.data.StandingsSubGroup as StandingsSubGroupDomain
 import com.paraiso.domain.sport.data.StandingsStat as StandingsStatDomain
 
 @Serializable
@@ -23,6 +24,13 @@ data class RestStandings(
 
 @Serializable
 data class Group(
+    val name: String,
+    val abbreviation: String,
+    val standings: Standings? = null,
+    val groups: List<SubGroup>? = null
+)
+@Serializable
+data class SubGroup(
     val name: String,
     val abbreviation: String,
     val standings: Standings
@@ -52,8 +60,15 @@ fun RestStandingsContainer.toDomain() = AllStandingsDomain(
 )
 
 fun Group.toDomain() = StandingsGroupDomain(
-    confName = name,
-    confAbbr = abbreviation,
+        confName = name,
+        confAbbr = abbreviation,
+        standings = standings?.entries?.map { it.toDomain() } ?: emptyList(),
+        subGroups = groups?.map { it.toDomain() } ?: emptyList()
+    )
+
+fun SubGroup.toDomain() = StandingsSubGroupDomain(
+    divName = name,
+    divAbbr = abbreviation,
     standings = standings.entries.map { it.toDomain() }
 )
 

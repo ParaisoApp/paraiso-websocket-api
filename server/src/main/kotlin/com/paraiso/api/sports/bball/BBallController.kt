@@ -9,7 +9,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 
 fun Route.bballController(bBallApi: BBallApi) {
-    route("sport") {
+    route("basketball") {
         get("/teams") {
             call.respond(HttpStatusCode.OK, bBallApi.getTeams())
         }
