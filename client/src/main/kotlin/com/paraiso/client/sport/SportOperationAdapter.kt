@@ -23,18 +23,18 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
         private const val SEASON = 2025
         private const val REGULAR = 2
         private const val LIMIT = 10
-
-        // private const val PLAYOFFS = 1
-        private const val EAST = 5
-        private const val WEST = 6
-        private const val OVERALL = 0
         private val dispatcher = Dispatchers.IO
         private val clientConfig = ClientConfig()
+
+        //private const val PLAYOFFS = 1
+        //private const val EAST = 5
+        //private const val WEST = 6
+        //private const val OVERALL = 0
     }
 
     override suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}/scoreboard"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.bballStatsUri}/scoreboard"
             val response: RestScoreboard = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -51,7 +51,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     }
     override suspend fun getGameStats(gameId: String): BoxScoreDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}/summary?event=$gameId"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.bballStatsUri}/summary?event=$gameId"
             val response: RestGameStats = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -68,7 +68,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     }
     override suspend fun getStandings(): AllStandingsDomain? = withContext(dispatcher) {
         try {
-            val westUrl = "${clientConfig.cdnApiBaseUrl}/standings?xhr=1"
+            val westUrl = "${clientConfig.cdnApiBaseUrl}${clientConfig.bballCdnUri}/standings?xhr=1"
             val standingsResponse: RestStandingsContainer = getHttpClient().use { httpClient ->
                 httpClient.get(westUrl).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -85,7 +85,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     }
     override suspend fun getTeams(): List<TeamDomain> = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}/teams"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.bballStatsUri}/teams"
             val response: RestTeams = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -102,7 +102,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     }
     override suspend fun getRoster(teamId: String): RosterDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}/teams/$teamId/roster"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.bballStatsUri}/teams/$teamId/roster"
             val response: RestRoster = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -119,7 +119,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     }
     override suspend fun getLeaders(): StatLeadersDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.coreApiBaseUrl}/seasons/$SEASON/types/$REGULAR/leaders?limit=$LIMIT"
+            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.bballCoreUri}/seasons/$SEASON/types/$REGULAR/leaders?limit=$LIMIT"
             val response: RestLeaders = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -136,7 +136,7 @@ class SportOperationAdapter() : SportOperation, BaseAdapter, Klogging {
     }
     override suspend fun getSchedule(teamId: String): ScheduleDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}/teams/$teamId/schedule?season=$SEASON"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.bballStatsUri}/teams/$teamId/schedule?season=$SEASON"
             val response: RestSchedule = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
