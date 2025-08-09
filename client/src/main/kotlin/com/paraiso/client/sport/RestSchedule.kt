@@ -1,6 +1,6 @@
 package com.paraiso.client.sport
 
-import com.paraiso.domain.sport.sports.TeamGameStats
+import com.paraiso.domain.sport.data.TeamGameStats
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -14,10 +14,10 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
-import com.paraiso.domain.sport.sports.Competition as CompetitionDomain
-import com.paraiso.domain.sport.sports.Record as RecordDomain
-import com.paraiso.domain.sport.sports.Schedule as ScheduleDomain
-import com.paraiso.domain.sport.sports.Venue as VenueDomain
+import com.paraiso.domain.sport.data.Competition as CompetitionDomain
+import com.paraiso.domain.sport.data.Record as RecordDomain
+import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
+import com.paraiso.domain.sport.data.Venue as VenueDomain
 
 @Serializable
 data class RestSchedule(

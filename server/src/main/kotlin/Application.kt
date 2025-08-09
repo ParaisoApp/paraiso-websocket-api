@@ -1,19 +1,21 @@
 package com.paraiso
 
-import com.paraiso.client.sport.SportOperationAdapter
+import com.paraiso.client.sport.adapters.BBallOperationAdapter
 import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
 import com.paraiso.com.paraiso.api.posts.postsController
-import com.paraiso.com.paraiso.api.sports.sportsController
+import com.paraiso.com.paraiso.api.sports.bball.bballController
+import com.paraiso.com.paraiso.api.sports.fball.fballController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.sport.SportApi
-import com.paraiso.domain.sport.SportHandler
+import com.paraiso.domain.sport.sports.bball.BBallApi
+import com.paraiso.domain.sport.sports.bball.BBallHandler
+import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
@@ -46,7 +48,7 @@ fun main() {
     val jobScope = CoroutineScope(Dispatchers.Default + job)
 
     jobScope.launch {
-        SportHandler(SportOperationAdapter()).bootJobs()
+        BBallHandler(BBallOperationAdapter()).bootJobs()
     }
     jobScope.launch {
         ServerHandler().cleanUserList()
@@ -64,7 +66,8 @@ fun main() {
             postsApi,
             usersApi,
             AuthApi(),
-            SportApi(),
+            BBallApi(),
+            FBallApi(),
             MetadataApi()
         )
     }.start(wait = true)
@@ -86,7 +89,8 @@ fun Application.configureSockets(
     postsApi: PostsApi,
     usersApi: UsersApi,
     authApi: AuthApi,
-    sportApi: SportApi,
+    bBallApi: BBallApi,
+    fBallApi: FBallApi,
     metadataApi: MetadataApi
 ) {
     install(WebSockets) {
@@ -130,7 +134,8 @@ fun Application.configureSockets(
             authController(authApi)
             postsController(postsApi)
             usersController(usersApi)
-            sportsController(sportApi)
+            bballController(bBallApi)
+            fballController(fBallApi)
             metadataController(metadataApi)
             adminController(adminApi)
         }

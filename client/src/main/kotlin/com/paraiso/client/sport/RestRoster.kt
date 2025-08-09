@@ -1,10 +1,11 @@
 package com.paraiso.client.sport
 
-import com.paraiso.domain.sport.sports.createUnknown
+import com.paraiso.domain.sport.data.Coach
+import com.paraiso.domain.sport.data.createUnknown
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.sports.Athlete as AthleteDomain
-import com.paraiso.domain.sport.sports.Coach as CoachDomain
-import com.paraiso.domain.sport.sports.Roster as RosterDomain
+import com.paraiso.domain.sport.data.Athlete as AthleteDomain
+import com.paraiso.domain.sport.data.Coach as CoachDomain
+import com.paraiso.domain.sport.data.Roster as RosterDomain
 
 @Serializable
 data class RestRoster(
@@ -34,7 +35,7 @@ data class RestCoach(
 
 fun RestRoster.toDomain() = RosterDomain(
     athletes = athletes.map { it.toDomain(team.abbreviation) },
-    coach = coach.firstOrNull()?.toDomain() ?: CoachDomain.createUnknown(),
+    coach = coach.firstOrNull()?.toDomain() ?: Coach.createUnknown(),
     team = team.toDomain()
 )
 

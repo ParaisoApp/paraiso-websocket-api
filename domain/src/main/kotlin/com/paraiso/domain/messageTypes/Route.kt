@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Route(
     val route: SiteRoute,
+    val modifier: SiteRoute,
     val content: String
 )
 

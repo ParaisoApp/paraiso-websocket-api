@@ -1,4 +1,4 @@
-package com.paraiso.domain.sport.sports
+package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.util.Constants
 import kotlinx.serialization.Serializable

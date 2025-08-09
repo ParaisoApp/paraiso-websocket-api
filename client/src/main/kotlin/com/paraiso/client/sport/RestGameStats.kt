@@ -3,11 +3,11 @@ package com.paraiso.client.sport
 import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.sports.Athlete as AthleteDomain
-import com.paraiso.domain.sport.sports.BoxScore as BoxScoreDomain
-import com.paraiso.domain.sport.sports.FullTeam as FullTeamDomain
-import com.paraiso.domain.sport.sports.StatTypes as StatTypesDomain
-import com.paraiso.domain.sport.sports.TeamStat as TeamStatDomain
+import com.paraiso.domain.sport.data.Athlete as AthleteDomain
+import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain
+import com.paraiso.domain.sport.data.FullTeam as FullTeamDomain
+import com.paraiso.domain.sport.data.StatTypes as StatTypesDomain
+import com.paraiso.domain.sport.data.TeamStat as TeamStatDomain
 
 @Serializable
 data class RestGameStats(

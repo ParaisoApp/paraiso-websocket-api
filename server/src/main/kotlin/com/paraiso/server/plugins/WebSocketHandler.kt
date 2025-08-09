@@ -2,7 +2,8 @@ package com.paraiso.server.plugins
 
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
-import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
+import com.paraiso.com.paraiso.server.plugins.jobs.sports.BBallJobs
+import com.paraiso.com.paraiso.server.plugins.jobs.sports.FBallJobs
 import com.paraiso.com.paraiso.server.util.SessionState
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.messageTypes.MessageType
@@ -15,7 +16,6 @@ import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toUser
-import com.paraiso.domain.users.toUserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.cleanDirectMessage
 import com.paraiso.server.util.cleanMessage
@@ -51,7 +51,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
     // jobs
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
-    private val sportJobs = SportJobs()
+    private val bBallJobs = BBallJobs()
+    private val fBallJobs = FBallJobs()
 
     // users
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
@@ -90,9 +91,30 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
         when (route.route) {
             SiteRoute.HOME -> homeJobs.homeJobs(session)
             SiteRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
-            SiteRoute.SPORT -> sportJobs.sportJobs(session)
-            SiteRoute.TEAM -> sportJobs.teamJobs(route.content, session)
-            else -> TODO()
+            SiteRoute.SPORT -> {
+                when(route.modifier){
+                    SiteRoute.BASKETBALL -> bBallJobs.sportJobs(session)
+                    SiteRoute.FOOTBALL -> fBallJobs.sportJobs(session)
+                    else -> {
+                        logger.error("Unrecognized Sport: $route")
+                        emptyList()
+                    }
+                }
+            }
+            SiteRoute.TEAM -> {
+                when(route.modifier){
+                    SiteRoute.BASKETBALL -> bBallJobs.teamJobs(route.content, session)
+                    SiteRoute.FOOTBALL -> fBallJobs.teamJobs(route.content, session)
+                    else -> {
+                        logger.error("Unrecognized Team: $route")
+                        emptyList()
+                    }
+                }
+            }
+            else -> {
+                logger.error("Unrecognized Route: $route")
+                emptyList()
+            }
         }
     }
 

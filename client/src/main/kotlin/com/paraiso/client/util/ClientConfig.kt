@@ -7,4 +7,7 @@ data class ClientConfig(
     var bballStatsUri: String = "/basketball/nba",
     var bballCoreUri: String = "/basketball/leagues/nba",
     var bballCdnUri: String = "/nba",
+    var fballStatsUri: String = "/football/nfl",
+    var fballCoreUri: String = "/football/leagues/nfl",
+    var fballCdnUri: String = "/nfl",
 )

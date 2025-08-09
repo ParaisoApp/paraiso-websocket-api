@@ -1,13 +1,12 @@
-package com.paraiso.domain.sport
+package com.paraiso.domain.sport.sports.fball
 
 import com.paraiso.domain.messageTypes.SiteRoute
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
-import com.paraiso.domain.sport.sports.Scoreboard
+import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
-import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.Constants.SYSTEM_ID
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerState
@@ -22,7 +21,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
 
-class SportHandler(private val sportOperation: SportOperation) : Klogging {
+class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
         launch { buildScoreboard() }
@@ -31,33 +30,33 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         launch { getLeaders() }
     }
 
-    suspend fun getStandings() = coroutineScope {
+    private suspend fun getStandings() = coroutineScope {
         while (isActive) {
-            sportOperation.getStandings().also { standingsRes ->
-                if (standingsRes != SportState.standings) SportState.standings = standingsRes
+            fBallOperation.getStandings().also { standingsRes ->
+                if (standingsRes != FBallState.standings) FBallState.standings = standingsRes
             }
             delay(6 * 60 * 60 * 1000)
         }
     }
 
-    suspend fun getTeams() = coroutineScope {
-        sportOperation.getTeams().also { teamsRes ->
+    private suspend fun getTeams() = coroutineScope {
+        fBallOperation.getTeams().also { teamsRes ->
             teamsRes.map { it.id }.let { teamIds ->
                 launch { getRosters(teamIds) }
                 launch { getSchedules(teamIds) }
             }
         }
         while (isActive) {
-            sportOperation.getTeams().also { teamsRes ->
-                if (teamsRes != SportState.teams) SportState.teams = teamsRes
+            fBallOperation.getTeams().also { teamsRes ->
+                if (teamsRes != FBallState.teams) FBallState.teams = teamsRes
             }
             delay(6 * 60 * 60 * 1000)
         }
     }
-    suspend fun getLeaders() = coroutineScope {
+    private suspend fun getLeaders() = coroutineScope {
         while (isActive) {
-            sportOperation.getLeaders().also { leadersRes ->
-                if (leadersRes != SportState.leaders) SportState.leaders = leadersRes
+            fBallOperation.getLeaders().also { leadersRes ->
+                if (leadersRes != FBallState.leaders) FBallState.leaders = leadersRes
             }
             delay(6 * 60 * 60 * 1000)
         }
@@ -67,10 +66,10 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         while (isActive) {
             teamIds.map { teamId ->
                 async {
-                    sportOperation.getSchedule(teamId)
+                    fBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                if (schedulesRes != SportState.schedules) SportState.schedules = schedulesRes
+                if (schedulesRes != FBallState.schedules) FBallState.schedules = schedulesRes
                 if (
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
@@ -110,34 +109,34 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
         while (isActive) {
             teamIds.map { teamId ->
                 async {
-                    sportOperation.getRoster(teamId)
+                    fBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                if (rostersRes != SportState.rosters) SportState.rosters = rostersRes
+                if (rostersRes != FBallState.rosters) FBallState.rosters = rostersRes
             }
             delay(6 * 60 * 60 * 1000)
         }
     }
-    suspend fun buildScoreboard() {
+    private suspend fun buildScoreboard() {
         coroutineScope {
-            sportOperation.getScoreboard()?.let { scoreboard ->
+            fBallOperation.getScoreboard()?.let { scoreboard ->
                 fillGamePosts(scoreboard)
-                SportState.scoreboard = scoreboard
-                SportState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
+                FBallState.scoreboard = scoreboard
+                FBallState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
                     fetchAndMapGames(gameIds)
                 }
             }
             while (isActive) {
                 delay(10 * 1000)
-                SportState.scoreboard?.let { sb ->
+                FBallState.scoreboard?.let { sb ->
                     sb.competitions.map { Triple(it.status.state, it.date, it.id) }.let { games ->
                         val earliestTime = games.minOf { Instant.parse(it.second) }
                         val allStates = games.map { it.first }.toSet()
                         // if current time is beyond the earliest start time start fetching the scoreboard
                         if (Clock.System.now() > earliestTime) {
-                            sportOperation.getScoreboard()?.let { scoreboard ->
+                            fBallOperation.getScoreboard()?.let { scoreboard ->
                                 fillGamePosts(scoreboard)
-                                SportState.scoreboard = scoreboard
+                                FBallState.scoreboard = scoreboard
 
                                 // If boxscores already filled once then filter out games not in progress
 //                            TODO DISABLE BOX SCORE UPDATES FOR NOW
@@ -162,7 +161,7 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     }
 
     private suspend fun fillGamePosts(scoreboard: Scoreboard) = coroutineScope {
-        if (SportState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
+        if (FBallState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
             ServerState.sportPosts.putAll(
                 scoreboard.competitions.associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
@@ -191,11 +190,11 @@ class SportHandler(private val sportOperation: SportOperation) : Klogging {
     private suspend fun fetchAndMapGames(gameIds: List<String>) = coroutineScope {
         gameIds.map { gameId ->
             async {
-                sportOperation.getGameStats(gameId)
+                fBallOperation.getGameStats(gameId)
             }
         }.awaitAll().filterNotNull().also { newBoxScores ->
             // map result to teams
-            SportState.boxScores = newBoxScores.flatMap { it.teams }
+            FBallState.boxScores = newBoxScores.flatMap { it.teams }
         }
     }
 }

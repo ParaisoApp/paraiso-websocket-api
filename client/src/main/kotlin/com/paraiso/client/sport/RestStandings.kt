@@ -1,10 +1,10 @@
 package com.paraiso.client.sport
 
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.sports.AllStandings as AllStandingsDomain
-import com.paraiso.domain.sport.sports.Standings as StandingsDomain
-import com.paraiso.domain.sport.sports.StandingsGroup as StandingsGroupDomain
-import com.paraiso.domain.sport.sports.StandingsStat as StandingsStatDomain
+import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
+import com.paraiso.domain.sport.data.Standings as StandingsDomain
+import com.paraiso.domain.sport.data.StandingsGroup as StandingsGroupDomain
+import com.paraiso.domain.sport.data.StandingsStat as StandingsStatDomain
 
 @Serializable
 data class RestStandingsContainer(

@@ -9,9 +9,9 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import com.paraiso.domain.sport.sports.Category as CategoryDomain
-import com.paraiso.domain.sport.sports.CategoryLeader as CategoryLeaderDomain
-import com.paraiso.domain.sport.sports.StatLeaders as StatLeadersDomain
+import com.paraiso.domain.sport.data.Category as CategoryDomain
+import com.paraiso.domain.sport.data.CategoryLeader as CategoryLeaderDomain
+import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 
 @Serializable
 data class RestLeaders(

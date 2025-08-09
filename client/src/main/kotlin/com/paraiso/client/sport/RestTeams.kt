@@ -2,7 +2,7 @@ package com.paraiso.client.sport
 
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.sports.Team as TeamDomain
+import com.paraiso.domain.sport.data.Team as TeamDomain
 
 @Serializable
 data class RestTeams(
