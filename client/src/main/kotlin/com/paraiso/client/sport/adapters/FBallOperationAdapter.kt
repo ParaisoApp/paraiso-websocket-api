@@ -127,7 +127,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
     }
     override suspend fun getLeaders(): StatLeadersDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.fballCoreUri}/seasons/$SEASON/types/$REGULAR/leaders?limit=$LIMIT"
+            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.fballCoreUri}/leaders?limit=$LIMIT"
             val response: RestLeaders = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
