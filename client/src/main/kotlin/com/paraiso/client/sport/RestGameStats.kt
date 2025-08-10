@@ -41,7 +41,8 @@ data class Player(
 
 @Serializable
 data class Statistic(
-    val names: List<String>,
+    val name: String? = null,
+    val names: List<String>? = null,
     val descriptions: List<String>,
     val athletes: List<AthleteBase>
 )
@@ -49,10 +50,10 @@ data class Statistic(
 @Serializable
 data class AthleteBase(
     val athlete: RestAthlete,
-    val starter: Boolean,
-    val didNotPlay: Boolean,
+    val starter: Boolean? = null,
+    val didNotPlay: Boolean? = null,
     val reason: String? = null,
-    val ejected: Boolean,
+    val ejected: Boolean? = null,
     val stats: List<String>
 )
 
@@ -71,7 +72,7 @@ fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
     return FullTeamDomain(
         teamId = team.id,
         teamStats = statistics.map { it.toDomain() },
-        statTypes = stats?.toDomain() ?: StatTypesDomain(names = emptyList(), descriptions = emptyList()),
+        statTypes = stats?.toDomain() ?: StatTypesDomain(name= UNKNOWN, names = emptyList(), descriptions = emptyList()),
         athletes = stats?.athletes?.map { it.toDomain() }
     )
 }
@@ -83,7 +84,8 @@ fun TeamStat.toDomain() = TeamStatDomain(
 )
 
 fun Statistic.toDomain() = StatTypesDomain(
-    names = names,
+    name = name ?: UNKNOWN,
+    names = names ?: emptyList(),
     descriptions = descriptions
 )
 
@@ -91,14 +93,14 @@ fun AthleteBase.toDomain() = AthleteDomain(
     id = athlete.id,
     teamAbbr = EMPTY,
     displayName = athlete.displayName,
-    shortName = athlete.shortName,
+    shortName = athlete.shortName ?: UNKNOWN,
     jersey = athlete.jersey ?: UNKNOWN,
-    positionName = athlete.position.name,
-    positionAbbreviation = athlete.position.abbreviation,
-    starter = starter,
-    didNotPlay = didNotPlay,
+    positionName = athlete.position?.name ?: UNKNOWN,
+    positionAbbreviation = athlete.position?.abbreviation ?: UNKNOWN,
+    starter = starter ?: false,
+    didNotPlay = didNotPlay ?: false,
     reason = reason ?: EMPTY,
-    ejected = ejected,
+    ejected = ejected ?: false,
     stats = stats,
     displayHeight = EMPTY,
     displayWeight = EMPTY

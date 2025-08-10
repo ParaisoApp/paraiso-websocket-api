@@ -2,6 +2,8 @@ package com.paraiso.client.sport
 
 import com.paraiso.domain.sport.data.Coach
 import com.paraiso.domain.sport.data.createUnknown
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Athlete as AthleteDomain
 import com.paraiso.domain.sport.data.Coach as CoachDomain
@@ -18,11 +20,11 @@ data class RestRoster(
 data class RestAthlete(
     val id: String,
     val displayName: String,
-    val shortName: String,
+    val shortName: String? = null,
     val displayWeight: String? = null,
     val displayHeight: String? = null,
     val jersey: String? = null,
-    val position: Position
+    val position: Position? = null
 )
 
 @Serializable
@@ -43,12 +45,12 @@ fun RestAthlete.toDomain(teamAbbr: String) = AthleteDomain(
     id = id,
     teamAbbr = teamAbbr,
     displayName = displayName,
-    shortName = shortName,
-    displayWeight = displayWeight ?: "",
-    displayHeight = displayHeight ?: "",
-    jersey = jersey ?: "",
-    positionName = position.name,
-    positionAbbreviation = position.abbreviation,
+    shortName = shortName ?: UNKNOWN,
+    displayWeight = displayWeight ?: UNKNOWN,
+    displayHeight = displayHeight ?: UNKNOWN,
+    jersey = jersey ?: UNKNOWN,
+    positionName = position?.name ?: UNKNOWN,
+    positionAbbreviation = position?.abbreviation ?: UNKNOWN,
     didNotPlay = false,
     ejected = false,
     reason = "",

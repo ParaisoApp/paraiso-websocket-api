@@ -78,8 +78,8 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                         schedulesRes.associate { it.team.abbreviation to it.events }
                             .flatMap { (key, values) ->
                                 values.map { competition ->
-                                    "$TEAM_PREFIX${competition.id}" to Post(
-                                        id = "$TEAM_PREFIX${competition.id}",
+                                    "$TEAM_PREFIX${competition.id}-${key}" to Post(
+                                        id = "$TEAM_PREFIX${competition.id}-${key}",
                                         userId = SYSTEM_ID,
                                         title = competition.shortName,
                                         content = "${competition.date}-${competition.shortName}",
@@ -87,9 +87,9 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                                         media = Constants.EMPTY,
                                         votes = emptyMap(),
                                         parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
-                                        rootId = "$TEAM_PREFIX${competition.id}",
+                                        rootId = "$TEAM_PREFIX${competition.id}-${key}",
                                         status = PostStatus.ACTIVE,
-                                        data = "$TEAM_PREFIX${competition.id}",
+                                        data = "$TEAM_PREFIX${competition.id}-${key}",
                                         subPosts = mutableSetOf(),
                                         count = 0,
                                         route = Constants.EMPTY,

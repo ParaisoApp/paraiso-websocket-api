@@ -24,6 +24,7 @@ data class TeamStat(
 
 @Serializable
 data class StatTypes(
+    val name: String,
     val names: List<String>,
     val descriptions: List<String>
 )
