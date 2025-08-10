@@ -74,7 +74,7 @@ class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
-                    ServerState.sportPosts.putAll(
+                    ServerState.posts.putAll(
                         schedulesRes.associate { it.team.abbreviation to it.events }
                             .flatMap { (key, values) ->
                                 values.map { competition ->
@@ -162,7 +162,7 @@ class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
 
     private suspend fun fillGamePosts(scoreboard: Scoreboard) = coroutineScope {
         if (FBallState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
-            ServerState.sportPosts.putAll(
+            ServerState.posts.putAll(
                 scoreboard.competitions.associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
                         id = "$GAME_PREFIX${competition.id}",

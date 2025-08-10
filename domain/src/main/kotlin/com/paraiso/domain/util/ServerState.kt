@@ -25,7 +25,6 @@ object ServerState {
     val postReports: ConcurrentHashMap<String, PostReport> = ConcurrentHashMap()
 
     val posts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
-    val sportPosts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)

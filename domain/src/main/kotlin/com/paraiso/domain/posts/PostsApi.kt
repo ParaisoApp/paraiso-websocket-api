@@ -161,6 +161,12 @@ class PostsApi {
                 val userFollowing = ServerState.userList[userId]?.following ?: setOf()
                 returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
+                ServerState.posts
+                    .filter { (_, gamePost) -> gamePost.parentId.lowercase() == root.id.lowercase() || gamePost.data == postSearchId }
+                    .forEach {(_, gamePost) ->
+                        returnPosts[gamePost.id] = gamePost.toPostReturn()
+                        refQueue.addLast(gamePost)
+                    }
                 while (refQueue.isNotEmpty()) {
                     val nextRefNode = refQueue.removeFirst()
                     ServerState.posts
@@ -185,11 +191,6 @@ class PostsApi {
                             }
                         }
                 }
-                ServerState.sportPosts
-                    .filter { (_, post) -> post.parentId.lowercase() == root.id.lowercase() || post.data == postSearchId }
-                    .forEach {
-                        returnPosts[it.key] = it.value.toPostReturn()
-                    }
             }
             returnPosts
         }

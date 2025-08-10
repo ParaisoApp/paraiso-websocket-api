@@ -74,7 +74,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
-                    ServerState.sportPosts.putAll(
+                    ServerState.posts.putAll(
                         schedulesRes.associate { it.team.abbreviation to it.events }
                             .flatMap { (key, values) ->
                                 values.map { competition ->
@@ -89,7 +89,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                                         parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
                                         rootId = "$TEAM_PREFIX${competition.id}",
                                         status = PostStatus.ACTIVE,
-                                        data = "TEAM-$key",
+                                        data = "$TEAM_PREFIX${competition.id}",
                                         subPosts = mutableSetOf(),
                                         count = 0,
                                         route = Constants.EMPTY,
@@ -162,7 +162,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
 
     private suspend fun fillGamePosts(scoreboard: Scoreboard) = coroutineScope {
         if (BBallState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
-            ServerState.sportPosts.putAll(
+            ServerState.posts.putAll(
                 scoreboard.competitions.associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
                         id = "$GAME_PREFIX${competition.id}",
