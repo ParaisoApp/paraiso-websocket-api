@@ -253,8 +253,8 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                     }
                     MessageType.DELETE -> {
                         converter?.findCorrectConversion<TypeMappingDomain<DeleteDomain>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let{delete ->
-                                launch { postsApiRef.deletePost(delete) }
+                            ?.typeMapping?.entries?.first()?.value?.let{delete ->
+                                launch { postsApiRef.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
                             }
                     }

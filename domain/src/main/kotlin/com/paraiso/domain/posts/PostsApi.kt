@@ -236,14 +236,16 @@ class PostsApi {
                     post.copy(votes = mutableVoteMap.toMap(), updatedOn = Clock.System.now())
             }
         }
-    fun deletePost(delete: Delete) =
+    fun deletePost(delete: Delete, userId: String) =
         ServerState.posts[delete.postId]?.let { post ->
-            Clock.System.now().let{now ->
-                ServerState.posts[delete.postId] =
-                    post.copy(status = PostStatus.DELETED, updatedOn = now)
-                //update parent sub post counts - decrement to subtract
-                ServerState.posts[post.parentId]?.let { parent ->
-                    updateCounts(parent, now, increment = -1)
+            if(post.userId == userId){
+                Clock.System.now().let{now ->
+                    ServerState.posts[delete.postId] =
+                        post.copy(status = PostStatus.DELETED, updatedOn = now)
+                    //update parent sub post counts - decrement to subtract
+                    ServerState.posts[post.parentId]?.let { parent ->
+                        updateCounts(parent, now, increment = -1)
+                    }
                 }
             }
         }
