@@ -60,6 +60,13 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
         println(e)
         null
     }
+
+fun cleanValue(value: String?) = value?.let{
+    Jsoup.clean(
+        it,
+        safeList
+    )
+}
 fun cleanMessage(
     message: MessageDomain
 ): MessageDomain =
@@ -110,18 +117,12 @@ fun cleanUser(
             user.about,
             safeList
         ),
-        location = user.location.copy(
-            city = Jsoup.clean(
-                user.location.city,
-                safeList
-            ),
-            state = Jsoup.clean(
-                user.location.state,
-                safeList
-            ),
+        location = user.location?.copy(
+            city = cleanValue(user.location?.city),
+            state = cleanValue(user.location?.state),
             country = Country(
-                name = user.location.country.name,
-                code = user.location.country.code,
+                name = user.location?.country?.name,
+                code = user.location?.country?.code,
             )
         )
     )
