@@ -2,9 +2,12 @@ package com.paraiso.domain.admin
 
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.posts.toPostReturn
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.buildUserResponse
+import com.paraiso.domain.users.toUser
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -92,6 +95,15 @@ class AdminApi {
         }
 
         }
+
+    fun tagUser(tag: Tag) {
+        ServerState.userList[tag.userId]?.let{user ->
+            ServerState.userList[tag.userId] = user.copy(
+                tag = tag.tag,
+                updatedOn = Clock.System.now()
+            )
+        }
+    }
 
     fun banUser(ban: Ban) =
         ServerState.banList.add(ban.userId)

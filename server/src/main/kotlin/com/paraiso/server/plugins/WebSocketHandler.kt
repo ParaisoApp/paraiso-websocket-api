@@ -43,6 +43,7 @@ import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
 import com.paraiso.domain.messageTypes.Follow as FollowDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.messageTypes.Route as RouteDomain
+import com.paraiso.domain.messageTypes.Tag as TagDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
@@ -154,6 +155,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         MessageType.USER_UPDATE -> sendTypedMessage(type, message as UserResponseDomain)
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as ReportDomain)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as ReportDomain)
+                        MessageType.TAG -> sendTypedMessage(type, message as TagDomain)
                         MessageType.BAN -> {
                             val ban = message as? BanDomain
                             ban?.let { bannedMsg ->
@@ -262,6 +264,15 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { adminApiRef.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
+                                }
+                            }
+                    }
+                    MessageType.TAG -> {
+                        converter?.findCorrectConversion<TypeMappingDomain<TagDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { tag ->
+                                if (sessionUser.roles == UserRole.ADMIN) {
+                                    launch { adminApiRef.tagUser(tag) }
+                                    ServerState.tagUserFlowMut.emit(tag)
                                 }
                             }
                     }

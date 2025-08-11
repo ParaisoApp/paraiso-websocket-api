@@ -38,6 +38,9 @@ enum class MessageType {
     @SerialName("BAN")
     BAN,
 
+    @SerialName("TAG")
+    TAG,
+
     @SerialName("BLOCK")
     BLOCK,
 

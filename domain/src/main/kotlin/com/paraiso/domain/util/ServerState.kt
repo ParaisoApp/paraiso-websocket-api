@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.User
@@ -32,6 +33,7 @@ object ServerState {
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
     val userUpdateFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
     val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
+    val tagUserFlowMut = MutableSharedFlow<Tag>(replay = 0)
     val reportUserFlowMut = MutableSharedFlow<Report>(replay = 0)
     val reportPostFlowMut = MutableSharedFlow<Report>(replay = 0)
 
@@ -42,6 +44,7 @@ object ServerState {
         Pair(MessageType.DELETE, deleteFlowMut.asSharedFlow()),
         Pair(MessageType.USER_UPDATE, userUpdateFlowMut.asSharedFlow()),
         Pair(MessageType.BAN, banUserFlowMut.asSharedFlow()),
+        Pair(MessageType.TAG, tagUserFlowMut.asSharedFlow()),
         Pair(MessageType.REPORT_USER, reportUserFlowMut.asSharedFlow()),
         Pair(MessageType.REPORT_POST, reportPostFlowMut.asSharedFlow())
     )

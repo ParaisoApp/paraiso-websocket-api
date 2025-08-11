@@ -32,6 +32,7 @@ data class User(
     val blockList: Set<String>,
     val image: UserImage,
     val lastSeen: Long,
+    val tag: String,
     val settings: UserSettings,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -90,6 +91,7 @@ data class UserResponse(
     val blockList: Map<String, Boolean>,
     val image: UserImage,
     val lastSeen: Long,
+    val tag: String,
     val settings: UserSettings,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -135,6 +137,7 @@ fun User.toUserResponse(
         image = image,
         lastSeen = lastSeen,
         settings = settings,
+        tag = tag,
         createdOn = createdOn,
         updatedOn = updatedOn
     )
@@ -163,6 +166,7 @@ fun UserResponse.toUser() =
         image = image,
         lastSeen = lastSeen,
         settings = settings,
+        tag = tag,
         createdOn = createdOn,
         updatedOn = updatedOn
     )
@@ -197,6 +201,7 @@ fun UserResponse.Companion.newUser(
             image = UserImage.initImage(),
             lastSeen = now.toEpochMilliseconds(),
             settings = UserSettings.initSettings(),
+            tag = EMPTY,
             createdOn = now,
             updatedOn = now
         )
