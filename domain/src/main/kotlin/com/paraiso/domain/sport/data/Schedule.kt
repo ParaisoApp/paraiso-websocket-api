@@ -23,5 +23,5 @@ data class Competition(
 data class Venue(
     val fullName: String,
     val city: String,
-    val state: String
+    val state: String?
 )

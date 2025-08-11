@@ -40,8 +40,8 @@ fun RestTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().team
 fun RestTeam.toDomain(): TeamDomain = TeamDomain(
     id = id,
     location = location,
-    name = name ?: UNKNOWN,
+    name = name,
     abbreviation = abbreviation,
     displayName = displayName,
-    shortDisplayName = shortDisplayName ?: ""
+    shortDisplayName = shortDisplayName
 )

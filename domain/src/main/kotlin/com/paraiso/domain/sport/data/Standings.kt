@@ -25,7 +25,7 @@ data class StandingsSubGroup(
 @Serializable
 data class Standings(
     val teamId: String,
-    val seed: Int,
+    val seed: Int?,
     val stats: List<StandingsStat>
 )
 
@@ -34,5 +34,5 @@ data class StandingsStat(
     val shortDisplayName: String,
     val displayValue: String,
     val displayName: String,
-    val value: Double
+    val value: Double?
 )

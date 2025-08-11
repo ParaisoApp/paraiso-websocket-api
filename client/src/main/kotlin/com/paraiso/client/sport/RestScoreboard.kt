@@ -53,7 +53,7 @@ fun TeamYearStats.toDomain() = TeamYearStatsDomain(
     name = name,
     abbreviation = abbreviation,
     displayValue = displayValue,
-    rankDisplayValue = rankDisplayValue ?: UNKNOWN
+    rankDisplayValue = rankDisplayValue
 )
 
 fun Record.toDomain() = RecordDomain(

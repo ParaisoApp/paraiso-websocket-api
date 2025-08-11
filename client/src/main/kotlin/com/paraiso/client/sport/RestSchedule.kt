@@ -111,7 +111,7 @@ fun RestCompetitor.toTeamDomain() = TeamGameStats(
     winner = winner ?: false,
     teamYearStats = statistics?.map { it.toDomain() } ?: emptyList(),
     lineScores = linescores?.map { it.value } ?: emptyList(),
-    score = score?.displayValue ?: "0"
+    score = score?.displayValue
 )
 
 fun RestRecordYTD.toDomain() = RecordDomain(
@@ -122,7 +122,7 @@ fun RestRecordYTD.toDomain() = RecordDomain(
 fun Venue.toDomain() = VenueDomain(
     fullName = fullName,
     city = address.city,
-    state = address.state ?: UNKNOWN
+    state = address.state
 )
 
 object ScoreSerializer : KSerializer<RestScore> {

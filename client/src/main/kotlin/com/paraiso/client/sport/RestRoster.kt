@@ -37,7 +37,7 @@ data class RestCoach(
 
 fun RestRoster.toDomain() = RosterDomain(
     athletes = athletes.map { it.toDomain(team.abbreviation) },
-    coach = coach.firstOrNull()?.toDomain() ?: Coach.createUnknown(),
+    coach = coach.firstOrNull()?.toDomain(),
     team = team.toDomain()
 )
 
@@ -45,12 +45,12 @@ fun RestAthlete.toDomain(teamAbbr: String) = AthleteDomain(
     id = id,
     teamAbbr = teamAbbr,
     displayName = displayName,
-    shortName = shortName ?: UNKNOWN,
-    displayWeight = displayWeight ?: UNKNOWN,
-    displayHeight = displayHeight ?: UNKNOWN,
-    jersey = jersey ?: UNKNOWN,
-    positionName = position?.name ?: UNKNOWN,
-    positionAbbreviation = position?.abbreviation ?: UNKNOWN,
+    shortName = shortName,
+    displayWeight = displayWeight,
+    displayHeight = displayHeight,
+    jersey = jersey,
+    positionName = position?.name,
+    positionAbbreviation = position?.abbreviation,
     didNotPlay = false,
     ejected = false,
     reason = "",

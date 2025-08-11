@@ -74,7 +74,7 @@ fun SubGroup.toDomain() = StandingsSubGroupDomain(
 
 fun Entry.toDomain() = StandingsDomain(
     teamId = team.id,
-    seed = team.seed?.toIntOrNull() ?: 0,
+    seed = team.seed?.toIntOrNull(),
     stats = stats.map { it.toDomain() }
 )
 
@@ -82,5 +82,5 @@ fun BBallStandingsStat.toDomain() = StandingsStatDomain(
     shortDisplayName = shortDisplayName,
     displayValue = displayValue,
     displayName = displayName,
-    value = value.toDoubleOrNull() ?: 0.0
+    value = value.toDoubleOrNull()
 )

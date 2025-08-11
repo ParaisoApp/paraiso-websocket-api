@@ -15,7 +15,7 @@ data class TeamGameStats(
     val winner: Boolean,
     val teamYearStats: List<TeamYearStats>,
     val lineScores: List<Double>,
-    val score: String
+    val score: String?
 )
 
 @Serializable
@@ -23,7 +23,7 @@ data class TeamYearStats(
     val name: String,
     val abbreviation: String,
     val displayValue: String,
-    val rankDisplayValue: String
+    val rankDisplayValue: String?
 )
 
 @Serializable

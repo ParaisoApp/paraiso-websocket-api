@@ -72,36 +72,36 @@ fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
     return FullTeamDomain(
         teamId = team.id,
         teamStats = statistics.map { it.toDomain() },
-        statTypes = stats?.toDomain() ?: StatTypesDomain(name= UNKNOWN, names = emptyList(), descriptions = emptyList()),
+        statTypes = stats?.toDomain(),
         athletes = stats?.athletes?.map { it.toDomain() }
     )
 }
 
 fun TeamStat.toDomain() = TeamStatDomain(
     displayValue = displayValue,
-    abbreviation = abbreviation ?: UNKNOWN,
+    abbreviation = abbreviation,
     label = label
 )
 
 fun Statistic.toDomain() = StatTypesDomain(
-    name = name ?: UNKNOWN,
+    name = name,
     names = names ?: emptyList(),
     descriptions = descriptions
 )
 
 fun AthleteBase.toDomain() = AthleteDomain(
     id = athlete.id,
-    teamAbbr = EMPTY,
+    teamAbbr = null,
     displayName = athlete.displayName,
-    shortName = athlete.shortName ?: UNKNOWN,
-    jersey = athlete.jersey ?: UNKNOWN,
-    positionName = athlete.position?.name ?: UNKNOWN,
-    positionAbbreviation = athlete.position?.abbreviation ?: UNKNOWN,
+    shortName = athlete.shortName,
+    jersey = athlete.jersey,
+    positionName = athlete.position?.name,
+    positionAbbreviation = athlete.position?.abbreviation,
     starter = starter ?: false,
     didNotPlay = didNotPlay ?: false,
-    reason = reason ?: EMPTY,
+    reason = reason,
     ejected = ejected ?: false,
     stats = stats,
-    displayHeight = EMPTY,
-    displayWeight = EMPTY
+    displayHeight = null,
+    displayWeight = null
 )
