@@ -24,7 +24,7 @@ data class CategoryLeader(
 
 @Serializable
 data class LeaderReturn(
-    val athleteName: String,
+    val athleteName: String?,
     val leaderStat: Double,
-    val teamAbbr: String
+    val teamAbbr: String?
 )
