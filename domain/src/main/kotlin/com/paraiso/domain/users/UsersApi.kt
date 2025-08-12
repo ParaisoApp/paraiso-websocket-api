@@ -32,16 +32,6 @@ class UsersApi {
         ).toUser()
     }
 
-    fun updateBlockList(sessionUserId: String, block: Block) {
-        ServerState.userList[sessionUserId]?.let { sessionUser ->
-            sessionUser.blockList.toMutableSet().let { mutableBlockList ->
-                mutableBlockList.add(block.userId)
-                ServerState.userList[sessionUser.id] =
-                    sessionUser.copy(blockList = mutableBlockList)
-            }
-        }
-    }
-
     fun getUserByPartial(search: String) =
         ServerState.userList.values
             .filter { it.name?.lowercase()?.contains(search.lowercase()) == true }

@@ -276,12 +276,6 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                 }
                             }
                     }
-                    MessageType.BLOCK -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<BlockDomain>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { block ->
-                                usersApiRef.updateBlockList(sessionUser.id, block)
-                            }
-                    }
                     MessageType.REPORT_USER -> {
                         converter?.findCorrectConversion<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
