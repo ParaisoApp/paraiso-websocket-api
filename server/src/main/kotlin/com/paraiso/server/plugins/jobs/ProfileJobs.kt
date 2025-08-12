@@ -5,7 +5,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 class ProfileJobs {
-    suspend fun profileJobs(content: String, session: WebSocketServerSession) = coroutineScope {
+    suspend fun profileJobs(content: String?, session: WebSocketServerSession) = coroutineScope {
         listOf(launch {})
     }
 }

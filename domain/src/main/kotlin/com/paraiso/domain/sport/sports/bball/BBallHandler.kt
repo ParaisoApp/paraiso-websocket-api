@@ -7,7 +7,6 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
-import com.paraiso.domain.util.Constants.SYSTEM_ID
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
@@ -80,7 +79,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                                 values.map { competition ->
                                     "$TEAM_PREFIX${competition.id}-${key}" to Post(
                                         id = "$TEAM_PREFIX${competition.id}-${key}",
-                                        userId = SYSTEM_ID,
+                                        userId = null,
                                         title = competition.shortName,
                                         content = "${competition.date}-${competition.shortName}",
                                         type = PostType.GAME,
@@ -166,7 +165,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                 scoreboard.competitions.associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
                         id = "$GAME_PREFIX${competition.id}",
-                        userId = SYSTEM_ID,
+                        userId = null,
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,

@@ -1,11 +1,8 @@
 package com.paraiso.domain.users
 
-import com.paraiso.domain.messageTypes.Block
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -93,22 +90,26 @@ class UsersApi {
 
     private fun updateChatForUser(
         dm: DirectMessage,
-        userId: String,
-        otherUserId: String,
+        userId: String?,
+        otherUserId: String?,
         isUser: Boolean,
         now: Instant
     ) =
         ServerState.userList[userId]?.let{ user ->
             user.chats.toMutableMap().let { mutableChat ->
-                mutableChat[otherUserId] = ChatRef(
-                    mostRecentDm = dm,
-                    chatId = dm.chatId,
-                    viewed = !isUser
-                )
-                ServerState.userList[userId] = user.copy(
-                    chats = mutableChat,
-                    updatedOn = now
-                )
+                if(otherUserId != null) {
+                    mutableChat[otherUserId] = ChatRef(
+                        mostRecentDm = dm,
+                        chatId = dm.chatId,
+                        viewed = !isUser
+                    )
+                }
+                if(userId != null){
+                    ServerState.userList[userId] = user.copy(
+                        chats = mutableChat,
+                        updatedOn = now
+                    )
+                }
             }
         }
 

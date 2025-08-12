@@ -1,7 +1,6 @@
 package com.paraiso.client.sport
 
 import com.paraiso.domain.sport.data.Scoreboard
-import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Record as RecordDomain
 import com.paraiso.domain.sport.data.Status as StatusDomain

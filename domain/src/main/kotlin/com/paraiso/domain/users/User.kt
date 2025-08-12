@@ -236,10 +236,12 @@ fun User.buildUserResponse(): UserResponse {
         .filterValues { it.userId == id }
         .values
         .map { post ->
-            if (post.type == PostType.SUB) {
-                posts[post.id] = post.votes
-            } else {
-                comments[post.id] = post.votes
+            if(post.id != null){
+                if (post.type == PostType.SUB) {
+                    posts[post.id] = post.votes
+                } else {
+                    comments[post.id] = post.votes
+                }
             }
         }
     return this.toUserResponse(posts, comments)
