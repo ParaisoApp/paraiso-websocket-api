@@ -40,11 +40,13 @@ class PostsApi {
                 ServerState.posts[messageId] = message.toNewPost()
                 // update parent sub posts
                 ServerState.posts[message.replyId]?.let { parent ->
-                    ServerState.posts[message.replyId] = parent.copy(
-                        count = parent.count + 1,
-                        subPosts = parent.subPosts + messageId,
-                        updatedOn = now
-                    )
+                    if(message.userId != null) {
+                        ServerState.posts[message.userId] = parent.copy(
+                            count = parent.count + 1,
+                            subPosts = parent.subPosts + messageId,
+                            updatedOn = now
+                        )
+                    }
                     launch{
                         //update grandparent sub post counts - increment to add
                         ServerState.posts[parent.parentId]?.let { grandParent ->
@@ -54,20 +56,24 @@ class PostsApi {
                 }
                 // update user posts
                 ServerState.userList[message.userId]?.let { user ->
-                    ServerState.userList[message.userId] = user.copy(
-                        posts = user.posts + messageId,
-                        updatedOn = now
-                    )
+                    if(message.userId != null) {
+                        ServerState.userList[message.userId] = user.copy(
+                            posts = user.posts + messageId,
+                            updatedOn = now
+                        )
+                    }
                 }
                 // update user post replies
                 //if (message.userId != message.userReceiveId) {
+                if(message.userReceiveId != null) {
                     ServerState.userList[message.userReceiveId]?.let { user ->
                         user.replies.toMutableMap().let { mutableReplies ->
                             mutableReplies[messageId] = false
-                            ServerState.userList[message.userReceiveId] = user.copy(
-                                replies = mutableReplies,
-                                updatedOn = now
-                            )
+                                ServerState.userList[message.userReceiveId] = user.copy(
+                                    replies = mutableReplies,
+                                    updatedOn = now
+                                )
+                            }
                         }
                     }
                 //}
@@ -76,10 +82,12 @@ class PostsApi {
     }
 
     private fun updateCounts(post: Post, now: Instant, increment: Int) {
-        ServerState.posts[post.id] = post.copy(
-            count = post.count + (1 * increment),
-            updatedOn = now
-        )
+        if(post.id != null){
+            ServerState.posts[post.id] = post.copy(
+                count = post.count + (1 * increment),
+                updatedOn = now
+            )
+        }
         if (post.rootId == post.id) return
         ServerState.posts[post.parentId]?.let {parent ->
             updateCounts(parent, now, increment)
@@ -102,7 +110,7 @@ class PostsApi {
     //search by partial for autocomplete
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {
-            it.title.lowercase().contains(search.lowercase()) || it.content.lowercase().contains(search.lowercase())
+            it.title?.lowercase()?.contains(search.lowercase()) == true || it.content?.lowercase()?.contains(search.lowercase()) == true
         }.take(PARTIAL_RETRIEVE_LIM).let{ foundPosts ->
             foundPosts.map { foundPost ->
                 foundPost.toPostReturn()
@@ -126,6 +134,7 @@ class PostsApi {
                         post.userId == postSearchId.removePrefix(USER_PREFIX) ||
                         (postSearchId == SiteRoute.HOME.name && post.rootId == post.id)
                     ) &&
+                    post.createdOn != null &&
                     post.createdOn > range &&
                     post.status != PostStatus.DELETED &&
                     filters.postTypes.contains(post.type) &&
@@ -159,13 +168,15 @@ class PostsApi {
         LinkedHashMap<String, PostReturn>().let { returnPosts ->
             basePost.toPostReturn().let { root -> // build tree with bfs
                 val userFollowing = ServerState.userList[userId]?.following ?: setOf()
-                returnPosts[root.id] = root
+                if(root.id != null) returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
                 ServerState.posts
-                    .filter { (_, gamePost) -> gamePost.parentId.lowercase() == root.id.lowercase() || gamePost.data == postSearchId }
+                    .filter { (_, gamePost) -> gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId }
                     .forEach {(_, gamePost) ->
-                        returnPosts[gamePost.id] = gamePost.toPostReturn()
-                        refQueue.addLast(gamePost)
+                        if(gamePost.id != null){
+                            returnPosts[gamePost.id] = gamePost.toPostReturn()
+                            refQueue.addLast(gamePost)
+                        }
                     }
                 while (refQueue.isNotEmpty()) {
                     val nextRefNode = refQueue.removeFirst()
@@ -173,6 +184,7 @@ class PostsApi {
                         .filterKeys { it in nextRefNode.subPosts }
                         .asSequence()
                         .filter { (_, post) ->
+                            post.createdOn != null &&
                             post.createdOn > range &&
                                 post.status != PostStatus.DELETED &&
                                 filters.postTypes.contains(post.type) &&
@@ -186,8 +198,10 @@ class PostsApi {
                             (
                                 id to post.toPostReturn()
                                 ).also { (_, returnPost) ->
-                                returnPosts[returnPost.id] = returnPost
-                                refQueue.addLast(post)
+                                    if(returnPost.id != null){
+                                        returnPosts[returnPost.id] = returnPost
+                                        refQueue.addLast(post)
+                                    }
                             }
                         }
                 }
@@ -209,7 +223,7 @@ class PostsApi {
             }
 
     private fun getSort(entry: Map.Entry<String, Post>, sortType: SortType) =
-        entry.value.createdOn.toEpochMilliseconds().let { created ->
+        entry.value.createdOn?.toEpochMilliseconds()?.let { created ->
             if (sortType == SortType.NEW) {
                 created
             } else {

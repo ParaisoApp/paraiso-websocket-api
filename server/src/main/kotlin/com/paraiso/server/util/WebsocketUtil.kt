@@ -71,24 +71,15 @@ fun cleanMessage(
     message: MessageDomain
 ): MessageDomain =
     message.copy(
-        title = Jsoup.clean(
-            message.title,
-            safeList
-        ),
-        content = Jsoup.clean(
-            message.content,
-            safeList
-        )
+        title = cleanValue(message.title),
+        content = cleanValue(message.content)
     )
 
 fun cleanDirectMessage(
     dm: DirectMessageDomain
 ): DirectMessageDomain =
     dm.copy(
-        content = Jsoup.clean(
-            dm.content,
-            safeList
-        )
+        content = cleanValue(dm.content)
     )
 
 fun cleanUser(

@@ -1,7 +1,6 @@
 package com.paraiso.client.sport
 
 import com.paraiso.domain.sport.data.TeamGameStats
-import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -71,14 +70,14 @@ data class RestCompetitor(
 
 @Serializable
 data class RestRecordYTD(
-    val description: String,
-    val displayValue: String
+    val description: String?,
+    val displayValue: String?
 )
 
 @Serializable
 data class RestScore(
-    val value: String,
-    val displayValue: String
+    val value: String?,
+    val displayValue: String?
 )
 
 @Serializable
@@ -135,8 +134,8 @@ object ScoreSerializer : KSerializer<RestScore> {
         return when (val element = jsonDecoder.decodeJsonElement()) {
             is JsonPrimitive -> RestScore(value = element.content, displayValue = element.content)
             is JsonObject -> {
-                val value = element["value"]?.jsonPrimitive?.content ?: UNKNOWN
-                val displayValue = element["displayValue"]?.jsonPrimitive?.content ?: UNKNOWN
+                val value = element["value"]?.jsonPrimitive?.content
+                val displayValue = element["displayValue"]?.jsonPrimitive?.content
                 RestScore(value = value, displayValue = displayValue)
             }
             else -> throw SerializationException("Unknown type for score")
@@ -166,8 +165,8 @@ object RecordSerializer : KSerializer<List<RestRecordYTD>> {
                 jsonElement.mapNotNull { element ->
                     if (element is JsonObject) {
                         RestRecordYTD(
-                            element["description"]?.jsonPrimitive?.content ?: "UNKNOWN",
-                            element["displayValue"]?.jsonPrimitive?.content ?: "UNKNOWN"
+                            element["description"]?.jsonPrimitive?.content,
+                            element["displayValue"]?.jsonPrimitive?.content
                         )
                     } else {
                         null

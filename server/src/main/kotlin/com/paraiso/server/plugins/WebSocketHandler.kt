@@ -119,7 +119,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
         }
     }
 
-    private fun validateMessage(sessionUserId: String, blockList: Map<String, Boolean>, postType: PostType, userId: String) =
+    private fun validateMessage(sessionUserId: String, blockList: Map<String, Boolean>, postType: PostType, userId: String?) =
         sessionUserId == userId || // message is from the cur user or
             (
                 !blockList.contains(userId) && // user isnt in cur user's blocklist
@@ -184,7 +184,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                     cleanMessage(message).copy(
                                         id = messageId,
                                         userId = sessionUser.id,
-                                        rootId = messageId.takeIf { message.rootId == "-1" } ?: message.rootId
+                                        rootId = messageId.takeIf { message.rootId == null } ?: message.rootId
                                     ).let { messageWithData ->
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)

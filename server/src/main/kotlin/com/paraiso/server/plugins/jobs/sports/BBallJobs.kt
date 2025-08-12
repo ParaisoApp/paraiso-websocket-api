@@ -37,7 +37,7 @@ class BBallJobs {
             }
         )
     }
-    suspend fun teamJobs(content: String, session: WebSocketServerSession) = coroutineScope {
+    suspend fun teamJobs(content: String?, session: WebSocketServerSession) = coroutineScope {
         listOf(
             launch {
                 var lastSentScoreboard: Scoreboard? = null

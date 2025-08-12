@@ -1,9 +1,5 @@
 package com.paraiso.client.sport
 
-import com.paraiso.domain.sport.data.Coach
-import com.paraiso.domain.sport.data.createUnknown
-import com.paraiso.domain.util.Constants
-import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Athlete as AthleteDomain
 import com.paraiso.domain.sport.data.Coach as CoachDomain

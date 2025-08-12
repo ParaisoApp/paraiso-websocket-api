@@ -1,6 +1,5 @@
 package com.paraiso.domain.posts
 
-import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.Constants
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -8,42 +7,42 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 data class Post(
-    val id: String,
-    val userId: String,
-    val title: String,
-    val content: String,
+    val id: String?,
+    val userId: String?,
+    val title: String?,
+    val content: String?,
     val type: PostType,
-    val media: String?,
     val votes: Map<String, Boolean>,
-    val parentId: String,
-    val rootId: String,
+    val parentId: String?,
+    val rootId: String?,
     val status: PostStatus,
+    val media: String?,
     val data: String?,
     val subPosts: Set<String>,
     val count: Int,
     val route: String,
-    val createdOn: Instant,
-    val updatedOn: Instant
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 ) { companion object }
 
 @Serializable
 data class PostReturn(
-    val id: String,
-    val userId: String,
-    val title: String,
-    val content: String,
+    val id: String?,
+    val userId: String?,
+    val title: String?,
+    val content: String?,
     val type: PostType,
-    val media: String?,
     val votes: Map<String, Boolean>,
-    val parentId: String,
-    val rootId: String,
+    val parentId: String?,
+    val rootId: String?,
     val status: PostStatus,
+    val media: String?,
     val data: String?,
     var subPosts: Map<String, Boolean>,
     val count: Int,
     val route: String,
-    val createdOn: Instant,
-    val updatedOn: Instant
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 ) { companion object }
 
 @Serializable
@@ -142,7 +141,7 @@ fun Post.toPostReturn() = PostReturn(
 
 fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<String>) = Post(
     id = basePostId,
-    userId = Constants.SYSTEM_ID,
+    userId = null,
     title = basePostName,
     content = Constants.EMPTY,
     type = PostType.SUPER,

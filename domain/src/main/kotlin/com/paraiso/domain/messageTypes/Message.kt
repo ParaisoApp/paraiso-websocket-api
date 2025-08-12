@@ -3,48 +3,47 @@ package com.paraiso.domain.messageTypes
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
-import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Message(
-    val id: String? = null,
-    val userId: String,
-    val userReceiveId: String,
-    val title: String,
-    val content: String,
+    val id: String?,
+    val userId: String?,
+    val userReceiveId: String?,
+    val title: String?,
+    val content: String?,
     val type: PostType,
-    val media: String,
-    val data: String,
-    val replyId: String,
-    val rootId: String,
-    val editId: String,
+    val media: String?,
+    val data: String?,
+    val replyId: String?,
+    val rootId: String?,
+    val editId: String?,
     val route: String
 )
 
 @Serializable
 data class DirectMessage(
-    val id: String? = null,
+    val id: String?,
     val chatId: String,
-    val userId: String,
+    val userId: String?,
     val userReceiveId: String,
-    val content: String,
-    val media: String,
-    val createdOn: Instant? = null
+    val content: String?,
+    val media: String?,
+    val createdOn: Instant?
 )
 
 fun Message.toNewPost() =
     Clock.System.now().let{now ->
         Post(
-            id = id ?: UNKNOWN,
+            id = id,
             userId = userId,
             title = title,
             content = content,
             type = type,
             media = media,
-            votes = mapOf(userId to true),
+            votes = if(userId != null) mapOf(userId to true) else mapOf(),
             parentId = replyId,
             rootId = rootId,
             status = PostStatus.ACTIVE,

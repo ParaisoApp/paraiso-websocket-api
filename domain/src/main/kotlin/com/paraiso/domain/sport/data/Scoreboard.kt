@@ -37,6 +37,6 @@ data class Status(
 
 @Serializable
 data class Record(
-    val name: String,
-    val summary: String
+    val name: String?,
+    val summary: String?
 )
