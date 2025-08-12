@@ -1,7 +1,17 @@
-package com.paraiso.domain.messageTypes
+package com.paraiso.domain.routes
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class RouteDetails(
+    val id: String,
+    val route: SiteRoute,
+    val modifier: SiteRoute,
+    val title: String,
+    val favoriteCount: String,
+    val about: String
+)
 
 @Serializable
 data class Route(

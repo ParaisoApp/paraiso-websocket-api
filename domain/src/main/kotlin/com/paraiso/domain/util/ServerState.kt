@@ -11,6 +11,7 @@ import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserChat
 import com.paraiso.domain.users.UserResponse
@@ -26,6 +27,7 @@ object ServerState {
     val postReports: ConcurrentHashMap<String, PostReport> = ConcurrentHashMap()
 
     val posts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
+    val routes: ConcurrentHashMap<String, RouteDetails> = ConcurrentHashMap()
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)

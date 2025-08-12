@@ -3,7 +3,7 @@ package com.paraiso.domain.posts
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
-import com.paraiso.domain.messageTypes.SiteRoute
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UserRole

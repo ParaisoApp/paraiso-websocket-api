@@ -6,6 +6,7 @@ import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
 import com.paraiso.com.paraiso.api.posts.postsController
+import com.paraiso.com.paraiso.api.routes.routesController
 import com.paraiso.com.paraiso.api.sports.bball.bballController
 import com.paraiso.com.paraiso.api.sports.fball.fballController
 import com.paraiso.com.paraiso.api.users.usersController
@@ -14,6 +15,7 @@ import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
@@ -68,6 +70,7 @@ fun main() {
         configureSockets(
             handler,
             adminApi,
+            RoutesApi(),
             postsApi,
             usersApi,
             AuthApi(),
@@ -91,6 +94,7 @@ fun main() {
 fun Application.configureSockets(
     handler: WebSocketHandler,
     adminApi: AdminApi,
+    routesApi: RoutesApi,
     postsApi: PostsApi,
     usersApi: UsersApi,
     authApi: AuthApi,
@@ -143,6 +147,7 @@ fun Application.configureSockets(
             fballController(fBallApi)
             metadataController(metadataApi)
             adminController(adminApi)
+            routesController(routesApi)
         }
     }
 }

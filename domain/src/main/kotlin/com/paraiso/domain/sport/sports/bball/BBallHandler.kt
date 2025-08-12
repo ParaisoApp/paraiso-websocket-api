@@ -1,11 +1,10 @@
 package com.paraiso.domain.sport.sports.bball
 
-import com.paraiso.domain.messageTypes.SiteRoute
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.sport.data.Scoreboard
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerState
