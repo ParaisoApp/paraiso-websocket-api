@@ -10,7 +10,7 @@ data class RouteDetails(
     val modifier: SiteRoute,
     val title: String,
     val favoriteCount: String,
-    val about: String
+    val about: String?
 )
 
 @Serializable
