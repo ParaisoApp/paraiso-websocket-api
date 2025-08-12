@@ -7,9 +7,9 @@ import kotlinx.serialization.Serializable
 data class RouteDetails(
     val id: String,
     val route: SiteRoute,
-    val modifier: SiteRoute,
+    val modifier: String?,
     val title: String,
-    val favoriteCount: String,
+    val userFavorites: Set<String>,
     val about: String?
 )
 

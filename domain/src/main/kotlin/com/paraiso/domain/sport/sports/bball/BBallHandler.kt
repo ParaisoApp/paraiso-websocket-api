@@ -4,7 +4,9 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerState
@@ -43,6 +45,9 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                 launch { getRosters(teamIds) }
                 launch { getSchedules(teamIds) }
             }
+            launch {
+                teamsRes.forEach { addTeamRoute(it) }
+            }
         }
         while (isActive) {
             bBallOperation.getTeams().also { teamsRes ->
@@ -51,6 +56,19 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
             delay(6 * 60 * 60 * 1000)
         }
     }
+
+    private fun addTeamRoute(team: Team) {
+        val teamRouteId = "${SiteRoute.BASKETBALL}-${SiteRoute.TEAM}-${team.id}"
+        ServerState.routes[teamRouteId] = RouteDetails(
+            id = teamRouteId,
+            route = SiteRoute.BASKETBALL,
+            modifier = team.abbreviation,
+            title = team.displayName,
+            userFavorites = emptySet(),
+            about = null,
+        )
+    }
+
     private suspend fun getLeaders() = coroutineScope {
         while (isActive) {
             bBallOperation.getLeaders().also { leadersRes ->

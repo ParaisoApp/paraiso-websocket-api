@@ -58,7 +58,7 @@ fun main() {
         FBallHandler(FBallOperationAdapter()).bootJobs()
     }
     jobScope.launch {
-        ServerHandler().cleanUserList()
+        ServerHandler().bootJobs()
     }
 
     val postsApi = PostsApi()
