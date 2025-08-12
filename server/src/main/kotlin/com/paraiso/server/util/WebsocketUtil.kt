@@ -96,10 +96,7 @@ fun cleanUser(
             user.email
         ),
         image = user.image.copy(
-          url = Jsoup.clean(
-              user.image.url,
-              safeList
-          )
+          url = cleanValue(user.image.url)
         ),
         about = cleanValue(
             user.about

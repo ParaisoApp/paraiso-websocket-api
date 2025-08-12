@@ -2,7 +2,6 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.posts.PostType
-import com.paraiso.domain.util.Constants.EMPTY
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -61,7 +60,7 @@ data class UserSettings(
 
 @Serializable
 data class UserImage(
-    val url: String,
+    val url: String?,
     val posX: Int,
     val posY: Int,
     val scale: Float
@@ -223,7 +222,7 @@ fun UserSettings.Companion.initSettings() =
 
 fun UserImage.Companion.initImage() =
     UserImage(
-        url = EMPTY,
+        url = null,
         posX = 0,
         posY = 0,
         scale = 1f

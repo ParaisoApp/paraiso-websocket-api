@@ -20,7 +20,7 @@ data class Post(
     val data: String?,
     val subPosts: Set<String>,
     val count: Int,
-    val route: String,
+    val route: String?,
     val createdOn: Instant?,
     val updatedOn: Instant?
 ) { companion object }
@@ -40,7 +40,7 @@ data class PostReturn(
     val data: String?,
     var subPosts: Map<String, Boolean>,
     val count: Int,
-    val route: String,
+    val route: String?,
     val createdOn: Instant?,
     val updatedOn: Instant?
 ) { companion object }
@@ -143,17 +143,17 @@ fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<Str
     id = basePostId,
     userId = null,
     title = basePostName,
-    content = Constants.EMPTY,
+    content = null,
     type = PostType.SUPER,
-    media = Constants.EMPTY,
+    media = null,
     votes = emptyMap(),
     parentId = Constants.SYSTEM,
     rootId = basePostId,
     status = PostStatus.ACTIVE,
-    data = Constants.EMPTY,
+    data = null,
     subPosts = subPosts,
     count = 0,
-    route = Constants.EMPTY,
+    route = null,
     createdOn = Clock.System.now(),
     updatedOn = Clock.System.now()
 )

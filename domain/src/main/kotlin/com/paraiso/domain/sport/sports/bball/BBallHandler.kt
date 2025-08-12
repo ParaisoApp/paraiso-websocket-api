@@ -83,7 +83,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                                         title = competition.shortName,
                                         content = "${competition.date}-${competition.shortName}",
                                         type = PostType.GAME,
-                                        media = Constants.EMPTY,
+                                        media = null,
                                         votes = emptyMap(),
                                         parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
                                         rootId = "$TEAM_PREFIX${competition.id}-${key}",
@@ -91,7 +91,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                                         data = "$TEAM_PREFIX${competition.id}-${key}",
                                         subPosts = mutableSetOf(),
                                         count = 0,
-                                        route = Constants.EMPTY,
+                                        route = null,
                                         createdOn = Clock.System.now(),
                                         updatedOn = Clock.System.now()
                                     )
@@ -169,7 +169,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,
-                        media = Constants.EMPTY,
+                        media = null,
                         votes = emptyMap(),
                         parentId = SiteRoute.BASKETBALL.name,
                         rootId = "$GAME_PREFIX${competition.id}",
@@ -177,7 +177,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                         data = "${competition.date}-${competition.shortName}",
                         subPosts = mutableSetOf(),
                         count = 0,
-                        route = Constants.EMPTY,
+                        route = null,
                         createdOn = Clock.System.now(),
                         updatedOn = Clock.System.now()
                     )

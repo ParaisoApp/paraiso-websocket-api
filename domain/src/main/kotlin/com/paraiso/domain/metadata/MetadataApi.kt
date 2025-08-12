@@ -1,6 +1,5 @@
 package com.paraiso.domain.metadata
 
-import com.paraiso.domain.util.Constants.EMPTY
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.jsoup.Connection
@@ -18,10 +17,7 @@ class MetadataApi {
             .contentType()?.let{contentType ->
                 if(contentType.startsWith("image")){
                     Metadata(
-                        title = EMPTY,
-                        description = EMPTY,
                         image = url,
-                        video = EMPTY,
                         url = url
                     )
                 }else if(contentType.startsWith("text")){
