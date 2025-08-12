@@ -40,8 +40,8 @@ class PostsApi {
                 ServerState.posts[messageId] = message.toNewPost()
                 // update parent sub posts
                 ServerState.posts[message.replyId]?.let { parent ->
-                    if(message.userId != null) {
-                        ServerState.posts[message.userId] = parent.copy(
+                    if(message.replyId != null) {
+                        ServerState.posts[message.replyId] = parent.copy(
                             count = parent.count + 1,
                             subPosts = parent.subPosts + messageId,
                             updatedOn = now
@@ -171,8 +171,10 @@ class PostsApi {
                 if(root.id != null) returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
                 ServerState.posts
-                    .filter { (_, gamePost) -> gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId }
-                    .forEach {(_, gamePost) ->
+                    .filter { (_, gamePost) ->
+                        gamePost.type == PostType.GAME &&
+                                (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
+                    }.forEach {(_, gamePost) ->
                         if(gamePost.id != null){
                             returnPosts[gamePost.id] = gamePost.toPostReturn()
                             refQueue.addLast(gamePost)
