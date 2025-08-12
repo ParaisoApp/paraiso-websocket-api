@@ -44,7 +44,7 @@ class UsersApi {
 
     fun getUserByPartial(search: String) =
         ServerState.userList.values
-            .filter { it.name.lowercase().contains(search.lowercase()) }
+            .filter { it.name?.lowercase()?.contains(search.lowercase()) == true }
             .take(PARTIAL_RETRIEVE_LIM)
             .map { it.buildUserResponse() }
 

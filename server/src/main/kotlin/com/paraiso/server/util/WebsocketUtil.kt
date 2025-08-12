@@ -95,17 +95,14 @@ fun cleanUser(
     user: UserResponseDomain
 ): UserResponseDomain =
     user.copy(
-        name = Jsoup.clean(
-            user.name,
-            safeList
+        name = cleanValue(
+            user.name
         ),
-        fullName = Jsoup.clean(
-            user.fullName,
-            safeList
+        fullName = cleanValue(
+            user.fullName
         ),
-        email = Jsoup.clean(
-            user.email,
-            safeList
+        email = cleanValue(
+            user.email
         ),
         image = user.image.copy(
           url = Jsoup.clean(
@@ -113,9 +110,8 @@ fun cleanUser(
               safeList
           )
         ),
-        about = Jsoup.clean(
-            user.about,
-            safeList
+        about = cleanValue(
+            user.about
         ),
         location = user.location?.copy(
             city = cleanValue(user.location?.city),

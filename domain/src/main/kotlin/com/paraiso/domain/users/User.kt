@@ -12,10 +12,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class User(
     val id: String,
-    val name: String,
-    val fullName: String,
-    val email: String,
-    val about: String,
+    val name: String?,
+    val fullName: String?,
+    val email: String?,
+    val about: String?,
     val location: Location?,
     val birthday: Instant?,
     val posts: Set<String>,
@@ -32,7 +32,7 @@ data class User(
     val blockList: Set<String>,
     val image: UserImage,
     val lastSeen: Long,
-    val tag: String,
+    val tag: String?,
     val settings: UserSettings,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -70,10 +70,10 @@ data class UserImage(
 @Serializable
 data class UserResponse(
     val id: String,
-    val name: String,
-    val fullName: String,
-    val email: String,
-    val about: String,
+    val name: String?,
+    val fullName: String?,
+    val email: String?,
+    val about: String?,
     val location: Location?,
     val birthday: Instant?,
     val posts: Map<String, Map<String, Boolean>>,
@@ -91,7 +91,7 @@ data class UserResponse(
     val blockList: Map<String, Boolean>,
     val image: UserImage,
     val lastSeen: Long,
-    val tag: String,
+    val tag: String?,
     val settings: UserSettings,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -180,9 +180,9 @@ fun UserResponse.Companion.newUser(
         UserResponse(
             id = id,
             name = randomGuestName(),
-            fullName = EMPTY,
-            email = EMPTY,
-            about = EMPTY,
+            fullName = null,
+            email = null,
+            about = null,
             location = null,
             birthday = null,
             posts = emptyMap(),
@@ -201,7 +201,7 @@ fun UserResponse.Companion.newUser(
             image = UserImage.initImage(),
             lastSeen = now.toEpochMilliseconds(),
             settings = UserSettings.initSettings(),
-            tag = EMPTY,
+            tag = null,
             createdOn = now,
             updatedOn = now
         )
