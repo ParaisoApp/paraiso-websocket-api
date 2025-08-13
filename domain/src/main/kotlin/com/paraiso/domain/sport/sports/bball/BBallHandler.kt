@@ -59,7 +59,7 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
 
     private fun addTeamRoute(team: Team) {
         val now = Clock.System.now()
-        val teamRouteId = "${SiteRoute.BASKETBALL}-${SiteRoute.TEAM}-${team.id}"
+        val teamRouteId = "/s/basketball/t/${team.abbreviation}"
         ServerState.routes[teamRouteId] = RouteDetails(
             id = teamRouteId,
             route = SiteRoute.BASKETBALL,

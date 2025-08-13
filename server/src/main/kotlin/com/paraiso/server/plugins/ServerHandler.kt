@@ -29,8 +29,8 @@ class ServerHandler {
 
     private suspend fun buildRoutes() = coroutineScope {
         val now = Clock.System.now()
-        ServerState.routes["${SiteRoute.HOME}"] = RouteDetails(
-            id = "${SiteRoute.HOME}",
+        ServerState.routes["/"] = RouteDetails(
+            id = "/",
             route = SiteRoute.HOME,
             modifier = null,
             title = "${SiteRoute.HOME}",
@@ -39,8 +39,8 @@ class ServerHandler {
             createdOn = now,
             updatedOn = now
         )
-        ServerState.routes["${SiteRoute.FOOTBALL}"] = RouteDetails(
-            id = "${SiteRoute.FOOTBALL}",
+        ServerState.routes["/s/football"] = RouteDetails(
+            id = "/s/football",
             route = SiteRoute.FOOTBALL,
             modifier = null,
             title = "${SiteRoute.FOOTBALL}",
@@ -49,8 +49,8 @@ class ServerHandler {
             createdOn = now,
             updatedOn = now
         )
-        ServerState.routes["${SiteRoute.BASKETBALL}"] = RouteDetails(
-            id = "${SiteRoute.BASKETBALL}",
+        ServerState.routes["/s/basketball"] = RouteDetails(
+            id = "/s/basketball",
             route = SiteRoute.BASKETBALL,
             modifier = null,
             title = "${SiteRoute.BASKETBALL}",
