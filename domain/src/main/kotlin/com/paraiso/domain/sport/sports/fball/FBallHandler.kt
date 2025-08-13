@@ -58,6 +58,7 @@ class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
     }
 
     private fun addTeamRoute(team: Team) {
+        val now = Clock.System.now()
         val teamRouteId = "${SiteRoute.FOOTBALL}-${SiteRoute.TEAM}-${team.id}"
         ServerState.routes[teamRouteId] = RouteDetails(
             id = teamRouteId,
@@ -66,6 +67,8 @@ class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
             title = team.displayName,
             userFavorites = emptySet(),
             about = null,
+            createdOn = now,
+            updatedOn = now
         )
     }
 

@@ -249,7 +249,8 @@ class UsersApi {
         }
     }
 
-    fun toggleFollowRoute(userId: String, route: String){
+    fun toggleFavoriteRoute(userId: String, route: String){
+        //toggle favorite from User
         ServerState.userList[userId]?.let{ user ->
             user.routeFavorite.toMutableSet().let { mutableRouteFavoriteSet ->
                 if(mutableRouteFavoriteSet.contains(route)){
@@ -261,6 +262,20 @@ class UsersApi {
                     routeFavorite = mutableRouteFavoriteSet,
                     updatedOn = Clock.System.now()
                 )
+            }
+            //toggle favorite from Route
+            ServerState.routes[route]?.let { routeDetails ->
+                routeDetails.userFavorites.toMutableSet().let { mutableFavorites ->
+                    if(mutableFavorites.contains(userId)){
+                        mutableFavorites.remove(userId)
+                    }else{
+                        mutableFavorites.add(userId)
+                    }
+                    ServerState.routes[route] = routeDetails.copy(
+                        userFavorites = mutableFavorites,
+                        updatedOn = Clock.System.now()
+                    )
+                }
             }
         }
     }

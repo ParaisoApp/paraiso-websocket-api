@@ -8,6 +8,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 class ServerHandler {
     suspend fun bootJobs() = coroutineScope {
@@ -27,6 +28,7 @@ class ServerHandler {
     }
 
     private suspend fun buildRoutes() = coroutineScope {
+        val now = Clock.System.now()
         ServerState.routes["${SiteRoute.HOME}"] = RouteDetails(
             id = "${SiteRoute.HOME}",
             route = SiteRoute.HOME,
@@ -34,6 +36,8 @@ class ServerHandler {
             title = "${SiteRoute.HOME}",
             userFavorites = emptySet(),
             about = null,
+            createdOn = now,
+            updatedOn = now
         )
         ServerState.routes["${SiteRoute.FOOTBALL}"] = RouteDetails(
             id = "${SiteRoute.FOOTBALL}",
@@ -42,6 +46,8 @@ class ServerHandler {
             title = "${SiteRoute.FOOTBALL}",
             userFavorites = emptySet(),
             about = null,
+            createdOn = now,
+            updatedOn = now
         )
         ServerState.routes["${SiteRoute.BASKETBALL}"] = RouteDetails(
             id = "${SiteRoute.BASKETBALL}",
@@ -50,6 +56,8 @@ class ServerHandler {
             title = "${SiteRoute.BASKETBALL}",
             userFavorites = emptySet(),
             about = null,
+            createdOn = now,
+            updatedOn = now
         )
     }
 }

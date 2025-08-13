@@ -106,8 +106,8 @@ fun Route.usersController(usersApi: UsersApi) {
             )
             call.respond(HttpStatusCode.OK)
         }
-        post("/toggleFollowRoute") {
-            usersApi.toggleFollowRoute(
+        post("/toggleFavoriteRoute") {
+            usersApi.toggleFavoriteRoute(
                 call.request.queryParameters["id"] ?: "",
                 call.request.queryParameters["route"] ?: ""
             )
