@@ -11,6 +11,7 @@ import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
+import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserChat
@@ -32,6 +33,7 @@ object ServerState {
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
     val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)
     val followFlowMut = MutableSharedFlow<Follow>(replay = 0)
+    val favoriteFlowMut = MutableSharedFlow<Favorite>(replay = 0)
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
     val userUpdateFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
     val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
@@ -43,6 +45,7 @@ object ServerState {
         Pair(MessageType.MSG, messageFlowMut.asSharedFlow()),
         Pair(MessageType.VOTE, voteFlowMut.asSharedFlow()),
         Pair(MessageType.FOLLOW, followFlowMut.asSharedFlow()),
+        Pair(MessageType.FAVORITE, favoriteFlowMut.asSharedFlow()),
         Pair(MessageType.DELETE, deleteFlowMut.asSharedFlow()),
         Pair(MessageType.USER_UPDATE, userUpdateFlowMut.asSharedFlow()),
         Pair(MessageType.BAN, banUserFlowMut.asSharedFlow()),

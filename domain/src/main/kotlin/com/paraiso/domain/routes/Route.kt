@@ -30,6 +30,12 @@ data class RouteReturn(
 )
 
 @Serializable
+data class Favorite(
+    val userId: String?,
+    val route: String
+)
+
+@Serializable
 data class Route(
     val route: SiteRoute,
     val modifier: SiteRoute,

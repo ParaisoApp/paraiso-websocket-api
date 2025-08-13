@@ -3,6 +3,7 @@ package com.paraiso.domain.users
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -249,29 +250,31 @@ class UsersApi {
         }
     }
 
-    fun toggleFavoriteRoute(userId: String, route: String){
+    fun toggleFavoriteRoute(favorite: Favorite){
         //toggle favorite from User
-        ServerState.userList[userId]?.let{ user ->
+        ServerState.userList[favorite.userId]?.let{ user ->
             user.routeFavorite.toMutableSet().let { mutableRouteFavoriteSet ->
-                if(mutableRouteFavoriteSet.contains(route)){
-                    mutableRouteFavoriteSet.remove(route)
+                if(mutableRouteFavoriteSet.contains(favorite.route)){
+                    mutableRouteFavoriteSet.remove(favorite.route)
                 }else{
-                    mutableRouteFavoriteSet.add(route)
+                    mutableRouteFavoriteSet.add(favorite.route)
                 }
-                ServerState.userList[userId] = user.copy(
-                    routeFavorite = mutableRouteFavoriteSet,
-                    updatedOn = Clock.System.now()
-                )
+                if(favorite.userId != null){
+                    ServerState.userList[favorite.userId] = user.copy(
+                        routeFavorite = mutableRouteFavoriteSet,
+                        updatedOn = Clock.System.now()
+                    )
+                }
             }
             //toggle favorite from Route
-            ServerState.routes[route]?.let { routeDetails ->
+            ServerState.routes[favorite.route]?.let { routeDetails ->
                 routeDetails.userFavorites.toMutableSet().let { mutableFavorites ->
-                    if(mutableFavorites.contains(userId)){
-                        mutableFavorites.remove(userId)
-                    }else{
-                        mutableFavorites.add(userId)
+                    if(mutableFavorites.contains(favorite.userId)){
+                        mutableFavorites.remove(favorite.userId)
+                    }else if(favorite.userId != null){
+                        mutableFavorites.add(favorite.userId)
                     }
-                    ServerState.routes[route] = routeDetails.copy(
+                    ServerState.routes[favorite.route] = routeDetails.copy(
                         userFavorites = mutableFavorites,
                         updatedOn = Clock.System.now()
                     )

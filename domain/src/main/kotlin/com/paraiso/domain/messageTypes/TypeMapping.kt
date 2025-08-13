@@ -23,6 +23,9 @@ enum class MessageType {
     @SerialName("FOLLOW")
     FOLLOW,
 
+    @SerialName("FAVORITE")
+    FAVORITE,
+
     @SerialName("FILTER_TYPES")
     FILTER_TYPES,
 

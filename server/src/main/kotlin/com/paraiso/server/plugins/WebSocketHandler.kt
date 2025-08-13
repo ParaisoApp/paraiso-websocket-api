@@ -40,6 +40,7 @@ import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
 import com.paraiso.domain.messageTypes.Follow as FollowDomain
+import com.paraiso.domain.routes.Favorite as FavoriteDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
 import com.paraiso.domain.routes.Route as RouteDomain
 import com.paraiso.domain.messageTypes.Tag as TagDomain
@@ -155,6 +156,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as ReportDomain)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as ReportDomain)
                         MessageType.TAG -> sendTypedMessage(type, message as TagDomain)
+                        MessageType.FAVORITE -> sendTypedMessage(type, message as FavoriteDomain)
                         MessageType.BAN -> {
                             val ban = message as? BanDomain
                             ban?.let { bannedMsg ->
@@ -223,6 +225,17 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                 ServerState.followFlowMut.emit(follow)
                             }
                         }
+                    }
+                    MessageType.FAVORITE -> {
+                        converter?.findCorrectConversion<TypeMappingDomain<FavoriteDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { follow ->
+                                if (sessionUser.banned) {
+                                    sendTypedMessage(MessageType.FOLLOW, follow)
+                                } else {
+                                    launch { usersApiRef.toggleFavoriteRoute(follow) }
+                                    ServerState.favoriteFlowMut.emit(follow)
+                                }
+                            }
                     }
                     MessageType.VOTE -> {
                         converter?.findCorrectConversion<TypeMappingDomain<VoteDomain>>(frame)
