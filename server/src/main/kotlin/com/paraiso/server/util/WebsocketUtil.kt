@@ -105,8 +105,8 @@ fun cleanUser(
             city = cleanValue(user.location?.city),
             state = cleanValue(user.location?.state),
             country = Country(
-                name = user.location?.country?.name,
-                code = user.location?.country?.code,
+                name = cleanValue(user.location?.country?.name),
+                code = cleanValue(user.location?.country?.code),
             )
         )
     )

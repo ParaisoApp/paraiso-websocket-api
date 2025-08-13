@@ -32,7 +32,8 @@ data class RouteReturn(
 @Serializable
 data class Favorite(
     val userId: String?,
-    val route: String
+    val route: String,
+    val icon: String?
 )
 
 @Serializable
