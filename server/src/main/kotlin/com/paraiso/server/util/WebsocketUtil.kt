@@ -110,50 +110,6 @@ private fun cleanElement(
     }
 }
 
-fun cleanValue(value: String?) = value?.let{
-    Jsoup.clean(
-        it,
-        safeList
-    )
-}
-fun MessageDomain.cleanMessage(): MessageDomain =
-    this.copy(
-        title = cleanValue(this.title),
-        content = cleanValue(this.content)
-    )
-
-fun DirectMessageDomain.cleanDirectMessage(): DirectMessageDomain =
-    this.copy(
-        content = cleanValue(this.content)
-    )
-
-fun UserResponseDomain.cleanUser(): UserResponseDomain =
-    this.copy(
-        name = cleanValue(
-            this.name
-        ),
-        fullName = cleanValue(
-            this.fullName
-        ),
-        email = cleanValue(
-            this.email
-        ),
-        image = this.image.copy(
-          url = cleanValue(this.image.url)
-        ),
-        about = cleanValue(
-            this.about
-        ),
-        location = this.location?.copy(
-            city = cleanValue(this.location?.city),
-            state = cleanValue(this.location?.state),
-            country = Country(
-                name = cleanValue(this.location?.country?.name),
-                code = cleanValue(this.location?.country?.code),
-            )
-        )
-    )
-
 
 fun UserResponseDomain.validateUser(): Boolean =
     this.name?.replace("\\s+".toRegex(), "")?.length != 0
