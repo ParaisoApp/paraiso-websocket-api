@@ -10,6 +10,10 @@ import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
@@ -47,26 +51,19 @@ fun determineMessageType(frame: Frame): MessageType? {
     }
 }
 
-suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
-    frame: Frame, clean: Boolean
+internal suspend inline fun <reified T> WebsocketContentConverter.cleanAndType(
+    frame: Frame,
+    skipFields: Set<String> = emptySet()
 ): T? =
     try {
-        //clean full json object if set to clean
-        val cleanFrame = if(clean){
-            when (frame) {
-                is Frame.Text -> {
-                    val rawText = frame.readText()
+        val cleanFrame = if (frame is Frame.Text) {
+            val rawText = frame.readText()
+            val cleanedJson = cleanJsonStrings(rawText, skipFields, safeList)
+            Frame.Text(cleanedJson)
+        } else {
+            frame
+        }
 
-                    val safeHtml = Jsoup.clean(
-                        rawText,
-                        safeList
-                    )
-
-                    Frame.Text(safeHtml)
-                }
-                else -> frame
-            }
-        }else{ frame }
         this.deserialize(
             Charset.defaultCharset(),
             typeInfo<T>(),
@@ -76,6 +73,42 @@ suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
         println(e)
         null
     }
+
+// Helper: clean JSON selectively
+private fun cleanJsonStrings(
+    json: String,
+    skipFields: Set<String>,
+    safeList: Safelist
+): String {
+    val parser = Json { ignoreUnknownKeys = true }
+    val root = parser.parseToJsonElement(json)
+    val cleaned = cleanElement(root, skipFields, safeList, parentField = null)
+    return Json.encodeToString(JsonElement.serializer(), cleaned)
+}
+
+private fun cleanElement(
+    element: JsonElement,
+    skipFields: Set<String>,
+    safeList: Safelist,
+    parentField: String?
+): JsonElement {
+    return when (element) {
+        is JsonObject -> JsonObject(element.mapValues { (key, value) ->
+            cleanElement(value, skipFields, safeList, key)
+        })
+        is JsonArray -> JsonArray(element.map { item ->
+            cleanElement(item, skipFields, safeList, parentField)
+        })
+        is JsonPrimitive -> {
+            if (element.isString && parentField != null && !skipFields.contains(parentField)) {
+                JsonPrimitive(Jsoup.clean(element.content, safeList))
+            } else {
+                element
+            }
+        }
+        else -> element
+    }
+}
 
 fun cleanValue(value: String?) = value?.let{
     Jsoup.clean(

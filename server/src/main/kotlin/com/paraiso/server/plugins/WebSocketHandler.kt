@@ -17,11 +17,8 @@ import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toUser
 import com.paraiso.domain.util.ServerState
-import com.paraiso.server.util.cleanDirectMessage
-import com.paraiso.server.util.cleanMessage
-import com.paraiso.server.util.cleanUser
+import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
-import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
 import com.paraiso.server.util.validateUser
 import io.klogging.Klogging
@@ -180,13 +177,13 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                 val messageType = determineMessageType(frame)
                 when (messageType) {
                     MessageType.MSG -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<MessageDomain>>(frame, false)
-                            ?.typeMapping?.entries?.first()?.value?.cleanMessage()?.let { cleanedMessage ->
+                        converter?.cleanAndType<TypeMappingDomain<MessageDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 UUID.randomUUID().toString().let { messageId ->
-                                    cleanedMessage.copy(
+                                    message.copy(
                                         id = messageId,
                                         userId = sessionUser.id,
-                                        rootId = messageId.takeIf { cleanedMessage.rootId == null } ?: cleanedMessage.rootId
+                                        rootId = messageId.takeIf { message.rootId == null } ?: message.rootId
                                     ).let { messageWithData ->
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)
@@ -199,9 +196,9 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         }
                     }
                     MessageType.DM -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<DirectMessageDomain>>(frame, false)
-                            ?.typeMapping?.entries?.first()?.value?.cleanDirectMessage()?.let { cleanDm ->
-                            cleanDm.copy(
+                        converter?.cleanAndType<TypeMappingDomain<DirectMessageDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { dm ->
+                            dm.copy(
                                 id = UUID.randomUUID().toString(),
                                 userId = sessionUser.id
                             ).let { dmWithData ->
@@ -217,7 +214,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         }
                     }
                     MessageType.FOLLOW -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<FollowDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<FollowDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.FOLLOW, follow)
@@ -228,7 +225,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         }
                     }
                     MessageType.FAVORITE -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<FavoriteDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<FavoriteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { follow ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
@@ -239,7 +236,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                             }
                     }
                     MessageType.VOTE -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<VoteDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<VoteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
                             if (sessionUser.banned) {
                                 sendTypedMessage(MessageType.VOTE, vote)
@@ -250,29 +247,29 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         }
                     }
                     MessageType.USER_UPDATE -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<UserResponseDomain>>(frame, false)
-                            ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.cleanUser()?.let{ cleanedUser ->
-                                if(cleanedUser.validateUser()){
-                                    launch { usersApiRef.saveUser(cleanedUser) }
-                                    ServerState.userUpdateFlowMut.emit(cleanedUser)
+                        converter?.cleanAndType<TypeMappingDomain<UserResponseDomain>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let{ user ->
+                                if(user.validateUser()){
+                                    launch { usersApiRef.saveUser(user) }
+                                    ServerState.userUpdateFlowMut.emit(user)
                                 }
                             }
                     }
                     MessageType.FILTER_TYPES -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<FilterTypesDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<FilterTypesDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
                             sessionState.filterTypes = newFilterTypes
                         }
                     }
                     MessageType.DELETE -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<DeleteDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<DeleteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let{delete ->
                                 launch { postsApiRef.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
                             }
                     }
                     MessageType.BAN -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<BanDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<BanDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { ban ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { adminApiRef.banUser(ban) }
@@ -281,7 +278,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                             }
                     }
                     MessageType.TAG -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<TagDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<TagDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { tag ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { adminApiRef.tagUser(tag) }
@@ -290,21 +287,21 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                             }
                     }
                     MessageType.REPORT_USER -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<ReportDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
                                 launch { adminApiRef.reportUser(sessionUser.id, reportUser) }
                                 ServerState.reportUserFlowMut.emit(reportUser)
                             }
                     }
                     MessageType.REPORT_POST -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<ReportDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
                                 launch { adminApiRef.reportPost(sessionUser.id, reportPost) }
                                 ServerState.reportPostFlowMut.emit(reportPost)
                             }
                     }
                     MessageType.ROUTE -> {
-                        converter?.findCorrectConversion<TypeMappingDomain<RouteDomain>>(frame, true)
+                        converter?.cleanAndType<TypeMappingDomain<RouteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { route ->
                                 activeJobs?.cancelAndJoin()
                                 val session = this
