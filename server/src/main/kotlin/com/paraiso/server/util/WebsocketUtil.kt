@@ -48,13 +48,29 @@ fun determineMessageType(frame: Frame): MessageType? {
 }
 
 suspend inline fun <reified T> WebsocketContentConverter.findCorrectConversion(
-    frame: Frame
+    frame: Frame, clean: Boolean
 ): T? =
     try {
+        //clean full json object if set to clean
+        val cleanFrame = if(clean){
+            when (frame) {
+                is Frame.Text -> {
+                    val rawText = frame.readText()
+
+                    val safeHtml = Jsoup.clean(
+                        rawText,
+                        safeList
+                    )
+
+                    Frame.Text(safeHtml)
+                }
+                else -> frame
+            }
+        }else{ frame }
         this.deserialize(
             Charset.defaultCharset(),
             typeInfo<T>(),
-            frame
+            cleanFrame
         ) as? T
     } catch (e: Exception) {
         println(e)
@@ -67,49 +83,50 @@ fun cleanValue(value: String?) = value?.let{
         safeList
     )
 }
-fun cleanMessage(
-    message: MessageDomain
-): MessageDomain =
-    message.copy(
-        title = cleanValue(message.title),
-        content = cleanValue(message.content)
+fun MessageDomain.cleanMessage(): MessageDomain =
+    this.copy(
+        title = cleanValue(this.title),
+        content = cleanValue(this.content)
     )
 
-fun cleanDirectMessage(
-    dm: DirectMessageDomain
-): DirectMessageDomain =
-    dm.copy(
-        content = cleanValue(dm.content)
+fun DirectMessageDomain.cleanDirectMessage(): DirectMessageDomain =
+    this.copy(
+        content = cleanValue(this.content)
     )
 
-fun cleanUser(
-    user: UserResponseDomain
-): UserResponseDomain =
-    user.copy(
+fun UserResponseDomain.cleanUser(): UserResponseDomain =
+    this.copy(
         name = cleanValue(
-            user.name
+            this.name
         ),
         fullName = cleanValue(
-            user.fullName
+            this.fullName
         ),
         email = cleanValue(
-            user.email
+            this.email
         ),
-        image = user.image.copy(
-          url = cleanValue(user.image.url)
+        image = this.image.copy(
+          url = cleanValue(this.image.url)
         ),
         about = cleanValue(
-            user.about
+            this.about
         ),
-        location = user.location?.copy(
-            city = cleanValue(user.location?.city),
-            state = cleanValue(user.location?.state),
+        location = this.location?.copy(
+            city = cleanValue(this.location?.city),
+            state = cleanValue(this.location?.state),
             country = Country(
-                name = cleanValue(user.location?.country?.name),
-                code = cleanValue(user.location?.country?.code),
+                name = cleanValue(this.location?.country?.name),
+                code = cleanValue(this.location?.country?.code),
             )
         )
     )
+
+
+//fun UserResponseDomain.cleanUser(): UserResponseDomain =
+//    user: UserResponseDomain
+//){
+//
+//}
 
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
     sendSerialized<TypeMappingDomain<T>>(
