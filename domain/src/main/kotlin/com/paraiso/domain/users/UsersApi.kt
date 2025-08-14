@@ -36,6 +36,9 @@ class UsersApi {
             .take(PARTIAL_RETRIEVE_LIM)
             .map { it.buildUserResponse() }
 
+    fun existsByPartial(search: String) =
+        ServerState.userList.values.any { it.name?.lowercase() == search.lowercase()}
+
     fun getUserList(filters: FilterTypes, userId: String) =
         ServerState.userList[userId]?.following?.let { followingList ->
             ServerState.userList.values

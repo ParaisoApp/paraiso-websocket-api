@@ -54,6 +54,11 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
+        get("/existsByPartial") {
+            usersApi.existsByPartial(call.request.queryParameters["search"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
         get("/getFollowingById") {
             usersApi.getFollowingById(call.request.queryParameters["id"] ?: "").let {
                 call.respond(HttpStatusCode.OK, it)
