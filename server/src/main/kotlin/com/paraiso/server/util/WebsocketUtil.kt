@@ -122,11 +122,8 @@ fun UserResponseDomain.cleanUser(): UserResponseDomain =
     )
 
 
-//fun UserResponseDomain.cleanUser(): UserResponseDomain =
-//    user: UserResponseDomain
-//){
-//
-//}
+fun UserResponseDomain.validateUser(): Boolean =
+    this.name?.replace("\\s+".toRegex(), "")?.length != 0
 
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
     sendSerialized<TypeMappingDomain<T>>(

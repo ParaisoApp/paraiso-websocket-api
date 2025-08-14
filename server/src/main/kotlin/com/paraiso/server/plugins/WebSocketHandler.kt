@@ -23,6 +23,7 @@ import com.paraiso.server.util.cleanUser
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.findCorrectConversion
 import com.paraiso.server.util.sendTypedMessage
+import com.paraiso.server.util.validateUser
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
@@ -251,8 +252,10 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                     MessageType.USER_UPDATE -> {
                         converter?.findCorrectConversion<TypeMappingDomain<UserResponseDomain>>(frame, false)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.cleanUser()?.let{ cleanedUser ->
-                                launch { usersApiRef.saveUser(cleanedUser) }
-                                ServerState.userUpdateFlowMut.emit(cleanedUser)
+                                if(cleanedUser.validateUser()){
+                                    launch { usersApiRef.saveUser(cleanedUser) }
+                                    ServerState.userUpdateFlowMut.emit(cleanedUser)
+                                }
                             }
                     }
                     MessageType.FILTER_TYPES -> {
