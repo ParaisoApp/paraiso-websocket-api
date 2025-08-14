@@ -21,7 +21,7 @@ data class User(
     val replies: Map<String, Boolean>,
     val followers: Set<String>,
     val following: Set<String>,
-    val routeFavorite: Map<String, String>,
+    val routeFavorite: Map<String, UserFavorite>,
     val userReports: Map<String, Boolean>,
     val postReports: Map<String, Boolean>,
     val chats: Map<String, ChatRef>,
@@ -81,7 +81,7 @@ data class UserResponse(
     val replies: Map<String, Boolean>,
     val followers: Map<String, Boolean>,
     val following: Map<String, Boolean>,
-    val routeFavorite: Map<String, String>,
+    val routeFavorite: Map<String, UserFavorite>,
     val userReports: Map<String, Boolean>,
     val postReports: Map<String, Boolean>,
     val roles: UserRole,
@@ -107,6 +107,12 @@ data class UserReportNotifs(
     val userIds: Set<String>,
     val postIds: Set<String>,
 ) { companion object }
+
+@Serializable
+data class UserFavorite(
+    val favorite: Boolean,
+    val icon: String?
+)
 
 fun User.toUserResponse(
     posts: Map<String, Map<String, Boolean>>,
