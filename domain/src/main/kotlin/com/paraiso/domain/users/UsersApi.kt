@@ -254,14 +254,14 @@ class UsersApi {
         //toggle favorite from User
         ServerState.userList[favorite.userId]?.let{ user ->
             if(favorite.userId != null){
-                user.routeFavorite.toMutableMap().let { mutableRouteFavoriteSet ->
+                user.routeFavorites.toMutableMap().let { mutableRouteFavoriteSet ->
                     if(favorite.icon == null && !favorite.favorite){
                         mutableRouteFavoriteSet.remove(favorite.route)
                     }else{
                         mutableRouteFavoriteSet[favorite.route] = UserFavorite(favorite.favorite, favorite.icon)
                     }
                     ServerState.userList[favorite.userId] = user.copy(
-                        routeFavorite = mutableRouteFavoriteSet,
+                        routeFavorites = mutableRouteFavoriteSet,
                         updatedOn = Clock.System.now()
                     )
                 }
