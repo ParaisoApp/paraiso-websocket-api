@@ -19,6 +19,7 @@ import com.paraiso.domain.users.toUser
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
+import com.paraiso.server.util.getMentions
 import com.paraiso.server.util.sendTypedMessage
 import com.paraiso.server.util.validateUser
 import io.klogging.Klogging
@@ -180,10 +181,16 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                         converter?.cleanAndType<TypeMappingDomain<MessageDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 UUID.randomUUID().toString().let { messageId ->
+                                    val userIdMentions = usersApiRef.addMentions(
+                                        getMentions(message.content),
+                                        message.userReceiveIds.firstOrNull(),
+                                        messageId
+                                    )
                                     message.copy(
                                         id = messageId,
                                         userId = sessionUser.id,
-                                        rootId = messageId.takeIf { message.rootId == null } ?: message.rootId
+                                        rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
+                                        userReceiveIds = message.userReceiveIds?.plus(userIdMentions) ?: emptySet()
                                     ).let { messageWithData ->
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)

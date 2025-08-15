@@ -3,6 +3,7 @@ package com.paraiso.domain.messageTypes
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.util.RecordSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -11,7 +12,8 @@ import kotlinx.serialization.Serializable
 data class Message(
     val id: String?,
     val userId: String?,
-    val userReceiveId: String?,
+    @Serializable(with = RecordSerializer::class)
+    val userReceiveIds: Set<String>,
     val title: String?,
     val content: String?,
     val type: PostType,
@@ -55,3 +57,4 @@ fun Message.toNewPost() =
             updatedOn = now
         )
     }
+

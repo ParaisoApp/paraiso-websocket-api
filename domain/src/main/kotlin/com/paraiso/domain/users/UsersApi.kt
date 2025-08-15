@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -28,6 +29,35 @@ class UsersApi {
         ServerState.userList[user.id] = user.copy(
             updatedOn = Clock.System.now()
         ).toUser()
+    }
+
+    private fun addMention(user: User, messageId: String): String {
+        user.replies.toMutableMap().let { mutableReplies ->
+            mutableReplies[messageId] = false
+            ServerState.userList[user.id] = user.copy(
+                replies = mutableReplies,
+                updatedOn = Clock.System.now()
+            )
+        }
+        return user.id
+    }
+
+    suspend fun addMentions(userNames: Set<String>, userId: String?, messageId: String): Set<String> = coroutineScope {
+     //update user post replies
+        val userIds = userNames.map { userName ->
+            async{
+                ServerState.userList.values.find { it.name == userName }?.let { user ->
+                    addMention(user, messageId)
+                } ?: run { null }
+            }
+        }.awaitAll().filterNotNull().toMutableSet()
+        //if (message.userId != message.userReceiveId) {
+        if(userId != null) {
+            ServerState.userList[userId]?.let { user ->
+                userIds.add(addMention(user, messageId))
+            }
+        }
+        userIds.toSet()
     }
 
     fun getUserByPartial(search: String) =

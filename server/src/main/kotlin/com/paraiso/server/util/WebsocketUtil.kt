@@ -110,6 +110,10 @@ private fun cleanElement(
     }
 }
 
+fun getMentions(content: String?): Set<String> {
+// (.*?) - capture any characters (non-greedy) into group 1
+    return if(content != null) Regex(">@(.*?)</a>").find(content)?.groupValues?.toSet() ?: emptySet() else emptySet()
+}
 
 fun UserResponseDomain.validateUser(): Boolean =
     this.name?.replace("\\s+".toRegex(), "")?.length != 0

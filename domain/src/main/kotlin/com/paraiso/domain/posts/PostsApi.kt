@@ -63,20 +63,6 @@ class PostsApi {
                         )
                     }
                 }
-                // update user post replies
-                //if (message.userId != message.userReceiveId) {
-                if(message.userReceiveId != null) {
-                    ServerState.userList[message.userReceiveId]?.let { user ->
-                        user.replies.toMutableMap().let { mutableReplies ->
-                            mutableReplies[messageId] = false
-                                ServerState.userList[message.userReceiveId] = user.copy(
-                                    replies = mutableReplies,
-                                    updatedOn = now
-                                )
-                            }
-                        }
-                    }
-                //}
             }
         }
     }
