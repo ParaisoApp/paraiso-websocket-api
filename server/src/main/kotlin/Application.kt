@@ -1,5 +1,6 @@
 package com.paraiso
 
+import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.client.sport.adapters.BBallOperationAdapter
 import com.paraiso.client.sport.adapters.FBallOperationAdapter
 import com.paraiso.com.paraiso.api.admin.adminController
@@ -45,6 +46,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import org.bson.codecs.configuration.CodecRegistries
 import java.time.Duration
 
 fun main() {
@@ -60,6 +62,11 @@ fun main() {
     jobScope.launch {
         ServerHandler().bootJobs()
     }
+
+    // Replace the placeholder with your MongoDB deployment's connection string
+    val uri = "mongodb://localhost:27017"
+    val mongoClient = MongoClient.create(uri)
+    val database = mongoClient.getDatabase("ekoes")
 
     val postsApi = PostsApi()
     val usersApi = UsersApi()
