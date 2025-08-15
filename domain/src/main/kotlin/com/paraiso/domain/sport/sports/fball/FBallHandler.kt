@@ -1,10 +1,10 @@
 package com.paraiso.domain.sport.sports.fball
 
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX

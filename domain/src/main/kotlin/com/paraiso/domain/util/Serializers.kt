@@ -13,7 +13,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-
 object RecordSerializer : KSerializer<Set<String>> {
     override val descriptor: SerialDescriptor =
         buildClassSerialDescriptor("UserReceiveIdsSerializer")

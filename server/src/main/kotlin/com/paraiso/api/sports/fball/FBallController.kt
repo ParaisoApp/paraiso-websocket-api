@@ -1,6 +1,5 @@
 package com.paraiso.com.paraiso.api.sports.fball
 
-import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call

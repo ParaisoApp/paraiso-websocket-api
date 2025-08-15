@@ -7,9 +7,9 @@ import com.paraiso.com.paraiso.server.plugins.jobs.sports.FBallJobs
 import com.paraiso.com.paraiso.server.util.SessionState
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
@@ -34,17 +34,17 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import java.util.UUID
 import com.paraiso.domain.messageTypes.Ban as BanDomain
-import com.paraiso.domain.messageTypes.Report as ReportDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
 import com.paraiso.domain.messageTypes.Follow as FollowDomain
-import com.paraiso.domain.routes.Favorite as FavoriteDomain
 import com.paraiso.domain.messageTypes.Message as MessageDomain
-import com.paraiso.domain.routes.Route as RouteDomain
+import com.paraiso.domain.messageTypes.Report as ReportDomain
 import com.paraiso.domain.messageTypes.Tag as TagDomain
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
 import com.paraiso.domain.messageTypes.Vote as VoteDomain
+import com.paraiso.domain.routes.Favorite as FavoriteDomain
+import com.paraiso.domain.routes.Route as RouteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminApi) : Klogging {
@@ -92,7 +92,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
             SiteRoute.HOME -> homeJobs.homeJobs(session)
             SiteRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
             SiteRoute.SPORT -> {
-                when(route.modifier){
+                when (route.modifier) {
                     SiteRoute.BASKETBALL -> bBallJobs.sportJobs(session)
                     SiteRoute.FOOTBALL -> fBallJobs.sportJobs(session)
                     else -> {
@@ -102,7 +102,7 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                 }
             }
             SiteRoute.TEAM -> {
-                when(route.modifier){
+                when (route.modifier) {
                     SiteRoute.BASKETBALL -> bBallJobs.teamJobs(route.content, session)
                     SiteRoute.FOOTBALL -> fBallJobs.teamJobs(route.content, session)
                     else -> {
@@ -200,36 +200,36 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                         }
                                     }
                                 }
-                        }
+                            }
                     }
                     MessageType.DM -> {
                         converter?.cleanAndType<TypeMappingDomain<DirectMessageDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
-                            dm.copy(
-                                id = UUID.randomUUID().toString(),
-                                userId = sessionUser.id
-                            ).let { dmWithData ->
-                                launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                if (
-                                    !sessionUser.banned &&
-                                    ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
-                                ) {
-                                    launch { usersApiRef.putDM(dmWithData) }
-                                    userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+                                dm.copy(
+                                    id = UUID.randomUUID().toString(),
+                                    userId = sessionUser.id
+                                ).let { dmWithData ->
+                                    launch { sendTypedMessage(MessageType.DM, dmWithData) }
+                                    if (
+                                        !sessionUser.banned &&
+                                        ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
+                                    ) {
+                                        launch { usersApiRef.putDM(dmWithData) }
+                                        userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+                                    }
                                 }
                             }
-                        }
                     }
                     MessageType.FOLLOW -> {
                         converter?.cleanAndType<TypeMappingDomain<FollowDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
-                            if (sessionUser.banned) {
-                                sendTypedMessage(MessageType.FOLLOW, follow)
-                            } else {
-                                launch { usersApiRef.follow(follow) }
-                                ServerState.followFlowMut.emit(follow)
+                                if (sessionUser.banned) {
+                                    sendTypedMessage(MessageType.FOLLOW, follow)
+                                } else {
+                                    launch { usersApiRef.follow(follow) }
+                                    ServerState.followFlowMut.emit(follow)
+                                }
                             }
-                        }
                     }
                     MessageType.FAVORITE -> {
                         converter?.cleanAndType<TypeMappingDomain<FavoriteDomain>>(frame)
@@ -245,18 +245,18 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                     MessageType.VOTE -> {
                         converter?.cleanAndType<TypeMappingDomain<VoteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
-                            if (sessionUser.banned) {
-                                sendTypedMessage(MessageType.VOTE, vote)
-                            } else {
-                                launch { postsApiRef.votePost(vote) }
-                                ServerState.voteFlowMut.emit(vote)
+                                if (sessionUser.banned) {
+                                    sendTypedMessage(MessageType.VOTE, vote)
+                                } else {
+                                    launch { postsApiRef.votePost(vote) }
+                                    ServerState.voteFlowMut.emit(vote)
+                                }
                             }
-                        }
                     }
                     MessageType.USER_UPDATE -> {
                         converter?.cleanAndType<TypeMappingDomain<UserResponseDomain>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let{ user ->
-                                if(user.validateUser()){
+                            ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
+                                if (user.validateUser()) {
                                     launch { usersApiRef.saveUser(user) }
                                     ServerState.userUpdateFlowMut.emit(user)
                                 }
@@ -265,12 +265,12 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                     MessageType.FILTER_TYPES -> {
                         converter?.cleanAndType<TypeMappingDomain<FilterTypesDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
-                            sessionState.filterTypes = newFilterTypes
-                        }
+                                sessionState.filterTypes = newFilterTypes
+                            }
                     }
                     MessageType.DELETE -> {
                         converter?.cleanAndType<TypeMappingDomain<DeleteDomain>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let{delete ->
+                            ?.typeMapping?.entries?.first()?.value?.let { delete ->
                                 launch { postsApiRef.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
                             }

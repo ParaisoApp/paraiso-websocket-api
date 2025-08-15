@@ -24,7 +24,6 @@ class UsersApi {
     fun getUserByName(userName: String): UserResponse? =
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
-
     fun saveUser(user: UserResponse) {
         ServerState.userList[user.id] = user.copy(
             updatedOn = Clock.System.now()
@@ -43,16 +42,16 @@ class UsersApi {
     }
 
     suspend fun addMentions(userNames: Set<String>, userId: String?, messageId: String): Set<String> = coroutineScope {
-     //update user post replies
+        // update user post replies
         val userIds = userNames.map { userName ->
-            async{
+            async {
                 ServerState.userList.values.find { it.name == userName }?.let { user ->
                     addMention(user, messageId)
                 } ?: run { null }
             }
         }.awaitAll().filterNotNull().toMutableSet()
-        //if (message.userId != message.userReceiveId) {
-        if(userId != null) {
+        // if (message.userId != message.userReceiveId) {
+        if (userId != null) {
             ServerState.userList[userId]?.let { user ->
                 userIds.add(addMention(user, messageId))
             }
@@ -67,7 +66,7 @@ class UsersApi {
             .map { it.buildUserResponse() }
 
     fun existsByPartial(search: String) =
-        ServerState.userList.values.any { it.name?.lowercase() == search.lowercase()}
+        ServerState.userList.values.any { it.name?.lowercase() == search.lowercase() }
 
     fun getUserList(filters: FilterTypes, userId: String) =
         ServerState.userList[userId]?.following?.let { followingList ->
@@ -104,7 +103,7 @@ class UsersApi {
             Clock.System.now().let { now ->
                 val user = ServerState.userList[userId]
                 val otherUser = ServerState.userList[otherUserId]
-                if(user != null && otherUser != null){
+                if (user != null && otherUser != null) {
                     UUID.randomUUID().toString().let { newChatId ->
                         val newUserChat = UserChat(
                             id = newChatId,
@@ -116,7 +115,7 @@ class UsersApi {
                         ServerState.userChatList[newChatId] = newUserChat
                         newUserChat.toReturn()
                     }
-                }else{
+                } else {
                     null
                 }
             }
@@ -129,16 +128,16 @@ class UsersApi {
         isUser: Boolean,
         now: Instant
     ) =
-        ServerState.userList[userId]?.let{ user ->
+        ServerState.userList[userId]?.let { user ->
             user.chats.toMutableMap().let { mutableChat ->
-                if(otherUserId != null) {
+                if (otherUserId != null) {
                     mutableChat[otherUserId] = ChatRef(
                         mostRecentDm = dm,
                         chatId = dm.chatId,
                         viewed = !isUser
                     )
                 }
-                if(userId != null){
+                if (userId != null) {
                     ServerState.userList[userId] = user.copy(
                         chats = mutableChat,
                         updatedOn = now
@@ -149,7 +148,7 @@ class UsersApi {
 
     suspend fun putDM(dm: DirectMessage) = coroutineScope {
         Clock.System.now().let { now ->
-            launch{ updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) } // update chat for receiving user
+            launch { updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) } // update chat for receiving user
             launch { updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) } // update chat for receiving user
             ServerState.userChatList[dm.chatId]?.let { chat ->
                 ServerState.userChatList[dm.chatId] = chat.copy(
@@ -163,12 +162,12 @@ class UsersApi {
     }
 
     suspend fun markNotifsRead(userId: String, userNotifs: UserNotifs) = coroutineScope {
-        ServerState.userList[userId]?.let{user ->
-            //grab chats and make mutable
+        ServerState.userList[userId]?.let { user ->
+            // grab chats and make mutable
             val userChats = async {
                 user.chats.filter { userNotifs.userChatIds.contains(it.key) }
                     .toMutableMap().let { mutableChats ->
-                        //find chat and set to viewed
+                        // find chat and set to viewed
                         mutableChats.map {
                             mutableChats[it.key] = it.value.copy(
                                 viewed = true
@@ -177,18 +176,18 @@ class UsersApi {
                         mutableChats
                     }
             }
-            //grab replies and make mutable
-            val replies =  async {
+            // grab replies and make mutable
+            val replies = async {
                 user.replies.filter { userNotifs.replyIds.contains(it.key) }
                     .toMutableMap().let { mutableReplies ->
-                        //find reply and set to viewed
+                        // find reply and set to viewed
                         mutableReplies.map {
                             mutableReplies[it.key] = true
                         }
                         mutableReplies
                     }
             }
-            //update user
+            // update user
             ServerState.userList[userId] = user.copy(
                 chats = userChats.await(),
                 replies = replies.await(),
@@ -198,23 +197,23 @@ class UsersApi {
     }
 
     suspend fun markReportNotifsRead(userId: String, userReportNotifs: UserReportNotifs) = coroutineScope {
-        ServerState.userList[userId]?.let{ user ->
-            //grab user reports and make mutable
+        ServerState.userList[userId]?.let { user ->
+            // grab user reports and make mutable
             val userReports = async {
                 user.userReports.filter { userReportNotifs.userIds.contains(it.key) }
                     .toMutableMap().let { mutableUserReports ->
-                        //find user report and set to viewed
+                        // find user report and set to viewed
                         mutableUserReports.map {
                             mutableUserReports[it.key] = true
                         }
                         mutableUserReports
                     }
             }
-            //grab post reports and make mutable
+            // grab post reports and make mutable
             val postReports = async {
                 user.postReports.filter { userReportNotifs.postIds.contains(it.key) }
                     .toMutableMap().let { mutablePostReports ->
-                        //find post report and set to viewed
+                        // find post report and set to viewed
                         mutablePostReports.map {
                             mutablePostReports[it.key] = true
                         }
@@ -222,7 +221,7 @@ class UsersApi {
                     }
             }
 
-            //update user
+            // update user
             ServerState.userList[userId] = user.copy(
                 userReports = userReports.await(),
                 postReports = postReports.await(),
@@ -267,12 +266,12 @@ class UsersApi {
         }
     }
 
-    fun toggleBlockUser(userId: String, userBlockId: String){
-        ServerState.userList[userId]?.let{ user ->
+    fun toggleBlockUser(userId: String, userBlockId: String) {
+        ServerState.userList[userId]?.let { user ->
             user.blockList.toMutableSet().let { mutableBlockSet ->
-                if(mutableBlockSet.contains(userBlockId)){
+                if (mutableBlockSet.contains(userBlockId)) {
                     mutableBlockSet.remove(userBlockId)
-                }else{
+                } else {
                     mutableBlockSet.add(userBlockId)
                 }
                 ServerState.userList[userId] = user.copy(
@@ -283,14 +282,14 @@ class UsersApi {
         }
     }
 
-    fun toggleFavoriteRoute(favorite: Favorite){
-        //toggle favorite from User
-        ServerState.userList[favorite.userId]?.let{ user ->
-            if(favorite.userId != null){
+    fun toggleFavoriteRoute(favorite: Favorite) {
+        // toggle favorite from User
+        ServerState.userList[favorite.userId]?.let { user ->
+            if (favorite.userId != null) {
                 user.routeFavorites.toMutableMap().let { mutableRouteFavoriteSet ->
-                    if(favorite.icon == null && !favorite.favorite){
+                    if (favorite.icon == null && !favorite.favorite) {
                         mutableRouteFavoriteSet.remove(favorite.route)
-                    }else{
+                    } else {
                         mutableRouteFavoriteSet[favorite.route] = UserFavorite(favorite.favorite, favorite.icon)
                     }
                     ServerState.userList[favorite.userId] = user.copy(
@@ -298,12 +297,12 @@ class UsersApi {
                         updatedOn = Clock.System.now()
                     )
                 }
-                //toggle favorite from Route
+                // toggle favorite from Route
                 ServerState.routes[favorite.route]?.let { routeDetails ->
                     routeDetails.userFavorites.toMutableSet().let { mutableFavorites ->
-                        if(!favorite.favorite){
+                        if (!favorite.favorite) {
                             mutableFavorites.remove(favorite.userId)
-                        }else{
+                        } else {
                             mutableFavorites.add(favorite.userId)
                         }
                         ServerState.routes[favorite.route] = routeDetails.copy(

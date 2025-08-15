@@ -99,13 +99,13 @@ data class UserResponse(
 @Serializable
 data class UserNotifs(
     val replyIds: Set<String>,
-    val userChatIds: Set<String>,
+    val userChatIds: Set<String>
 ) { companion object }
 
 @Serializable
 data class UserReportNotifs(
     val userIds: Set<String>,
-    val postIds: Set<String>,
+    val postIds: Set<String>
 ) { companion object }
 
 @Serializable
@@ -179,7 +179,7 @@ fun UserResponse.toUser() =
 fun randomGuestName() = "Guest${(Math.random() * 10000).toInt()}"
 
 fun UserResponse.Companion.newUser(
-    id: String,
+    id: String
 ) =
     Clock.System.now().let { now ->
         UserResponse(
@@ -241,7 +241,7 @@ fun User.buildUserResponse(): UserResponse {
         .filterValues { it.userId == id }
         .values
         .map { post ->
-            if(post.id != null){
+            if (post.id != null) {
                 if (post.type == PostType.SUB) {
                     posts[post.id] = post.votes
                 } else {

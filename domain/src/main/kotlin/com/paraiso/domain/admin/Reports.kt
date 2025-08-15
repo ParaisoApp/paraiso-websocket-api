@@ -10,7 +10,7 @@ data class UserReport(
     val user: UserResponse,
     val reportedBy: Set<String>,
     val createdOn: Instant,
-    val updatedOn: Instant,
+    val updatedOn: Instant
 )
 
 @Serializable
@@ -18,5 +18,5 @@ data class PostReport(
     val post: PostReturn,
     val reportedBy: Set<String>,
     val createdOn: Instant,
-    val updatedOn: Instant,
+    val updatedOn: Instant
 )

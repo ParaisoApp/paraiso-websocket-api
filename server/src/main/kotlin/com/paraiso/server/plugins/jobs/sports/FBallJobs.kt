@@ -1,7 +1,6 @@
 package com.paraiso.com.paraiso.server.plugins.jobs.sports
 
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.sports.fball.FBallState

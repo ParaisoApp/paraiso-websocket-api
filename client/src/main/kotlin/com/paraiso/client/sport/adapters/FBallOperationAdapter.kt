@@ -34,10 +34,10 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
         private val dispatcher = Dispatchers.IO
         private val clientConfig = ClientConfig()
 
-        //private const val PLAYOFFS = 1
-        //private const val EAST = 5
-        //private const val WEST = 6
-        //private const val OVERALL = 0
+        // private const val PLAYOFFS = 1
+        // private const val EAST = 5
+        // private const val WEST = 6
+        // private const val OVERALL = 0
     }
 
     override suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {

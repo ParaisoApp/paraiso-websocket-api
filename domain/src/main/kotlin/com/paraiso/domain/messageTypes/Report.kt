@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Report(
-    val id: String //can be post or userId
+    val id: String // can be post or userId
 )

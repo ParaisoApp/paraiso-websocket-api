@@ -1,10 +1,10 @@
 package com.paraiso.domain.sport.sports.bball
 
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX
@@ -97,8 +97,8 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                         schedulesRes.associate { it.team.abbreviation to it.events }
                             .flatMap { (key, values) ->
                                 values.map { competition ->
-                                    "$TEAM_PREFIX${competition.id}-${key}" to Post(
-                                        id = "$TEAM_PREFIX${competition.id}-${key}",
+                                    "$TEAM_PREFIX${competition.id}-$key" to Post(
+                                        id = "$TEAM_PREFIX${competition.id}-$key",
                                         userId = null,
                                         title = competition.shortName,
                                         content = "${competition.date}-${competition.shortName}",
@@ -106,9 +106,9 @@ class BBallHandler(private val bBallOperation: BBallOperation) : Klogging {
                                         media = null,
                                         votes = emptyMap(),
                                         parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
-                                        rootId = "$TEAM_PREFIX${competition.id}-${key}",
+                                        rootId = "$TEAM_PREFIX${competition.id}-$key",
                                         status = PostStatus.ACTIVE,
-                                        data = "$TEAM_PREFIX${competition.id}-${key}",
+                                        data = "$TEAM_PREFIX${competition.id}-$key",
                                         subPosts = mutableSetOf(),
                                         count = 0,
                                         route = null,

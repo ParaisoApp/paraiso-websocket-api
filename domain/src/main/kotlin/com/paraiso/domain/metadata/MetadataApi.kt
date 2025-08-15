@@ -14,19 +14,19 @@ class MetadataApi {
             .ignoreContentType(true)
             .method(Connection.Method.HEAD)
             .execute()
-            .contentType()?.let{contentType ->
-                if(contentType.startsWith("image")){
+            .contentType()?.let { contentType ->
+                if (contentType.startsWith("image")) {
                     Metadata(
                         image = url,
                         url = url
                     )
-                }else if(contentType.startsWith("text")){
+                } else if (contentType.startsWith("text")) {
                     val doc: Document = Jsoup.connect(url)
                         .userAgent("Mozilla/5.0")
                         .timeout(10_000)
                         .get()
 
-                    val title = async{
+                    val title = async {
                         firstAvailable(
                             meta("property", "og:title", doc),
                             meta("name", "twitter:title", doc),
@@ -43,7 +43,7 @@ class MetadataApi {
                         )
                     }
 
-                    val image = async{
+                    val image = async {
                         firstAvailable(
                             meta("property", "og:image", doc),
                             meta("name", "twitter:image", doc),
@@ -52,12 +52,12 @@ class MetadataApi {
                         )
                     }
 
-                    val video = async{
+                    val video = async {
                         firstAvailable(
                             meta("property", "og:video", doc),
                             meta("name", "twitter:player", doc),
                             doc.select("video source").firstOrNull()?.absUrl("src"),
-                            doc.select("iframe").firstOrNull()?.absUrl("src"),
+                            doc.select("iframe").firstOrNull()?.absUrl("src")
                         )
                     }
 
@@ -71,5 +71,4 @@ class MetadataApi {
                 } else { null }
             } ?: run { null }
     }
-
 }

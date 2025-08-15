@@ -37,7 +37,7 @@ data class DirectMessage(
 )
 
 fun Message.toNewPost() =
-    Clock.System.now().let{now ->
+    Clock.System.now().let { now ->
         Post(
             id = id,
             userId = userId,
@@ -45,7 +45,7 @@ fun Message.toNewPost() =
             content = content,
             type = type,
             media = media,
-            votes = if(userId != null) mapOf(userId to true) else mapOf(),
+            votes = if (userId != null) mapOf(userId to true) else mapOf(),
             parentId = replyId,
             rootId = rootId,
             status = PostStatus.ACTIVE,
@@ -57,4 +57,3 @@ fun Message.toNewPost() =
             updatedOn = now
         )
     }
-

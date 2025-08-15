@@ -5,7 +5,6 @@ import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
-
 @Serializable
 data class UserChat(
     val id: String,

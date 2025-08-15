@@ -1,8 +1,6 @@
 package com.paraiso.server.util
 
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.users.Country
-import com.paraiso.domain.users.UserResponse
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.sendSerialized
@@ -19,8 +17,6 @@ import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import java.nio.charset.Charset
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
-import com.paraiso.domain.messageTypes.Message as MessageDomain
-import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 val safeList: Safelist = Safelist()
@@ -93,12 +89,16 @@ private fun cleanElement(
     parentField: String?
 ): JsonElement {
     return when (element) {
-        is JsonObject -> JsonObject(element.mapValues { (key, value) ->
-            cleanElement(value, skipFields, safeList, key)
-        })
-        is JsonArray -> JsonArray(element.map { item ->
-            cleanElement(item, skipFields, safeList, parentField)
-        })
+        is JsonObject -> JsonObject(
+            element.mapValues { (key, value) ->
+                cleanElement(value, skipFields, safeList, key)
+            }
+        )
+        is JsonArray -> JsonArray(
+            element.map { item ->
+                cleanElement(item, skipFields, safeList, parentField)
+            }
+        )
         is JsonPrimitive -> {
             if (element.isString && parentField != null && !skipFields.contains(parentField)) {
                 JsonPrimitive(Jsoup.clean(element.content, safeList))
@@ -112,7 +112,7 @@ private fun cleanElement(
 
 fun getMentions(content: String?): Set<String> {
 // (.*?) - capture any characters (non-greedy) into group 1
-    return if(content != null) Regex(">@(.*?)</a>").find(content)?.groupValues?.toSet() ?: emptySet() else emptySet()
+    return if (content != null) Regex(">@(.*?)</a>").find(content)?.groupValues?.toSet() ?: emptySet() else emptySet()
 }
 
 fun UserResponseDomain.validateUser(): Boolean =

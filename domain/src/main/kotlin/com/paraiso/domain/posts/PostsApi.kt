@@ -3,9 +3,9 @@ package com.paraiso.domain.posts
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
@@ -40,15 +40,15 @@ class PostsApi {
                 ServerState.posts[messageId] = message.toNewPost()
                 // update parent sub posts
                 ServerState.posts[message.replyId]?.let { parent ->
-                    if(message.replyId != null) {
+                    if (message.replyId != null) {
                         ServerState.posts[message.replyId] = parent.copy(
                             count = parent.count + 1,
                             subPosts = parent.subPosts + messageId,
                             updatedOn = now
                         )
                     }
-                    launch{
-                        //update grandparent sub post counts - increment to add
+                    launch {
+                        // update grandparent sub post counts - increment to add
                         ServerState.posts[parent.parentId]?.let { grandParent ->
                             updateCounts(grandParent, now, increment = 1)
                         }
@@ -56,7 +56,7 @@ class PostsApi {
                 }
                 // update user posts
                 ServerState.userList[message.userId]?.let { user ->
-                    if(message.userId != null) {
+                    if (message.userId != null) {
                         ServerState.userList[message.userId] = user.copy(
                             posts = user.posts + messageId,
                             updatedOn = now
@@ -68,14 +68,14 @@ class PostsApi {
     }
 
     private fun updateCounts(post: Post, now: Instant, increment: Int) {
-        if(post.id != null){
+        if (post.id != null) {
             ServerState.posts[post.id] = post.copy(
                 count = post.count + (1 * increment),
                 updatedOn = now
             )
         }
         if (post.rootId == post.id) return
-        ServerState.posts[post.parentId]?.let {parent ->
+        ServerState.posts[post.parentId]?.let { parent ->
             updateCounts(parent, now, increment)
         }
     }
@@ -93,11 +93,11 @@ class PostsApi {
             )
         }
 
-    //search by partial for autocomplete
+    // search by partial for autocomplete
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {
             it.title?.lowercase()?.contains(search.lowercase()) == true || it.content?.lowercase()?.contains(search.lowercase()) == true
-        }.take(PARTIAL_RETRIEVE_LIM).let{ foundPosts ->
+        }.take(PARTIAL_RETRIEVE_LIM).let { foundPosts ->
             foundPosts.map { foundPost ->
                 foundPost.toPostReturn()
             }
@@ -126,8 +126,8 @@ class PostsApi {
                     filters.postTypes.contains(post.type) &&
                     (
                         filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                    )
+                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                        )
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
@@ -154,14 +154,14 @@ class PostsApi {
         LinkedHashMap<String, PostReturn>().let { returnPosts ->
             basePost.toPostReturn().let { root -> // build tree with bfs
                 val userFollowing = ServerState.userList[userId]?.following ?: setOf()
-                if(root.id != null) returnPosts[root.id] = root
+                if (root.id != null) returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
                 ServerState.posts
                     .filter { (_, gamePost) ->
                         gamePost.type == PostType.GAME &&
-                                (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
-                    }.forEach {(_, gamePost) ->
-                        if(gamePost.id != null){
+                            (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
+                    }.forEach { (_, gamePost) ->
+                        if (gamePost.id != null) {
                             returnPosts[gamePost.id] = gamePost.toPostReturn()
                             refQueue.addLast(gamePost)
                         }
@@ -173,7 +173,7 @@ class PostsApi {
                         .asSequence()
                         .filter { (_, post) ->
                             post.createdOn != null &&
-                            post.createdOn > range &&
+                                post.createdOn > range &&
                                 post.status != PostStatus.DELETED &&
                                 filters.postTypes.contains(post.type) &&
                                 (
@@ -186,10 +186,10 @@ class PostsApi {
                             (
                                 id to post.toPostReturn()
                                 ).also { (_, returnPost) ->
-                                    if(returnPost.id != null){
-                                        returnPosts[returnPost.id] = returnPost
-                                        refQueue.addLast(post)
-                                    }
+                                if (returnPost.id != null) {
+                                    returnPosts[returnPost.id] = returnPost
+                                    refQueue.addLast(post)
+                                }
                             }
                         }
                 }
@@ -240,11 +240,11 @@ class PostsApi {
         }
     fun deletePost(delete: Delete, userId: String) =
         ServerState.posts[delete.postId]?.let { post ->
-            if(post.userId == userId){
-                Clock.System.now().let{now ->
+            if (post.userId == userId) {
+                Clock.System.now().let { now ->
                     ServerState.posts[delete.postId] =
                         post.copy(status = PostStatus.DELETED, updatedOn = now)
-                    //update parent sub post counts - decrement to subtract
+                    // update parent sub post counts - decrement to subtract
                     ServerState.posts[post.parentId]?.let { parent ->
                         updateCounts(parent, now, increment = -1)
                     }
