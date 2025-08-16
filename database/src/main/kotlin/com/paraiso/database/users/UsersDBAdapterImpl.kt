@@ -11,12 +11,14 @@ import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.ChatRef
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersDBAdapter
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toSet
 import kotlinx.datetime.Clock
@@ -61,11 +63,11 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
     suspend fun save(users: List<User>) =
         collection.insertMany(users)
 
-    suspend fun setMentions(id: String, replies: Map<String, Boolean>) =
+    suspend fun setMentions(id: String, replyId: String) =
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::replies.name, replies),
+                Updates.set("${User::replies.name}.$replyId", false),
                 Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
@@ -82,74 +84,89 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         id: String,
         chats: Map<String, ChatRef>,
         replies: Map<String, Boolean>
-    ) =
+    ) = coroutineScope {
+        val chatUpdates = chats.map { (k, v) ->
+            Updates.set("${User::chats.name}.$k", v)
+        }
+        val replyUpdates = replies.map { (k, v) ->
+            Updates.set("${User::replies.name}.$k", v)
+        }
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::chats.name, chats),
-                Updates.set(User::replies.name, replies),
-                Updates.set(User::updatedOn.name, Clock.System.now())
+                chatUpdates +
+                    replyUpdates +
+                    Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
+    }
 
     suspend fun markReportNotifsRead(
         id: String,
         userReports: Map<String, Boolean>,
         postReports: Map<String, Boolean>
-    ) =
+    ) = coroutineScope {
+        val userReportUpdates = userReports.map { (k, v) ->
+            Updates.set("${User::userReports.name}.$k", v)
+        }
+        val postReportUpdates = postReports.map { (k, v) ->
+            Updates.set("${User::postReports.name}.$k", v)
+        }
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::userReports.name, userReports),
-                Updates.set(User::postReports.name, postReports),
-                Updates.set(User::updatedOn.name, Clock.System.now())
+                userReportUpdates +
+                    postReportUpdates +
+                    Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
+    }
 
     suspend fun setFollowers(
         id: String,
-        followers: Set<String>
+        followerUserId: String
     ) =
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::followers.name, followers),
+                Updates.addToSet(User::followers.name, followerUserId),
                 Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
 
     suspend fun setFollowing(
         id: String,
-        following: Set<String>
+        followingUserId: String
     ) =
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::following.name, following),
+                Updates.addToSet(User::following.name, followingUserId),
                 Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
 
     suspend fun setBlocklist(
         id: String,
-        blockList: Set<String>
+        blockUserId: String
     ) =
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::blockList.name, blockList),
+                Updates.addToSet(User::blockList.name, blockUserId),
                 Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
 
     suspend fun setUserChat(
         id: String,
-        chat: MutableMap<String, ChatRef>,
+        chatId: String,
+        chatRef: ChatRef,
     ) =
         collection.updateOne(
             eq(User::id.name, id),
             Updates.combine(
-                Updates.set(User::chats.name, chat),
+                Updates.set("${User::chats.name}.$chatId", chatRef),
                 Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )

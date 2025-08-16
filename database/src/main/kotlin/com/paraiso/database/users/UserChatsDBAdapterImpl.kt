@@ -23,12 +23,12 @@ class UserChatsDBAdapterImpl(database: MongoDatabase): RoutesDBAdapter {
 
     suspend fun setUserChat(
         chatId: String,
-        dms: Set<DirectMessage>,
+        dm: DirectMessage,
     ) =
         collection.updateOne(
             Filters.eq(UserChat::id.name, chatId),
             Updates.combine(
-                Updates.set(UserChat::dms.name, dms),
+                Updates.addToSet(UserChat::dms.name, dm),
                 Updates.set(UserChat::updatedOn.name, Clock.System.now())
             )
         )

@@ -18,14 +18,14 @@ class RoutesDBAdapterImpl(database: MongoDatabase): RoutesDBAdapter {
     suspend fun save(routes: List<RouteDetails>) =
         collection.insertMany(routes)
 
-    suspend fun setBlocklist(
+    suspend fun setUserFavorites(
         route: String,
-        userFavorites: Set<String>
+        userFavoriteId: String
     ) =
         collection.updateOne(
             Filters.eq(RouteDetails::id.name, route),
             Updates.combine(
-                Updates.set(RouteDetails::userFavorites.name, userFavorites),
+                Updates.addToSet(RouteDetails::userFavorites.name, userFavoriteId),
                 Updates.set(RouteDetails::updatedOn.name, Clock.System.now())
             )
         )

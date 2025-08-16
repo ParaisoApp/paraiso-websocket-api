@@ -33,14 +33,46 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     suspend fun save(posts: List<Post>) =
         collection.insertMany(posts)
 
-    suspend fun setVotes(
+    suspend fun editPost(
         id: String,
-        votes:  Map<String, Boolean>
+        title: String,
+        content: String,
+        media: String,
+        data: String
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
             Updates.combine(
-                Updates.set(Post::votes.name, votes),
+                Updates.set(Post::title.name, title),
+                Updates.set(Post::content.name, content),
+                Updates.set(Post::media.name, media),
+                Updates.set(Post::data.name, data),
+                Updates.set(Post::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun updateParent(
+        id: String,
+        subPostId: String,
+    ) =
+        collection.updateOne(
+            eq(Post::id.name, id),
+            Updates.combine(
+                Updates.addToSet(Post::subPosts.name, subPostId),
+                Updates.inc(Post::count.name, 1),
+                Updates.set(Post::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun setVotes(
+        id: String,
+        voteUserId: String,
+        upvote: Boolean
+    ) =
+        collection.updateOne(
+            eq(Post::id.name, id),
+            Updates.combine(
+                Updates.set("${Post::votes.name}.$voteUserId", upvote),
                 Updates.set(Post::updatedOn.name, Clock.System.now())
             )
         )
@@ -63,7 +95,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
         collection.updateOne(
             eq(Post::id.name, id),
             Updates.combine(
-                Updates.inc("count", 1 * increment),
+                Updates.inc(Post::count.name, 1 * increment),
                 Updates.set(Post::updatedOn.name, Clock.System.now())
             )
         )
