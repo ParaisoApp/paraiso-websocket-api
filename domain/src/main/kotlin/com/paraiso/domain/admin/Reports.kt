@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserReport(
-    val user: UserResponse,
+    val userId: String,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -15,7 +15,7 @@ data class UserReport(
 
 @Serializable
 data class PostReport(
-    val post: PostReturn,
+    val postId: String,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant

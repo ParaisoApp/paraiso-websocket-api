@@ -1,8 +1,9 @@
-package com.paraiso.database.users
+package com.paraiso.database.admin
 
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.domain.admin.UserReport
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDBAdapter
@@ -13,23 +14,23 @@ import com.paraiso.domain.users.UserChatsDBAdapter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
-class UserChatsDBAdapterImpl(database: MongoDatabase): UserChatsDBAdapter {
-    private val collection = database.getCollection("userChats", UserChat::class.java)
+class UserReportsDBAdapterImpl(database: MongoDatabase): UserChatsDBAdapter {
+    private val collection = database.getCollection("userReports", UserReport::class.java)
 
-    suspend fun findById(id: String) =
-        collection.find(Filters.eq(UserChat::id.name, id)).firstOrNull()
+    fun get() =
+        collection.find()
 
-    suspend fun save(chats: List<UserChat>) =
-        collection.insertMany(chats)
+    suspend fun save(userReports: List<UserReport>) =
+        collection.insertMany(userReports)
 
-    suspend fun setUserChat(
-        chatId: String,
-        dm: DirectMessage,
+    suspend fun addUserReport(
+        userId: String,
+        reportingUserId: String,
     ) =
         collection.updateOne(
-            Filters.eq(UserChat::id.name, chatId),
+            Filters.eq(UserReport::userId.name, userId),
             Updates.combine(
-                Updates.addToSet(UserChat::dms.name, dm),
+                Updates.addToSet(UserReport::reportedBy.name, reportingUserId),
                 Updates.set(UserChat::updatedOn.name, Clock.System.now())
             )
         )

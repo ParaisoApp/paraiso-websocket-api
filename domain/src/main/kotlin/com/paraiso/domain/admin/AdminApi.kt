@@ -34,14 +34,12 @@ class AdminApi {
                     )
                 }
             } ?: run {
-                ServerState.userList[report.id]?.let { user ->
-                    ServerState.userReports[report.id] = UserReport(
-                        user = user.buildUserResponse(),
-                        reportedBy = setOf(sessionUserId),
-                        createdOn = now,
-                        updatedOn = now
-                    )
-                }
+                ServerState.userReports[report.id] = UserReport(
+                    userId = report.id,
+                    reportedBy = setOf(sessionUserId),
+                    createdOn = now,
+                    updatedOn = now
+                )
             }
         }
         ServerState.userList.values.filter {
@@ -69,14 +67,12 @@ class AdminApi {
                     )
                 }
             } ?: run {
-                ServerState.posts[report.id]?.let { post ->
-                    ServerState.postReports[report.id] = PostReport(
-                        post = post.toPostReturn(),
-                        reportedBy = setOf(sessionUserId),
-                        createdOn = now,
-                        updatedOn = now
-                    )
-                }
+                ServerState.postReports[report.id] = PostReport(
+                    postId = report.id,
+                    reportedBy = setOf(sessionUserId),
+                    createdOn = now,
+                    updatedOn = now
+                )
             }
         }
 
