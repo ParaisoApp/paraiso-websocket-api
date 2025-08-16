@@ -42,6 +42,23 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     suspend fun findById(id: String) =
         collection.find(eq(Post::id.name, id)).firstOrNull()
 
+    private fun getInitAggPipeline(
+        initialFilter: Bson,
+    ) =
+        mutableListOf(
+            // Step 1: apply initial filters
+            match(initialFilter),
+
+            // Step 2: join user roles
+            lookup(
+                "users",   // from collection
+                Post::userId.name,        // localField
+                User::id.name,     // foreignField
+                "userInfo"    // as
+            ),
+            limit(RETRIEVE_LIM)
+        )
+
     private fun getUserRoleCondition(
         filters: FilterTypes,
         userFollowing: Set<String>
@@ -61,23 +78,6 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
         }
         return match(Document("\$expr", Document("\$or", orConditions)))
     }
-
-    private fun getInitAggPipeline(
-        initialFilter: Bson,
-    ) =
-        mutableListOf(
-            // Step 1: apply initial filters
-            match(initialFilter),
-
-            // Step 2: join user roles
-            lookup(
-                "users",   // from collection
-                Post::userId.name,        // localField
-                User::id.name,     // foreignField
-                "userInfo"    // as
-            ),
-            limit(RETRIEVE_LIM)
-        )
     private fun getSort(
         sortType: SortType,
     ) =
