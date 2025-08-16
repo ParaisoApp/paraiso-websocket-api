@@ -202,12 +202,13 @@ class WebSocketHandler(
                                         id = messageId,
                                         userId = sessionUser.id,
                                         rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
-                                        userReceiveIds = message.userReceiveIds?.plus(userIdMentions) ?: emptySet()
+                                        userReceiveIds = message.userReceiveIds.plus(userIdMentions)
                                     ).let { messageWithData ->
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)
                                         } else {
                                             launch { postsApiRef.putPost(messageWithData) }
+                                            launch { usersApiRef.putPost(sessionUser.id, messageId) }
                                             ServerState.messageFlowMut.emit(messageWithData)
                                         }
                                     }

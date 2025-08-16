@@ -52,26 +52,26 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
             )
         )
 
-    fun getFollowingById(userId: String) =
-        collection.find(eq(User::following.name, userId))
+    fun getFollowingById(id: String) =
+        collection.find(eq(User::following.name, id))
 
-    fun getFollowersById(userId: String) =
-        collection.find(eq(User::followers.name, userId))
+    fun getFollowersById(id: String) =
+        collection.find(eq(User::followers.name, id))
 
     suspend fun save(users: List<User>) =
         collection.insertMany(users)
 
-    suspend fun setMentions(userId: String, replies: Map<String, Boolean>) =
+    suspend fun setMentions(id: String, replies: Map<String, Boolean>) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::replies.name, replies),
                 Updates.set(User::updatedOn.name, Clock.System.now())
             )
         )
-    suspend fun setSettings(userId: String, settings: UserSettings) =
+    suspend fun setSettings(id: String, settings: UserSettings) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::settings.name, settings),
                 Updates.set(User::updatedOn.name, Clock.System.now())
@@ -79,12 +79,12 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
 
     suspend fun markNotifsRead(
-        userId: String,
+        id: String,
         chats: Map<String, ChatRef>,
         replies: Map<String, Boolean>
     ) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::chats.name, chats),
                 Updates.set(User::replies.name, replies),
@@ -93,12 +93,12 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
 
     suspend fun markReportNotifsRead(
-        userId: String,
+        id: String,
         userReports: Map<String, Boolean>,
         postReports: Map<String, Boolean>
     ) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::userReports.name, userReports),
                 Updates.set(User::postReports.name, postReports),
@@ -107,11 +107,11 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
 
     suspend fun setFollowers(
-        userId: String,
+        id: String,
         followers: Set<String>
     ) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::followers.name, followers),
                 Updates.set(User::updatedOn.name, Clock.System.now())
@@ -119,11 +119,11 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
 
     suspend fun setFollowing(
-        userId: String,
+        id: String,
         following: Set<String>
     ) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::following.name, following),
                 Updates.set(User::updatedOn.name, Clock.System.now())
@@ -131,11 +131,11 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
 
     suspend fun setBlocklist(
-        userId: String,
+        id: String,
         blockList: Set<String>
     ) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::blockList.name, blockList),
                 Updates.set(User::updatedOn.name, Clock.System.now())
@@ -143,11 +143,11 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
 
     suspend fun setUserChat(
-        userId: String,
+        id: String,
         chat: MutableMap<String, ChatRef>,
     ) =
         collection.updateOne(
-            eq(User::id.name, userId),
+            eq(User::id.name, id),
             Updates.combine(
                 Updates.set(User::chats.name, chat),
                 Updates.set(User::updatedOn.name, Clock.System.now())

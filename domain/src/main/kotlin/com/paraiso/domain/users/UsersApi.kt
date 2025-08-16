@@ -3,6 +3,7 @@ package com.paraiso.domain.users
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.async
@@ -238,6 +239,17 @@ class UsersApi {
         }
     }
 
+
+    suspend fun putPost(userId: String, messageId: String) = coroutineScope {
+        // update user posts
+        ServerState.userList[userId]?.let { user ->
+            ServerState.userList[userId] = user.copy(
+                posts = user.posts + messageId,
+                updatedOn = Clock.System.now()
+            )
+        }
+    }
+
     fun updateChatForUser(
         dm: DirectMessage,
         userId: String?,
@@ -262,19 +274,4 @@ class UsersApi {
                 }
             }
         }
-
-    suspend fun putDM(dm: DirectMessage) = coroutineScope {
-        Clock.System.now().let { now ->
-            launch { updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) } // update chat for receiving user
-            launch { updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) } // update chat for receiving user
-            ServerState.userChatList[dm.chatId]?.let { chat ->
-                ServerState.userChatList[dm.chatId] = chat.copy(
-                    dms = chat.dms + dm.copy(
-                        createdOn = now
-                    ),
-                    updatedOn = now
-                )
-            }
-        }
-    }
 }

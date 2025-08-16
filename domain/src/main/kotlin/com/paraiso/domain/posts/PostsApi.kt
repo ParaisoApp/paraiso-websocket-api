@@ -23,63 +23,6 @@ class PostsApi {
         const val TIME_WEIGHTING = 10000000000
     }
 
-    suspend fun putPost(message: Message) = coroutineScope {
-        message.id?.let { messageId ->
-            val now = Clock.System.now()
-            // if post already exists then edit
-            ServerState.posts[messageId]?.let { existingPost ->
-                ServerState.posts[messageId] = existingPost.copy(
-                    title = message.title,
-                    content = message.content,
-                    media = message.media,
-                    data = message.data,
-                    updatedOn = now
-                )
-                // otherwise create a new post
-            } ?: run {
-                ServerState.posts[messageId] = message.toNewPost()
-                // update parent sub posts
-                ServerState.posts[message.replyId]?.let { parent ->
-                    if (message.replyId != null) {
-                        ServerState.posts[message.replyId] = parent.copy(
-                            count = parent.count + 1,
-                            subPosts = parent.subPosts + messageId,
-                            updatedOn = now
-                        )
-                    }
-                    launch {
-                        // update grandparent sub post counts - increment to add
-                        ServerState.posts[parent.parentId]?.let { grandParent ->
-                            updateCounts(grandParent, now, increment = 1)
-                        }
-                    }
-                }
-                // update user posts
-                ServerState.userList[message.userId]?.let { user ->
-                    if (message.userId != null) {
-                        ServerState.userList[message.userId] = user.copy(
-                            posts = user.posts + messageId,
-                            updatedOn = now
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun updateCounts(post: Post, now: Instant, increment: Int) {
-        if (post.id != null) {
-            ServerState.posts[post.id] = post.copy(
-                count = post.count + (1 * increment),
-                updatedOn = now
-            )
-        }
-        if (post.rootId == post.id) return
-        ServerState.posts[post.parentId]?.let { parent ->
-            updateCounts(parent, now, increment)
-        }
-    }
-
     // return fully updated root post (for update or load of root post to post tree)
     fun getById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         ServerState.posts[postSearchId]?.let { post ->
@@ -116,18 +59,18 @@ class PostsApi {
             val userFollowing = ServerState.userList[userId]?.following ?: setOf()
             ServerState.posts.asSequence().filter { (_, post) ->
                 ( // check for base post or user if profile nav
-                    post.parentId == postSearchId ||
-                        post.userId == postSearchId.removePrefix(USER_PREFIX) ||
-                        (postSearchId == SiteRoute.HOME.name && post.rootId == post.id)
-                    ) &&
-                    post.createdOn != null &&
-                    post.createdOn > range &&
-                    post.status != PostStatus.DELETED &&
-                    filters.postTypes.contains(post.type) &&
-                    (
-                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                        )
+                        post.parentId == postSearchId ||
+                                post.userId == postSearchId.removePrefix(USER_PREFIX) ||
+                                (postSearchId == SiteRoute.HOME.name && post.rootId == post.id)
+                        ) &&
+                        post.createdOn != null &&
+                        post.createdOn > range &&
+                        post.status != PostStatus.DELETED &&
+                        filters.postTypes.contains(post.type) &&
+                        (
+                                filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                                )
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
@@ -159,7 +102,7 @@ class PostsApi {
                 ServerState.posts
                     .filter { (_, gamePost) ->
                         gamePost.type == PostType.GAME &&
-                            (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
+                                (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
                     }.forEach { (_, gamePost) ->
                         if (gamePost.id != null) {
                             returnPosts[gamePost.id] = gamePost.toPostReturn()
@@ -173,24 +116,24 @@ class PostsApi {
                         .asSequence()
                         .filter { (_, post) ->
                             post.createdOn != null &&
-                                post.createdOn > range &&
-                                post.status != PostStatus.DELETED &&
-                                filters.postTypes.contains(post.type) &&
-                                (
-                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                                    )
+                                    post.createdOn > range &&
+                                    post.status != PostStatus.DELETED &&
+                                    filters.postTypes.contains(post.type) &&
+                                    (
+                                            filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                                                    (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                                            )
                         }.sortedBy { getSort(it, sortType) }
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->
                             (
-                                id to post.toPostReturn()
-                                ).also { (_, returnPost) ->
-                                if (returnPost.id != null) {
-                                    returnPosts[returnPost.id] = returnPost
-                                    refQueue.addLast(post)
+                                    id to post.toPostReturn()
+                                    ).also { (_, returnPost) ->
+                                    if (returnPost.id != null) {
+                                        returnPosts[returnPost.id] = returnPost
+                                        refQueue.addLast(post)
+                                    }
                                 }
-                            }
                         }
                 }
             }
@@ -226,6 +169,42 @@ class PostsApi {
             }
         }
 
+
+    suspend fun putPost(message: Message) = coroutineScope {
+        message.id?.let { messageId ->
+            val now = Clock.System.now()
+            // if post already exists then edit
+            ServerState.posts[messageId]?.let { existingPost ->
+                ServerState.posts[messageId] = existingPost.copy(
+                    title = message.title,
+                    content = message.content,
+                    media = message.media,
+                    data = message.data,
+                    updatedOn = now
+                )
+                // otherwise create a new post
+            } ?: run {
+                ServerState.posts[messageId] = message.toNewPost()
+                // update parent sub posts
+                ServerState.posts[message.replyId]?.let { parent ->
+                    if (message.replyId != null) {
+                        ServerState.posts[message.replyId] = parent.copy(
+                            count = parent.count + 1,
+                            subPosts = parent.subPosts + messageId,
+                            updatedOn = now
+                        )
+                    }
+                    launch {
+                        // update grandparent sub post counts - increment to add
+                        ServerState.posts[parent.parentId]?.let { grandParent ->
+                            updateCounts(grandParent, now, increment = 1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun votePost(vote: Vote) =
         ServerState.posts[vote.postId]?.let { post ->
             post.votes.toMutableMap().let { mutableVoteMap ->
@@ -238,6 +217,7 @@ class PostsApi {
                     post.copy(votes = mutableVoteMap.toMap(), updatedOn = Clock.System.now())
             }
         }
+
     fun deletePost(delete: Delete, userId: String) =
         ServerState.posts[delete.postId]?.let { post ->
             if (post.userId == userId) {
@@ -251,4 +231,17 @@ class PostsApi {
                 }
             }
         }
+
+    private fun updateCounts(post: Post, now: Instant, increment: Int) {
+        if (post.id != null) {
+            ServerState.posts[post.id] = post.copy(
+                count = post.count + (1 * increment),
+                updatedOn = now
+            )
+        }
+        if (post.rootId == post.id) return
+        ServerState.posts[post.parentId]?.let { parent ->
+            updateCounts(parent, now, increment)
+        }
+    }
 }
