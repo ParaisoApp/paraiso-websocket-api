@@ -24,6 +24,37 @@ class UsersApi {
     fun getUserByName(userName: String): UserResponse? =
         ServerState.userList.values.find { it.name == userName }?.buildUserResponse()
 
+    fun exists(search: String) =
+        ServerState.userList.values.any { it.name?.lowercase() == search.lowercase() }
+
+    fun getUserByPartial(search: String) =
+        ServerState.userList.values
+            .filter { it.name?.lowercase()?.contains(search.lowercase()) == true }
+            .take(PARTIAL_RETRIEVE_LIM)
+            .map { it.buildUserResponse() }
+
+    fun getUserList(filters: FilterTypes, userId: String) =
+        ServerState.userList[userId]?.following?.let { followingList ->
+            ServerState.userList.values
+                .filter { user ->
+                    user.status != UserStatus.DISCONNECTED &&
+                            (
+                                    filters.userRoles.contains(user.roles) ||
+                                            (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
+                                    )
+                }.associate { user -> user.id to user.buildUserResponse() }
+        }
+
+    fun getFollowingById(userId: String) =
+        ServerState.userList.values.filter {
+            it.following.contains(userId)
+        }.map { it.buildUserResponse() }
+
+    fun getFollowersById(userId: String) =
+        ServerState.userList.values.filter {
+            it.followers.contains(userId)
+        }.map { it.buildUserResponse() }
+
     fun saveUser(user: UserResponse) {
         ServerState.userList[user.id] = user.copy(
             updatedOn = Clock.System.now()
@@ -59,27 +90,6 @@ class UsersApi {
         userIds.toSet()
     }
 
-    fun getUserByPartial(search: String) =
-        ServerState.userList.values
-            .filter { it.name?.lowercase()?.contains(search.lowercase()) == true }
-            .take(PARTIAL_RETRIEVE_LIM)
-            .map { it.buildUserResponse() }
-
-    fun existsByPartial(search: String) =
-        ServerState.userList.values.any { it.name?.lowercase() == search.lowercase() }
-
-    fun getUserList(filters: FilterTypes, userId: String) =
-        ServerState.userList[userId]?.following?.let { followingList ->
-            ServerState.userList.values
-                .filter { user ->
-                    user.status != UserStatus.DISCONNECTED &&
-                        (
-                            filters.userRoles.contains(user.roles) ||
-                                (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
-                            )
-                }.associate { user -> user.id to user.buildUserResponse() }
-        }
-
     fun setSettings(userId: String, settings: UserSettings) =
         ServerState.userList[userId]?.let { user ->
             ServerState.userList[userId] = user.copy(
@@ -87,79 +97,6 @@ class UsersApi {
                 updatedOn = Clock.System.now()
             )
         }
-
-    fun getFollowingById(userId: String) =
-        ServerState.userList.values.filter {
-            it.following.contains(userId)
-        }.map { it.buildUserResponse() }
-
-    fun getFollowersById(userId: String) =
-        ServerState.userList.values.filter {
-            it.followers.contains(userId)
-        }.map { it.buildUserResponse() }
-
-    fun getOrPutUserChat(chatId: String, userId: String, otherUserId: String) =
-        ServerState.userChatList[chatId]?.toReturn() ?: run {
-            Clock.System.now().let { now ->
-                val user = ServerState.userList[userId]
-                val otherUser = ServerState.userList[otherUserId]
-                if (user != null && otherUser != null) {
-                    UUID.randomUUID().toString().let { newChatId ->
-                        val newUserChat = UserChat(
-                            id = newChatId,
-                            users = setOf(user, otherUser),
-                            dms = emptySet(),
-                            createdOn = now,
-                            updatedOn = now
-                        )
-                        ServerState.userChatList[newChatId] = newUserChat
-                        newUserChat.toReturn()
-                    }
-                } else {
-                    null
-                }
-            }
-        }
-
-    private fun updateChatForUser(
-        dm: DirectMessage,
-        userId: String?,
-        otherUserId: String?,
-        isUser: Boolean,
-        now: Instant
-    ) =
-        ServerState.userList[userId]?.let { user ->
-            user.chats.toMutableMap().let { mutableChat ->
-                if (otherUserId != null) {
-                    mutableChat[otherUserId] = ChatRef(
-                        mostRecentDm = dm,
-                        chatId = dm.chatId,
-                        viewed = !isUser
-                    )
-                }
-                if (userId != null) {
-                    ServerState.userList[userId] = user.copy(
-                        chats = mutableChat,
-                        updatedOn = now
-                    )
-                }
-            }
-        }
-
-    suspend fun putDM(dm: DirectMessage) = coroutineScope {
-        Clock.System.now().let { now ->
-            launch { updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) } // update chat for receiving user
-            launch { updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) } // update chat for receiving user
-            ServerState.userChatList[dm.chatId]?.let { chat ->
-                ServerState.userChatList[dm.chatId] = chat.copy(
-                    dms = chat.dms + dm.copy(
-                        createdOn = now
-                    ),
-                    updatedOn = now
-                )
-            }
-        }
-    }
 
     suspend fun markNotifsRead(userId: String, userNotifs: UserNotifs) = coroutineScope {
         ServerState.userList[userId]?.let { user ->
@@ -282,7 +219,7 @@ class UsersApi {
         }
     }
 
-    fun toggleFavoriteRoute(favorite: Favorite) {
+    fun toggleFavoriteRoute(favorite: Favorite, now: Instant) {
         // toggle favorite from User
         ServerState.userList[favorite.userId]?.let { user ->
             if (favorite.userId != null) {
@@ -294,23 +231,49 @@ class UsersApi {
                     }
                     ServerState.userList[favorite.userId] = user.copy(
                         routeFavorites = mutableRouteFavoriteSet,
-                        updatedOn = Clock.System.now()
+                        updatedOn = now
                     )
                 }
-                // toggle favorite from Route
-                ServerState.routes[favorite.route]?.let { routeDetails ->
-                    routeDetails.userFavorites.toMutableSet().let { mutableFavorites ->
-                        if (!favorite.favorite) {
-                            mutableFavorites.remove(favorite.userId)
-                        } else {
-                            mutableFavorites.add(favorite.userId)
-                        }
-                        ServerState.routes[favorite.route] = routeDetails.copy(
-                            userFavorites = mutableFavorites,
-                            updatedOn = Clock.System.now()
-                        )
-                    }
+            }
+        }
+    }
+
+    fun updateChatForUser(
+        dm: DirectMessage,
+        userId: String?,
+        otherUserId: String?,
+        isUser: Boolean,
+        now: Instant
+    ) =
+        ServerState.userList[userId]?.let { user ->
+            user.chats.toMutableMap().let { mutableChat ->
+                if (otherUserId != null) {
+                    mutableChat[otherUserId] = ChatRef(
+                        mostRecentDm = dm,
+                        chatId = dm.chatId,
+                        viewed = !isUser
+                    )
                 }
+                if (userId != null) {
+                    ServerState.userList[userId] = user.copy(
+                        chats = mutableChat,
+                        updatedOn = now
+                    )
+                }
+            }
+        }
+
+    suspend fun putDM(dm: DirectMessage) = coroutineScope {
+        Clock.System.now().let { now ->
+            launch { updateChatForUser(dm, dm.userId, dm.userReceiveId, true, now) } // update chat for receiving user
+            launch { updateChatForUser(dm, dm.userReceiveId, dm.userId, false, now) } // update chat for receiving user
+            ServerState.userChatList[dm.chatId]?.let { chat ->
+                ServerState.userChatList[dm.chatId] = chat.copy(
+                    dms = chat.dms + dm.copy(
+                        createdOn = now
+                    ),
+                    updatedOn = now
+                )
             }
         }
     }

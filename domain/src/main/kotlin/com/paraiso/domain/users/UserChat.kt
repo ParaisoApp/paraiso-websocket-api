@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserChat(
     val id: String,
-    val users: Set<User>,
+    val userIds: Set<String>,
     val dms: Set<DirectMessage>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -17,7 +17,7 @@ data class UserChat(
 @Serializable
 data class UserChatReturn(
     val id: String,
-    val users: Map<String, UserResponse>,
+    val userIds: Map<String, Boolean>,
     val dms: Map<String, DirectMessage>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -26,7 +26,7 @@ data class UserChatReturn(
 fun UserChat.toReturn() =
     UserChatReturn(
         id = id,
-        users = users.map { it.buildUserResponse() }.associateBy { it.id },
+        userIds = userIds.associateWith { true },
         dms = dms.associateBy { it.id ?: UNKNOWN },
         createdOn = createdOn,
         updatedOn = updatedOn
@@ -35,7 +35,7 @@ fun UserChat.toReturn() =
 fun UserChatReturn.toUserChat() =
     UserChat(
         id = id,
-        users = users.values.map { it.toUser() }.toSet(),
+        userIds = userIds.keys,
         dms = dms.values.toSet(),
         createdOn = createdOn,
         updatedOn = updatedOn

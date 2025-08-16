@@ -9,7 +9,9 @@ import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
+import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
@@ -47,7 +49,13 @@ import com.paraiso.domain.routes.Favorite as FavoriteDomain
 import com.paraiso.domain.routes.Route as RouteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
-class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminApi) : Klogging {
+class WebSocketHandler(
+    usersApi: UsersApi,
+    userChatsApi: UserChatsApi,
+    postsApi: PostsApi,
+    adminApi: AdminApi,
+    routesApi: RoutesApi
+) : Klogging {
     // jobs
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
@@ -57,9 +65,13 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
     // users
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
     private val usersApiRef = usersApi
+    private val userChatsApiRef = userChatsApi
 
     // posts
     private val postsApiRef = postsApi
+
+    //routes
+    private val routesApiRef = routesApi
 
     // admin
     private val adminApiRef = adminApi
@@ -214,7 +226,25 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                         !sessionUser.banned &&
                                         ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
                                     ) {
-                                        launch { usersApiRef.putDM(dmWithData) }
+                                        Clock.System.now().let{ updatedOn ->
+                                            launch {
+                                                usersApiRef.updateChatForUser(
+                                                    dmWithData,
+                                                    dmWithData.userId,
+                                                    dmWithData.userReceiveId,
+                                                    true,
+                                                    updatedOn)
+                                            } // update chat for receiving user
+                                            launch {
+                                                usersApiRef.updateChatForUser(
+                                                    dmWithData,
+                                                    dmWithData.userReceiveId,
+                                                    dmWithData.userId,
+                                                    false,
+                                                    updatedOn)
+                                            } // update chat for receiving user
+                                            launch { userChatsApiRef.putDM(dmWithData, updatedOn) }
+                                        }
                                         userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                     }
                                 }
@@ -237,7 +267,10 @@ class WebSocketHandler(usersApi: UsersApi, postsApi: PostsApi, adminApi: AdminAp
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    launch { usersApiRef.toggleFavoriteRoute(follow) }
+                                    Clock.System.now().let{ updatedOn ->
+                                        launch { usersApiRef.toggleFavoriteRoute(follow, updatedOn) }
+                                        launch { routesApiRef.toggleFavoriteRoute(follow, updatedOn) }
+                                    }
                                     ServerState.favoriteFlowMut.emit(follow)
                                 }
                             }

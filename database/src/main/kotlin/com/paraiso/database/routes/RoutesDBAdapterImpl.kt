@@ -1,9 +1,32 @@
 package com.paraiso.database.routes
 
+import com.mongodb.client.model.Filters
+import com.mongodb.client.model.Updates
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.routes.Route
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDBAdapter
+import com.paraiso.domain.users.User
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 
 class RoutesDBAdapterImpl(database: MongoDatabase): RoutesDBAdapter {
-    private val collection = database.getCollection("routes", Route::class.java)
+    private val collection = database.getCollection("routes", RouteDetails::class.java)
+
+    suspend fun findById(id: String) =
+        collection.find(Filters.eq(RouteDetails::id.name, id)).firstOrNull()
+
+    suspend fun save(routes: List<RouteDetails>) =
+        collection.insertMany(routes)
+
+    suspend fun setBlocklist(
+        route: String,
+        userFavorites: Set<String>
+    ) =
+        collection.updateOne(
+            Filters.eq(RouteDetails::id.name, route),
+            Updates.combine(
+                Updates.set(RouteDetails::userFavorites.name, userFavorites),
+                Updates.set(RouteDetails::updatedOn.name, Clock.System.now())
+            )
+        )
 }

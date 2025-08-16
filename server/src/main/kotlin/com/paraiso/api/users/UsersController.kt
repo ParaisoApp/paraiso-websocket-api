@@ -30,15 +30,6 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        get("/chat") {
-            usersApi.getOrPutUserChat(
-                call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["userId"] ?: "",
-                call.request.queryParameters["otherUserId"] ?: ""
-            )?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
-        }
         get("/getByName") {
             usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
@@ -54,8 +45,8 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
-        get("/existsByPartial") {
-            usersApi.existsByPartial(call.request.queryParameters["search"] ?: "").let {
+        get("/exists") {
+            usersApi.exists(call.request.queryParameters["search"] ?: "").let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }

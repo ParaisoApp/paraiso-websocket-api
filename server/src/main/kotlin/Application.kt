@@ -10,6 +10,7 @@ import com.paraiso.com.paraiso.api.posts.postsController
 import com.paraiso.com.paraiso.api.routes.routesController
 import com.paraiso.com.paraiso.api.sports.bball.bballController
 import com.paraiso.com.paraiso.api.sports.fball.fballController
+import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.domain.admin.AdminApi
@@ -21,6 +22,7 @@ import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallHandler
+import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
@@ -65,21 +67,24 @@ fun main() {
 
     // Replace the placeholder with your MongoDB deployment's connection string
     val uri = "mongodb://localhost:27017"
-    val mongoClient = MongoClient.create(uri)
-    val database = mongoClient.getDatabase("ekoes")
+    //val mongoClient = MongoClient.create(uri)
+    //val database = mongoClient.getDatabase("ekoes")
 
     val postsApi = PostsApi()
     val usersApi = UsersApi()
+    val userChatsApi = UserChatsApi()
     val adminApi = AdminApi()
-    val handler = WebSocketHandler(usersApi, postsApi, adminApi)
+    val routesApi = RoutesApi()
+    val handler = WebSocketHandler(usersApi, userChatsApi, postsApi, adminApi, routesApi)
 
     val server = embeddedServer(Netty, port = 8080) {
         configureSockets(
             handler,
             adminApi,
-            RoutesApi(),
+            routesApi,
             postsApi,
             usersApi,
+            userChatsApi,
             AuthApi(),
             BBallApi(),
             FBallApi(),
@@ -104,6 +109,7 @@ fun Application.configureSockets(
     routesApi: RoutesApi,
     postsApi: PostsApi,
     usersApi: UsersApi,
+    userChatsApi: UserChatsApi,
     authApi: AuthApi,
     bBallApi: BBallApi,
     fBallApi: FBallApi,
@@ -150,6 +156,7 @@ fun Application.configureSockets(
             authController(authApi)
             postsController(postsApi)
             usersController(usersApi)
+            userChatsController(userChatsApi)
             bballController(bBallApi)
             fballController(fBallApi)
             metadataController(metadataApi)
