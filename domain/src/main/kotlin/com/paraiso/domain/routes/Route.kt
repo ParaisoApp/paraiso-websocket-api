@@ -17,7 +17,7 @@ data class RouteDetails(
 )
 
 @Serializable
-data class RouteReturn(
+data class RouteResponse(
     val id: String,
     val route: SiteRoute,
     val modifier: String?,
@@ -78,8 +78,8 @@ enum class SiteRoute {
     @SerialName("GOLF")
     GOLF
 }
-fun RouteDetails.toReturn() =
-    RouteReturn(
+fun RouteDetails.toResponse() =
+    RouteResponse(
         id = id,
         route = route,
         modifier = modifier,

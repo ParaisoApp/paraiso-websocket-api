@@ -1,5 +1,6 @@
 package com.paraiso
 
+import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.client.sport.adapters.BBallOperationAdapter
 import com.paraiso.client.sport.adapters.FBallOperationAdapter
 import com.paraiso.com.paraiso.api.admin.adminController
@@ -12,11 +13,13 @@ import com.paraiso.com.paraiso.api.sports.fball.fballController
 import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
+import com.paraiso.database.routes.RoutesDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.routes.RoutesDBAdapter
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
@@ -52,7 +55,12 @@ import java.time.Duration
 fun main() {
     val job = Job()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
-    val routesApi = RoutesApi()
+
+    val uri = "mongodb://localhost:27017"
+    val mongoClient = MongoClient.create(uri)
+    val database = mongoClient.getDatabase("ekoes")
+
+    val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
 
     jobScope.launch {
         BBallHandler(BBallOperationAdapter(), routesApi).bootJobs()
@@ -65,9 +73,6 @@ fun main() {
     }
 
     // Replace the placeholder with your MongoDB deployment's connection string
-    val uri = "mongodb://localhost:27017"
-    // val mongoClient = MongoClient.create(uri)
-    // val database = mongoClient.getDatabase("ekoes")
 
     val postsApi = PostsApi()
     val usersApi = UsersApi()

@@ -261,7 +261,7 @@ class WebSocketHandler(
                                 } else {
                                     Clock.System.now().let { updatedOn ->
                                         launch { usersApi.toggleFavoriteRoute(follow, updatedOn) }
-                                        launch { routesApi.toggleFavoriteRoute(follow, updatedOn) }
+                                        launch { routesApi.toggleFavoriteRoute(follow) }
                                     }
                                     ServerState.favoriteFlowMut.emit(follow)
                                 }

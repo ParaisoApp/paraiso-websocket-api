@@ -50,7 +50,7 @@ class BBallHandler(
                 launch { getSchedules(teamIds) }
             }
             launch {
-                teamsRes.forEach { addTeamRoute(it) }
+                addTeamRoutes(teamsRes)
             }
         }
         while (isActive) {
@@ -61,21 +61,22 @@ class BBallHandler(
         }
     }
 
-    private fun addTeamRoute(team: Team) {
-        val now = Clock.System.now()
-        val teamRouteId = "/s/basketball/t/${team.abbreviation}"
-        routesApi.saveRoute(
+    private suspend fun addTeamRoutes(teams: List<Team>) {
+        teams.map {
+            val now = Clock.System.now()
             RouteDetails(
-                id = teamRouteId,
+                id = "/s/basketball/t/${it.abbreviation}",
                 route = SiteRoute.BASKETBALL,
-                modifier = team.abbreviation,
-                title = team.displayName,
+                modifier = it.abbreviation,
+                title = it.displayName,
                 userFavorites = emptySet(),
                 about = null,
                 createdOn = now,
                 updatedOn = now
             )
-        )
+        }.let {
+            routesApi.saveRoutes(it)
+        }
     }
 
     private suspend fun getLeaders() = coroutineScope {

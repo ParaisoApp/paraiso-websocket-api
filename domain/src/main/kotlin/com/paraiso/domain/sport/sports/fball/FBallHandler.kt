@@ -50,7 +50,7 @@ class FBallHandler(
                 launch { getSchedules(teamIds) }
             }
             launch {
-                teamsRes.forEach { addTeamRoute(it) }
+                addTeamRoutes(teamsRes)
             }
         }
         while (isActive) {
@@ -61,21 +61,23 @@ class FBallHandler(
         }
     }
 
-    private fun addTeamRoute(team: Team) {
-        val now = Clock.System.now()
-        val teamRouteId = "/s/football/t/${team.id}"
-        routesApi.saveRoute(
+
+    private suspend fun addTeamRoutes(teams: List<Team>) {
+        teams.map {
+            val now = Clock.System.now()
             RouteDetails(
-                id = teamRouteId,
+                id = "/s/football/t/${it.abbreviation}",
                 route = SiteRoute.FOOTBALL,
-                modifier = team.abbreviation,
-                title = team.displayName,
+                modifier = it.abbreviation,
+                title = it.displayName,
                 userFavorites = emptySet(),
                 about = null,
                 createdOn = now,
                 updatedOn = now
             )
-        )
+        }.let {
+            routesApi.saveRoutes(it)
+        }
     }
 
     private suspend fun getLeaders() = coroutineScope {

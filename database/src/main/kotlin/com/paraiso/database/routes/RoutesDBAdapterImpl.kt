@@ -14,33 +14,33 @@ import kotlinx.datetime.Clock
 class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
     private val collection = database.getCollection("routes", RouteDetailsEntity::class.java)
 
-    suspend fun findById(id: String) =
-        collection.find(Filters.eq(RouteDetailsEntity::id.name, id)).firstOrNull()
+    override suspend fun findById(id: String) =
+        collection.find(Filters.eq("_id", id)).firstOrNull()?.toDomain()
 
-    suspend fun save(routes: List<RouteDetailsEntity>) =
-        collection.insertMany(routes)
+    override suspend fun save(routes: List<RouteDetails>) =
+        collection.insertMany(routes.map { it.toEntity() }).insertedIds.map { it.value.toString() }
 
-    suspend fun addUserFavorites(
+    override suspend fun addUserFavorites(
         route: String,
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq(RouteDetailsEntity::id.name, route),
+            Filters.eq("_id", route),
             combine(
                 addToSet(RouteDetailsEntity::userFavorites.name, userFavoriteId),
                 set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeUserFavorites(
+    override suspend fun removeUserFavorites(
         route: String,
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq(RouteDetailsEntity::id.name, route),
+            Filters.eq("_id", route),
             combine(
                 pull(RouteDetailsEntity::userFavorites.name, userFavoriteId),
                 set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 }

@@ -1,30 +1,20 @@
 package com.paraiso.domain.routes
 
-import com.paraiso.domain.util.ServerState
-import kotlinx.datetime.Instant
+class RoutesApi(private val routesDBAdapter: RoutesDBAdapter) {
+    suspend fun getById(id: String) = routesDBAdapter.findById(id)?.toResponse()
+    //ServerState.routes[id]?.toResponse()
 
-class RoutesApi {
-    fun getById(id: String) = ServerState.routes[id]?.toReturn()
+    suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDBAdapter.save(routeDetails)
+        //ServerState.routes[routeDetails.id] = routeDetails
 
-    fun saveRoute(routeDetails: RouteDetails) {
-        ServerState.routes[routeDetails.id] = routeDetails
-    }
 
-    fun toggleFavoriteRoute(favorite: Favorite, now: Instant) {
+    suspend fun toggleFavoriteRoute(favorite: Favorite) {
         if (favorite.userId != null) {
             // toggle favorite from Route
-            ServerState.routes[favorite.route]?.let { routeDetails ->
-                routeDetails.userFavorites.toMutableSet().let { mutableFavorites ->
-                    if (!favorite.favorite) {
-                        mutableFavorites.remove(favorite.userId)
-                    } else {
-                        mutableFavorites.add(favorite.userId)
-                    }
-                    ServerState.routes[favorite.route] = routeDetails.copy(
-                        userFavorites = mutableFavorites,
-                        updatedOn = now
-                    )
-                }
+            if (!favorite.favorite) {
+                routesDBAdapter.removeUserFavorites(favorite.route, favorite.userId)
+            } else {
+                routesDBAdapter.addUserFavorites(favorite.route, favorite.userId)
             }
         }
     }

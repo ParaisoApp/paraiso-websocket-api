@@ -3,14 +3,14 @@ package com.paraiso.database.routes
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.bson.codecs.pojo.annotations.BsonId
 
 
 @Serializable
 data class RouteDetailsEntity(
-    @BsonId
-    val id: String,
+    @SerialName("_id") val id: String,
     val route: SiteRoute,
     val modifier: String?,
     val title: String,
