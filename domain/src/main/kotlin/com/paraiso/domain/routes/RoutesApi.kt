@@ -2,10 +2,8 @@ package com.paraiso.domain.routes
 
 class RoutesApi(private val routesDBAdapter: RoutesDBAdapter) {
     suspend fun getById(id: String) = routesDBAdapter.findById(id)?.toResponse()
-    //ServerState.routes[id]?.toResponse()
 
     suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDBAdapter.save(routeDetails)
-        //ServerState.routes[routeDetails.id] = routeDetails
 
 
     suspend fun toggleFavoriteRoute(favorite: Favorite) {
