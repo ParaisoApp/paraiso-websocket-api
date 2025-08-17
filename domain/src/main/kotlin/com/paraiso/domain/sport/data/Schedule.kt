@@ -6,14 +6,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Schedule(
-    @SerialName(ID) val id: String,
+    val id: String,
     val team: Team,
     val events: List<Competition>
 )
 
 @Serializable
 data class Competition(
-    @SerialName(ID) val id: String,
+    val id: String,
     val name: String,
     val shortName: String,
     val date: String,

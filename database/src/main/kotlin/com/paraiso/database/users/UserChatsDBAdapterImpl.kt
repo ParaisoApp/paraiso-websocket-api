@@ -16,13 +16,13 @@ import kotlinx.datetime.Clock
 class UserChatsDBAdapterImpl(database: MongoDatabase) : UserChatsDBAdapter {
     private val collection = database.getCollection("userChats", UserChat::class.java)
 
-    suspend fun findById(id: String) =
+    override suspend fun findById(id: String) =
         collection.find(Filters.eq(ID, id)).firstOrNull()
 
-    suspend fun save(chats: List<UserChat>) =
-        collection.insertMany(chats)
+    override suspend fun save(chats: List<UserChat>) =
+        collection.insertMany(chats).insertedIds.map { it.toString() }
 
-    suspend fun setUserChat(
+    override suspend fun addToUserChat(
         chatId: String,
         dm: DirectMessage
     ) =
@@ -32,5 +32,5 @@ class UserChatsDBAdapterImpl(database: MongoDatabase) : UserChatsDBAdapter {
                 addToSet(UserChat::dms.name, dm),
                 set(UserChat::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 }

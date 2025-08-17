@@ -14,6 +14,7 @@ import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.database.routes.RoutesDBAdapterImpl
+import com.paraiso.database.users.UserChatsDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
@@ -76,7 +77,7 @@ fun main() {
 
     val postsApi = PostsApi()
     val usersApi = UsersApi()
-    val userChatsApi = UserChatsApi()
+    val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
     val adminApi = AdminApi()
     val handler = WebSocketHandler(usersApi, userChatsApi, postsApi, adminApi, routesApi)
 

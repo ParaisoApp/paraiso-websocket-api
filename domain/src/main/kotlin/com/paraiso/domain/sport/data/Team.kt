@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Team(
-    @SerialName(Constants.ID) val id: String,
+    val id: String,
     val location: String,
     val name: String?,
     val abbreviation: String,

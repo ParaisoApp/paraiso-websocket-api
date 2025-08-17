@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Roster(
-    @SerialName(ID) val id: String,
+    val id: String,
     val athletes: List<Athlete>,
     val coach: Coach?,
     val team: Team

@@ -27,7 +27,7 @@ data class StandingsSubGroup(
 
 @Serializable
 data class Standings(
-    @SerialName(ID) val id: String,
+    val id: String,
     val seed: Int?,
     val stats: List<StandingsStat>
 )

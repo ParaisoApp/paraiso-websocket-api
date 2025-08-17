@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class StatLeaders(
-    @SerialName(ID) val id: String,
+    val id: String,
     val categories: List<Category>
 )
 

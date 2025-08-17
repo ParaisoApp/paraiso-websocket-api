@@ -235,7 +235,7 @@ class WebSocketHandler(
                                                     updatedOn
                                                 )
                                             } // update chat for receiving user
-                                            launch { userChatsApi.putDM(dmWithData, updatedOn) }
+                                            launch { userChatsApi.putDM(dmWithData) }
                                         }
                                         userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                     }
