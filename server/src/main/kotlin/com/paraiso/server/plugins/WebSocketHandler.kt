@@ -313,7 +313,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<BanDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { ban ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { adminApiRef.banUser(ban) }
+                                    launch { usersApiRef.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
                                 }
                             }
@@ -322,7 +322,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<TagDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { tag ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { adminApiRef.tagUser(tag) }
+                                    launch { usersApiRef.tagUser(tag) }
                                     ServerState.tagUserFlowMut.emit(tag)
                                 }
                             }

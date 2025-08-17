@@ -2,6 +2,9 @@ package com.paraiso.database.routes
 
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import com.mongodb.client.model.Updates.addToSet
+import com.mongodb.client.model.Updates.combine
+import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDBAdapter
@@ -24,9 +27,9 @@ class RoutesDBAdapterImpl(database: MongoDatabase): RoutesDBAdapter {
     ) =
         collection.updateOne(
             Filters.eq(RouteDetails::id.name, route),
-            Updates.combine(
-                Updates.addToSet(RouteDetails::userFavorites.name, userFavoriteId),
-                Updates.set(RouteDetails::updatedOn.name, Clock.System.now())
+            combine(
+                addToSet(RouteDetails::userFavorites.name, userFavoriteId),
+                set(RouteDetails::updatedOn.name, Clock.System.now())
             )
         )
 }

@@ -88,16 +88,4 @@ class AdminApi {
             }
         }
     }
-
-    fun tagUser(tag: Tag) {
-        ServerState.userList[tag.userId]?.let { user ->
-            ServerState.userList[tag.userId] = user.copy(
-                tag = tag.tag,
-                updatedOn = Clock.System.now()
-            )
-        }
-    }
-
-    fun banUser(ban: Ban) =
-        ServerState.banList.add(ban.userId)
 }

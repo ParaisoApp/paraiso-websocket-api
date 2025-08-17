@@ -2,6 +2,9 @@ package com.paraiso.database.users
 
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import com.mongodb.client.model.Updates.addToSet
+import com.mongodb.client.model.Updates.combine
+import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.routes.RouteDetails
@@ -28,9 +31,9 @@ class UserChatsDBAdapterImpl(database: MongoDatabase): UserChatsDBAdapter {
     ) =
         collection.updateOne(
             Filters.eq(UserChat::id.name, chatId),
-            Updates.combine(
-                Updates.addToSet(UserChat::dms.name, dm),
-                Updates.set(UserChat::updatedOn.name, Clock.System.now())
+            combine(
+                addToSet(UserChat::dms.name, dm),
+                set(UserChat::updatedOn.name, Clock.System.now())
             )
         )
 }

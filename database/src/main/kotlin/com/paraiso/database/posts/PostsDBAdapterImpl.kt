@@ -11,6 +11,10 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Updates
+import com.mongodb.client.model.Updates.addToSet
+import com.mongodb.client.model.Updates.combine
+import com.mongodb.client.model.Updates.inc
+import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.fieldsEq
@@ -182,12 +186,12 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
-            Updates.combine(
-                Updates.set(Post::title.name, title),
-                Updates.set(Post::content.name, content),
-                Updates.set(Post::media.name, media),
-                Updates.set(Post::data.name, data),
-                Updates.set(Post::updatedOn.name, Clock.System.now())
+            combine(
+                set(Post::title.name, title),
+                set(Post::content.name, content),
+                set(Post::media.name, media),
+                set(Post::data.name, data),
+                set(Post::updatedOn.name, Clock.System.now())
             )
         )
 
@@ -197,10 +201,10 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
-            Updates.combine(
-                Updates.addToSet(Post::subPosts.name, subPostId),
-                Updates.inc(Post::count.name, 1),
-                Updates.set(Post::updatedOn.name, Clock.System.now())
+            combine(
+                addToSet(Post::subPosts.name, subPostId),
+                inc(Post::count.name, 1),
+                set(Post::updatedOn.name, Clock.System.now())
             )
         )
 
@@ -211,9 +215,9 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
-            Updates.combine(
-                Updates.set("${Post::votes.name}.$voteUserId", upvote),
-                Updates.set(Post::updatedOn.name, Clock.System.now())
+            combine(
+                set("${Post::votes.name}.$voteUserId", upvote),
+                set(Post::updatedOn.name, Clock.System.now())
             )
         )
 
@@ -222,9 +226,9 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
-            Updates.combine(
-                Updates.set(Post::status.name, PostStatus.DELETED),
-                Updates.set(Post::updatedOn.name, Clock.System.now())
+            combine(
+                set(Post::status.name, PostStatus.DELETED),
+                set(Post::updatedOn.name, Clock.System.now())
             )
         )
 
@@ -234,9 +238,9 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
-            Updates.combine(
-                Updates.inc(Post::count.name, 1 * increment),
-                Updates.set(Post::updatedOn.name, Clock.System.now())
+            combine(
+                inc(Post::count.name, 1 * increment),
+                set(Post::updatedOn.name, Clock.System.now())
             )
         )
 }

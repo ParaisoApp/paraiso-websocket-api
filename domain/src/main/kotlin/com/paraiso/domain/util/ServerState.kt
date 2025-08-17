@@ -25,7 +25,6 @@ object ServerState {
     val userList: ConcurrentHashMap<String, User> = ConcurrentHashMap()
     val userChatList: ConcurrentHashMap<String, UserChat> = ConcurrentHashMap()
     //admin
-    val banList: MutableSet<String> = mutableSetOf()
     val userReports: ConcurrentHashMap<String, UserReport> = ConcurrentHashMap()
     val postReports: ConcurrentHashMap<String, PostReport> = ConcurrentHashMap()
 

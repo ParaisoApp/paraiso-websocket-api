@@ -1,9 +1,11 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.async
@@ -274,4 +276,22 @@ class UsersApi {
                 }
             }
         }
+
+    fun tagUser(tag: Tag) {
+        ServerState.userList[tag.userId]?.let { user ->
+            ServerState.userList[tag.userId] = user.copy(
+                tag = tag.tag,
+                updatedOn = Clock.System.now()
+            )
+        }
+    }
+
+    fun banUser(ban: Ban) {
+        ServerState.userList[ban.userId]?.let { user ->
+            ServerState.userList[ban.userId] = user.copy(
+                banned = true,
+                updatedOn = Clock.System.now()
+            )
+        }
+    }
 }
