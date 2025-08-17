@@ -89,6 +89,7 @@ data class RestSeason(
 )
 
 fun RestSchedule.toDomain() = ScheduleDomain(
+    id = team.id,
     team = team.toDomain(),
     events = events.map { it.competitions.first().toDomain(it.name, it.shortName) }
 )

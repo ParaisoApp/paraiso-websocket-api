@@ -7,6 +7,7 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.admin.PostReport
 import com.paraiso.domain.admin.PostReportsDBAdapter
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.datetime.Clock
 
 class PostReportsDBAdapterImpl(database: MongoDatabase) : PostReportsDBAdapter {
@@ -23,7 +24,7 @@ class PostReportsDBAdapterImpl(database: MongoDatabase) : PostReportsDBAdapter {
         reportingUserId: String
     ) =
         collection.updateOne(
-            Filters.eq(PostReport::postId.name, userId),
+            Filters.eq(ID, userId),
             combine(
                 addToSet(PostReport::reportedBy.name, reportingUserId),
                 set(PostReport::updatedOn.name, Clock.System.now())

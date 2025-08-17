@@ -1,9 +1,12 @@
 package com.paraiso.domain.sport.data
 
+import com.paraiso.domain.util.Constants.ID
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class StatLeaders(
+    @SerialName(ID) val id: String,
     val categories: List<Category>
 )
 

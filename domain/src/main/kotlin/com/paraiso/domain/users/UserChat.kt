@@ -1,13 +1,16 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserChat(
-    val id: String,
+    @SerialName(ID) val id: String,
     val userIds: Set<String>,
     val dms: Set<DirectMessage>,
     val createdOn: Instant,

@@ -2,12 +2,15 @@ package com.paraiso.domain.admin
 
 import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserReport(
-    val userId: String,
+    @SerialName(ID) val id: String,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -23,7 +26,7 @@ data class UserReportResponse(
 
 @Serializable
 data class PostReport(
-    val postId: String,
+    @SerialName(ID) val id: String,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant

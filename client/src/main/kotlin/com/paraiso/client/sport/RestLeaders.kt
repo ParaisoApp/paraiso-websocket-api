@@ -41,6 +41,7 @@ data class RestAthleteLeader(
 )
 
 fun RestLeaders.toDomain() = StatLeadersDomain(
+    id = "Leaders",
     categories = categories.map { it.toDomain() }
 )
 

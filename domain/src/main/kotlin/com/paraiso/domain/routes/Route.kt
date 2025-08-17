@@ -1,12 +1,13 @@
 package com.paraiso.domain.routes
 
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class RouteDetails(
-    val id: String,
+    @SerialName(ID) val id: String,
     val route: SiteRoute,
     val modifier: String?,
     val title: String,

@@ -7,13 +7,14 @@ import com.paraiso.domain.sport.adapters.bball.BBallSchedulesDBAdapter
 import com.paraiso.domain.sport.adapters.fball.FBallCompetitionsDBAdapter
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Schedule
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 
 class FBallCompetitionsDBAdapterImpl(database: MongoDatabase) : FBallCompetitionsDBAdapter {
     private val collection = database.getCollection("fballCompetitions", Competition::class.java)
 
     suspend fun findById(id: String) =
-        collection.find(Filters.eq(Competition::id.name, id)).firstOrNull()
+        collection.find(Filters.eq(ID, id)).firstOrNull()
 
     suspend fun save(competitions: List<Competition>) =
         collection.insertMany(competitions)

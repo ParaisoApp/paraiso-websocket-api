@@ -1,13 +1,15 @@
 package com.paraiso.domain.posts
 
 import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Serializable
 data class Post(
-    val id: String?,
+    @SerialName(ID) val id: String?,
     val userId: String?,
     val title: String?,
     val content: String?,

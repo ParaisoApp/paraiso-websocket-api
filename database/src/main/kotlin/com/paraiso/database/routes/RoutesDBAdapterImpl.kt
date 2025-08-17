@@ -8,27 +8,29 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDBAdapter
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
-    private val collection = database.getCollection("routes", RouteDetailsEntity::class.java)
+    private val collection = database.getCollection("routes", RouteDetails::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(Filters.eq("_id", id)).firstOrNull()?.toDomain()
+        collection.find(Filters.eq(ID, id)).firstOrNull()
 
     override suspend fun save(routes: List<RouteDetails>) =
-        collection.insertMany(routes.map { it.toEntity() }).insertedIds.map { it.value.toString() }
+        collection.insertMany(routes).insertedIds.map { it.value.toString() }
 
     override suspend fun addUserFavorites(
         route: String,
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq("_id", route),
+            Filters.eq(ID, route),
             combine(
-                addToSet(RouteDetailsEntity::userFavorites.name, userFavoriteId),
-                set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
+                addToSet(RouteDetails::userFavorites.name, userFavoriteId),
+                set(RouteDetails::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
 
@@ -37,10 +39,10 @@ class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq("_id", route),
+            Filters.eq(ID, route),
             combine(
-                pull(RouteDetailsEntity::userFavorites.name, userFavoriteId),
-                set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
+                pull(RouteDetails::userFavorites.name, userFavoriteId),
+                set(RouteDetails::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
 }
