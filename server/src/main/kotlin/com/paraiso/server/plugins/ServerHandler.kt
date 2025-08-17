@@ -4,6 +4,7 @@ import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserStatus
+import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -16,7 +17,7 @@ class ServerHandler(
 ) {
     suspend fun bootJobs() = coroutineScope {
         launch { cleanUserList() }
-        launch { buildRoutes() }
+        launch { if(autoBuild) buildRoutes() }
     }
     private suspend fun cleanUserList() = coroutineScope {
         while (isActive) {

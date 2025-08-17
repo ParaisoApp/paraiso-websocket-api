@@ -10,6 +10,7 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
+import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
@@ -50,7 +51,7 @@ class BBallHandler(
                 launch { getSchedules(teamIds) }
             }
             launch {
-                addTeamRoutes(teamsRes)
+                if(autoBuild) addTeamRoutes(teamsRes)
             }
         }
         while (isActive) {
