@@ -16,14 +16,14 @@ class AdminApi {
     }
     fun getUserReports() =
         ServerState.userReports.values.mapNotNull { userReport ->
-            ServerState.userList[userReport.userId]?.let{user ->
+            ServerState.userList[userReport.userId]?.let { user ->
                 userReport.toResponse(user.buildUserResponse())
             } ?: run { null }
         }.sortedBy { it.updatedOn }
 
     fun getPostReports() =
         ServerState.postReports.values.mapNotNull { postReport ->
-            ServerState.posts[postReport.postId]?.let{post ->
+            ServerState.posts[postReport.postId]?.let { post ->
                 postReport.toResponse(post.toResponse())
             } ?: run { null }
         }.sortedBy { it.updatedOn }

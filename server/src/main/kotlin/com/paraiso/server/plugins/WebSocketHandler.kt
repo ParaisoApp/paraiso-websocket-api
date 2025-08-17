@@ -70,7 +70,7 @@ class WebSocketHandler(
     // posts
     private val postsApiRef = postsApi
 
-    //routes
+    // routes
     private val routesApiRef = routesApi
 
     // admin
@@ -227,14 +227,15 @@ class WebSocketHandler(
                                         !sessionUser.banned &&
                                         ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
                                     ) {
-                                        Clock.System.now().let{ updatedOn ->
+                                        Clock.System.now().let { updatedOn ->
                                             launch {
                                                 usersApiRef.updateChatForUser(
                                                     dmWithData,
                                                     dmWithData.userId,
                                                     dmWithData.userReceiveId,
                                                     true,
-                                                    updatedOn)
+                                                    updatedOn
+                                                )
                                             } // update chat for receiving user
                                             launch {
                                                 usersApiRef.updateChatForUser(
@@ -242,7 +243,8 @@ class WebSocketHandler(
                                                     dmWithData.userReceiveId,
                                                     dmWithData.userId,
                                                     false,
-                                                    updatedOn)
+                                                    updatedOn
+                                                )
                                             } // update chat for receiving user
                                             launch { userChatsApiRef.putDM(dmWithData, updatedOn) }
                                         }
@@ -268,7 +270,7 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    Clock.System.now().let{ updatedOn ->
+                                    Clock.System.now().let { updatedOn ->
                                         launch { usersApiRef.toggleFavoriteRoute(follow, updatedOn) }
                                         launch { routesApiRef.toggleFavoriteRoute(follow, updatedOn) }
                                     }

@@ -1,24 +1,15 @@
 package com.paraiso.database.admin
 
 import com.mongodb.client.model.Filters
-import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.admin.UserReport
 import com.paraiso.domain.admin.UserReportsDBAdapter
-import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.routes.RouteDetails
-import com.paraiso.domain.routes.RoutesDBAdapter
-import com.paraiso.domain.users.ChatRef
-import com.paraiso.domain.users.User
-import com.paraiso.domain.users.UserChat
-import com.paraiso.domain.users.UserChatsDBAdapter
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
-class UserReportsDBAdapterImpl(database: MongoDatabase): UserReportsDBAdapter {
+class UserReportsDBAdapterImpl(database: MongoDatabase) : UserReportsDBAdapter {
     private val collection = database.getCollection("userReports", UserReport::class.java)
 
     fun get() =
@@ -29,7 +20,7 @@ class UserReportsDBAdapterImpl(database: MongoDatabase): UserReportsDBAdapter {
 
     suspend fun addUserReport(
         userId: String,
-        reportingUserId: String,
+        reportingUserId: String
     ) =
         collection.updateOne(
             Filters.eq(UserReport::userId.name, userId),

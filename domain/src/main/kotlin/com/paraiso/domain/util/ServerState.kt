@@ -21,10 +21,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 import java.util.concurrent.ConcurrentHashMap
 
 object ServerState {
-    //users
+    // users
     val userList: ConcurrentHashMap<String, User> = ConcurrentHashMap()
     val userChatList: ConcurrentHashMap<String, UserChat> = ConcurrentHashMap()
-    //admin
+
+    // admin
     val userReports: ConcurrentHashMap<String, UserReport> = ConcurrentHashMap()
     val postReports: ConcurrentHashMap<String, PostReport> = ConcurrentHashMap()
 

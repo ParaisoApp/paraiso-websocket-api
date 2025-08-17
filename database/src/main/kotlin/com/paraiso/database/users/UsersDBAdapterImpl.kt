@@ -6,7 +6,6 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
-import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -14,10 +13,8 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.Ban
-import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.ChatRef
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserRole
@@ -26,10 +23,9 @@ import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersDBAdapter
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.toSet
 import kotlinx.datetime.Clock
 
-class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
+class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     private val collection = database.getCollection("users", User::class.java)
 
     suspend fun findById(id: String) =
@@ -54,7 +50,7 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
                     `in`(User::roles.name, filters.userRoles),
                     and(
                         `in`(User::roles.name, UserRole.FOLLOWING),
-                        `in`(User::id.name, followingList),
+                        `in`(User::id.name, followingList)
                     )
                 )
             )
@@ -239,7 +235,7 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
     suspend fun setUserChat(
         id: String,
         chatId: String,
-        chatRef: ChatRef,
+        chatRef: ChatRef
     ) =
         collection.updateOne(
             eq(User::id.name, id),

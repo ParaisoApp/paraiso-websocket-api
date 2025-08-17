@@ -4,7 +4,6 @@ import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
@@ -14,7 +13,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import java.util.UUID
 
 class UsersApi {
 
@@ -41,10 +39,10 @@ class UsersApi {
             ServerState.userList.values
                 .filter { user ->
                     user.status != UserStatus.DISCONNECTED &&
-                            (
-                                    filters.userRoles.contains(user.roles) ||
-                                            (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
-                                    )
+                        (
+                            filters.userRoles.contains(user.roles) ||
+                                (filters.userRoles.contains(UserRole.FOLLOWING) && followingList.contains(user.id))
+                            )
                 }.associate { user -> user.id to user.buildUserResponse() }
         }
 
@@ -240,7 +238,6 @@ class UsersApi {
             }
         }
     }
-
 
     suspend fun putPost(userId: String, messageId: String) = coroutineScope {
         // update user posts

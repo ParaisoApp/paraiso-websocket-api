@@ -59,18 +59,18 @@ class PostsApi {
             val userFollowing = ServerState.userList[userId]?.following ?: setOf()
             ServerState.posts.asSequence().filter { (_, post) ->
                 ( // check for base post or user if profile nav
-                        post.parentId == postSearchId ||
-                                post.userId == postSearchId.removePrefix(USER_PREFIX) ||
-                                (postSearchId == SiteRoute.HOME.name && post.rootId == post.id)
-                        ) &&
-                        post.createdOn != null &&
-                        post.createdOn > range &&
-                        post.status != PostStatus.DELETED &&
-                        filters.postTypes.contains(post.type) &&
-                        (
-                                filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                                )
+                    post.parentId == postSearchId ||
+                        post.userId == postSearchId.removePrefix(USER_PREFIX) ||
+                        (postSearchId == SiteRoute.HOME.name && post.rootId == post.id)
+                    ) &&
+                    post.createdOn != null &&
+                    post.createdOn > range &&
+                    post.status != PostStatus.DELETED &&
+                    filters.postTypes.contains(post.type) &&
+                    (
+                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                        )
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
@@ -102,7 +102,7 @@ class PostsApi {
                 ServerState.posts
                     .filter { (_, gamePost) ->
                         gamePost.type == PostType.GAME &&
-                                (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
+                            (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
                     }.forEach { (_, gamePost) ->
                         if (gamePost.id != null) {
                             returnPosts[gamePost.id] = gamePost.toResponse()
@@ -116,24 +116,24 @@ class PostsApi {
                         .asSequence()
                         .filter { (_, post) ->
                             post.createdOn != null &&
-                                    post.createdOn > range &&
-                                    post.status != PostStatus.DELETED &&
-                                    filters.postTypes.contains(post.type) &&
-                                    (
-                                            filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                                                    (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                                            )
+                                post.createdOn > range &&
+                                post.status != PostStatus.DELETED &&
+                                filters.postTypes.contains(post.type) &&
+                                (
+                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+                                    )
                         }.sortedBy { getSort(it, sortType) }
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->
                             (
-                                    id to post.toResponse()
-                                    ).also { (_, returnPost) ->
-                                    if (returnPost.id != null) {
-                                        returnPosts[returnPost.id] = returnPost
-                                        refQueue.addLast(post)
-                                    }
+                                id to post.toResponse()
+                                ).also { (_, returnPost) ->
+                                if (returnPost.id != null) {
+                                    returnPosts[returnPost.id] = returnPost
+                                    refQueue.addLast(post)
                                 }
+                            }
                         }
                 }
             }
@@ -168,7 +168,6 @@ class PostsApi {
                 }
             }
         }
-
 
     suspend fun putPost(message: Message) = coroutineScope {
         message.id?.let { messageId ->

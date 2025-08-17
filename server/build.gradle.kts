@@ -16,7 +16,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("io.ktor:ktor-server-cors")
-    //db connection
+    // db connection
     implementation(platform("org.mongodb:mongodb-driver-bom:5.5.1"))
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine")
     implementation("org.mongodb:bson-kotlinx")

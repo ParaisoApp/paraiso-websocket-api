@@ -1,4 +1,3 @@
 package com.paraiso.domain.routes
 
-interface RoutesDBAdapter {
-}
+interface RoutesDBAdapter

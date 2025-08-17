@@ -35,7 +35,7 @@ import kotlinx.datetime.Instant
 import org.bson.Document
 import org.bson.conversions.Bson
 
-class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
+class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
     companion object {
         const val RETRIEVE_LIM = 50
         const val PARTIAL_RETRIEVE_LIM = 5
@@ -48,7 +48,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
         collection.find(eq(Post::id.name, id)).firstOrNull()
 
     private fun getInitAggPipeline(
-        initialFilter: Bson,
+        initialFilter: Bson
     ) =
         mutableListOf(
             // Step 1: apply initial filters
@@ -56,10 +56,10 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
 
             // Step 2: join user roles
             lookup(
-                "users",   // from collection
-                Post::userId.name,        // localField
-                User::id.name,     // foreignField
-                "userInfo"    // as
+                "users", // from collection
+                Post::userId.name, // localField
+                User::id.name, // foreignField
+                "userInfo" // as
             ),
             limit(RETRIEVE_LIM)
         )
@@ -68,11 +68,16 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
         filters: FilterTypes,
         userFollowing: Set<String>
     ): Bson {
-        val roleCondition = Document("\$gt", listOf(
-            Document("\$size",
-                Document("\$setIntersection", listOf("\$userInfo.roles", filters.userRoles))
-            ), 0
-        ))
+        val roleCondition = Document(
+            "\$gt",
+            listOf(
+                Document(
+                    "\$size",
+                    Document("\$setIntersection", listOf("\$userInfo.roles", filters.userRoles))
+                ),
+                0
+            )
+        )
 
         val orConditions = mutableListOf(roleCondition)
 
@@ -84,33 +89,49 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
         return match(Document("\$expr", Document("\$or", orConditions)))
     }
     private fun getSort(
-        sortType: SortType,
+        sortType: SortType
     ) =
-        when(sortType) {
+        when (sortType) {
             SortType.NEW -> Document("\$sort", Document(Post::createdOn.name, -1))
-            SortType.TOP -> Document("\$sort", Document(
-                "score", Document("\$sum", listOf(
-                    Document("\$map", Document()
-                        .append("input", Document("\$objectToArray", "\$votes"))
-                        .append("as", "vote")
-                        .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
-                    )
-                ))
-            ))
-            SortType.HOT -> Document("\$sort", Document(
-                "\$multiply", listOf(
-                    Document("\$divide", listOf("\$createdOn", TIME_WEIGHTING)),
+            SortType.TOP -> Document(
+                "\$sort",
+                Document(
+                    "score",
                     Document(
-                        "\$sum", listOf(
-                            Document("\$map", Document()
-                                .append("input", Document("\$objectToArray", "\$votes"))
-                                .append("as", "vote")
-                                .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
+                        "\$sum",
+                        listOf(
+                            Document(
+                                "\$map",
+                                Document()
+                                    .append("input", Document("\$objectToArray", "\$votes"))
+                                    .append("as", "vote")
+                                    .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
                             )
                         )
                     )
                 )
-            ))
+            )
+            SortType.HOT -> Document(
+                "\$sort",
+                Document(
+                    "\$multiply",
+                    listOf(
+                        Document("\$divide", listOf("\$createdOn", TIME_WEIGHTING)),
+                        Document(
+                            "\$sum",
+                            listOf(
+                                Document(
+                                    "\$map",
+                                    Document()
+                                        .append("input", Document("\$objectToArray", "\$votes"))
+                                        .append("as", "vote")
+                                        .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
+                                )
+                            )
+                        )
+                    )
+                )
+            )
         }
 
     suspend fun findByBaseCriteria(
@@ -123,7 +144,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
         val homeFilters = mutableListOf(
             eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
         )
-        if(postSearchId == SiteRoute.HOME.name){
+        if (postSearchId == SiteRoute.HOME.name) {
             homeFilters.add(fieldsEq(Post::rootId, Post::id))
         }
 
@@ -136,7 +157,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
             or(orConditions),
             gt(Post::createdOn.name, range),
             ne(Post::status.name, PostStatus.DELETED),
-            `in`(Post::type.name, filters.postTypes),
+            `in`(Post::type.name, filters.postTypes)
         )
 
         val pipeline = getInitAggPipeline(initialFilter)
@@ -161,14 +182,13 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
             `in`(Post::id.name, subPostIds),
             gt(Post::createdOn.name, range),
             ne(Post::status.name, PostStatus.DELETED),
-            `in`(Post::type.name, filters.postTypes),
+            `in`(Post::type.name, filters.postTypes)
         )
 
         val pipeline = getInitAggPipeline(initialFilter)
         pipeline.add(getUserRoleCondition(filters, userFollowing))
         pipeline.add(getSort(sortType))
         collection.aggregate<Post>(pipeline)
-
     }
 
     suspend fun findByPartial(partial: String): FindFlow<Post> =
@@ -198,7 +218,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
 
     suspend fun addSubpostToParent(
         id: String,
-        subPostId: String,
+        subPostId: String
     ) =
         collection.updateOne(
             eq(Post::id.name, id),
@@ -211,7 +231,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
 
     suspend fun removeSubpostFromParent(
         id: String,
-        subPostId: String,
+        subPostId: String
     ) =
         collection.updateOne(
             eq(Post::id.name, id),

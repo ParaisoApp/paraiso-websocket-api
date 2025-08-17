@@ -1,14 +1,8 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.messageTypes.FilterTypes
-import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.util.UUID
