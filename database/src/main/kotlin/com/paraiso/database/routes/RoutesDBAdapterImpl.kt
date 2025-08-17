@@ -4,6 +4,7 @@ import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
+import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.RouteDetails
@@ -21,7 +22,7 @@ class RoutesDBAdapterImpl(database: MongoDatabase): RoutesDBAdapter {
     suspend fun save(routes: List<RouteDetails>) =
         collection.insertMany(routes)
 
-    suspend fun setUserFavorites(
+    suspend fun addUserFavorites(
         route: String,
         userFavoriteId: String
     ) =
@@ -29,6 +30,18 @@ class RoutesDBAdapterImpl(database: MongoDatabase): RoutesDBAdapter {
             Filters.eq(RouteDetails::id.name, route),
             combine(
                 addToSet(RouteDetails::userFavorites.name, userFavoriteId),
+                set(RouteDetails::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun removeUserFavorites(
+        route: String,
+        userFavoriteId: String
+    ) =
+        collection.updateOne(
+            Filters.eq(RouteDetails::id.name, route),
+            combine(
+                pull(RouteDetails::userFavorites.name, userFavoriteId),
                 set(RouteDetails::updatedOn.name, Clock.System.now())
             )
         )

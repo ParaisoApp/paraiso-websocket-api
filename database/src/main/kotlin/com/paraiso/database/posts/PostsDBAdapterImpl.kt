@@ -13,7 +13,9 @@ import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
+import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
+import com.mongodb.client.model.Updates.unset
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.fieldsEq
@@ -194,7 +196,7 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
             )
         )
 
-    suspend fun updateParent(
+    suspend fun addSubpostToParent(
         id: String,
         subPostId: String,
     ) =
@@ -207,7 +209,20 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
             )
         )
 
-    suspend fun setVotes(
+    suspend fun removeSubpostFromParent(
+        id: String,
+        subPostId: String,
+    ) =
+        collection.updateOne(
+            eq(Post::id.name, id),
+            combine(
+                pull(Post::subPosts.name, subPostId),
+                inc(Post::count.name, -1),
+                set(Post::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun addVotes(
         id: String,
         voteUserId: String,
         upvote: Boolean
@@ -216,6 +231,18 @@ class PostsDBAdapterImpl(database: MongoDatabase): PostsDBAdapter {
             eq(Post::id.name, id),
             combine(
                 set("${Post::votes.name}.$voteUserId", upvote),
+                set(Post::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun removeVotes(
+        id: String,
+        voteUserId: String
+    ) =
+        collection.updateOne(
+            eq(Post::id.name, id),
+            combine(
+                unset("${Post::votes.name}.$voteUserId"),
                 set(Post::updatedOn.name, Clock.System.now())
             )
         )
