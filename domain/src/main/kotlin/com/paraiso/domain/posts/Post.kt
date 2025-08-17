@@ -120,7 +120,7 @@ enum class Range {
     ALL
 }
 
-fun Post.toPostResponse() = PostResponse(
+fun Post.toResponse() = PostResponse(
     id = id,
     userId = userId,
     title = title,

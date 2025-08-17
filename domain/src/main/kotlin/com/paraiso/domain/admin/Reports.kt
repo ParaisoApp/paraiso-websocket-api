@@ -16,7 +16,7 @@ data class UserReport(
 @Serializable
 data class UserReportResponse(
     val user: UserResponse,
-    val reportedBy: Set<String>,
+    val reportedBy: Map<String, Boolean>,
     val createdOn: Instant,
     val updatedOn: Instant
 )
@@ -32,7 +32,23 @@ data class PostReport(
 @Serializable
 data class PostReportResponse(
     val post: PostResponse,
-    val reportedBy: Set<String>,
+    val reportedBy: Map<String, Boolean>,
     val createdOn: Instant,
     val updatedOn: Instant
 )
+
+fun UserReport.toResponse(user: UserResponse) =
+    UserReportResponse(
+        user = user,
+        reportedBy = reportedBy.associateWith { true },
+        createdOn = createdOn,
+        updatedOn = updatedOn
+    )
+
+fun PostReport.toResponse(post: PostResponse) =
+    PostReportResponse(
+        post = post,
+        reportedBy = reportedBy.associateWith { true },
+        createdOn = createdOn,
+        updatedOn = updatedOn
+    )

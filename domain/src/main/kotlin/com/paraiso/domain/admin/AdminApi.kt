@@ -1,7 +1,9 @@
 package com.paraiso.domain.admin
 
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.posts.toResponse
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -13,10 +15,18 @@ class AdminApi {
         const val PARTIAL_RETRIEVE_LIM = 5
     }
     fun getUserReports() =
-        ServerState.userReports.values.sortedBy { it.updatedOn }
+        ServerState.userReports.values.mapNotNull { userReport ->
+            ServerState.userList[userReport.userId]?.let{user ->
+                userReport.toResponse(user.buildUserResponse())
+            } ?: run { null }
+        }.sortedBy { it.updatedOn }
 
     fun getPostReports() =
-        ServerState.postReports.values.sortedBy { it.updatedOn }
+        ServerState.postReports.values.mapNotNull { postReport ->
+            ServerState.posts[postReport.postId]?.let{post ->
+                postReport.toResponse(post.toResponse())
+            } ?: run { null }
+        }.sortedBy { it.updatedOn }
 
     suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
