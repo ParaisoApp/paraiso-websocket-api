@@ -52,15 +52,16 @@ import java.time.Duration
 fun main() {
     val job = Job()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
+    val routesApi = RoutesApi()
 
     jobScope.launch {
-        BBallHandler(BBallOperationAdapter()).bootJobs()
+        BBallHandler(BBallOperationAdapter(), routesApi).bootJobs()
     }
     jobScope.launch {
-        FBallHandler(FBallOperationAdapter()).bootJobs()
+        FBallHandler(FBallOperationAdapter(), routesApi).bootJobs()
     }
     jobScope.launch {
-        ServerHandler().bootJobs()
+        ServerHandler(routesApi).bootJobs()
     }
 
     // Replace the placeholder with your MongoDB deployment's connection string
@@ -72,7 +73,6 @@ fun main() {
     val usersApi = UsersApi()
     val userChatsApi = UserChatsApi()
     val adminApi = AdminApi()
-    val routesApi = RoutesApi()
     val handler = WebSocketHandler(usersApi, userChatsApi, postsApi, adminApi, routesApi)
 
     val server = embeddedServer(Netty, port = 8080) {
