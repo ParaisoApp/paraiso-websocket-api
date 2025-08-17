@@ -128,7 +128,7 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
         )
     }
 
-    suspend fun setFollowers(
+    suspend fun addFollowers(
         id: String,
         followerUserId: String
     ) =
@@ -140,7 +140,19 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
             )
         )
 
-    suspend fun setFollowing(
+    suspend fun removeFollowers(
+        id: String,
+        followerUserId: String
+    ) =
+        collection.updateOne(
+            eq(User::id.name, id),
+            combine(
+                pull(User::followers.name, followerUserId),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun addFollowing(
         id: String,
         followingUserId: String
     ) =
@@ -148,6 +160,18 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
             eq(User::id.name, id),
             combine(
                 addToSet(User::following.name, followingUserId),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun removeFollowing(
+        id: String,
+        followingUserId: String
+    ) =
+        collection.updateOne(
+            eq(User::id.name, id),
+            combine(
+                pull(User::following.name, followingUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
         )
@@ -172,6 +196,42 @@ class UsersDBAdapterImpl(database: MongoDatabase): UsersDBAdapter {
             eq(User::id.name, id),
             combine(
                 pull(User::blockList.name, blockUserId),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun addFavoriteRoute(
+        id: String,
+        routeFavorite: String
+    ) =
+        collection.updateOne(
+            eq(User::id.name, id),
+            combine(
+                addToSet(User::routeFavorites.name, routeFavorite),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun removeFavoriteRoute(
+        id: String,
+        routeFavorite: String
+    ) =
+        collection.updateOne(
+            eq(User::id.name, id),
+            combine(
+                pull(User::routeFavorites.name, routeFavorite),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun addPost(
+        id: String,
+        postId: String
+    ) =
+        collection.updateOne(
+            eq(User::id.name, id),
+            combine(
+                addToSet(User::posts.name, postId),
                 set(User::updatedOn.name, Clock.System.now())
             )
         )
