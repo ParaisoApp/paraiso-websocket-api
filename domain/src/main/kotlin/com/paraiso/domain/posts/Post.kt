@@ -26,7 +26,7 @@ data class Post(
 ) { companion object }
 
 @Serializable
-data class PostReturn(
+data class PostResponse(
     val id: String?,
     val userId: String?,
     val title: String?,
@@ -120,7 +120,7 @@ enum class Range {
     ALL
 }
 
-fun Post.toPostReturn() = PostReturn(
+fun Post.toPostResponse() = PostResponse(
     id = id,
     userId = userId,
     title = title,

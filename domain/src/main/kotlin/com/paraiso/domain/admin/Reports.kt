@@ -1,6 +1,6 @@
 package com.paraiso.domain.admin
 
-import com.paraiso.domain.posts.PostReturn
+import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.users.UserResponse
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -14,8 +14,24 @@ data class UserReport(
 )
 
 @Serializable
+data class UserReportResponse(
+    val user: UserResponse,
+    val reportedBy: Set<String>,
+    val createdOn: Instant,
+    val updatedOn: Instant
+)
+
+@Serializable
 data class PostReport(
     val postId: String,
+    val reportedBy: Set<String>,
+    val createdOn: Instant,
+    val updatedOn: Instant
+)
+
+@Serializable
+data class PostReportResponse(
+    val post: PostResponse,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant

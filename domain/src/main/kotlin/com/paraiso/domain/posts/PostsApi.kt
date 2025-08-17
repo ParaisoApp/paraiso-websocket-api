@@ -42,7 +42,7 @@ class PostsApi {
             it.title?.lowercase()?.contains(search.lowercase()) == true || it.content?.lowercase()?.contains(search.lowercase()) == true
         }.take(PARTIAL_RETRIEVE_LIM).let { foundPosts ->
             foundPosts.map { foundPost ->
-                foundPost.toPostReturn()
+                foundPost.toPostResponse()
             }
         }
 
@@ -94,8 +94,8 @@ class PostsApi {
         filters: FilterTypes,
         userId: String
     ) =
-        LinkedHashMap<String, PostReturn>().let { returnPosts ->
-            basePost.toPostReturn().let { root -> // build tree with bfs
+        LinkedHashMap<String, PostResponse>().let { returnPosts ->
+            basePost.toPostResponse().let { root -> // build tree with bfs
                 val userFollowing = ServerState.userList[userId]?.following ?: setOf()
                 if (root.id != null) returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
@@ -105,7 +105,7 @@ class PostsApi {
                                 (gamePost.parentId?.lowercase() == root.id?.lowercase() || gamePost.data == postSearchId)
                     }.forEach { (_, gamePost) ->
                         if (gamePost.id != null) {
-                            returnPosts[gamePost.id] = gamePost.toPostReturn()
+                            returnPosts[gamePost.id] = gamePost.toPostResponse()
                             refQueue.addLast(gamePost)
                         }
                     }
@@ -127,7 +127,7 @@ class PostsApi {
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->
                             (
-                                    id to post.toPostReturn()
+                                    id to post.toPostResponse()
                                     ).also { (_, returnPost) ->
                                     if (returnPost.id != null) {
                                         returnPosts[returnPost.id] = returnPost
