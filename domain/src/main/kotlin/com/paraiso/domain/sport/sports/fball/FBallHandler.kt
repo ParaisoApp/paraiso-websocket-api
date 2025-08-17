@@ -4,6 +4,7 @@ import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
@@ -21,7 +22,10 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
 
-class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
+class FBallHandler(
+    private val fBallOperation: FBallOperation,
+    private val routesApi: RoutesApi
+) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
         launch { buildScoreboard() }
@@ -60,15 +64,17 @@ class FBallHandler(private val fBallOperation: FBallOperation) : Klogging {
     private fun addTeamRoute(team: Team) {
         val now = Clock.System.now()
         val teamRouteId = "/s/football/t/${team.id}"
-        ServerState.routes[teamRouteId] = RouteDetails(
-            id = teamRouteId,
-            route = SiteRoute.FOOTBALL,
-            modifier = team.abbreviation,
-            title = team.displayName,
-            userFavorites = emptySet(),
-            about = null,
-            createdOn = now,
-            updatedOn = now
+        routesApi.saveRoute(
+            RouteDetails(
+                id = teamRouteId,
+                route = SiteRoute.FOOTBALL,
+                modifier = team.abbreviation,
+                title = team.displayName,
+                userFavorites = emptySet(),
+                about = null,
+                createdOn = now,
+                updatedOn = now
+            )
         )
     }
 

@@ -5,6 +5,11 @@ import kotlinx.datetime.Instant
 
 class RoutesApi {
     fun getById(id: String) = ServerState.routes[id]?.toReturn()
+
+    fun saveRoute(routeDetails: RouteDetails) {
+        ServerState.routes[routeDetails.id] = routeDetails
+    }
+
     fun toggleFavoriteRoute(favorite: Favorite, now: Instant) {
         if (favorite.userId != null) {
             // toggle favorite from Route

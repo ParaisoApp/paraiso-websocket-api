@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
-    private val collection = database.getCollection("routes", RouteDetails::class.java)
+    private val collection = database.getCollection("routes", RouteDetailsEntity::class.java)
 
     suspend fun findById(id: String) =
-        collection.find(Filters.eq(RouteDetails::id.name, id)).firstOrNull()
+        collection.find(Filters.eq(RouteDetailsEntity::id.name, id)).firstOrNull()
 
-    suspend fun save(routes: List<RouteDetails>) =
+    suspend fun save(routes: List<RouteDetailsEntity>) =
         collection.insertMany(routes)
 
     suspend fun addUserFavorites(
@@ -25,10 +25,10 @@ class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq(RouteDetails::id.name, route),
+            Filters.eq(RouteDetailsEntity::id.name, route),
             combine(
-                addToSet(RouteDetails::userFavorites.name, userFavoriteId),
-                set(RouteDetails::updatedOn.name, Clock.System.now())
+                addToSet(RouteDetailsEntity::userFavorites.name, userFavoriteId),
+                set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
             )
         )
 
@@ -37,10 +37,10 @@ class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq(RouteDetails::id.name, route),
+            Filters.eq(RouteDetailsEntity::id.name, route),
             combine(
-                pull(RouteDetails::userFavorites.name, userFavoriteId),
-                set(RouteDetails::updatedOn.name, Clock.System.now())
+                pull(RouteDetailsEntity::userFavorites.name, userFavoriteId),
+                set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
             )
         )
 }

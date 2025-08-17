@@ -1,6 +1,7 @@
 package com.paraiso.com.paraiso.server.plugins
 
 import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.util.ServerState
@@ -10,7 +11,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-class ServerHandler {
+class ServerHandler(
+    private val routesApi: RoutesApi
+) {
     suspend fun bootJobs() = coroutineScope {
         launch { cleanUserList() }
         launch { buildRoutes() }
@@ -29,35 +32,41 @@ class ServerHandler {
 
     private suspend fun buildRoutes() = coroutineScope {
         val now = Clock.System.now()
-        ServerState.routes["/"] = RouteDetails(
-            id = "/",
-            route = SiteRoute.HOME,
-            modifier = null,
-            title = "${SiteRoute.HOME}",
-            userFavorites = emptySet(),
-            about = null,
-            createdOn = now,
-            updatedOn = now
+        routesApi.saveRoute(
+            RouteDetails(
+                id = "/",
+                route = SiteRoute.HOME,
+                modifier = null,
+                title = "${SiteRoute.HOME}",
+                userFavorites = emptySet(),
+                about = null,
+                createdOn = now,
+                updatedOn = now
+            )
         )
-        ServerState.routes["/s/football"] = RouteDetails(
-            id = "/s/football",
-            route = SiteRoute.FOOTBALL,
-            modifier = null,
-            title = "${SiteRoute.FOOTBALL}",
-            userFavorites = emptySet(),
-            about = null,
-            createdOn = now,
-            updatedOn = now
+        routesApi.saveRoute(
+            RouteDetails(
+                id = "/s/football",
+                route = SiteRoute.FOOTBALL,
+                modifier = null,
+                title = "${SiteRoute.FOOTBALL}",
+                userFavorites = emptySet(),
+                about = null,
+                createdOn = now,
+                updatedOn = now
+            )
         )
-        ServerState.routes["/s/basketball"] = RouteDetails(
-            id = "/s/basketball",
-            route = SiteRoute.BASKETBALL,
-            modifier = null,
-            title = "${SiteRoute.BASKETBALL}",
-            userFavorites = emptySet(),
-            about = null,
-            createdOn = now,
-            updatedOn = now
+        routesApi.saveRoute(
+            RouteDetails(
+                id = "/s/basketball",
+                route = SiteRoute.BASKETBALL,
+                modifier = null,
+                title = "${SiteRoute.BASKETBALL}",
+                userFavorites = emptySet(),
+                about = null,
+                createdOn = now,
+                updatedOn = now
+            )
         )
     }
 }

@@ -50,11 +50,11 @@ import com.paraiso.domain.routes.Route as RouteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(
-    usersApi: UsersApi,
-    userChatsApi: UserChatsApi,
-    postsApi: PostsApi,
-    adminApi: AdminApi,
-    routesApi: RoutesApi
+    private val usersApi: UsersApi,
+    private val userChatsApi: UserChatsApi,
+    private val postsApi: PostsApi,
+    private val adminApi: AdminApi,
+    private val routesApi: RoutesApi
 ) : Klogging {
     // jobs
     private val homeJobs = HomeJobs()
@@ -64,17 +64,6 @@ class WebSocketHandler(
 
     // users
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
-    private val usersApiRef = usersApi
-    private val userChatsApiRef = userChatsApi
-
-    // posts
-    private val postsApiRef = postsApi
-
-    // routes
-    private val routesApiRef = routesApi
-
-    // admin
-    private val adminApiRef = adminApi
 
     // session state
     private val sessionState = SessionState()
@@ -193,7 +182,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<MessageDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 UUID.randomUUID().toString().let { messageId ->
-                                    val userIdMentions = usersApiRef.addMentions(
+                                    val userIdMentions = usersApi.addMentions(
                                         getMentions(message.content),
                                         message.userReceiveIds.firstOrNull(),
                                         messageId
@@ -207,8 +196,8 @@ class WebSocketHandler(
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)
                                         } else {
-                                            launch { postsApiRef.putPost(messageWithData) }
-                                            launch { usersApiRef.putPost(sessionUser.id, messageId) }
+                                            launch { postsApi.putPost(messageWithData) }
+                                            launch { usersApi.putPost(sessionUser.id, messageId) }
                                             ServerState.messageFlowMut.emit(messageWithData)
                                         }
                                     }
@@ -229,7 +218,7 @@ class WebSocketHandler(
                                     ) {
                                         Clock.System.now().let { updatedOn ->
                                             launch {
-                                                usersApiRef.updateChatForUser(
+                                                usersApi.updateChatForUser(
                                                     dmWithData,
                                                     dmWithData.userId,
                                                     dmWithData.userReceiveId,
@@ -238,7 +227,7 @@ class WebSocketHandler(
                                                 )
                                             } // update chat for receiving user
                                             launch {
-                                                usersApiRef.updateChatForUser(
+                                                usersApi.updateChatForUser(
                                                     dmWithData,
                                                     dmWithData.userReceiveId,
                                                     dmWithData.userId,
@@ -246,7 +235,7 @@ class WebSocketHandler(
                                                     updatedOn
                                                 )
                                             } // update chat for receiving user
-                                            launch { userChatsApiRef.putDM(dmWithData, updatedOn) }
+                                            launch { userChatsApi.putDM(dmWithData, updatedOn) }
                                         }
                                         userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                     }
@@ -259,7 +248,7 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    launch { usersApiRef.follow(follow) }
+                                    launch { usersApi.follow(follow) }
                                     ServerState.followFlowMut.emit(follow)
                                 }
                             }
@@ -271,8 +260,8 @@ class WebSocketHandler(
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
                                     Clock.System.now().let { updatedOn ->
-                                        launch { usersApiRef.toggleFavoriteRoute(follow, updatedOn) }
-                                        launch { routesApiRef.toggleFavoriteRoute(follow, updatedOn) }
+                                        launch { usersApi.toggleFavoriteRoute(follow, updatedOn) }
+                                        launch { routesApi.toggleFavoriteRoute(follow, updatedOn) }
                                     }
                                     ServerState.favoriteFlowMut.emit(follow)
                                 }
@@ -284,7 +273,7 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.VOTE, vote)
                                 } else {
-                                    launch { postsApiRef.votePost(vote) }
+                                    launch { postsApi.votePost(vote) }
                                     ServerState.voteFlowMut.emit(vote)
                                 }
                             }
@@ -293,7 +282,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<UserResponseDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
                                 if (user.validateUser()) {
-                                    launch { usersApiRef.saveUser(user) }
+                                    launch { usersApi.saveUser(user) }
                                     ServerState.userUpdateFlowMut.emit(user)
                                 }
                             }
@@ -307,7 +296,7 @@ class WebSocketHandler(
                     MessageType.DELETE -> {
                         converter?.cleanAndType<TypeMappingDomain<DeleteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { delete ->
-                                launch { postsApiRef.deletePost(delete, sessionUser.id) }
+                                launch { postsApi.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
                             }
                     }
@@ -315,7 +304,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<BanDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { ban ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { usersApiRef.banUser(ban) }
+                                    launch { usersApi.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
                                 }
                             }
@@ -324,7 +313,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<TagDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { tag ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { usersApiRef.tagUser(tag) }
+                                    launch { usersApi.tagUser(tag) }
                                     ServerState.tagUserFlowMut.emit(tag)
                                 }
                             }
@@ -332,14 +321,14 @@ class WebSocketHandler(
                     MessageType.REPORT_USER -> {
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
-                                launch { adminApiRef.reportUser(sessionUser.id, reportUser) }
+                                launch { adminApi.reportUser(sessionUser.id, reportUser) }
                                 ServerState.reportUserFlowMut.emit(reportUser)
                             }
                     }
                     MessageType.REPORT_POST -> {
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
-                                launch { adminApiRef.reportPost(sessionUser.id, reportPost) }
+                                launch { adminApi.reportPost(sessionUser.id, reportPost) }
                                 ServerState.reportPostFlowMut.emit(reportPost)
                             }
                     }
