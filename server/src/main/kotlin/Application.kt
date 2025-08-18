@@ -13,6 +13,8 @@ import com.paraiso.com.paraiso.api.sports.fball.fballController
 import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
+import com.paraiso.database.admin.PostReportsDBAdapterImpl
+import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
@@ -20,7 +22,6 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
-import com.paraiso.domain.routes.RoutesDBAdapter
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
@@ -73,12 +74,10 @@ fun main() {
         ServerHandler(routesApi).bootJobs()
     }
 
-    // Replace the placeholder with your MongoDB deployment's connection string
-
     val postsApi = PostsApi()
     val usersApi = UsersApi()
     val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
-    val adminApi = AdminApi()
+    val adminApi = AdminApi(PostReportsDBAdapterImpl(database), UserReportsDBAdapterImpl(database))
     val handler = WebSocketHandler(usersApi, userChatsApi, postsApi, adminApi, routesApi)
 
     val server = embeddedServer(Netty, port = 8080) {

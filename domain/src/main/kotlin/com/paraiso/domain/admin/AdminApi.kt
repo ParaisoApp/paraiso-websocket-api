@@ -9,42 +9,42 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-class AdminApi {
+class AdminApi(
+    private val postReportsDBAdapter: PostReportsDBAdapter,
+    private val userReportsDBAdapter: UserReportsDBAdapter
+) {
 
     companion object {
         const val PARTIAL_RETRIEVE_LIM = 5
     }
-    fun getUserReports() =
-        ServerState.userReports.values.mapNotNull { userReport ->
+    suspend fun getUserReports() =
+        userReportsDBAdapter.getAll().mapNotNull { userReport ->
             ServerState.userList[userReport.id]?.let { user ->
                 userReport.toResponse(user.buildUserResponse())
             } ?: run { null }
-        }.sortedBy { it.updatedOn }
+        }
 
-    fun getPostReports() =
-        ServerState.postReports.values.mapNotNull { postReport ->
+    suspend fun getPostReports() =
+        postReportsDBAdapter.getAll().mapNotNull { postReport ->
             ServerState.posts[postReport.id]?.let { post ->
                 postReport.toResponse(post.toResponse())
             } ?: run { null }
-        }.sortedBy { it.updatedOn }
+        }
 
     suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
         launch {
-            ServerState.userReports[report.id]?.let { userReport ->
-                userReport.reportedBy.toMutableSet().let { mutableReports ->
-                    mutableReports.add(sessionUserId)
-                    ServerState.userReports[report.id] = userReport.copy(
-                        reportedBy = mutableReports,
-                        updatedOn = now
+            val modifiedCount = userReportsDBAdapter.addUserReport(report.id, sessionUserId)
+            if(modifiedCount == 0L){
+                userReportsDBAdapter.save(
+                    listOf(
+                        UserReport(
+                            id = report.id,
+                            reportedBy = setOf(sessionUserId),
+                            createdOn = now,
+                            updatedOn = now
+                        )
                     )
-                }
-            } ?: run {
-                ServerState.userReports[report.id] = UserReport(
-                    id = report.id,
-                    reportedBy = setOf(sessionUserId),
-                    createdOn = now,
-                    updatedOn = now
                 )
             }
         }
@@ -64,20 +64,17 @@ class AdminApi {
     suspend fun reportPost(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
         launch {
-            ServerState.postReports[report.id]?.let { postReport ->
-                postReport.reportedBy.toMutableSet().let { mutableReports ->
-                    mutableReports.add(sessionUserId)
-                    ServerState.postReports[report.id] = postReport.copy(
-                        reportedBy = mutableReports,
-                        updatedOn = now
+            val modifiedCount = postReportsDBAdapter.addPostReport(report.id, sessionUserId)
+            if(modifiedCount == 0L) {
+                postReportsDBAdapter.save(
+                    listOf(
+                        PostReport(
+                            id = report.id,
+                            reportedBy = setOf(sessionUserId),
+                            createdOn = now,
+                            updatedOn = now
+                        )
                     )
-                }
-            } ?: run {
-                ServerState.postReports[report.id] = PostReport(
-                    id = report.id,
-                    reportedBy = setOf(sessionUserId),
-                    createdOn = now,
-                    updatedOn = now
                 )
             }
         }
