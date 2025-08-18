@@ -166,7 +166,6 @@ class BBallHandler(
                 athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
                 coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
             }
-            delay(6 * 60 * 60 * 1000)
         }
     }
     private suspend fun buildScoreboard() {
