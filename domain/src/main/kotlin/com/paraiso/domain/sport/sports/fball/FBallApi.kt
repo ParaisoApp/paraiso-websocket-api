@@ -2,15 +2,17 @@ package com.paraiso.domain.sport.sports.fball
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
+import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.toResponse
 
 
 class FBallApi(
+    private val teamsDBAdapter: TeamsDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter
 ) {
-    fun getTeamByAbbr(teamAbbr: String) = FBallState.teams.find { it.abbreviation == teamAbbr }?.toResponse()
-    fun getTeams() = FBallState.teams.map { it.toResponse() }.associateBy { it.id }
+    suspend fun getTeamByAbbr(teamAbbr: String) = teamsDBAdapter.findById("${SiteRoute.FOOTBALL}-$teamAbbr")?.toResponse()
+    suspend fun getTeams() = teamsDBAdapter.findBySport(SiteRoute.FOOTBALL).map { it.toResponse() }.associateBy { it.id }
     suspend fun getStandings() = standingsDBAdapter.findById(SiteRoute.FOOTBALL.toString())?.standingsGroups?.flatMap { confGroup ->
         confGroup.subGroups
     }?.associate { standingsSubGroup ->
@@ -31,6 +33,6 @@ class FBallApi(
     }
 
     fun getLeaderCategories() = FBallState.leaders?.categories?.map { it.displayName }
-    fun getTeamRoster(teamId: String) = FBallState.rosters.find { it.team.id == teamId }?.toResponse()
-    fun getTeamSchedule(teamId: String) = FBallState.schedules.find { it.team.id == teamId }?.toResponse()
+    fun getTeamRoster(teamId: String) = FBallState.rosters.find { it.teamId == teamId }?.toResponse()
+    fun getTeamSchedule(teamId: String) = FBallState.schedules.find { it.teamId == teamId }?.toResponse()
 }

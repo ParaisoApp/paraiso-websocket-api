@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Schedule(
     @SerialName(ID) val id: String,
-    val team: Team,
+    val teamId: String,
     val events: List<Competition>
 )
 
@@ -41,7 +41,7 @@ data class Venue(
 @Serializable
 data class ScheduleResponse(
     val id: String,
-    val team: TeamResponse,
+    val teamId: String,
     val events: List<CompetitionResponse>
 )
 
@@ -75,7 +75,7 @@ data class VenueResponse(
 fun Schedule.toResponse() =
     ScheduleResponse(
         id = id,
-        team = team.toResponse(),
+        teamId = teamId,
         events = events.map { it.toResponse() },
     )
 

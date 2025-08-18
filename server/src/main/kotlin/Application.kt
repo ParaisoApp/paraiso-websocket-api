@@ -17,6 +17,7 @@ import com.paraiso.database.admin.PostReportsDBAdapterImpl
 import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
+import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
@@ -65,18 +66,21 @@ fun main() {
 
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
     val standingsDBAdapterImpl = StandingsDBAdapterImpl(database)
+    val teamsDBAdapterImpl = TeamsDBAdapterImpl(database)
 
     jobScope.launch {
         BBallHandler(
             BBallOperationAdapter(),
             routesApi,
+            teamsDBAdapterImpl,
             standingsDBAdapterImpl
         ).bootJobs()
     }
     jobScope.launch {
         FBallHandler(
             FBallOperationAdapter(),
-            routesApi, 
+            routesApi,
+            teamsDBAdapterImpl,
             standingsDBAdapterImpl
         ).bootJobs()
     }
@@ -99,8 +103,14 @@ fun main() {
             usersApi,
             userChatsApi,
             AuthApi(),
-            BBallApi(standingsDBAdapterImpl),
-            FBallApi(standingsDBAdapterImpl),
+            BBallApi(
+                teamsDBAdapterImpl,
+                standingsDBAdapterImpl
+            ),
+            FBallApi(
+                teamsDBAdapterImpl,
+                standingsDBAdapterImpl
+            ),
             MetadataApi()
         )
     }.start(wait = true)

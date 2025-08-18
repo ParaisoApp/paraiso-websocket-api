@@ -6,6 +6,8 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -64,8 +66,16 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     fun getFollowersById(id: String) =
         collection.find(eq(User::followers.name, id))
 
-    suspend fun save(users: List<User>) =
-        collection.insertMany(users)
+    suspend fun save(users: List<User>): Int {
+        val bulkOps = users.map { user ->
+            ReplaceOneModel(
+                eq(ID, user.id),
+                user,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
     suspend fun setMentions(id: String, replyId: String) =
         collection.updateOne(

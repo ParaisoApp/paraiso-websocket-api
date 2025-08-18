@@ -7,10 +7,12 @@ import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
+import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
+import com.paraiso.domain.util.ServerConfig
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
@@ -27,6 +29,7 @@ import kotlin.time.Duration.Companion.hours
 class BBallHandler(
     private val bBallOperation: BBallOperation,
     private val routesApi: RoutesApi,
+    private val teamsDBAdapter: TeamsDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter
 ) : Klogging {
 
@@ -54,15 +57,12 @@ class BBallHandler(
                 launch { getRosters(teamIds) }
                 launch { getSchedules(teamIds) }
             }
-            launch {
-                if(autoBuild) addTeamRoutes(teamsRes)
+            if (autoBuild) {
+                launch {
+                    addTeamRoutes(teamsRes)
+                }
+                teamsDBAdapter.save(teamsRes)
             }
-        }
-        while (isActive) {
-            bBallOperation.getTeams().also { teamsRes ->
-                if (teamsRes != BBallState.teams) BBallState.teams = teamsRes
-            }
-            delay(6 * 60 * 60 * 1000)
         }
     }
 
@@ -105,9 +105,11 @@ class BBallHandler(
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
+                    val teams = teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
                     ServerState.posts.putAll(
-                        schedulesRes.associate { it.team.abbreviation to it.events }
-                            .flatMap { (key, values) ->
+                        schedulesRes.associate {
+                            teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
+                        }.flatMap { (key, values) ->
                                 values.map { competition ->
                                     "$TEAM_PREFIX${competition.id}-$key" to Post(
                                         id = "$TEAM_PREFIX${competition.id}-$key",

@@ -90,7 +90,7 @@ data class RestSeason(
 
 fun RestSchedule.toDomain() = ScheduleDomain(
     id = team.id,
-    team = team.toDomain(),
+    teamId = team.id,
     events = events.map { it.competitions.first().toDomain(it.name, it.shortName) }
 )
 
@@ -105,7 +105,7 @@ fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomai
 )
 
 fun RestCompetitor.toTeamDomain() = TeamGameStats(
-    team = team.toDomain(),
+    teamId = team.id,
     homeAway = homeAway,
     records = records?.map { it.toDomain() } ?: record?.map { it.toDomain() } ?: emptyList(),
     winner = winner ?: false,

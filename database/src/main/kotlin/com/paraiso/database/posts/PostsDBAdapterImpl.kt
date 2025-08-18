@@ -10,6 +10,8 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
@@ -195,8 +197,16 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         collection.find(Filters.regex(Post::title.name, partial, "i"))
             .limit(PARTIAL_RETRIEVE_LIM)
 
-    suspend fun save(posts: List<Post>) =
-        collection.insertMany(posts)
+    suspend fun save(posts: List<Post>): Int {
+        val bulkOps = posts.map { post ->
+            ReplaceOneModel(
+                eq(ID, post.id),
+                post,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
     suspend fun editPost(
         id: String,

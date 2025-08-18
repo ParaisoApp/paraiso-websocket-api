@@ -1,6 +1,8 @@
 package com.paraiso.database.admin
 
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts.ascending
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
@@ -18,8 +20,16 @@ class UserReportsDBAdapterImpl(database: MongoDatabase) : UserReportsDBAdapter {
     override suspend fun getAll() =
         collection.find().sort(ascending(UserReport::updatedOn.name)).toList()
 
-    override suspend fun save(userReports: List<UserReport>) =
-        collection.insertMany(userReports).insertedIds.map { it.toString() }
+    override suspend fun save(userReports: List<UserReport>): Int {
+        val bulkOps = userReports.map { report ->
+            ReplaceOneModel(
+                Filters.eq(ID, report.id),
+                report,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
     override suspend fun addUserReport(
         userId: String,

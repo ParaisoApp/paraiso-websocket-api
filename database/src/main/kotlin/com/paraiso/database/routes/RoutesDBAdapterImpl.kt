@@ -1,6 +1,8 @@
 package com.paraiso.database.routes
 
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -19,8 +21,16 @@ class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
     override suspend fun findById(id: String) =
         collection.find(Filters.eq(ID, id)).firstOrNull()
 
-    override suspend fun save(routes: List<RouteDetails>) =
-        collection.insertMany(routes).insertedIds.map { it.value.toString() }
+    override suspend fun save(routes: List<RouteDetails>): Int {
+        val bulkOps = routes.map { route ->
+            ReplaceOneModel(
+                Filters.eq(ID, route.id),
+                route,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
     override suspend fun addUserFavorites(
         route: String,

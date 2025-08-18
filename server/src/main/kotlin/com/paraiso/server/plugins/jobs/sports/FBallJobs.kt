@@ -49,7 +49,7 @@ class FBallJobs {
                     val currentScoreboard = FBallState.scoreboard
                     currentScoreboard?.let { sb ->
                         val filteredSb = currentScoreboard.copy(
-                            competitions = sb.competitions.filter { comp -> comp.teams.map { it.team.id }.contains(content) }
+                            competitions = sb.competitions.filter { comp -> comp.teams.map { it.teamId }.contains(content) }
                         )
                         if (lastSentScoreboard != filteredSb) {
                             session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb.toResponse())
@@ -66,8 +66,8 @@ class FBallJobs {
 
                     if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
                         currentScoreboard.competitions.firstOrNull { comp ->
-                            comp.teams.map { it.team.id }.contains(content)
-                        }?.teams?.map { it.team.id }
+                            comp.teams.map { it.teamId }.contains(content)
+                        }?.teams?.map { it.teamId }
                             ?.let { teamIds ->
                                 currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
                                     .map { it.toResponse() }

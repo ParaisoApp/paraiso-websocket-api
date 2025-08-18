@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.routes.SiteRoute
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Team as TeamDomain
 
@@ -34,10 +35,12 @@ data class RestTeam(
     val seed: String? = null
 )
 
-fun RestTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }
+fun RestTeams.toDomain(sport: SiteRoute): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain(sport) }
 
-fun RestTeam.toDomain(): TeamDomain = TeamDomain(
-    id = id,
+fun RestTeam.toDomain(sport: SiteRoute): TeamDomain = TeamDomain(
+    id = "$sport-$abbreviation",
+    sport = sport,
+    teamId = id,
     location = location,
     name = name,
     abbreviation = abbreviation,

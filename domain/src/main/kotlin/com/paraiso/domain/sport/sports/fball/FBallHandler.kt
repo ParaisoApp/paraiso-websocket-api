@@ -7,6 +7,7 @@ import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
+import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.sports.bball.BBallState
@@ -29,6 +30,7 @@ import kotlin.time.Duration.Companion.hours
 class FBallHandler(
     private val fBallOperation: FBallOperation,
     private val routesApi: RoutesApi,
+    private val teamsDBAdapter: TeamsDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter
 ) : Klogging {
 
@@ -56,15 +58,12 @@ class FBallHandler(
                 launch { getRosters(teamIds) }
                 launch { getSchedules(teamIds) }
             }
-            launch {
-                if(autoBuild) addTeamRoutes(teamsRes)
+            if (autoBuild) {
+                launch {
+                    addTeamRoutes(teamsRes)
+                }
+                teamsDBAdapter.save(teamsRes)
             }
-        }
-        while (isActive) {
-            fBallOperation.getTeams().also { teamsRes ->
-                if (teamsRes != FBallState.teams) FBallState.teams = teamsRes
-            }
-            delay(6 * 60 * 60 * 1000)
         }
     }
 
@@ -108,9 +107,11 @@ class FBallHandler(
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
+                    val teams = teamsDBAdapter.findBySport(SiteRoute.FOOTBALL)
                     ServerState.posts.putAll(
-                        schedulesRes.associate { it.team.abbreviation to it.events }
-                            .flatMap { (key, values) ->
+                        schedulesRes.associate {
+                            teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
+                        }.flatMap { (key, values) ->
                                 values.map { competition ->
                                     "$TEAM_PREFIX${competition.id}-$key" to Post(
                                         id = "$TEAM_PREFIX${competition.id}-$key",

@@ -4,5 +4,5 @@ import com.paraiso.domain.sport.data.AllStandings
 
 interface StandingsDBAdapter{
     suspend fun findById(id: String): AllStandings?
-    suspend fun save(allStandings: List<AllStandings>): List<String>
+    suspend fun save(allStandings: List<AllStandings>): Int
 }

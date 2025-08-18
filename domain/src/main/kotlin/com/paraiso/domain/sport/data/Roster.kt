@@ -9,7 +9,7 @@ data class Roster(
     @SerialName(ID) val id: String,
     val athletes: List<Athlete>,
     val coach: Coach?,
-    val team: Team
+    val teamId: String
 )
 
 @Serializable
@@ -43,7 +43,7 @@ data class RosterResponse(
     val id: String,
     val athletes: List<AthleteResponse>,
     val coach: CoachResponse?,
-    val team: TeamResponse
+    val teamId: String
 )
 
 @Serializable
@@ -77,7 +77,7 @@ fun Roster.toResponse() =
         id = id,
         athletes = athletes.map { it.toResponse() },
         coach = coach?.toResponse(),
-        team = team.toResponse(),
+        teamId = teamId,
     )
 
 fun Athlete.toResponse() =

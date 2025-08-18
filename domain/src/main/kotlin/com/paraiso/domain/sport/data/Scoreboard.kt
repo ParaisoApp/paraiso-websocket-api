@@ -9,7 +9,7 @@ data class Scoreboard(
 
 @Serializable
 data class TeamGameStats(
-    val team: Team,
+    val teamId: String,
     val homeAway: String,
     val records: List<Record>,
     val winner: Boolean,
@@ -39,7 +39,7 @@ data class ScoreboardResponse(
 
 @Serializable
 data class TeamGameStatsResponse(
-    val team: TeamResponse,
+    val teamId: String,
     val homeAway: String,
     val records: List<RecordResponse>,
     val winner: Boolean,
@@ -69,7 +69,7 @@ fun Scoreboard.toResponse() =
 
 fun TeamGameStats.toResponse() =
     TeamGameStatsResponse(
-        team = team.toResponse(),
+        teamId = teamId,
         homeAway = homeAway,
         records = records.map { it.toResponse() },
         winner = winner,

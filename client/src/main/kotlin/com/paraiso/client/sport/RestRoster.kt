@@ -35,7 +35,7 @@ fun RestRoster.toDomain() = RosterDomain(
     id = team.id,
     athletes = athletes.map { it.toDomain(team.abbreviation) },
     coach = coach.firstOrNull()?.toDomain(),
-    team = team.toDomain()
+    teamId = team.id
 )
 
 fun RestAthlete.toDomain(teamAbbr: String) = AthleteDomain(

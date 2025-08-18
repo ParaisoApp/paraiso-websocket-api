@@ -1,5 +1,6 @@
 package com.paraiso.domain.sport.data
 
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,6 +8,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Team(
     @SerialName(ID) val id: String,
+    val sport: SiteRoute,
+    val teamId: String,
     val location: String,
     val name: String?,
     val abbreviation: String,
@@ -26,7 +29,7 @@ data class TeamResponse(
 
 fun Team.toResponse() =
     TeamResponse(
-        id = id,
+        id = teamId,
         location = location,
         name = name,
         abbreviation = abbreviation,
