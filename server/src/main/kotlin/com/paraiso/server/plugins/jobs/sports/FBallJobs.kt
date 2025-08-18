@@ -3,6 +3,8 @@ package com.paraiso.com.paraiso.server.plugins.jobs.sports
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.toResponse
+import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.domain.sport.sports.fball.FBallState
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
@@ -18,9 +20,10 @@ class FBallJobs {
             launch {
                 var lastSentScoreboard: Scoreboard? = null
                 while (isActive) {
-                    if (FBallState.scoreboard != null && lastSentScoreboard != FBallState.scoreboard) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, FBallState.scoreboard)
-                        lastSentScoreboard = FBallState.scoreboard
+                    val currentScoreboard = FBallState.scoreboard
+                    if (currentScoreboard != null && lastSentScoreboard != currentScoreboard) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, currentScoreboard.toResponse())
+                        lastSentScoreboard = currentScoreboard
                     }
                     delay(5 * 1000)
                 }
@@ -28,9 +31,10 @@ class FBallJobs {
             launch {
                 var lastSentBoxScores = listOf<FullTeam>()
                 while (isActive) {
-                    if (FBallState.boxScores.isNotEmpty() && lastSentBoxScores != FBallState.boxScores) {
-                        session.sendTypedMessage(MessageType.BOX_SCORES, FBallState.boxScores)
-                        lastSentBoxScores = FBallState.boxScores
+                    val boxScores = FBallState.boxScores
+                    if (boxScores.isNotEmpty() && lastSentBoxScores != boxScores) {
+                        session.sendTypedMessage(MessageType.BOX_SCORES, boxScores.map { it.toResponse() })
+                        lastSentBoxScores = boxScores
                     }
                     delay(5 * 1000)
                 }
@@ -48,7 +52,7 @@ class FBallJobs {
                             competitions = sb.competitions.filter { comp -> comp.teams.map { it.team.id }.contains(content) }
                         )
                         if (lastSentScoreboard != filteredSb) {
-                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb)
+                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb.toResponse())
                             lastSentScoreboard = filteredSb
                         }
                         delay(5 * 1000)
@@ -66,6 +70,7 @@ class FBallJobs {
                         }?.teams?.map { it.team.id }
                             ?.let { teamIds ->
                                 currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
+                                    .map { it.toResponse() }
                                     .let { filteredBoxScores ->
                                         session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
                                     }

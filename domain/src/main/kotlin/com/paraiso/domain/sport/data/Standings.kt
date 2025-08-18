@@ -1,6 +1,5 @@
 package com.paraiso.domain.sport.data
 
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -27,7 +26,7 @@ data class StandingsSubGroup(
 
 @Serializable
 data class Standings(
-    val id: String,
+    @SerialName(ID) val id: String,
     val seed: Int?,
     val stats: List<StandingsStat>
 )
@@ -39,3 +38,33 @@ data class StandingsStat(
     val displayName: String,
     val value: Double?
 )
+
+@Serializable
+data class StandingsResponse(
+    val id: String,
+    val seed: Int?,
+    val stats: List<StandingsStatResponse>
+)
+
+@Serializable
+data class StandingsStatResponse(
+    val shortDisplayName: String,
+    val displayValue: String,
+    val displayName: String,
+    val value: Double?
+)
+
+fun Standings.toResponse() =
+    StandingsResponse(
+        id = id,
+        seed = seed,
+        stats = stats.map { it.toResponse() },
+    )
+
+fun StandingsStat.toResponse() =
+    StandingsStatResponse(
+        shortDisplayName = shortDisplayName,
+        displayValue = displayValue,
+        displayName = displayName,
+        value = value,
+    )

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class StatLeaders(
-    val id: String,
+    @SerialName(ID) val id: String,
     val categories: List<Category>
 )
 
@@ -26,7 +26,7 @@ data class CategoryLeader(
 )
 
 @Serializable
-data class LeaderReturn(
+data class LeaderResponse(
     val athleteName: String?,
     val leaderStat: Double,
     val teamAbbr: String?

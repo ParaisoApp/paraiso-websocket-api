@@ -6,14 +6,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Schedule(
-    val id: String,
+    @SerialName(ID) val id: String,
     val team: Team,
     val events: List<Competition>
 )
 
 @Serializable
 data class Competition(
-    val id: String,
+    @SerialName(ID) val id: String,
     val name: String,
     val shortName: String,
     val date: String,
@@ -23,8 +23,71 @@ data class Competition(
 )
 
 @Serializable
+data class Status(
+    val clock: String,
+    val period: Int,
+    val name: String,
+    val state: String,
+    val completed: Boolean
+)
+
+@Serializable
 data class Venue(
     val fullName: String,
     val city: String,
     val state: String?
 )
+
+@Serializable
+data class ScheduleResponse(
+    val id: String,
+    val team: TeamResponse,
+    val events: List<CompetitionResponse>
+)
+
+@Serializable
+data class CompetitionResponse(
+    val id: String,
+    val name: String,
+    val shortName: String,
+    val date: String,
+    val teams: List<TeamGameStatsResponse>,
+    val venue: Venue,
+    val status: StatusResponse
+)
+
+@Serializable
+data class StatusResponse(
+    val clock: String,
+    val period: Int,
+    val name: String,
+    val state: String,
+    val completed: Boolean
+)
+
+fun Schedule.toResponse() =
+    ScheduleResponse(
+        id = id,
+        team = team.toResponse(),
+        events = events.map { it.toResponse() },
+    )
+
+fun Competition.toResponse() =
+    CompetitionResponse(
+        id = id,
+        name = name,
+        shortName = shortName,
+        date = date,
+        teams = teams.map { it.toResponse() },
+        venue = venue,
+        status = status.toResponse(),
+    )
+
+fun Status.toResponse() =
+    StatusResponse(
+        clock = clock,
+        period = period,
+        name = name,
+        state = state,
+        completed = completed,
+    )
