@@ -1,7 +1,5 @@
 package com.paraiso.domain.util
 
-import com.paraiso.domain.admin.PostReport
-import com.paraiso.domain.admin.UserReport
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Follow
@@ -12,9 +10,7 @@ import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.routes.Favorite
-import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.User
-import com.paraiso.domain.users.UserChat
 import com.paraiso.domain.users.UserResponse
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -23,11 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 object ServerState {
     // users
     val userList: ConcurrentHashMap<String, User> = ConcurrentHashMap()
-    val userChatList: ConcurrentHashMap<String, UserChat> = ConcurrentHashMap()
-
-    // admin
-    val userReports: ConcurrentHashMap<String, UserReport> = ConcurrentHashMap()
-    val postReports: ConcurrentHashMap<String, PostReport> = ConcurrentHashMap()
 
     val posts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
 
