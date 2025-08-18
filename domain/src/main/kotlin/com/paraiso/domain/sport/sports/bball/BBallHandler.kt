@@ -8,6 +8,7 @@ import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
+import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX
@@ -100,39 +101,46 @@ class BBallHandler(
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
                 if (schedulesRes != BBallState.schedules) BBallState.schedules = schedulesRes
-                if (
-                    !ServerState.posts.map { it.key }
-                        .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
-                ) {
-                    ServerState.posts.putAll(
-                        schedulesRes.associate {
-                            teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
-                        }.flatMap { (key, values) ->
-                                values.map { competition ->
-                                    "$TEAM_PREFIX${competition.id}-$key" to Post(
-                                        id = "$TEAM_PREFIX${competition.id}-$key",
-                                        userId = null,
-                                        title = competition.shortName,
-                                        content = "${competition.date}-${competition.shortName}",
-                                        type = PostType.GAME,
-                                        media = null,
-                                        votes = emptyMap(),
-                                        parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
-                                        rootId = "$TEAM_PREFIX${competition.id}-$key",
-                                        status = PostStatus.ACTIVE,
-                                        data = "$TEAM_PREFIX${competition.id}-$key",
-                                        subPosts = mutableSetOf(),
-                                        count = 0,
-                                        route = null,
-                                        createdOn = Clock.System.now(),
-                                        updatedOn = Clock.System.now()
-                                    )
-                                }
-                            }
-                    )
-                }
+                addScheduleGamePosts(teams, schedulesRes)
             }
             delay(6 * 60 * 60 * 1000)
+        }
+    }
+
+    private fun addScheduleGamePosts(
+        teams: List<Team>,
+        schedules: List<Schedule>
+    ) {
+        if (
+            !ServerState.posts.map { it.key }
+                .contains(schedules.firstOrNull()?.events?.firstOrNull()?.id)
+        ) {
+            ServerState.posts.putAll(
+                schedules.associate {
+                    teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
+                }.flatMap { (key, values) ->
+                    values.map { competition ->
+                        "$TEAM_PREFIX${competition.id}-$key" to Post(
+                            id = "$TEAM_PREFIX${competition.id}-$key",
+                            userId = null,
+                            title = competition.shortName,
+                            content = "${competition.date}-${competition.shortName}",
+                            type = PostType.GAME,
+                            media = null,
+                            votes = emptyMap(),
+                            parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
+                            rootId = "$TEAM_PREFIX${competition.id}-$key",
+                            status = PostStatus.ACTIVE,
+                            data = "$TEAM_PREFIX${competition.id}-$key",
+                            subPosts = mutableSetOf(),
+                            count = 0,
+                            route = null,
+                            createdOn = Clock.System.now(),
+                            updatedOn = Clock.System.now()
+                        )
+                    }
+                }
+            )
         }
     }
 
