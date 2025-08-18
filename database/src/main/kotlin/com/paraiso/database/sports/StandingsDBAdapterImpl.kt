@@ -1,15 +1,20 @@
 package com.paraiso.database.sports
 
+import com.mongodb.client.model.Filters
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
+import com.paraiso.domain.sport.data.AllStandings
 import com.paraiso.domain.sport.data.Standings
+import com.paraiso.domain.util.Constants
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 
 class StandingsDBAdapterImpl(database: MongoDatabase) : StandingsDBAdapter {
-    private val collection = database.getCollection("standings", Standings::class.java)
+    private val collection = database.getCollection("standings", AllStandings::class.java)
 
-    suspend fun getAll() =
-        collection.find()
+    override suspend fun findById(id: String) =
+        collection.find(Filters.eq(Constants.ID, id)).firstOrNull()
 
-    suspend fun save(standings: List<Standings>) =
-        collection.insertMany(standings)
+    override suspend fun save(allStandings: List<AllStandings>) =
+        collection.insertMany(allStandings).insertedIds.map { it.toString() }
 }

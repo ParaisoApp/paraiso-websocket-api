@@ -10,6 +10,7 @@ import com.paraiso.client.sport.RestTeams
 import com.paraiso.client.sport.toDomain
 import com.paraiso.client.util.BaseAdapter
 import com.paraiso.client.util.ClientConfig
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.bball.BBallOperation
 import io.klogging.Klogging
 import io.ktor.client.call.body
@@ -85,7 +86,7 @@ class BBallOperationAdapter() : BBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            standingsResponse.toDomain()
+            standingsResponse.toDomain(SiteRoute.BASKETBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

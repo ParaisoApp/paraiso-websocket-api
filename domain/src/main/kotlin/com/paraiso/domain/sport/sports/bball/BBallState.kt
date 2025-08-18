@@ -1,6 +1,5 @@
 package com.paraiso.domain.sport.sports.bball
 
-import com.paraiso.domain.sport.data.AllStandings
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Roster
 import com.paraiso.domain.sport.data.Schedule
@@ -11,7 +10,6 @@ import com.paraiso.domain.sport.data.Team
 object BBallState {
     var scoreboard: Scoreboard? = null
     var teams: List<Team> = emptyList()
-    var standings: AllStandings? = null
     var boxScores: List<FullTeam> = emptyList()
     var rosters: List<Roster> = emptyList()
     var leaders: StatLeaders? = null

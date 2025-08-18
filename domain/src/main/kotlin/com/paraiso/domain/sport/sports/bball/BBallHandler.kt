@@ -6,6 +6,7 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants.GAME_PREFIX
@@ -25,7 +26,8 @@ import kotlin.time.Duration.Companion.hours
 
 class BBallHandler(
     private val bBallOperation: BBallOperation,
-    private val routesApi: RoutesApi
+    private val routesApi: RoutesApi,
+    private val standingsDBAdapter: StandingsDBAdapter
 ) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
@@ -38,9 +40,11 @@ class BBallHandler(
     private suspend fun getStandings() = coroutineScope {
         while (isActive) {
             bBallOperation.getStandings().also { standingsRes ->
-                if (standingsRes != BBallState.standings) BBallState.standings = standingsRes
+                if (standingsRes != null) {
+                    standingsDBAdapter.save(listOf(standingsRes))
+                }
             }
-            delay(6 * 60 * 60 * 1000)
+            delay(12 * 60 * 60 * 1000)
         }
     }
 

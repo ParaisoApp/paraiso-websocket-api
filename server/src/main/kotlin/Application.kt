@@ -16,6 +16,7 @@ import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.database.admin.PostReportsDBAdapterImpl
 import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
+import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
@@ -63,12 +64,21 @@ fun main() {
     val database = mongoClient.getDatabase("ekoes")
 
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
+    val standingsDBAdapterImpl = StandingsDBAdapterImpl(database)
 
     jobScope.launch {
-        BBallHandler(BBallOperationAdapter(), routesApi).bootJobs()
+        BBallHandler(
+            BBallOperationAdapter(),
+            routesApi,
+            standingsDBAdapterImpl
+        ).bootJobs()
     }
     jobScope.launch {
-        FBallHandler(FBallOperationAdapter(), routesApi).bootJobs()
+        FBallHandler(
+            FBallOperationAdapter(),
+            routesApi, 
+            standingsDBAdapterImpl
+        ).bootJobs()
     }
     jobScope.launch {
         ServerHandler(routesApi).bootJobs()
@@ -89,8 +99,8 @@ fun main() {
             usersApi,
             userChatsApi,
             AuthApi(),
-            BBallApi(),
-            FBallApi(),
+            BBallApi(standingsDBAdapterImpl),
+            FBallApi(standingsDBAdapterImpl),
             MetadataApi()
         )
     }.start(wait = true)

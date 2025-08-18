@@ -1,12 +1,16 @@
 package com.paraiso.domain.sport.sports.bball
 
+import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.toResponse
 
-class BBallApi {
+class BBallApi(
+    private val standingsDBAdapter: StandingsDBAdapter
+) {
     fun getTeamByAbbr(teamAbbr: String) = BBallState.teams.find { it.abbreviation == teamAbbr }?.toResponse()
     fun getTeams() = BBallState.teams.map { it.toResponse() }.associateBy { it.id }
-    fun getStandings() = BBallState.standings?.standingsGroups?.associate { standingsGroup ->
+    suspend fun getStandings() = standingsDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.standingsGroups?.associate { standingsGroup ->
         standingsGroup.confAbbr to standingsGroup.standings.map { it.toResponse() }
     }
     fun getLeaders() = BBallState.rosters.flatMap { it.athletes }.associateBy { it.id }.let { athletes ->

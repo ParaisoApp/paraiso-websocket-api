@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AllStandings(
+    @SerialName(ID) val id: String,
     val standingsGroups: List<StandingsGroup>
 )
 
@@ -26,7 +27,7 @@ data class StandingsSubGroup(
 
 @Serializable
 data class Standings(
-    @SerialName(ID) val id: String,
+    val teamId: String,
     val seed: Int?,
     val stats: List<StandingsStat>
 )
@@ -56,7 +57,7 @@ data class StandingsStatResponse(
 
 fun Standings.toResponse() =
     StandingsResponse(
-        teamId = id,
+        teamId = teamId,
         seed = seed,
         stats = stats.map { it.toResponse() },
     )

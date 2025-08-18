@@ -1,13 +1,17 @@
 package com.paraiso.domain.sport.sports.fball
 
+import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.toResponse
 
 
-class FBallApi {
+class FBallApi(
+    private val standingsDBAdapter: StandingsDBAdapter
+) {
     fun getTeamByAbbr(teamAbbr: String) = FBallState.teams.find { it.abbreviation == teamAbbr }?.toResponse()
     fun getTeams() = FBallState.teams.map { it.toResponse() }.associateBy { it.id }
-    fun getStandings() = FBallState.standings?.standingsGroups?.flatMap { confGroup ->
+    suspend fun getStandings() = standingsDBAdapter.findById(SiteRoute.FOOTBALL.toString())?.standingsGroups?.flatMap { confGroup ->
         confGroup.subGroups
     }?.associate { standingsSubGroup ->
         standingsSubGroup.divName to standingsSubGroup.standings.map { it.toResponse() }
