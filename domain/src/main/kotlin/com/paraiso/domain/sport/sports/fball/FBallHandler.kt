@@ -39,26 +39,22 @@ class FBallHandler(
         launch { getStandings() }
         launch { getTeams() }
         launch { getLeaders() }
+        launch { getRosters() }
+        launch { getSchedules() }
     }
 
     private suspend fun getStandings() = coroutineScope {
         while (isActive) {
-            fBallOperation.getStandings().also { standingsRes ->
-                if (standingsRes != null) {
-                    standingsDBAdapter.save(listOf(standingsRes))
-                }
+            fBallOperation.getStandings()?.let { standingsRes ->
+                standingsDBAdapter.save(listOf(standingsRes))
             }
             delay(12 * 60 * 60 * 1000)
         }
     }
 
     private suspend fun getTeams() = coroutineScope {
-        fBallOperation.getTeams().also { teamsRes ->
-            teamsRes.map { it.id }.let { teamIds ->
-                launch { getRosters(teamIds) }
-                launch { getSchedules(teamIds) }
-            }
-            if (autoBuild) {
+        if (autoBuild) {
+            fBallOperation.getTeams().let { teamsRes ->
                 launch {
                     addTeamRoutes(teamsRes)
                 }
@@ -95,9 +91,10 @@ class FBallHandler(
         }
     }
 
-    private suspend fun getSchedules(teamIds: List<String>) = coroutineScope {
+    private suspend fun getSchedules() = coroutineScope {
         while (isActive) {
-            teamIds.map { teamId ->
+            val teams = teamsDBAdapter.findBySport(SiteRoute.FOOTBALL)
+            teams.map { it.id }.map { teamId ->
                 async {
                     fBallOperation.getSchedule(teamId)
                 }
@@ -107,7 +104,6 @@ class FBallHandler(
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
-                    val teams = teamsDBAdapter.findBySport(SiteRoute.FOOTBALL)
                     ServerState.posts.putAll(
                         schedulesRes.associate {
                             teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
@@ -140,9 +136,9 @@ class FBallHandler(
         }
     }
 
-    private suspend fun getRosters(teamIds: List<String>) = coroutineScope {
+    private suspend fun getRosters() = coroutineScope {
         while (isActive) {
-            teamIds.map { teamId ->
+            teamsDBAdapter.findBySport(SiteRoute.FOOTBALL).map { it.id }.map { teamId ->
                 async {
                     fBallOperation.getRoster(teamId)
                 }

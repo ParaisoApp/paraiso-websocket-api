@@ -38,6 +38,8 @@ class BBallHandler(
         launch { getStandings() }
         launch { getTeams() }
         launch { getLeaders() }
+        launch { getRosters() }
+        launch { getSchedules() }
     }
 
     private suspend fun getStandings() = coroutineScope {
@@ -52,12 +54,8 @@ class BBallHandler(
     }
 
     private suspend fun getTeams() = coroutineScope {
-        bBallOperation.getTeams().also { teamsRes ->
-            teamsRes.map { it.id }.let { teamIds ->
-                launch { getRosters(teamIds) }
-                launch { getSchedules(teamIds) }
-            }
-            if (autoBuild) {
+        if (autoBuild) {
+            bBallOperation.getTeams().also { teamsRes ->
                 launch {
                     addTeamRoutes(teamsRes)
                 }
@@ -93,9 +91,10 @@ class BBallHandler(
         }
     }
 
-    private suspend fun getSchedules(teamIds: List<String>) = coroutineScope {
+    private suspend fun getSchedules() = coroutineScope {
         while (isActive) {
-            teamIds.map { teamId ->
+            val teams = teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
+            teams.map { it.id }.map { teamId ->
                 async {
                     bBallOperation.getSchedule(teamId)
                 }
@@ -105,7 +104,6 @@ class BBallHandler(
                     !ServerState.posts.map { it.key }
                         .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
                 ) {
-                    val teams = teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
                     ServerState.posts.putAll(
                         schedulesRes.associate {
                             teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
@@ -138,9 +136,9 @@ class BBallHandler(
         }
     }
 
-    private suspend fun getRosters(teamIds: List<String>) = coroutineScope {
+    private suspend fun getRosters() = coroutineScope {
         while (isActive) {
-            teamIds.map { teamId ->
+            teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.id }.map { teamId ->
                 async {
                     bBallOperation.getRoster(teamId)
                 }
