@@ -126,6 +126,28 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         )
     }
 
+    suspend fun addUserReport(
+        id: String,
+    ) =
+        collection.updateOne(
+            `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
+            combine(
+                addToSet(User::userReports.name, id),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun addPostReport(
+        id: String,
+    ) =
+        collection.updateOne(
+            `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
+            combine(
+                addToSet(User::postReports.name, id),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
     suspend fun addFollowers(
         id: String,
         followerUserId: String

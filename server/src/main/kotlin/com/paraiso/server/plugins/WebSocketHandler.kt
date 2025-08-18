@@ -322,6 +322,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
                                 launch { adminApi.reportUser(sessionUser.id, reportUser) }
+                                launch { usersApi.addUserReport(reportUser) }
                                 ServerState.reportUserFlowMut.emit(reportUser)
                             }
                     }
@@ -329,6 +330,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
                                 launch { adminApi.reportPost(sessionUser.id, reportPost) }
+                                launch { usersApi.addPostReport(reportPost) }
                                 ServerState.reportPostFlowMut.emit(reportPost)
                             }
                     }

@@ -48,17 +48,6 @@ class AdminApi(
                 )
             }
         }
-        ServerState.userList.values.filter {
-            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
-        }.forEach { user ->
-            user.userReports.toMutableMap().let { mutableReports ->
-                mutableReports[report.id] = false
-                ServerState.userList[user.id] = user.copy(
-                    userReports = mutableReports,
-                    updatedOn = now
-                )
-            }
-        }
     }
 
     suspend fun reportPost(sessionUserId: String, report: Report) = coroutineScope {
@@ -75,18 +64,6 @@ class AdminApi(
                             updatedOn = now
                         )
                     )
-                )
-            }
-        }
-
-        ServerState.userList.values.filter {
-            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
-        }.forEach { user ->
-            user.postReports.toMutableMap().let { mutableReports ->
-                mutableReports[report.id] = false
-                ServerState.userList[user.id] = user.copy(
-                    postReports = mutableReports,
-                    updatedOn = Clock.System.now()
                 )
             }
         }
