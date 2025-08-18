@@ -4,18 +4,23 @@ import com.mongodb.client.model.Filters
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.StatLeaders
+import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 
 class LeadersDBAdapterImpl(database: MongoDatabase) : LeadersDBAdapter {
     private val collection = database.getCollection("leaders", StatLeaders::class.java)
 
-    fun getAll() =
-        collection.find()
+    override suspend fun findBySport(sport: SiteRoute) =
+        collection.find(Filters.eq(ID, sport)).firstOrNull()
 
-    suspend fun save(statLeaders: List<StatLeaders>): Int {
+    override suspend fun save(statLeaders: List<StatLeaders>): Int {
         val bulkOps = statLeaders.map { statLeader ->
             ReplaceOneModel(
                 Filters.eq(Constants.ID, statLeader.id),

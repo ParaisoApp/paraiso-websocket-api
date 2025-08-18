@@ -6,6 +6,7 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Schedule
@@ -32,7 +33,8 @@ class FBallHandler(
     private val fBallOperation: FBallOperation,
     private val routesApi: RoutesApi,
     private val teamsDBAdapter: TeamsDBAdapter,
-    private val standingsDBAdapter: StandingsDBAdapter
+    private val standingsDBAdapter: StandingsDBAdapter,
+    private val leadersDBAdapter: LeadersDBAdapter
 ) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
@@ -49,7 +51,7 @@ class FBallHandler(
             fBallOperation.getStandings()?.let { standingsRes ->
                 standingsDBAdapter.save(listOf(standingsRes))
             }
-            delay(12 * 60 * 60 * 1000)
+            delay(6 * 60 * 60 * 1000)
         }
     }
 
@@ -84,8 +86,8 @@ class FBallHandler(
 
     private suspend fun getLeaders() = coroutineScope {
         while (isActive) {
-            fBallOperation.getLeaders().also { leadersRes ->
-                if (leadersRes != FBallState.leaders) FBallState.leaders = leadersRes
+            fBallOperation.getLeaders()?.let { leadersRes ->
+                leadersDBAdapter.save(listOf(leadersRes))
             }
             delay(6 * 60 * 60 * 1000)
         }

@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.routes.SiteRoute
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -40,8 +41,8 @@ data class RestAthleteLeader(
     val id: Int
 )
 
-fun RestLeaders.toDomain() = StatLeadersDomain(
-    id = "Leaders",
+fun RestLeaders.toDomain(sport: SiteRoute) = StatLeadersDomain(
+    id = sport.toString(),
     categories = categories.map { it.toDomain() }
 )
 
