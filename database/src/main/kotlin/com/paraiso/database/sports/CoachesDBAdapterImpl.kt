@@ -16,10 +16,10 @@ import kotlinx.coroutines.flow.firstOrNull
 class CoachesDBAdapterImpl(database: MongoDatabase) : CoachesDBAdapter {
     private val collection = database.getCollection("coaches", Coach::class.java)
 
-    suspend fun findById(id: String) =
+    override suspend fun findById(id: String) =
         collection.find(Filters.eq(ID, id)).firstOrNull()
 
-    suspend fun save(coaches: List<Coach>): Int {
+    override suspend fun save(coaches: List<Coach>): Int {
         val bulkOps = coaches.map { coach ->
             ReplaceOneModel(
                 Filters.eq(ID, coach.id),

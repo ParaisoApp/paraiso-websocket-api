@@ -6,12 +6,18 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.adapters.AthletesDBAdapter
+import com.paraiso.domain.sport.adapters.CoachesDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
+import com.paraiso.domain.sport.adapters.RostersDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
+import com.paraiso.domain.sport.data.Coach
+import com.paraiso.domain.sport.data.Roster
 import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
+import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig
@@ -32,6 +38,9 @@ class BBallHandler(
     private val bBallOperation: BBallOperation,
     private val routesApi: RoutesApi,
     private val teamsDBAdapter: TeamsDBAdapter,
+    private val rostersDBAdapter: RostersDBAdapter,
+    private val athletesDBAdapter: AthletesDBAdapter,
+    private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) : Klogging {
@@ -147,13 +156,15 @@ class BBallHandler(
     }
 
     private suspend fun getRosters() = coroutineScope {
-        while (isActive) {
-            teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.id }.map { teamId ->
+        if (autoBuild) {
+            teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                if (rostersRes != BBallState.rosters) BBallState.rosters = rostersRes
+                rostersDBAdapter.save(rostersRes.map { it.toEntity() })
+                athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
+                coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
             }
             delay(6 * 60 * 60 * 1000)
         }

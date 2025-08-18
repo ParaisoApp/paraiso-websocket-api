@@ -16,7 +16,10 @@ import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.database.admin.PostReportsDBAdapterImpl
 import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
+import com.paraiso.database.sports.AthletesDBAdapterImpl
+import com.paraiso.database.sports.CoachesDBAdapterImpl
 import com.paraiso.database.sports.LeadersDBAdapterImpl
+import com.paraiso.database.sports.RostersDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
@@ -69,14 +72,20 @@ fun main() {
     val standingsDBAdapterImpl = StandingsDBAdapterImpl(database)
     val teamsDBAdapterImpl = TeamsDBAdapterImpl(database)
     val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
+    val rostersDBAdapter = RostersDBAdapterImpl(database)
+    val athletesDBAdapter = AthletesDBAdapterImpl(database)
+    val coachesDBAdapter = CoachesDBAdapterImpl(database)
 
     jobScope.launch {
         BBallHandler(
             BBallOperationAdapter(),
             routesApi,
             teamsDBAdapterImpl,
+            rostersDBAdapter,
+            athletesDBAdapter,
+            coachesDBAdapter,
             standingsDBAdapterImpl,
-            leadersDBAdapterImpl
+            leadersDBAdapterImpl,
         ).bootJobs()
     }
     jobScope.launch {
@@ -84,6 +93,9 @@ fun main() {
             FBallOperationAdapter(),
             routesApi,
             teamsDBAdapterImpl,
+            rostersDBAdapter,
+            athletesDBAdapter,
+            coachesDBAdapter,
             standingsDBAdapterImpl,
             leadersDBAdapterImpl
         ).bootJobs()
@@ -109,11 +121,17 @@ fun main() {
             AuthApi(),
             BBallApi(
                 teamsDBAdapterImpl,
+                rostersDBAdapter,
+                athletesDBAdapter,
+                coachesDBAdapter,
                 standingsDBAdapterImpl,
                 leadersDBAdapterImpl
             ),
             FBallApi(
                 teamsDBAdapterImpl,
+                rostersDBAdapter,
+                athletesDBAdapter,
+                coachesDBAdapter,
                 standingsDBAdapterImpl,
                 leadersDBAdapterImpl
             ),

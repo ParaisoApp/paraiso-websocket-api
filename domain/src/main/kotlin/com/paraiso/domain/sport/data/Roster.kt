@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Roster(
-    @SerialName(ID) val id: String,
+    val id: String,
     val athletes: List<Athlete>,
     val coach: Coach?,
     val teamId: String
@@ -72,6 +72,14 @@ data class CoachResponse(
     val experience: Int
 )
 
+@Serializable
+data class RosterEntity(
+    @SerialName(ID) val id: String,
+    val athletes: List<String>,
+    val coach: String?,
+    val teamId: String
+)
+
 fun Roster.toResponse() =
     RosterResponse(
         id = id,
@@ -103,4 +111,12 @@ fun Coach.toResponse() =
         firstName = firstName,
         lastName = lastName,
         experience = experience,
+    )
+
+fun Roster.toEntity() =
+    RosterEntity(
+        id = id,
+        athletes = athletes.map { it.id },
+        coach = coach?.id,
+        teamId = teamId,
     )
