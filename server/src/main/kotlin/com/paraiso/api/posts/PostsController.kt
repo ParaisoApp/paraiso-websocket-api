@@ -38,6 +38,13 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
+        get("getByIdBasic") {
+            postsApi.getByIdBasic(
+                call.request.queryParameters["id"] ?: "",
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
         get("getByPartial") {
             postsApi.getByPartial(call.request.queryParameters["search"] ?: "").let {
                 call.respond(HttpStatusCode.OK, it)

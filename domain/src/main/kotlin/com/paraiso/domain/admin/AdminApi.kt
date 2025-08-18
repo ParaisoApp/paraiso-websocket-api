@@ -13,22 +13,14 @@ class AdminApi(
     private val postReportsDBAdapter: PostReportsDBAdapter,
     private val userReportsDBAdapter: UserReportsDBAdapter
 ) {
-
-    companion object {
-        const val PARTIAL_RETRIEVE_LIM = 5
-    }
     suspend fun getUserReports() =
-        userReportsDBAdapter.getAll().mapNotNull { userReport ->
-            ServerState.userList[userReport.id]?.let { user ->
-                userReport.toResponse(user.buildUserResponse())
-            } ?: run { null }
+        userReportsDBAdapter.getAll().map { userReport ->
+            userReport.toResponse()
         }
 
     suspend fun getPostReports() =
-        postReportsDBAdapter.getAll().mapNotNull { postReport ->
-            ServerState.posts[postReport.id]?.let { post ->
-                postReport.toResponse(post.toResponse())
-            } ?: run { null }
+        postReportsDBAdapter.getAll().map { postReport ->
+            postReport.toResponse()
         }
 
     suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
