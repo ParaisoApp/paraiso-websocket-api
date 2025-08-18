@@ -41,7 +41,7 @@ data class StandingsStat(
 
 @Serializable
 data class StandingsResponse(
-    val id: String,
+    val teamId: String,
     val seed: Int?,
     val stats: List<StandingsStatResponse>
 )
@@ -56,7 +56,7 @@ data class StandingsStatResponse(
 
 fun Standings.toResponse() =
     StandingsResponse(
-        id = id,
+        teamId = id,
         seed = seed,
         stats = stats.map { it.toResponse() },
     )

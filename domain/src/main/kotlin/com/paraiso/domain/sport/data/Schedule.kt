@@ -52,7 +52,7 @@ data class CompetitionResponse(
     val shortName: String,
     val date: String,
     val teams: List<TeamGameStatsResponse>,
-    val venue: Venue,
+    val venue: VenueResponse,
     val status: StatusResponse
 )
 
@@ -63,6 +63,13 @@ data class StatusResponse(
     val name: String,
     val state: String,
     val completed: Boolean
+)
+
+@Serializable
+data class VenueResponse(
+    val fullName: String,
+    val city: String,
+    val state: String?
 )
 
 fun Schedule.toResponse() =
@@ -79,7 +86,7 @@ fun Competition.toResponse() =
         shortName = shortName,
         date = date,
         teams = teams.map { it.toResponse() },
-        venue = venue,
+        venue = venue.toResponse(),
         status = status.toResponse(),
     )
 
@@ -90,4 +97,11 @@ fun Status.toResponse() =
         name = name,
         state = state,
         completed = completed,
+    )
+
+fun Venue.toResponse() =
+    VenueResponse(
+        fullName = fullName,
+        city = city,
+        state = state,
     )
