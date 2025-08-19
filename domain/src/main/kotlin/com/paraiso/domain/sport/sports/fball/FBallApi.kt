@@ -3,12 +3,16 @@ package com.paraiso.domain.sport.sports.fball
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.AthletesDBAdapter
 import com.paraiso.domain.sport.adapters.CoachesDBAdapter
+import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
+import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
+import com.paraiso.domain.sport.data.ScheduleResponse
+import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -20,6 +24,8 @@ class FBallApi(
     private val athletesDBAdapter: AthletesDBAdapter,
     private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
+    private val schedulesDBAdapter: SchedulesDBAdapter,
+    private val competitionsDBAdapter: CompetitionsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) {
     suspend fun getTeamByAbbr(teamAbbr: String) = teamsDBAdapter.findById("${SiteRoute.FOOTBALL}-$teamAbbr")?.toResponse()
@@ -66,5 +72,9 @@ class FBallApi(
         }
     }
 
-    fun getTeamSchedule(teamId: String) = FBallState.schedules.find { it.teamId == teamId }?.toResponse()
+    suspend fun getTeamSchedule(teamId: String, seasonYear: String, seasonType: String) =
+        schedulesDBAdapter.findById("${SiteRoute.FOOTBALL}-${teamId}-${seasonYear}-${seasonType}")?.let { schedule ->
+            val competitions = competitionsDBAdapter.findByIdIn(schedule.events)
+            schedule.toDomain(competitions)
+        }?.toResponse()
 }

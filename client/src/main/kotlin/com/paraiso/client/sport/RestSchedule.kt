@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.TeamGameStats
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.data.Record as RecordDomain
 import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
+import com.paraiso.domain.sport.data.Season as SeasonDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
 
 @Serializable
@@ -88,10 +90,18 @@ data class RestSeason(
     val displayName: String
 )
 
-fun RestSchedule.toDomain() = ScheduleDomain(
-    id = team.id,
+fun RestSchedule.toDomain(sport: SiteRoute) = ScheduleDomain(
+    id = "$sport-${team.id}-${season.year}-${season.type}",
     teamId = team.id,
+    season = season.toDomain(),
     events = events.map { it.competitions.first().toDomain(it.name, it.shortName) }
+)
+
+fun RestSeason.toDomain() = SeasonDomain(
+    year = year,
+    type = type,
+    name = name,
+    displayName = displayName,
 )
 
 fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomain(

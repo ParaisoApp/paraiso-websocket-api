@@ -18,8 +18,10 @@ import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
 import com.paraiso.database.sports.AthletesDBAdapterImpl
 import com.paraiso.database.sports.CoachesDBAdapterImpl
+import com.paraiso.database.sports.CompetitionsDBAdapterImpl
 import com.paraiso.database.sports.LeadersDBAdapterImpl
 import com.paraiso.database.sports.RostersDBAdapterImpl
+import com.paraiso.database.sports.SchedulesDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
@@ -28,6 +30,7 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
@@ -71,10 +74,12 @@ fun main() {
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
     val standingsDBAdapterImpl = StandingsDBAdapterImpl(database)
     val teamsDBAdapterImpl = TeamsDBAdapterImpl(database)
-    val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
     val rostersDBAdapter = RostersDBAdapterImpl(database)
     val athletesDBAdapter = AthletesDBAdapterImpl(database)
     val coachesDBAdapter = CoachesDBAdapterImpl(database)
+    val schedulesDBAdapter = SchedulesDBAdapterImpl(database)
+    val competitionsDBAdapter = CompetitionsDBAdapterImpl(database)
+    val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
 
     jobScope.launch {
         BBallHandler(
@@ -85,6 +90,8 @@ fun main() {
             athletesDBAdapter,
             coachesDBAdapter,
             standingsDBAdapterImpl,
+            schedulesDBAdapter,
+            competitionsDBAdapter,
             leadersDBAdapterImpl,
         ).bootJobs()
     }
@@ -97,6 +104,8 @@ fun main() {
             athletesDBAdapter,
             coachesDBAdapter,
             standingsDBAdapterImpl,
+            schedulesDBAdapter,
+            competitionsDBAdapter,
             leadersDBAdapterImpl
         ).bootJobs()
     }
@@ -125,6 +134,8 @@ fun main() {
                 athletesDBAdapter,
                 coachesDBAdapter,
                 standingsDBAdapterImpl,
+                schedulesDBAdapter,
+                competitionsDBAdapter,
                 leadersDBAdapterImpl
             ),
             FBallApi(
@@ -133,6 +144,8 @@ fun main() {
                 athletesDBAdapter,
                 coachesDBAdapter,
                 standingsDBAdapterImpl,
+                schedulesDBAdapter,
+                competitionsDBAdapter,
                 leadersDBAdapterImpl
             ),
             MetadataApi()

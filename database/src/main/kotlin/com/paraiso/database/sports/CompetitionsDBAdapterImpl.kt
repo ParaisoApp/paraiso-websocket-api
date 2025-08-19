@@ -8,14 +8,18 @@ import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 
 class CompetitionsDBAdapterImpl(database: MongoDatabase) : CompetitionsDBAdapter {
     private val collection = database.getCollection("competitions", Competition::class.java)
 
-    suspend fun findById(id: String) =
+    override suspend fun findById(id: String) =
         collection.find(Filters.eq(ID, id)).firstOrNull()
 
-    suspend fun save(competitions: List<Competition>): Int {
+    override suspend fun findByIdIn(ids: List<String>): List<Competition> =
+        collection.find(Filters.`in`(ID, ids)).toList()
+
+    override suspend fun save(competitions: List<Competition>): Int {
         val bulkOps = competitions.map { competition ->
             ReplaceOneModel(
                 Filters.eq(ID, competition.id),

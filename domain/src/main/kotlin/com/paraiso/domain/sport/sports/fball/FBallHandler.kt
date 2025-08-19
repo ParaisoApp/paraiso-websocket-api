@@ -8,8 +8,10 @@ import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.AthletesDBAdapter
 import com.paraiso.domain.sport.adapters.CoachesDBAdapter
+import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
+import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Schedule
@@ -41,6 +43,8 @@ class FBallHandler(
     private val athletesDBAdapter: AthletesDBAdapter,
     private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
+    private val schedulesDBAdapter: SchedulesDBAdapter,
+    private val competitionsDBAdapter: CompetitionsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) : Klogging {
 
@@ -101,17 +105,17 @@ class FBallHandler(
     }
 
     private suspend fun getSchedules() = coroutineScope {
-        while (isActive) {
+        if (autoBuild) {
             val teams = teamsDBAdapter.findBySport(SiteRoute.FOOTBALL)
-            teams.map { it.id }.map { teamId ->
+            teams.map { it.teamId }.map { teamId ->
                 async {
                     fBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                if (schedulesRes != FBallState.schedules) FBallState.schedules = schedulesRes
+                schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
+                competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
                 addScheduleGamePosts(teams, schedulesRes)
             }
-            delay(6 * 60 * 60 * 1000)
         }
     }
 

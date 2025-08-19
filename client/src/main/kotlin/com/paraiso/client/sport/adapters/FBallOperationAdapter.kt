@@ -146,7 +146,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
     }
     override suspend fun getSchedule(teamId: String): ScheduleDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/schedule?season=$SEASON"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/schedule"
             val response: RestSchedule = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -155,7 +155,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

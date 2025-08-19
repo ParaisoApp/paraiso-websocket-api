@@ -39,7 +39,11 @@ fun Route.fballController(fBallApi: FBallApi) {
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/team_schedule") {
-            fBallApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let {
+            fBallApi.getTeamSchedule(
+                call.request.queryParameters["teamId"] ?: "",
+                call.request.queryParameters["seasonYear"] ?: "",
+                call.request.queryParameters["seasonType"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
