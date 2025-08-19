@@ -115,9 +115,11 @@ class BBallHandler(
                     bBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
-                competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
-                addScheduleGamePosts(teams, schedulesRes)
+                if(schedulesRes.isNotEmpty()){
+                    schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
+                    competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
+                    addScheduleGamePosts(teams, schedulesRes)
+                }
             }
         }
     }
@@ -166,9 +168,11 @@ class BBallHandler(
                     bBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                rostersDBAdapter.save(rostersRes.map { it.toEntity() })
-                athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
-                coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
+                if(rostersRes.isNotEmpty()){
+                    rostersDBAdapter.save(rostersRes.map { it.toEntity() })
+                    athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
+                    coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
+                }
             }
         }
     }
