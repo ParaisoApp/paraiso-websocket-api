@@ -8,6 +8,4 @@ import com.paraiso.domain.sport.data.Scoreboard
 object FBallState {
     var scoreboard: Scoreboard? = null
     var boxScores: List<FullTeam> = emptyList()
-    var rosters: List<Roster> = emptyList()
-    var schedules: List<Schedule> = emptyList()
 }
