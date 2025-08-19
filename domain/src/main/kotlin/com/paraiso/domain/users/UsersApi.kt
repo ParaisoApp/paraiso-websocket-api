@@ -169,7 +169,7 @@ class UsersApi {
         }
     }
 
-    fun addUserReport(report: Report){
+    fun addUserReport(report: Report) {
         ServerState.userList.values.filter {
             it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
         }.forEach { user ->
@@ -183,7 +183,7 @@ class UsersApi {
         }
     }
 
-    fun addPostReport(report: Report){
+    fun addPostReport(report: Report) {
         ServerState.userList.values.filter {
             it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
         }.forEach { user ->
@@ -196,7 +196,6 @@ class UsersApi {
             }
         }
     }
-
 
     suspend fun follow(follow: Follow) = coroutineScope {
         val now = Clock.System.now()

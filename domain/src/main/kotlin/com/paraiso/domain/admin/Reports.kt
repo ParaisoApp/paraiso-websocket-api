@@ -1,8 +1,5 @@
 package com.paraiso.domain.admin
 
-import com.paraiso.domain.posts.PostResponse
-import com.paraiso.domain.users.UserResponse
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName

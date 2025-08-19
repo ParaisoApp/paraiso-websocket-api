@@ -64,7 +64,7 @@ data class TeamYearStatsResponse(
 
 fun Scoreboard.toResponse() =
     ScoreboardResponse(
-        competitions = competitions.map{ it.toResponse() }
+        competitions = competitions.map { it.toResponse() }
     )
 
 fun TeamGameStats.toResponse() =
@@ -73,15 +73,15 @@ fun TeamGameStats.toResponse() =
         homeAway = homeAway,
         records = records.map { it.toResponse() },
         winner = winner,
-        teamYearStats = teamYearStats.map{ it.toResponse() },
+        teamYearStats = teamYearStats.map { it.toResponse() },
         lineScores = lineScores,
-        score = score,
+        score = score
     )
 
 fun Record.toResponse() =
     RecordResponse(
         name = name,
-        summary = summary,
+        summary = summary
     )
 
 fun TeamYearStats.toResponse() =
@@ -89,5 +89,5 @@ fun TeamYearStats.toResponse() =
         name = name,
         abbreviation = abbreviation,
         displayValue = displayValue,
-        rankDisplayValue = rankDisplayValue,
+        rankDisplayValue = rankDisplayValue
     )

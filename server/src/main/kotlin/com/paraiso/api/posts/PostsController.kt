@@ -40,7 +40,7 @@ fun Route.postsController(postsApi: PostsApi) {
         }
         get("getByIdBasic") {
             postsApi.getByIdBasic(
-                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["id"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }

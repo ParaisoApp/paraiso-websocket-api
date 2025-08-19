@@ -11,12 +11,10 @@ import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
-import com.paraiso.domain.sport.data.ScheduleResponse
 import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-
 
 class FBallApi(
     private val teamsDBAdapter: TeamsDBAdapter,
@@ -35,12 +33,12 @@ class FBallApi(
     }?.associate { standingsSubGroup ->
         standingsSubGroup.divName to standingsSubGroup.standings.map { it.toResponse() }
     }
-    suspend fun getLeaders() = leadersDBAdapter.findBySport(SiteRoute.FOOTBALL)?.categories?.let{ categories ->
-        //grab athletes from DB and associate with their id
+    suspend fun getLeaders() = leadersDBAdapter.findBySport(SiteRoute.FOOTBALL)?.categories?.let { categories ->
+        // grab athletes from DB and associate with their id
         val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
             athletesDBAdapter.findByIdsIn(athleteIds.map { it.toString() })
         }.associateBy { it.id }
-        //associate each category with athlete name and stats
+        // associate each category with athlete name and stats
         categories.associate {
             it.displayName to it.leaders.mapNotNull { leader ->
                 athletes[leader.athleteId.toString()]?.let { athlete ->
@@ -73,7 +71,7 @@ class FBallApi(
     }
 
     suspend fun getTeamSchedule(teamId: String, seasonYear: String, seasonType: String) =
-        schedulesDBAdapter.findById("${SiteRoute.FOOTBALL}-${teamId}-${seasonYear}-${seasonType}")?.let { schedule ->
+        schedulesDBAdapter.findById("${SiteRoute.FOOTBALL}-$teamId-$seasonYear-$seasonType")?.let { schedule ->
             val competitions = competitionsDBAdapter.findByIdIn(schedule.events)
             schedule.toDomain(competitions)
         }?.toResponse()

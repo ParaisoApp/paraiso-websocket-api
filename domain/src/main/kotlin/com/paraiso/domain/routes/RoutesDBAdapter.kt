@@ -1,6 +1,6 @@
 package com.paraiso.domain.routes
 
-interface RoutesDBAdapter{
+interface RoutesDBAdapter {
     suspend fun findById(id: String): RouteDetails?
     suspend fun save(routes: List<RouteDetails>): Int
 

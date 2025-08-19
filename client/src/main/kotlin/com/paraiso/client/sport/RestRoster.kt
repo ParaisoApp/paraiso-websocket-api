@@ -23,7 +23,7 @@ data class RestRosterNested(
 @Serializable
 data class RestAthleteNested(
     val position: String,
-    val items: List<RestAthlete>,
+    val items: List<RestAthlete>
 )
 
 @Serializable

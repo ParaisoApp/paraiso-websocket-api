@@ -101,7 +101,7 @@ fun RestSeason.toDomain() = SeasonDomain(
     year = year,
     type = type,
     name = name,
-    displayName = displayName,
+    displayName = displayName
 )
 
 fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomain(

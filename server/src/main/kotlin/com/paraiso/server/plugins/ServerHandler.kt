@@ -17,7 +17,7 @@ class ServerHandler(
 ) {
     suspend fun bootJobs() = coroutineScope {
         launch { cleanUserList() }
-        launch { if(autoBuild) buildRoutes() }
+        launch { if (autoBuild) buildRoutes() }
     }
     private suspend fun cleanUserList() = coroutineScope {
         while (isActive) {

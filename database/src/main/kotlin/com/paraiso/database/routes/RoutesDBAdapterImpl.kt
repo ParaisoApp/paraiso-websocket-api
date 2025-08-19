@@ -10,7 +10,6 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDBAdapter
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock

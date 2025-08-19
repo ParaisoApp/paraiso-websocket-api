@@ -23,7 +23,6 @@ import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersDBAdapter
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
@@ -137,7 +136,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     }
 
     suspend fun addUserReport(
-        id: String,
+        id: String
     ) =
         collection.updateOne(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
@@ -148,7 +147,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         )
 
     suspend fun addPostReport(
-        id: String,
+        id: String
     ) =
         collection.updateOne(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),

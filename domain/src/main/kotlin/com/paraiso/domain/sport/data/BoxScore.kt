@@ -28,6 +28,7 @@ data class StatTypes(
     val names: List<String>,
     val descriptions: List<String>
 )
+
 @Serializable
 data class BoxScoreResponse(
     val teams: List<FullTeamResponse>
@@ -57,7 +58,7 @@ data class StatTypesResponse(
 
 fun BoxScore.toResponse() =
     BoxScoreResponse(
-        teams = teams.map { it.toResponse() },
+        teams = teams.map { it.toResponse() }
     )
 
 fun FullTeam.toResponse() =
@@ -65,19 +66,19 @@ fun FullTeam.toResponse() =
         teamId = teamId,
         teamStats = teamStats.map { it.toResponse() },
         statTypes = statTypes?.toResponse(),
-        athletes = athletes?.map { it.toResponse() },
+        athletes = athletes?.map { it.toResponse() }
     )
 
 fun TeamStat.toResponse() =
     TeamStatResponse(
         displayValue = displayValue,
         abbreviation = abbreviation,
-        label = label,
+        label = label
     )
 
 fun StatTypes.toResponse() =
     StatTypesResponse(
         name = name,
         names = names,
-        descriptions = descriptions,
+        descriptions = descriptions
     )

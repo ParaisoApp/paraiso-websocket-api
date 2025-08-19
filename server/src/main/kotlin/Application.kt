@@ -30,7 +30,6 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
-import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
@@ -92,7 +91,7 @@ fun main() {
             standingsDBAdapterImpl,
             schedulesDBAdapter,
             competitionsDBAdapter,
-            leadersDBAdapterImpl,
+            leadersDBAdapterImpl
         ).bootJobs()
     }
     jobScope.launch {

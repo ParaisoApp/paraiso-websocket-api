@@ -5,7 +5,6 @@ class RoutesApi(private val routesDBAdapter: RoutesDBAdapter) {
 
     suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDBAdapter.save(routeDetails)
 
-
     suspend fun toggleFavoriteRoute(favorite: Favorite) {
         if (favorite.userId != null) {
             // toggle favorite from Route

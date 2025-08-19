@@ -1,7 +1,6 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.datetime.Instant

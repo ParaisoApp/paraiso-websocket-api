@@ -111,7 +111,7 @@ fun Schedule.toResponse() =
         id = id,
         season = season.toResponse(),
         teamId = teamId,
-        events = events.map { it.toResponse() },
+        events = events.map { it.toResponse() }
     )
 
 fun Competition.toResponse() =
@@ -122,7 +122,7 @@ fun Competition.toResponse() =
         date = date,
         teams = teams.map { it.toResponse() },
         venue = venue.toResponse(),
-        status = status.toResponse(),
+        status = status.toResponse()
     )
 
 fun Season.toResponse() =
@@ -130,7 +130,7 @@ fun Season.toResponse() =
         year = year,
         type = type,
         name = name,
-        displayName = displayName,
+        displayName = displayName
     )
 
 fun Status.toResponse() =
@@ -139,14 +139,14 @@ fun Status.toResponse() =
         period = period,
         name = name,
         state = state,
-        completed = completed,
+        completed = completed
     )
 
 fun Venue.toResponse() =
     VenueResponse(
         fullName = fullName,
         city = city,
-        state = state,
+        state = state
     )
 
 fun Schedule.toEntity() =
@@ -154,7 +154,7 @@ fun Schedule.toEntity() =
         id = id,
         season = season.toEntity(),
         teamId = teamId,
-        events = events.map { it.id },
+        events = events.map { it.id }
     )
 
 fun Season.toEntity() =
@@ -162,7 +162,7 @@ fun Season.toEntity() =
         year = year,
         type = type,
         name = name,
-        displayName = displayName,
+        displayName = displayName
     )
 
 fun ScheduleEntity.toDomain(events: List<Competition>) =
@@ -170,7 +170,7 @@ fun ScheduleEntity.toDomain(events: List<Competition>) =
         id = id,
         season = season.toDomain(),
         teamId = teamId,
-        events = events,
+        events = events
     )
 
 fun SeasonEntity.toDomain() =
@@ -178,5 +178,5 @@ fun SeasonEntity.toDomain() =
         year = year,
         type = type,
         name = name,
-        displayName = displayName,
+        displayName = displayName
     )

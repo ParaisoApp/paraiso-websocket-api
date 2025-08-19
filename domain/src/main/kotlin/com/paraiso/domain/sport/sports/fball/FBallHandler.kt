@@ -15,13 +15,10 @@ import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Schedule
-import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
-import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
-import com.paraiso.domain.util.ServerConfig
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
@@ -112,7 +109,7 @@ class FBallHandler(
                     fBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                if(schedulesRes.isNotEmpty()){
+                if (schedulesRes.isNotEmpty()) {
                     schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
                     competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
                     addScheduleGamePosts(teams, schedulesRes)
@@ -155,7 +152,7 @@ class FBallHandler(
                     }
                 }
             )
-            //add posts for base sport route
+            // add posts for base sport route
             ServerState.posts.putAll(
                 schedules.flatMap { it.events }.toSet().associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
@@ -188,7 +185,7 @@ class FBallHandler(
                     fBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                if(rostersRes.isNotEmpty()){
+                if (rostersRes.isNotEmpty()) {
                     rostersDBAdapter.save(rostersRes.map { it.toEntity() })
                     athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
                     coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })

@@ -6,11 +6,8 @@ import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.sport.adapters.AthletesDBAdapter
-import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.data.Athlete
-import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.util.Constants.ID
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 
 class AthletesDBAdapterImpl(database: MongoDatabase) : AthletesDBAdapter {

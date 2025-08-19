@@ -85,7 +85,7 @@ fun Roster.toResponse() =
         id = id,
         athletes = athletes.map { it.toResponse() },
         coach = coach?.toResponse(),
-        teamId = teamId,
+        teamId = teamId
     )
 
 fun Athlete.toResponse() =
@@ -110,7 +110,7 @@ fun Coach.toResponse() =
         id = id,
         firstName = firstName,
         lastName = lastName,
-        experience = experience,
+        experience = experience
     )
 
 fun Roster.toEntity() =
@@ -118,5 +118,5 @@ fun Roster.toEntity() =
         id = id,
         athletes = athletes.map { it.id },
         coach = coach?.id,
-        teamId = teamId,
+        teamId = teamId
     )

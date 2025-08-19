@@ -59,7 +59,7 @@ fun Standings.toResponse() =
     StandingsResponse(
         teamId = teamId,
         seed = seed,
-        stats = stats.map { it.toResponse() },
+        stats = stats.map { it.toResponse() }
     )
 
 fun StandingsStat.toResponse() =
@@ -67,5 +67,5 @@ fun StandingsStat.toResponse() =
         shortDisplayName = shortDisplayName,
         displayValue = displayValue,
         displayName = displayName,
-        value = value,
+        value = value
     )

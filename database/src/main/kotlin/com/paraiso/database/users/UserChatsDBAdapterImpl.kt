@@ -10,7 +10,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.users.UserChat
 import com.paraiso.domain.users.UserChatsDBAdapter
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock

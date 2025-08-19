@@ -1,10 +1,8 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import java.util.UUID
 
 class UserChatsApi(private val userChatsDBAdapter: UserChatsDBAdapter) {

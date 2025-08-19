@@ -14,15 +14,11 @@ import com.paraiso.domain.sport.adapters.RostersDBAdapter
 import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
-import com.paraiso.domain.sport.data.Coach
-import com.paraiso.domain.sport.data.Roster
 import com.paraiso.domain.sport.data.Schedule
-import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
-import com.paraiso.domain.util.ServerConfig
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
@@ -115,7 +111,7 @@ class BBallHandler(
                     bBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                if(schedulesRes.isNotEmpty()){
+                if (schedulesRes.isNotEmpty()) {
                     schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
                     competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
                     addScheduleGamePosts(teams, schedulesRes)
@@ -132,7 +128,7 @@ class BBallHandler(
             !ServerState.posts.map { it.key }
                 .contains(schedules.firstOrNull()?.events?.firstOrNull()?.id)
         ) {
-            //add posts for team sport route - separate for focused discussion
+            // add posts for team sport route - separate for focused discussion
             ServerState.posts.putAll(
                 schedules.associate {
                     teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
@@ -159,7 +155,7 @@ class BBallHandler(
                     }
                 }
             )
-            //add posts for base sport route
+            // add posts for base sport route
             ServerState.posts.putAll(
                 schedules.flatMap { it.events }.toSet().associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
@@ -192,7 +188,7 @@ class BBallHandler(
                     bBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                if(rostersRes.isNotEmpty()){
+                if (rostersRes.isNotEmpty()) {
                     rostersDBAdapter.save(rostersRes.map { it.toEntity() })
                     athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
                     coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })

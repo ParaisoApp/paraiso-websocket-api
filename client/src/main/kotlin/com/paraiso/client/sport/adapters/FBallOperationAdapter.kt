@@ -2,7 +2,6 @@ package com.paraiso.client.sport.adapters
 
 import com.paraiso.client.sport.RestGameStats
 import com.paraiso.client.sport.RestLeaders
-import com.paraiso.client.sport.RestRoster
 import com.paraiso.client.sport.RestRosterNested
 import com.paraiso.client.sport.RestSchedule
 import com.paraiso.client.sport.RestScoreboard

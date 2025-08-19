@@ -1,6 +1,6 @@
 package com.paraiso.domain.admin
 
-interface UserReportsDBAdapter{
+interface UserReportsDBAdapter {
     suspend fun getAll(): List<UserReport>
     suspend fun save(userReports: List<UserReport>): Int
     suspend fun addUserReport(

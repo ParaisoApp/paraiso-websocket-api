@@ -5,7 +5,6 @@ import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
-import com.paraiso.domain.sport.data.Roster
 import com.paraiso.domain.sport.data.RosterEntity
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull

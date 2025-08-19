@@ -4,7 +4,6 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.toResponse
-import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.domain.sport.sports.fball.FBallState
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
