@@ -29,16 +29,9 @@ import com.paraiso.domain.sport.data.Team as TeamDomain
 class BBallOperationAdapter() : BBallOperation, BaseAdapter, Klogging {
 
     companion object {
-        private const val SEASON = 2025
-        private const val REGULAR = 2
         private const val LIMIT = 10
         private val dispatcher = Dispatchers.IO
         private val clientConfig = ClientConfig()
-
-        // private const val PLAYOFFS = 1
-        // private const val EAST = 5
-        // private const val WEST = 6
-        // private const val OVERALL = 0
     }
 
     override suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {
