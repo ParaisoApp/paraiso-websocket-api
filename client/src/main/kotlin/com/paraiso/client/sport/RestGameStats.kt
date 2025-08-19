@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.routes.SiteRoute
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Athlete as AthleteDomain
 import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain
@@ -61,11 +62,11 @@ data class Position(
     val abbreviation: String
 )
 
-fun RestGameStats.toDomain() = BoxScoreDomain(
-    teams = boxscore.teams.map { it.toDomain(boxscore.players) }
+fun RestGameStats.toDomain(sport: SiteRoute) = BoxScoreDomain(
+    teams = boxscore.teams.map { it.toDomain(boxscore.players, sport) }
 )
 
-fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
+fun TeamWithStats.toDomain(players: List<Player>?, sport: SiteRoute): FullTeamDomain {
     val stats = players?.first { it.team.id == team.id }?.statistics?.first()
     return FullTeamDomain(
         teamId = team.id,

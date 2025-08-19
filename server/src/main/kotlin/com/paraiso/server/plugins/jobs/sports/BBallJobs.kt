@@ -3,6 +3,7 @@ package com.paraiso.com.paraiso.server.plugins.jobs.sports
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.toResponse
 import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
@@ -18,9 +19,10 @@ class BBallJobs {
             launch {
                 var lastSentScoreboard: Scoreboard? = null
                 while (isActive) {
-                    if (BBallState.scoreboard != null && lastSentScoreboard != BBallState.scoreboard) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, BBallState.scoreboard)
-                        lastSentScoreboard = BBallState.scoreboard
+                    val scoreboard = BBallState.scoreboard
+                    if (scoreboard != null && lastSentScoreboard != scoreboard) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, scoreboard.toResponse())
+                        lastSentScoreboard = scoreboard
                     }
                     delay(5 * 1000)
                 }
@@ -28,9 +30,10 @@ class BBallJobs {
             launch {
                 var lastSentBoxScores = listOf<FullTeam>()
                 while (isActive) {
-                    if (BBallState.boxScores.isNotEmpty() && lastSentBoxScores != BBallState.boxScores) {
-                        session.sendTypedMessage(MessageType.BOX_SCORES, BBallState.boxScores)
-                        lastSentBoxScores = BBallState.boxScores
+                    val boxScores = BBallState.boxScores
+                    if (boxScores.isNotEmpty() && lastSentBoxScores != boxScores) {
+                        session.sendTypedMessage(MessageType.BOX_SCORES, boxScores.map { it.toResponse() })
+                        lastSentBoxScores = boxScores
                     }
                     delay(5 * 1000)
                 }
@@ -45,10 +48,10 @@ class BBallJobs {
                     val currentScoreboard = BBallState.scoreboard
                     currentScoreboard?.let { sb ->
                         val filteredSb = currentScoreboard.copy(
-                            competitions = sb.competitions.filter { comp -> comp.teams.map { it.team.id }.contains(content) }
+                            competitions = sb.competitions.filter { comp -> comp.teams.map { it.teamId }.contains(content) }
                         )
                         if (lastSentScoreboard != filteredSb) {
-                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb)
+                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb.toResponse())
                             lastSentScoreboard = filteredSb
                         }
                         delay(5 * 1000)
@@ -62,10 +65,11 @@ class BBallJobs {
 
                     if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
                         currentScoreboard.competitions.firstOrNull { comp ->
-                            comp.teams.map { it.team.id }.contains(content)
-                        }?.teams?.map { it.team.id }
+                            comp.teams.map { it.teamId }.contains(content)
+                        }?.teams?.map { it.teamId }
                             ?.let { teamIds ->
                                 currentBoxScores.filter { boxScore -> teamIds.contains(boxScore.teamId) }
+                                    .map { it.toResponse() }
                                     .let { filteredBoxScores ->
                                         session.sendTypedMessage(MessageType.BOX_SCORES, filteredBoxScores)
                                     }

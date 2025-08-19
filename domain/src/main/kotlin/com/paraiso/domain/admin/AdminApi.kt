@@ -9,53 +9,34 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-class AdminApi {
+class AdminApi(
+    private val postReportsDBAdapter: PostReportsDBAdapter,
+    private val userReportsDBAdapter: UserReportsDBAdapter
+) {
+    suspend fun getUserReports() =
+        userReportsDBAdapter.getAll().map { userReport ->
+            userReport.toResponse()
+        }
 
-    companion object {
-        const val PARTIAL_RETRIEVE_LIM = 5
-    }
-    fun getUserReports() =
-        ServerState.userReports.values.mapNotNull { userReport ->
-            ServerState.userList[userReport.userId]?.let { user ->
-                userReport.toResponse(user.buildUserResponse())
-            } ?: run { null }
-        }.sortedBy { it.updatedOn }
-
-    fun getPostReports() =
-        ServerState.postReports.values.mapNotNull { postReport ->
-            ServerState.posts[postReport.postId]?.let { post ->
-                postReport.toResponse(post.toResponse())
-            } ?: run { null }
-        }.sortedBy { it.updatedOn }
+    suspend fun getPostReports() =
+        postReportsDBAdapter.getAll().map { postReport ->
+            postReport.toResponse()
+        }
 
     suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
         launch {
-            ServerState.userReports[report.id]?.let { userReport ->
-                userReport.reportedBy.toMutableSet().let { mutableReports ->
-                    mutableReports.add(sessionUserId)
-                    ServerState.userReports[report.id] = userReport.copy(
-                        reportedBy = mutableReports,
-                        updatedOn = now
+            val modifiedCount = userReportsDBAdapter.addUserReport(report.id, sessionUserId)
+            if(modifiedCount == 0L){
+                userReportsDBAdapter.save(
+                    listOf(
+                        UserReport(
+                            id = report.id,
+                            reportedBy = setOf(sessionUserId),
+                            createdOn = now,
+                            updatedOn = now
+                        )
                     )
-                }
-            } ?: run {
-                ServerState.userReports[report.id] = UserReport(
-                    userId = report.id,
-                    reportedBy = setOf(sessionUserId),
-                    createdOn = now,
-                    updatedOn = now
-                )
-            }
-        }
-        ServerState.userList.values.filter {
-            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
-        }.forEach { user ->
-            user.userReports.toMutableMap().let { mutableReports ->
-                mutableReports[report.id] = false
-                ServerState.userList[user.id] = user.copy(
-                    userReports = mutableReports,
-                    updatedOn = now
                 )
             }
         }
@@ -64,32 +45,17 @@ class AdminApi {
     suspend fun reportPost(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
         launch {
-            ServerState.postReports[report.id]?.let { postReport ->
-                postReport.reportedBy.toMutableSet().let { mutableReports ->
-                    mutableReports.add(sessionUserId)
-                    ServerState.postReports[report.id] = postReport.copy(
-                        reportedBy = mutableReports,
-                        updatedOn = now
+            val modifiedCount = postReportsDBAdapter.addPostReport(report.id, sessionUserId)
+            if(modifiedCount == 0L) {
+                postReportsDBAdapter.save(
+                    listOf(
+                        PostReport(
+                            id = report.id,
+                            reportedBy = setOf(sessionUserId),
+                            createdOn = now,
+                            updatedOn = now
+                        )
                     )
-                }
-            } ?: run {
-                ServerState.postReports[report.id] = PostReport(
-                    postId = report.id,
-                    reportedBy = setOf(sessionUserId),
-                    createdOn = now,
-                    updatedOn = now
-                )
-            }
-        }
-
-        ServerState.userList.values.filter {
-            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
-        }.forEach { user ->
-            user.postReports.toMutableMap().let { mutableReports ->
-                mutableReports[report.id] = false
-                ServerState.userList[user.id] = user.copy(
-                    postReports = mutableReports,
-                    updatedOn = Clock.System.now()
                 )
             }
         }

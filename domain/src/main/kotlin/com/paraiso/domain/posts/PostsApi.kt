@@ -36,6 +36,9 @@ class PostsApi {
             )
         }
 
+    fun getByIdBasic(postSearchId: String) =
+        ServerState.posts[postSearchId]
+
     // search by partial for autocomplete
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {

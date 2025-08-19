@@ -6,6 +6,8 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -21,6 +23,8 @@ import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersDBAdapter
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
@@ -29,7 +33,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     private val collection = database.getCollection("users", User::class.java)
 
     suspend fun findById(id: String) =
-        collection.find(eq(User::id.name, id)).firstOrNull()
+        collection.find(eq(ID, id)).firstOrNull()
 
     suspend fun findByName(name: String) =
         collection.find(eq(User::name.name, name)).firstOrNull()
@@ -62,12 +66,20 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     fun getFollowersById(id: String) =
         collection.find(eq(User::followers.name, id))
 
-    suspend fun save(users: List<User>) =
-        collection.insertMany(users)
+    suspend fun save(users: List<User>): Int {
+        val bulkOps = users.map { user ->
+            ReplaceOneModel(
+                eq(ID, user.id),
+                user,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
     suspend fun setMentions(id: String, replyId: String) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 set("${User::replies.name}.$replyId", false),
                 set(User::updatedOn.name, Clock.System.now())
@@ -75,7 +87,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         )
     suspend fun setSettings(id: String, settings: UserSettings) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 set(User::settings.name, settings),
                 set(User::updatedOn.name, Clock.System.now())
@@ -94,7 +106,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
             set("${User::replies.name}.$k", v)
         }
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 chatUpdates +
                     replyUpdates +
@@ -115,7 +127,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
             set("${User::postReports.name}.$k", v)
         }
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 userReportUpdates +
                     postReportUpdates +
@@ -124,12 +136,34 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         )
     }
 
+    suspend fun addUserReport(
+        id: String,
+    ) =
+        collection.updateOne(
+            `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
+            combine(
+                addToSet(User::userReports.name, id),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
+    suspend fun addPostReport(
+        id: String,
+    ) =
+        collection.updateOne(
+            `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
+            combine(
+                addToSet(User::postReports.name, id),
+                set(User::updatedOn.name, Clock.System.now())
+            )
+        )
+
     suspend fun addFollowers(
         id: String,
         followerUserId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 addToSet(User::followers.name, followerUserId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -141,7 +175,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         followerUserId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 pull(User::followers.name, followerUserId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -153,7 +187,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         followingUserId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 addToSet(User::following.name, followingUserId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -165,7 +199,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         followingUserId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 pull(User::following.name, followingUserId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -177,7 +211,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         blockUserId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 addToSet(User::blockList.name, blockUserId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -189,7 +223,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         blockUserId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 pull(User::blockList.name, blockUserId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -201,7 +235,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         routeFavorite: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 addToSet(User::routeFavorites.name, routeFavorite),
                 set(User::updatedOn.name, Clock.System.now())
@@ -213,7 +247,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         routeFavorite: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 pull(User::routeFavorites.name, routeFavorite),
                 set(User::updatedOn.name, Clock.System.now())
@@ -225,7 +259,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         postId: String
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 addToSet(User::posts.name, postId),
                 set(User::updatedOn.name, Clock.System.now())
@@ -238,7 +272,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         chatRef: ChatRef
     ) =
         collection.updateOne(
-            eq(User::id.name, id),
+            eq(ID, id),
             combine(
                 set("${User::chats.name}.$chatId", chatRef),
                 set(User::updatedOn.name, Clock.System.now())
@@ -249,7 +283,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         tag: Tag
     ) =
         collection.updateOne(
-            eq(User::id.name, tag.userId),
+            eq(ID, tag.userId),
             combine(
                 set(User::tag.name, tag.tag),
                 set(User::updatedOn.name, Clock.System.now())
@@ -260,7 +294,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         ban: Ban
     ) =
         collection.updateOne(
-            eq(User::id.name, ban.userId),
+            eq(ID, ban.userId),
             combine(
                 set(User::banned.name, true),
                 set(User::updatedOn.name, Clock.System.now())

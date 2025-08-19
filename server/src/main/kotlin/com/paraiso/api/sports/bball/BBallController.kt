@@ -39,7 +39,11 @@ fun Route.bballController(bBallApi: BBallApi) {
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/team_schedule") {
-            bBallApi.getTeamSchedule(call.request.queryParameters["teamId"] ?: "")?.let {
+            bBallApi.getTeamSchedule(
+                call.request.queryParameters["teamId"] ?: "",
+                call.request.queryParameters["seasonYear"] ?: "",
+                call.request.queryParameters["seasonType"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }

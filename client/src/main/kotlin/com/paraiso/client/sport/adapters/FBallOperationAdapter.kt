@@ -3,6 +3,7 @@ package com.paraiso.client.sport.adapters
 import com.paraiso.client.sport.RestGameStats
 import com.paraiso.client.sport.RestLeaders
 import com.paraiso.client.sport.RestRoster
+import com.paraiso.client.sport.RestRosterNested
 import com.paraiso.client.sport.RestSchedule
 import com.paraiso.client.sport.RestScoreboard
 import com.paraiso.client.sport.RestStandingsContainer
@@ -10,6 +11,7 @@ import com.paraiso.client.sport.RestTeams
 import com.paraiso.client.sport.toDomain
 import com.paraiso.client.util.BaseAdapter
 import com.paraiso.client.util.ClientConfig
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.fball.FBallOperation
 import io.klogging.Klogging
 import io.ktor.client.call.body
@@ -68,7 +70,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -85,7 +87,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            standingsResponse.toDomain()
+            standingsResponse.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -102,7 +104,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             emptyList()
@@ -111,7 +113,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
     override suspend fun getRoster(teamId: String): RosterDomain? = withContext(dispatcher) {
         try {
             val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/roster"
-            val response: RestRoster = getHttpClient().use { httpClient ->
+            val response: RestRosterNested = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -119,7 +121,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -136,7 +138,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -144,7 +146,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
     }
     override suspend fun getSchedule(teamId: String): ScheduleDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/schedule?season=$SEASON"
+            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/schedule"
             val response: RestSchedule = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -153,7 +155,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

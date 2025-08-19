@@ -10,6 +10,8 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
@@ -18,15 +20,15 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.client.model.Updates.unset
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.database.util.fieldsEq
+import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostsDBAdapter
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
@@ -45,7 +47,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
     private val collection = database.getCollection("posts", Post::class.java)
 
     suspend fun findById(id: String) =
-        collection.find(eq(Post::id.name, id)).firstOrNull()
+        collection.find(eq(ID, id)).firstOrNull()
 
     private fun getInitAggPipeline(
         initialFilter: Bson
@@ -58,7 +60,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
             lookup(
                 "users", // from collection
                 Post::userId.name, // localField
-                User::id.name, // foreignField
+                ID, // foreignField
                 "userInfo" // as
             ),
             limit(RETRIEVE_LIM)
@@ -145,7 +147,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
             eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
         )
         if (postSearchId == SiteRoute.HOME.name) {
-            homeFilters.add(fieldsEq(Post::rootId, Post::id))
+            homeFilters.add(eqId(Post::rootId))
         }
 
         val orConditions = mutableListOf<Bson>()
@@ -175,11 +177,11 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         subPostIds: Set<String>,
         userFollowing: Set<String>
     ) = coroutineScope {
-        collection.find(`in`(Post::id.name, ids))
+        collection.find(`in`(ID, ids))
             .limit(RETRIEVE_LIM)
 
         val initialFilter = and(
-            `in`(Post::id.name, subPostIds),
+            `in`(ID, subPostIds),
             gt(Post::createdOn.name, range),
             ne(Post::status.name, PostStatus.DELETED),
             `in`(Post::type.name, filters.postTypes)
@@ -195,8 +197,16 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         collection.find(Filters.regex(Post::title.name, partial, "i"))
             .limit(PARTIAL_RETRIEVE_LIM)
 
-    suspend fun save(posts: List<Post>) =
-        collection.insertMany(posts)
+    suspend fun save(posts: List<Post>): Int {
+        val bulkOps = posts.map { post ->
+            ReplaceOneModel(
+                eq(ID, post.id),
+                post,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
     suspend fun editPost(
         id: String,
@@ -206,7 +216,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         data: String
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 set(Post::title.name, title),
                 set(Post::content.name, content),
@@ -221,7 +231,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         subPostId: String
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 addToSet(Post::subPosts.name, subPostId),
                 inc(Post::count.name, 1),
@@ -234,7 +244,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         subPostId: String
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 pull(Post::subPosts.name, subPostId),
                 inc(Post::count.name, -1),
@@ -248,7 +258,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         upvote: Boolean
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 set("${Post::votes.name}.$voteUserId", upvote),
                 set(Post::updatedOn.name, Clock.System.now())
@@ -260,7 +270,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         voteUserId: String
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 unset("${Post::votes.name}.$voteUserId"),
                 set(Post::updatedOn.name, Clock.System.now())
@@ -271,7 +281,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         id: String
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 set(Post::status.name, PostStatus.DELETED),
                 set(Post::updatedOn.name, Clock.System.now())
@@ -283,7 +293,7 @@ class PostsDBAdapterImpl(database: MongoDatabase) : PostsDBAdapter {
         increment: Int // +1 for inc | -1 for dec
     ) =
         collection.updateOne(
-            eq(Post::id.name, id),
+            eq(ID, id),
             combine(
                 inc(Post::count.name, 1 * increment),
                 set(Post::updatedOn.name, Clock.System.now())

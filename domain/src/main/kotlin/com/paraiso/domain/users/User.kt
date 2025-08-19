@@ -2,6 +2,7 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -10,7 +11,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class User(
-    val id: String,
+    @SerialName(ID) val id: String,
     val name: String?,
     val fullName: String?,
     val email: String?,

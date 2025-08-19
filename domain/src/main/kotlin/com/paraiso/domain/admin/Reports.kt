@@ -2,12 +2,15 @@ package com.paraiso.domain.admin
 
 import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserReport(
-    val userId: String,
+    @SerialName(ID) val id: String,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -15,7 +18,7 @@ data class UserReport(
 
 @Serializable
 data class UserReportResponse(
-    val user: UserResponse,
+    val userId: String,
     val reportedBy: Map<String, Boolean>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -23,7 +26,7 @@ data class UserReportResponse(
 
 @Serializable
 data class PostReport(
-    val postId: String,
+    @SerialName(ID) val id: String,
     val reportedBy: Set<String>,
     val createdOn: Instant,
     val updatedOn: Instant
@@ -31,23 +34,23 @@ data class PostReport(
 
 @Serializable
 data class PostReportResponse(
-    val post: PostResponse,
+    val postId: String,
     val reportedBy: Map<String, Boolean>,
     val createdOn: Instant,
     val updatedOn: Instant
 )
 
-fun UserReport.toResponse(user: UserResponse) =
+fun UserReport.toResponse() =
     UserReportResponse(
-        user = user,
+        userId = id,
         reportedBy = reportedBy.associateWith { true },
         createdOn = createdOn,
         updatedOn = updatedOn
     )
 
-fun PostReport.toResponse(post: PostResponse) =
+fun PostReport.toResponse() =
     PostReportResponse(
-        post = post,
+        postId = id,
         reportedBy = reportedBy.associateWith { true },
         createdOn = createdOn,
         updatedOn = updatedOn

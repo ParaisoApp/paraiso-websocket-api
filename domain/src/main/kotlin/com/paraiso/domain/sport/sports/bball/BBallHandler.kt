@@ -6,10 +6,24 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.adapters.AthletesDBAdapter
+import com.paraiso.domain.sport.adapters.CoachesDBAdapter
+import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
+import com.paraiso.domain.sport.adapters.LeadersDBAdapter
+import com.paraiso.domain.sport.adapters.RostersDBAdapter
+import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
+import com.paraiso.domain.sport.adapters.StandingsDBAdapter
+import com.paraiso.domain.sport.adapters.TeamsDBAdapter
+import com.paraiso.domain.sport.data.Coach
+import com.paraiso.domain.sport.data.Roster
+import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
+import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
+import com.paraiso.domain.util.ServerConfig
+import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
@@ -24,7 +38,15 @@ import kotlin.time.Duration.Companion.hours
 
 class BBallHandler(
     private val bBallOperation: BBallOperation,
-    private val routesApi: RoutesApi
+    private val routesApi: RoutesApi,
+    private val teamsDBAdapter: TeamsDBAdapter,
+    private val rostersDBAdapter: RostersDBAdapter,
+    private val athletesDBAdapter: AthletesDBAdapter,
+    private val coachesDBAdapter: CoachesDBAdapter,
+    private val standingsDBAdapter: StandingsDBAdapter,
+    private val schedulesDBAdapter: SchedulesDBAdapter,
+    private val competitionsDBAdapter: CompetitionsDBAdapter,
+    private val leadersDBAdapter: LeadersDBAdapter
 ) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
@@ -32,114 +54,122 @@ class BBallHandler(
         launch { getStandings() }
         launch { getTeams() }
         launch { getLeaders() }
+        launch { getRosters() }
+        launch { getSchedules() }
     }
 
     private suspend fun getStandings() = coroutineScope {
         while (isActive) {
             bBallOperation.getStandings().also { standingsRes ->
-                if (standingsRes != BBallState.standings) BBallState.standings = standingsRes
+                if (standingsRes != null) {
+                    standingsDBAdapter.save(listOf(standingsRes))
+                }
             }
-            delay(6 * 60 * 60 * 1000)
+            delay(12 * 60 * 60 * 1000)
         }
     }
 
     private suspend fun getTeams() = coroutineScope {
-        bBallOperation.getTeams().also { teamsRes ->
-            teamsRes.map { it.id }.let { teamIds ->
-                launch { getRosters(teamIds) }
-                launch { getSchedules(teamIds) }
-            }
-            launch {
-                teamsRes.forEach { addTeamRoute(it) }
-            }
-        }
-        while (isActive) {
+        if (autoBuild) {
             bBallOperation.getTeams().also { teamsRes ->
-                if (teamsRes != BBallState.teams) BBallState.teams = teamsRes
+                launch {
+                    addTeamRoutes(teamsRes)
+                }
+                teamsDBAdapter.save(teamsRes)
             }
-            delay(6 * 60 * 60 * 1000)
         }
     }
 
-    private fun addTeamRoute(team: Team) {
-        val now = Clock.System.now()
-        val teamRouteId = "/s/basketball/t/${team.abbreviation}"
-        routesApi.saveRoute(
+    private suspend fun addTeamRoutes(teams: List<Team>) {
+        teams.map {
+            val now = Clock.System.now()
             RouteDetails(
-                id = teamRouteId,
+                id = "/s/basketball/t/${it.abbreviation}",
                 route = SiteRoute.BASKETBALL,
-                modifier = team.abbreviation,
-                title = team.displayName,
+                modifier = it.abbreviation,
+                title = it.displayName,
                 userFavorites = emptySet(),
                 about = null,
                 createdOn = now,
                 updatedOn = now
             )
-        )
+        }.let {
+            routesApi.saveRoutes(it)
+        }
     }
 
     private suspend fun getLeaders() = coroutineScope {
         while (isActive) {
-            bBallOperation.getLeaders().also { leadersRes ->
-                if (leadersRes != BBallState.leaders) BBallState.leaders = leadersRes
+            bBallOperation.getLeaders()?.let { leadersRes ->
+                leadersDBAdapter.save(listOf(leadersRes))
             }
             delay(6 * 60 * 60 * 1000)
         }
     }
 
-    private suspend fun getSchedules(teamIds: List<String>) = coroutineScope {
-        while (isActive) {
-            teamIds.map { teamId ->
+    private suspend fun getSchedules() = coroutineScope {
+        if (autoBuild) {
+            val teams = teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
+            teams.map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
-                if (schedulesRes != BBallState.schedules) BBallState.schedules = schedulesRes
-                if (
-                    !ServerState.posts.map { it.key }
-                        .contains(schedulesRes.firstOrNull()?.events?.firstOrNull()?.id)
-                ) {
-                    ServerState.posts.putAll(
-                        schedulesRes.associate { it.team.abbreviation to it.events }
-                            .flatMap { (key, values) ->
-                                values.map { competition ->
-                                    "$TEAM_PREFIX${competition.id}-$key" to Post(
-                                        id = "$TEAM_PREFIX${competition.id}-$key",
-                                        userId = null,
-                                        title = competition.shortName,
-                                        content = "${competition.date}-${competition.shortName}",
-                                        type = PostType.GAME,
-                                        media = null,
-                                        votes = emptyMap(),
-                                        parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
-                                        rootId = "$TEAM_PREFIX${competition.id}-$key",
-                                        status = PostStatus.ACTIVE,
-                                        data = "$TEAM_PREFIX${competition.id}-$key",
-                                        subPosts = mutableSetOf(),
-                                        count = 0,
-                                        route = null,
-                                        createdOn = Clock.System.now(),
-                                        updatedOn = Clock.System.now()
-                                    )
-                                }
-                            }
-                    )
-                }
+                schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
+                competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
+                addScheduleGamePosts(teams, schedulesRes)
             }
-            delay(6 * 60 * 60 * 1000)
         }
     }
 
-    private suspend fun getRosters(teamIds: List<String>) = coroutineScope {
-        while (isActive) {
-            teamIds.map { teamId ->
+    private fun addScheduleGamePosts(
+        teams: List<Team>,
+        schedules: List<Schedule>
+    ) {
+        if (
+            !ServerState.posts.map { it.key }
+                .contains(schedules.firstOrNull()?.events?.firstOrNull()?.id)
+        ) {
+            ServerState.posts.putAll(
+                schedules.associate {
+                    teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
+                }.flatMap { (key, values) ->
+                    values.map { competition ->
+                        "$TEAM_PREFIX${competition.id}-$key" to Post(
+                            id = "$TEAM_PREFIX${competition.id}-$key",
+                            userId = null,
+                            title = competition.shortName,
+                            content = "${competition.date}-${competition.shortName}",
+                            type = PostType.GAME,
+                            media = null,
+                            votes = emptyMap(),
+                            parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
+                            rootId = "$TEAM_PREFIX${competition.id}-$key",
+                            status = PostStatus.ACTIVE,
+                            data = "$TEAM_PREFIX${competition.id}-$key",
+                            subPosts = mutableSetOf(),
+                            count = 0,
+                            route = null,
+                            createdOn = Clock.System.now(),
+                            updatedOn = Clock.System.now()
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    private suspend fun getRosters() = coroutineScope {
+        if (autoBuild) {
+            teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
-                if (rostersRes != BBallState.rosters) BBallState.rosters = rostersRes
+                rostersDBAdapter.save(rostersRes.map { it.toEntity() })
+                athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
+                coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
             }
-            delay(6 * 60 * 60 * 1000)
         }
     }
     private suspend fun buildScoreboard() {

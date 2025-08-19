@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.routes.SiteRoute
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
 import com.paraiso.domain.sport.data.Standings as StandingsDomain
@@ -56,7 +57,8 @@ data class BBallStandingsStat(
     val value: String
 )
 
-fun RestStandingsContainer.toDomain() = AllStandingsDomain(
+fun RestStandingsContainer.toDomain(sport: SiteRoute) = AllStandingsDomain(
+    id = sport.toString(),
     standingsGroups = content.standings.groups.map { it.toDomain() }
 )
 

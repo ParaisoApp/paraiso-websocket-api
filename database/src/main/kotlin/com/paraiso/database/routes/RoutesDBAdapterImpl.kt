@@ -1,6 +1,8 @@
 package com.paraiso.database.routes
 
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -8,39 +10,49 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDBAdapter
+import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 class RoutesDBAdapterImpl(database: MongoDatabase) : RoutesDBAdapter {
-    private val collection = database.getCollection("routes", RouteDetailsEntity::class.java)
+    private val collection = database.getCollection("routes", RouteDetails::class.java)
 
-    suspend fun findById(id: String) =
-        collection.find(Filters.eq(RouteDetailsEntity::id.name, id)).firstOrNull()
+    override suspend fun findById(id: String) =
+        collection.find(Filters.eq(ID, id)).firstOrNull()
 
-    suspend fun save(routes: List<RouteDetailsEntity>) =
-        collection.insertMany(routes)
+    override suspend fun save(routes: List<RouteDetails>): Int {
+        val bulkOps = routes.map { route ->
+            ReplaceOneModel(
+                Filters.eq(ID, route.id),
+                route,
+                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            )
+        }
+        return collection.bulkWrite(bulkOps).modifiedCount
+    }
 
-    suspend fun addUserFavorites(
+    override suspend fun addUserFavorites(
         route: String,
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq(RouteDetailsEntity::id.name, route),
+            Filters.eq(ID, route),
             combine(
-                addToSet(RouteDetailsEntity::userFavorites.name, userFavoriteId),
-                set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
+                addToSet(RouteDetails::userFavorites.name, userFavoriteId),
+                set(RouteDetails::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeUserFavorites(
+    override suspend fun removeUserFavorites(
         route: String,
         userFavoriteId: String
     ) =
         collection.updateOne(
-            Filters.eq(RouteDetailsEntity::id.name, route),
+            Filters.eq(ID, route),
             combine(
-                pull(RouteDetailsEntity::userFavorites.name, userFavoriteId),
-                set(RouteDetailsEntity::updatedOn.name, Clock.System.now())
+                pull(RouteDetails::userFavorites.name, userFavoriteId),
+                set(RouteDetails::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 }

@@ -4,6 +4,7 @@ import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.util.ServerState
@@ -167,6 +168,35 @@ class UsersApi {
             )
         }
     }
+
+    fun addUserReport(report: Report){
+        ServerState.userList.values.filter {
+            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
+        }.forEach { user ->
+            user.userReports.toMutableMap().let { mutableReports ->
+                mutableReports[report.id] = false
+                ServerState.userList[user.id] = user.copy(
+                    userReports = mutableReports,
+                    updatedOn = Clock.System.now()
+                )
+            }
+        }
+    }
+
+    fun addPostReport(report: Report){
+        ServerState.userList.values.filter {
+            it.roles == UserRole.ADMIN || it.roles == UserRole.MOD
+        }.forEach { user ->
+            user.postReports.toMutableMap().let { mutableReports ->
+                mutableReports[report.id] = false
+                ServerState.userList[user.id] = user.copy(
+                    postReports = mutableReports,
+                    updatedOn = Clock.System.now()
+                )
+            }
+        }
+    }
+
 
     suspend fun follow(follow: Follow) = coroutineScope {
         val now = Clock.System.now()

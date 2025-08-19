@@ -1,5 +1,6 @@
 package com.paraiso
 
+import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.client.sport.adapters.BBallOperationAdapter
 import com.paraiso.client.sport.adapters.FBallOperationAdapter
 import com.paraiso.com.paraiso.api.admin.adminController
@@ -12,11 +13,24 @@ import com.paraiso.com.paraiso.api.sports.fball.fballController
 import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
+import com.paraiso.database.admin.PostReportsDBAdapterImpl
+import com.paraiso.database.admin.UserReportsDBAdapterImpl
+import com.paraiso.database.routes.RoutesDBAdapterImpl
+import com.paraiso.database.sports.AthletesDBAdapterImpl
+import com.paraiso.database.sports.CoachesDBAdapterImpl
+import com.paraiso.database.sports.CompetitionsDBAdapterImpl
+import com.paraiso.database.sports.LeadersDBAdapterImpl
+import com.paraiso.database.sports.RostersDBAdapterImpl
+import com.paraiso.database.sports.SchedulesDBAdapterImpl
+import com.paraiso.database.sports.StandingsDBAdapterImpl
+import com.paraiso.database.sports.TeamsDBAdapterImpl
+import com.paraiso.database.users.UserChatsDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
@@ -52,27 +66,57 @@ import java.time.Duration
 fun main() {
     val job = Job()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
-    val routesApi = RoutesApi()
+
+    val uri = "mongodb://localhost:27017"
+    val mongoClient = MongoClient.create(uri)
+    val database = mongoClient.getDatabase("ekoes")
+
+    val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
+    val standingsDBAdapterImpl = StandingsDBAdapterImpl(database)
+    val teamsDBAdapterImpl = TeamsDBAdapterImpl(database)
+    val rostersDBAdapter = RostersDBAdapterImpl(database)
+    val athletesDBAdapter = AthletesDBAdapterImpl(database)
+    val coachesDBAdapter = CoachesDBAdapterImpl(database)
+    val schedulesDBAdapter = SchedulesDBAdapterImpl(database)
+    val competitionsDBAdapter = CompetitionsDBAdapterImpl(database)
+    val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
 
     jobScope.launch {
-        BBallHandler(BBallOperationAdapter(), routesApi).bootJobs()
+        BBallHandler(
+            BBallOperationAdapter(),
+            routesApi,
+            teamsDBAdapterImpl,
+            rostersDBAdapter,
+            athletesDBAdapter,
+            coachesDBAdapter,
+            standingsDBAdapterImpl,
+            schedulesDBAdapter,
+            competitionsDBAdapter,
+            leadersDBAdapterImpl,
+        ).bootJobs()
     }
     jobScope.launch {
-        FBallHandler(FBallOperationAdapter(), routesApi).bootJobs()
+        FBallHandler(
+            FBallOperationAdapter(),
+            routesApi,
+            teamsDBAdapterImpl,
+            rostersDBAdapter,
+            athletesDBAdapter,
+            coachesDBAdapter,
+            standingsDBAdapterImpl,
+            schedulesDBAdapter,
+            competitionsDBAdapter,
+            leadersDBAdapterImpl
+        ).bootJobs()
     }
     jobScope.launch {
         ServerHandler(routesApi).bootJobs()
     }
 
-    // Replace the placeholder with your MongoDB deployment's connection string
-    val uri = "mongodb://localhost:27017"
-    // val mongoClient = MongoClient.create(uri)
-    // val database = mongoClient.getDatabase("ekoes")
-
     val postsApi = PostsApi()
     val usersApi = UsersApi()
-    val userChatsApi = UserChatsApi()
-    val adminApi = AdminApi()
+    val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
+    val adminApi = AdminApi(PostReportsDBAdapterImpl(database), UserReportsDBAdapterImpl(database))
     val handler = WebSocketHandler(usersApi, userChatsApi, postsApi, adminApi, routesApi)
 
     val server = embeddedServer(Netty, port = 8080) {
@@ -84,8 +128,26 @@ fun main() {
             usersApi,
             userChatsApi,
             AuthApi(),
-            BBallApi(),
-            FBallApi(),
+            BBallApi(
+                teamsDBAdapterImpl,
+                rostersDBAdapter,
+                athletesDBAdapter,
+                coachesDBAdapter,
+                standingsDBAdapterImpl,
+                schedulesDBAdapter,
+                competitionsDBAdapter,
+                leadersDBAdapterImpl
+            ),
+            FBallApi(
+                teamsDBAdapterImpl,
+                rostersDBAdapter,
+                athletesDBAdapter,
+                coachesDBAdapter,
+                standingsDBAdapterImpl,
+                schedulesDBAdapter,
+                competitionsDBAdapter,
+                leadersDBAdapterImpl
+            ),
             MetadataApi()
         )
     }.start(wait = true)

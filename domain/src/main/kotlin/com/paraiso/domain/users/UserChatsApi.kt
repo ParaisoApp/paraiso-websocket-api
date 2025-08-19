@@ -7,37 +7,29 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.util.UUID
 
-class UserChatsApi {
+class UserChatsApi(private val userChatsDBAdapter: UserChatsDBAdapter) {
 
     companion object {
         const val RETRIEVE_LIM = 5
     }
 
-    fun getOrPutUserChat(chatId: String, userId: String, otherUserId: String) =
-        ServerState.userChatList[chatId]?.toReturn() ?: run {
-            Clock.System.now().let { now ->
-                UUID.randomUUID().toString().let { newChatId ->
-                    val newUserChat = UserChat(
-                        id = newChatId,
-                        userIds = setOf(userId, otherUserId),
-                        dms = emptySet(),
-                        createdOn = now,
-                        updatedOn = now
-                    )
-                    ServerState.userChatList[newChatId] = newUserChat
-                    newUserChat.toReturn()
-                }
+    suspend fun getOrPutUserChat(chatId: String, userId: String, otherUserId: String) =
+        userChatsDBAdapter.findById(chatId) ?: run {
+            val now = Clock.System.now()
+            UUID.randomUUID().toString().let { newChatId ->
+                val newUserChat = UserChat(
+                    id = newChatId,
+                    userIds = setOf(userId, otherUserId),
+                    dms = emptySet(),
+                    createdOn = now,
+                    updatedOn = now
+                )
+                userChatsDBAdapter.save(listOf(newUserChat))
+                newUserChat.toReturn()
             }
         }
 
-    suspend fun putDM(dm: DirectMessage, now: Instant) = coroutineScope {
-        ServerState.userChatList[dm.chatId]?.let { chat ->
-            ServerState.userChatList[dm.chatId] = chat.copy(
-                dms = chat.dms + dm.copy(
-                    createdOn = now
-                ),
-                updatedOn = now
-            )
-        }
+    suspend fun putDM(dm: DirectMessage) = coroutineScope {
+        userChatsDBAdapter.addToUserChat(dm.chatId, dm)
     }
 }

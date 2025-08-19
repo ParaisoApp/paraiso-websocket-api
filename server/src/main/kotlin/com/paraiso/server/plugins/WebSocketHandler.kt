@@ -235,7 +235,7 @@ class WebSocketHandler(
                                                     updatedOn
                                                 )
                                             } // update chat for receiving user
-                                            launch { userChatsApi.putDM(dmWithData, updatedOn) }
+                                            launch { userChatsApi.putDM(dmWithData) }
                                         }
                                         userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                     }
@@ -261,7 +261,7 @@ class WebSocketHandler(
                                 } else {
                                     Clock.System.now().let { updatedOn ->
                                         launch { usersApi.toggleFavoriteRoute(follow, updatedOn) }
-                                        launch { routesApi.toggleFavoriteRoute(follow, updatedOn) }
+                                        launch { routesApi.toggleFavoriteRoute(follow) }
                                     }
                                     ServerState.favoriteFlowMut.emit(follow)
                                 }
@@ -322,6 +322,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
                                 launch { adminApi.reportUser(sessionUser.id, reportUser) }
+                                launch { usersApi.addUserReport(reportUser) }
                                 ServerState.reportUserFlowMut.emit(reportUser)
                             }
                     }
@@ -329,6 +330,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
                                 launch { adminApi.reportPost(sessionUser.id, reportPost) }
+                                launch { usersApi.addPostReport(reportPost) }
                                 ServerState.reportPostFlowMut.emit(reportPost)
                             }
                     }
