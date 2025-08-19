@@ -11,6 +11,8 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.sports.bball.BBallApi
+import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserStatus
@@ -54,13 +56,15 @@ class WebSocketHandler(
     private val userChatsApi: UserChatsApi,
     private val postsApi: PostsApi,
     private val adminApi: AdminApi,
-    private val routesApi: RoutesApi
+    private val routesApi: RoutesApi,
+    bBallApi: BBallApi,
+    fBallApi: FBallApi
 ) : Klogging {
     // jobs
     private val homeJobs = HomeJobs()
     private val profileJobs = ProfileJobs()
-    private val bBallJobs = BBallJobs()
-    private val fBallJobs = FBallJobs()
+    private val bBallJobs = BBallJobs(bBallApi)
+    private val fBallJobs = FBallJobs(fBallApi)
 
     // users
     private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()

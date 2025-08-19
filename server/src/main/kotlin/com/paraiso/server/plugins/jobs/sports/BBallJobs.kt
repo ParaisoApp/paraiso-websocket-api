@@ -3,7 +3,9 @@ package com.paraiso.com.paraiso.server.plugins.jobs.sports
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.toResponse
+import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
@@ -12,16 +14,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class BBallJobs {
+class BBallJobs(private val bBallApi: BBallApi) {
 
     suspend fun sportJobs(session: WebSocketServerSession) = coroutineScope {
         listOf(
             launch {
-                var lastSentScoreboard: Scoreboard? = null
+                var lastSentScoreboard: ScoreboardResponse? = null
                 while (isActive) {
-                    val scoreboard = BBallState.scoreboard
+                    val scoreboard = bBallApi.getScoreboard()
                     if (scoreboard != null && lastSentScoreboard != scoreboard) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, scoreboard.toResponse())
+                        session.sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
                         lastSentScoreboard = scoreboard
                     }
                     delay(5 * 1000)
@@ -43,15 +45,15 @@ class BBallJobs {
     suspend fun teamJobs(content: String?, session: WebSocketServerSession) = coroutineScope {
         listOf(
             launch {
-                var lastSentScoreboard: Scoreboard? = null
+                var lastSentScoreboard: ScoreboardResponse? = null
                 while (isActive) {
-                    val currentScoreboard = BBallState.scoreboard
-                    currentScoreboard?.let { sb ->
-                        val filteredSb = currentScoreboard.copy(
+                    val scoreboard = bBallApi.getScoreboard()
+                    scoreboard?.let { sb ->
+                        val filteredSb = scoreboard.copy(
                             competitions = sb.competitions.filter { comp -> comp.teams.map { it.teamId }.contains(content) }
                         )
                         if (lastSentScoreboard != filteredSb) {
-                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb.toResponse())
+                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb)
                             lastSentScoreboard = filteredSb
                         }
                         delay(5 * 1000)
@@ -61,10 +63,10 @@ class BBallJobs {
             launch {
                 while (isActive) {
                     val currentBoxScores = BBallState.boxScores
-                    val currentScoreboard = BBallState.scoreboard
+                    val scoreboard = bBallApi.getScoreboard()
 
-                    if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
-                        currentScoreboard.competitions.firstOrNull { comp ->
+                    if (currentBoxScores.isNotEmpty() && scoreboard != null) {
+                        scoreboard.competitions.firstOrNull { comp ->
                             comp.teams.map { it.teamId }.contains(content)
                         }?.teams?.map { it.teamId }
                             ?.let { teamIds ->

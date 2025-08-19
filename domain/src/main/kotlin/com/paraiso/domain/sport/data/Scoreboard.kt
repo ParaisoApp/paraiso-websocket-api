@@ -1,9 +1,13 @@
 package com.paraiso.domain.sport.data
 
+import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.util.Constants.ID
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Scoreboard(
+    val id: String,
     val competitions: List<Competition>
 )
 
@@ -61,6 +65,11 @@ data class TeamYearStatsResponse(
     val displayValue: String,
     val rankDisplayValue: String?
 )
+@Serializable
+data class ScoreboardEntity(
+    @SerialName(ID) val id: String,
+    val competitions: List<String>
+)
 
 fun Scoreboard.toResponse() =
     ScoreboardResponse(
@@ -90,4 +99,10 @@ fun TeamYearStats.toResponse() =
         abbreviation = abbreviation,
         displayValue = displayValue,
         rankDisplayValue = rankDisplayValue
+    )
+
+fun Scoreboard.toEntity() =
+    ScoreboardEntity(
+        id = id,
+        competitions = competitions.map { it.id }
     )

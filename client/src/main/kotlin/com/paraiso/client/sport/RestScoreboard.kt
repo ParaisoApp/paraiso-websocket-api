@@ -1,5 +1,6 @@
 package com.paraiso.client.sport
 
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Record as RecordDomain
@@ -44,7 +45,8 @@ data class Type(
     val completed: Boolean
 )
 
-fun RestScoreboard.toDomain() = Scoreboard(
+fun RestScoreboard.toDomain(sport: SiteRoute) = Scoreboard(
+    id = sport.toString(),
     competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName) }
 )
 

@@ -3,7 +3,10 @@ package com.paraiso.com.paraiso.server.plugins.jobs.sports
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.FullTeam
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.toResponse
+import com.paraiso.domain.sport.sports.bball.BBallApi
+import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallState
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
@@ -12,17 +15,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class FBallJobs {
+class FBallJobs(private val fBallApi: FBallApi) {
 
     suspend fun sportJobs(session: WebSocketServerSession) = coroutineScope {
         listOf(
             launch {
-                var lastSentScoreboard: Scoreboard? = null
+                var lastSentScoreboard: ScoreboardResponse? = null
                 while (isActive) {
-                    val currentScoreboard = FBallState.scoreboard
-                    if (currentScoreboard != null && lastSentScoreboard != currentScoreboard) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, currentScoreboard.toResponse())
-                        lastSentScoreboard = currentScoreboard
+                    val scoreboard = fBallApi.getScoreboard()
+                    if (scoreboard != null && lastSentScoreboard != scoreboard) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, scoreboard)
+                        lastSentScoreboard = scoreboard
                     }
                     delay(5 * 1000)
                 }
@@ -43,15 +46,15 @@ class FBallJobs {
     suspend fun teamJobs(content: String?, session: WebSocketServerSession) = coroutineScope {
         listOf(
             launch {
-                var lastSentScoreboard: Scoreboard? = null
+                var lastSentScoreboard: ScoreboardResponse? = null
                 while (isActive) {
-                    val currentScoreboard = FBallState.scoreboard
-                    currentScoreboard?.let { sb ->
-                        val filteredSb = currentScoreboard.copy(
+                    val scoreboard = fBallApi.getScoreboard()
+                    scoreboard?.let { sb ->
+                        val filteredSb = scoreboard.copy(
                             competitions = sb.competitions.filter { comp -> comp.teams.map { it.teamId }.contains(content) }
                         )
                         if (lastSentScoreboard != filteredSb) {
-                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb.toResponse())
+                            session.sendTypedMessage(MessageType.SCOREBOARD, filteredSb)
                             lastSentScoreboard = filteredSb
                         }
                         delay(5 * 1000)
@@ -61,10 +64,10 @@ class FBallJobs {
             launch {
                 while (isActive) {
                     val currentBoxScores = FBallState.boxScores
-                    val currentScoreboard = FBallState.scoreboard
+                    val scoreboard = fBallApi.getScoreboard()
 
-                    if (currentBoxScores.isNotEmpty() && currentScoreboard != null) {
-                        currentScoreboard.competitions.firstOrNull { comp ->
+                    if (currentBoxScores.isNotEmpty() && scoreboard != null) {
+                        scoreboard.competitions.firstOrNull { comp ->
                             comp.teams.map { it.teamId }.contains(content)
                         }?.teams?.map { it.teamId }
                             ?.let { teamIds ->

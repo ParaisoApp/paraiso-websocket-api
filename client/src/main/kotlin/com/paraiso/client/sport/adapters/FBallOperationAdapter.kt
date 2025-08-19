@@ -52,7 +52,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.FOOTBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

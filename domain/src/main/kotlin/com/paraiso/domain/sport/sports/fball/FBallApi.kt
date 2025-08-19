@@ -7,10 +7,12 @@ import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
 import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
+import com.paraiso.domain.sport.adapters.ScoreboardDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
+import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
@@ -23,6 +25,7 @@ class FBallApi(
     private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
     private val schedulesDBAdapter: SchedulesDBAdapter,
+    private val scoreboardDBAdapter: ScoreboardDBAdapter,
     private val competitionsDBAdapter: CompetitionsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) {
@@ -68,6 +71,12 @@ class FBallApi(
                 teamId = rosterEntity.teamId
             )
         }
+    }
+
+    suspend fun getScoreboard() = scoreboardDBAdapter.findById(SiteRoute.FOOTBALL.name)?.let { sb ->
+        ScoreboardResponse(
+            competitions = competitionsDBAdapter.findByIdIn(sb.competitions).map { it.toResponse() }
+        )
     }
 
     suspend fun getTeamSchedule(teamId: String, seasonYear: String, seasonType: String) =

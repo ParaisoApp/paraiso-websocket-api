@@ -22,6 +22,7 @@ import com.paraiso.database.sports.CompetitionsDBAdapterImpl
 import com.paraiso.database.sports.LeadersDBAdapterImpl
 import com.paraiso.database.sports.RostersDBAdapterImpl
 import com.paraiso.database.sports.SchedulesDBAdapterImpl
+import com.paraiso.database.sports.ScoreboardDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
@@ -77,6 +78,7 @@ fun main() {
     val athletesDBAdapter = AthletesDBAdapterImpl(database)
     val coachesDBAdapter = CoachesDBAdapterImpl(database)
     val schedulesDBAdapter = SchedulesDBAdapterImpl(database)
+    val scoreboardDBAdapter = ScoreboardDBAdapterImpl(database)
     val competitionsDBAdapter = CompetitionsDBAdapterImpl(database)
     val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
 
@@ -90,6 +92,7 @@ fun main() {
             coachesDBAdapter,
             standingsDBAdapterImpl,
             schedulesDBAdapter,
+            scoreboardDBAdapter,
             competitionsDBAdapter,
             leadersDBAdapterImpl
         ).bootJobs()
@@ -104,6 +107,7 @@ fun main() {
             coachesDBAdapter,
             standingsDBAdapterImpl,
             schedulesDBAdapter,
+            scoreboardDBAdapter,
             competitionsDBAdapter,
             leadersDBAdapterImpl
         ).bootJobs()
@@ -111,12 +115,42 @@ fun main() {
     jobScope.launch {
         ServerHandler(routesApi).bootJobs()
     }
+    val bballApi = BBallApi(
+        teamsDBAdapterImpl,
+        rostersDBAdapter,
+        athletesDBAdapter,
+        coachesDBAdapter,
+        standingsDBAdapterImpl,
+        schedulesDBAdapter,
+        scoreboardDBAdapter,
+        competitionsDBAdapter,
+        leadersDBAdapterImpl
+    )
+    val fballApi = FBallApi(
+        teamsDBAdapterImpl,
+        rostersDBAdapter,
+        athletesDBAdapter,
+        coachesDBAdapter,
+        standingsDBAdapterImpl,
+        schedulesDBAdapter,
+        scoreboardDBAdapter,
+        competitionsDBAdapter,
+        leadersDBAdapterImpl
+    )
 
     val postsApi = PostsApi()
     val usersApi = UsersApi()
     val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
     val adminApi = AdminApi(PostReportsDBAdapterImpl(database), UserReportsDBAdapterImpl(database))
-    val handler = WebSocketHandler(usersApi, userChatsApi, postsApi, adminApi, routesApi)
+    val handler = WebSocketHandler(
+        usersApi,
+        userChatsApi,
+        postsApi,
+        adminApi,
+        routesApi,
+        bballApi,
+        fballApi
+    )
 
     val server = embeddedServer(Netty, port = 8080) {
         configureSockets(
@@ -127,26 +161,8 @@ fun main() {
             usersApi,
             userChatsApi,
             AuthApi(),
-            BBallApi(
-                teamsDBAdapterImpl,
-                rostersDBAdapter,
-                athletesDBAdapter,
-                coachesDBAdapter,
-                standingsDBAdapterImpl,
-                schedulesDBAdapter,
-                competitionsDBAdapter,
-                leadersDBAdapterImpl
-            ),
-            FBallApi(
-                teamsDBAdapterImpl,
-                rostersDBAdapter,
-                athletesDBAdapter,
-                coachesDBAdapter,
-                standingsDBAdapterImpl,
-                schedulesDBAdapter,
-                competitionsDBAdapter,
-                leadersDBAdapterImpl
-            ),
+            bballApi,
+            fballApi,
             MetadataApi()
         )
     }.start(wait = true)

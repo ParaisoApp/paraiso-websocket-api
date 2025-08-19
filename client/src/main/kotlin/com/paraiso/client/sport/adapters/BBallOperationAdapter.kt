@@ -45,7 +45,7 @@ class BBallOperationAdapter() : BBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain()
+            response.toDomain(SiteRoute.BASKETBALL)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

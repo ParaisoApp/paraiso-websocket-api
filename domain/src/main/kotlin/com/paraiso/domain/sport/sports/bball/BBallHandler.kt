@@ -12,9 +12,12 @@ import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
 import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
+import com.paraiso.domain.sport.adapters.ScoreboardDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
+import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Schedule
+import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.util.Constants.GAME_PREFIX
@@ -41,6 +44,7 @@ class BBallHandler(
     private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
     private val schedulesDBAdapter: SchedulesDBAdapter,
+    private val scoreboardDBAdapter: ScoreboardDBAdapter,
     private val competitionsDBAdapter: CompetitionsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) : Klogging {
@@ -114,13 +118,13 @@ class BBallHandler(
                 if (schedulesRes.isNotEmpty()) {
                     schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
                     competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
-                    addScheduleGamePosts(teams, schedulesRes)
+                    addGamePosts(teams, schedulesRes)
                 }
             }
         }
     }
 
-    private fun addScheduleGamePosts(
+    private fun addGamePosts(
         teams: List<Team>,
         schedules: List<Schedule>
     ) {
@@ -136,21 +140,12 @@ class BBallHandler(
                     values.map { competition ->
                         "$TEAM_PREFIX${competition.id}-$key" to Post(
                             id = "$TEAM_PREFIX${competition.id}-$key",
-                            userId = null,
                             title = competition.shortName,
                             content = "${competition.date}-${competition.shortName}",
                             type = PostType.GAME,
-                            media = null,
-                            votes = emptyMap(),
                             parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
                             rootId = "$TEAM_PREFIX${competition.id}-$key",
-                            status = PostStatus.ACTIVE,
                             data = "$TEAM_PREFIX${competition.id}-$key",
-                            subPosts = mutableSetOf(),
-                            count = 0,
-                            route = null,
-                            createdOn = Clock.System.now(),
-                            updatedOn = Clock.System.now()
                         )
                     }
                 }
@@ -160,21 +155,12 @@ class BBallHandler(
                 schedules.flatMap { it.events }.toSet().associate { competition ->
                     "$GAME_PREFIX${competition.id}" to Post(
                         id = "$GAME_PREFIX${competition.id}",
-                        userId = null,
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,
-                        media = null,
-                        votes = emptyMap(),
                         parentId = SiteRoute.BASKETBALL.name,
                         rootId = "$GAME_PREFIX${competition.id}",
-                        status = PostStatus.ACTIVE,
                         data = "${competition.date}-${competition.shortName}",
-                        subPosts = mutableSetOf(),
-                        count = 0,
-                        route = null,
-                        createdOn = Clock.System.now(),
-                        updatedOn = Clock.System.now()
                     )
                 }
             )
@@ -199,27 +185,20 @@ class BBallHandler(
     private suspend fun buildScoreboard() {
         coroutineScope {
             bBallOperation.getScoreboard()?.let { scoreboard ->
-                BBallState.scoreboard = scoreboard
-                BBallState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
-                    fetchAndMapGames(gameIds)
-                }
+                saveScoreboardAndGetBoxscores(scoreboard, scoreboard.competitions, true)
             }
+            var delayBoxScore = 1
             while (isActive) {
                 delay(10 * 1000)
-                BBallState.scoreboard?.let { sb ->
-                    sb.competitions.map { Triple(it.status.state, it.date, it.id) }.let { games ->
-                        val earliestTime = games.minOf { Instant.parse(it.second) }
-                        val allStates = games.map { it.first }.toSet()
+                scoreboardDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.competitions?.let { competitionIds ->
+                    competitionsDBAdapter.findByIdIn(competitionIds).let { competitions ->
+                        val earliestTime = competitions.minOf { Instant.parse(it.date) }
+                        val allStates = competitions.map { it.status.state }.toSet()
                         // if current time is beyond the earliest start time start fetching the scoreboard
                         if (Clock.System.now() > earliestTime) {
                             bBallOperation.getScoreboard()?.let { scoreboard ->
-                                BBallState.scoreboard = scoreboard
-
-                                // If boxscores already filled once then filter out games not in progress
-//                            TODO DISABLE BOX SCORE UPDATES FOR NOW
-//                            games.filter { it.second == "in" }.map { it.third }.let {gameIds ->
-//                                fetchAndMapGames(gameIds)
-//                            }
+                                val activeCompetitions = competitions.filter { it.status.state == "in" }
+                                saveScoreboardAndGetBoxscores(scoreboard, activeCompetitions, delayBoxScore == 0)
                                 if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
                                     // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                                     delay(60 * 60 * 1000)
@@ -228,16 +207,32 @@ class BBallHandler(
                             // else if current time is before the earliest time, delay until the earliest time
                         } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
                             delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
+                            delayBoxScore = 0
                         } else {
                             delay(1 * 60 * 1000) // delay one minute (game start not always in sync with clock)
                         }
                     }
                 }
+                //delay boxscore for 30 ticks of delay (every 5 minutes)
+                if(delayBoxScore == 30) delayBoxScore = 0
+                else delayBoxScore++
             }
         }
     }
 
-    private suspend fun fetchAndMapGames(gameIds: List<String>) = coroutineScope {
+    private suspend fun saveScoreboardAndGetBoxscores(
+        scoreboard: Scoreboard,
+        competitions: List<Competition>,
+        enableBoxScore: Boolean
+    ) = coroutineScope {
+        if(competitions.isNotEmpty()){
+            scoreboardDBAdapter.save(listOf(scoreboard.toEntity()))
+            competitionsDBAdapter.save(competitions)
+            if(enableBoxScore) getBoxscores(competitions.map { it.id })
+        }
+    }
+
+    private suspend fun getBoxscores(gameIds: List<String>) = coroutineScope {
         gameIds.map { gameId ->
             async {
                 bBallOperation.getGameStats(gameId)

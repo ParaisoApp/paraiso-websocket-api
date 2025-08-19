@@ -10,21 +10,21 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Post(
     @SerialName(ID) val id: String?,
-    val userId: String?,
+    val userId: String? = null,
     val title: String?,
     val content: String?,
     val type: PostType,
-    val votes: Map<String, Boolean>,
+    val votes: Map<String, Boolean> = emptyMap(),
     val parentId: String?,
     val rootId: String?,
-    val status: PostStatus,
-    val media: String?,
+    val status: PostStatus = PostStatus.ACTIVE,
+    val media: String? = null,
     val data: String?,
-    val subPosts: Set<String>,
-    val count: Int,
-    val route: String?,
-    val createdOn: Instant?,
-    val updatedOn: Instant?
+    val subPosts: Set<String> = emptySet(),
+    val count: Int = 0,
+    val route: String? = null,
+    val createdOn: Instant? = Clock.System.now(),
+    val updatedOn: Instant? = Clock.System.now()
 ) { companion object }
 
 @Serializable
