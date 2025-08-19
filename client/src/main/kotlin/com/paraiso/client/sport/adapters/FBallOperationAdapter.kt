@@ -26,7 +26,7 @@ import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 import com.paraiso.domain.sport.data.Team as TeamDomain
 
-class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
+class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
 
     companion object {
         private const val SEASON = 2025
@@ -69,7 +69,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL, competitionId)
+            response.toDomain(competitionId)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

@@ -26,7 +26,7 @@ import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 import com.paraiso.domain.sport.data.Team as TeamDomain
 
-class BBallOperationAdapter() : BBallOperation, BaseAdapter, Klogging {
+class BBallOperationAdapter : BBallOperation, BaseAdapter, Klogging {
 
     companion object {
         private const val LIMIT = 10
@@ -62,7 +62,7 @@ class BBallOperationAdapter() : BBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.BASKETBALL, competitionId)
+            response.toDomain(competitionId)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

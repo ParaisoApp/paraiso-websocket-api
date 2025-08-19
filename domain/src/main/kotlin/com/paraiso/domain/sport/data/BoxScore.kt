@@ -14,8 +14,7 @@ data class BoxScore(
 data class FullTeam(
     val teamId: String,
     val teamStats: List<TeamStat>,
-    val statTypes: StatTypes?,
-    val athletes: List<Athlete>?
+    val statTypes: List<StatTypes>
 )
 
 @Serializable
@@ -29,7 +28,8 @@ data class TeamStat(
 data class StatTypes(
     val name: String?,
     val names: List<String>,
-    val descriptions: List<String>
+    val descriptions: List<String>,
+    val athletes: List<Athlete>
 )
 
 @Serializable
@@ -41,8 +41,7 @@ data class BoxScoreResponse(
 data class FullTeamResponse(
     val teamId: String,
     val teamStats: List<TeamStatResponse>,
-    val statTypes: StatTypesResponse?,
-    val athletes: List<AthleteResponse>?
+    val statTypes: List<StatTypesResponse>
 )
 
 @Serializable
@@ -56,7 +55,8 @@ data class TeamStatResponse(
 data class StatTypesResponse(
     val name: String?,
     val names: List<String>,
-    val descriptions: List<String>
+    val descriptions: List<String>,
+    val athletes: List<AthleteResponse>
 )
 
 fun BoxScore.toResponse() =
@@ -68,8 +68,7 @@ fun FullTeam.toResponse() =
     FullTeamResponse(
         teamId = teamId,
         teamStats = teamStats.map { it.toResponse() },
-        statTypes = statTypes?.toResponse(),
-        athletes = athletes?.map { it.toResponse() }
+        statTypes = statTypes.map { it.toResponse() }
     )
 
 fun TeamStat.toResponse() =
@@ -83,5 +82,6 @@ fun StatTypes.toResponse() =
     StatTypesResponse(
         name = name,
         names = names,
-        descriptions = descriptions
+        descriptions = descriptions,
+        athletes = athletes.map { it.toResponse() }
     )

@@ -62,18 +62,17 @@ data class Position(
     val abbreviation: String
 )
 
-fun RestGameStats.toDomain(sport: SiteRoute, competitionId: String) = BoxScoreDomain(
+fun RestGameStats.toDomain(competitionId: String) = BoxScoreDomain(
     id = competitionId,
-    teams = boxscore.teams.map { it.toDomain(boxscore.players, sport) }
+    teams = boxscore.teams.map { it.toDomain(boxscore.players) }
 )
 
-fun TeamWithStats.toDomain(players: List<Player>?, sport: SiteRoute): FullTeamDomain {
-    val stats = players?.first { it.team.id == team.id }?.statistics?.first()
+fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
+    val stats = players?.first { it.team.id == team.id }?.statistics
     return FullTeamDomain(
         teamId = team.id,
         teamStats = statistics.map { it.toDomain() },
-        statTypes = stats?.toDomain(),
-        athletes = stats?.athletes?.map { it.toDomain() }
+        statTypes = stats?.map { it.toDomain() } ?: emptyList()
     )
 }
 
@@ -86,7 +85,8 @@ fun TeamStat.toDomain() = TeamStatDomain(
 fun Statistic.toDomain() = StatTypesDomain(
     name = name,
     names = names ?: emptyList(),
-    descriptions = descriptions
+    descriptions = descriptions,
+    athletes = athletes.map { it.toDomain() }
 )
 
 fun AthleteBase.toDomain() = AthleteDomain(

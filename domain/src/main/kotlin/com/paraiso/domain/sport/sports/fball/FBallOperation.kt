@@ -11,7 +11,7 @@ import com.paraiso.domain.sport.data.Team
 interface FBallOperation {
 
     suspend fun getScoreboard(): Scoreboard?
-    suspend fun getGameStats(gameId: String): BoxScore?
+    suspend fun getGameStats(competitionId: String): BoxScore?
     suspend fun getStandings(): AllStandings?
     suspend fun getTeams(): List<Team>
     suspend fun getRoster(teamId: String): Roster?
