@@ -155,6 +155,29 @@ class FBallHandler(
                     }
                 }
             )
+            //add posts for base sport route
+            ServerState.posts.putAll(
+                schedules.flatMap { it.events }.toSet().associate { competition ->
+                    "$GAME_PREFIX${competition.id}" to Post(
+                        id = "$GAME_PREFIX${competition.id}",
+                        userId = null,
+                        title = competition.shortName,
+                        content = "${competition.date}-${competition.shortName}",
+                        type = PostType.GAME,
+                        media = null,
+                        votes = emptyMap(),
+                        parentId = SiteRoute.FOOTBALL.name,
+                        rootId = "$GAME_PREFIX${competition.id}",
+                        status = PostStatus.ACTIVE,
+                        data = "${competition.date}-${competition.shortName}",
+                        subPosts = mutableSetOf(),
+                        count = 0,
+                        route = null,
+                        createdOn = Clock.System.now(),
+                        updatedOn = Clock.System.now()
+                    )
+                }
+            )
         }
     }
 
@@ -176,7 +199,6 @@ class FBallHandler(
     private suspend fun buildScoreboard() {
         coroutineScope {
             fBallOperation.getScoreboard()?.let { scoreboard ->
-                fillGamePosts(scoreboard)
                 FBallState.scoreboard = scoreboard
                 FBallState.scoreboard?.competitions?.map { it.id }?.let { gameIds ->
                     fetchAndMapGames(gameIds)
@@ -191,7 +213,6 @@ class FBallHandler(
                         // if current time is beyond the earliest start time start fetching the scoreboard
                         if (Clock.System.now() > earliestTime) {
                             fBallOperation.getScoreboard()?.let { scoreboard ->
-                                fillGamePosts(scoreboard)
                                 FBallState.scoreboard = scoreboard
 
                                 // If boxscores already filled once then filter out games not in progress
@@ -213,33 +234,6 @@ class FBallHandler(
                     }
                 }
             }
-        }
-    }
-
-    private suspend fun fillGamePosts(scoreboard: Scoreboard) = coroutineScope {
-        if (FBallState.scoreboard?.competitions?.map { it.id } != scoreboard.competitions.map { it.id }) {
-            ServerState.posts.putAll(
-                scoreboard.competitions.associate { competition ->
-                    "$GAME_PREFIX${competition.id}" to Post(
-                        id = "$GAME_PREFIX${competition.id}",
-                        userId = null,
-                        title = competition.shortName,
-                        content = "${competition.date}-${competition.shortName}",
-                        type = PostType.GAME,
-                        media = null,
-                        votes = emptyMap(),
-                        parentId = SiteRoute.FOOTBALL.name,
-                        rootId = "$GAME_PREFIX${competition.id}",
-                        status = PostStatus.ACTIVE,
-                        data = "${competition.date}-${competition.shortName}",
-                        subPosts = mutableSetOf(),
-                        count = 0,
-                        route = null,
-                        createdOn = Clock.System.now(),
-                        updatedOn = Clock.System.now()
-                    )
-                }
-            )
         }
     }
 
