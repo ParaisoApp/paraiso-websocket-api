@@ -62,7 +62,8 @@ data class Position(
     val abbreviation: String
 )
 
-fun RestGameStats.toDomain(sport: SiteRoute) = BoxScoreDomain(
+fun RestGameStats.toDomain(sport: SiteRoute, competitionId: String) = BoxScoreDomain(
+    id = competitionId,
     teams = boxscore.teams.map { it.toDomain(boxscore.players, sport) }
 )
 

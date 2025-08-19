@@ -2,12 +2,13 @@ package com.paraiso.domain.sport.sports.fball
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.AthletesDBAdapter
+import com.paraiso.domain.sport.adapters.BoxscoresDBAdapter
 import com.paraiso.domain.sport.adapters.CoachesDBAdapter
 import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
 import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
-import com.paraiso.domain.sport.adapters.ScoreboardDBAdapter
+import com.paraiso.domain.sport.adapters.ScoreboardsDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.LeaderResponse
@@ -25,7 +26,8 @@ class FBallApi(
     private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
     private val schedulesDBAdapter: SchedulesDBAdapter,
-    private val scoreboardDBAdapter: ScoreboardDBAdapter,
+    private val scoreboardsDBAdapter: ScoreboardsDBAdapter,
+    private val boxscoresDBAdapter: BoxscoresDBAdapter,
     private val competitionsDBAdapter: CompetitionsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) {
@@ -73,11 +75,13 @@ class FBallApi(
         }
     }
 
-    suspend fun getScoreboard() = scoreboardDBAdapter.findById(SiteRoute.FOOTBALL.name)?.let { sb ->
+    suspend fun getScoreboard() = scoreboardsDBAdapter.findById(SiteRoute.FOOTBALL.name)?.let { sb ->
         ScoreboardResponse(
             competitions = competitionsDBAdapter.findByIdIn(sb.competitions).map { it.toResponse() }
         )
     }
+
+    suspend fun getBoxscores(ids: List<String>) = boxscoresDBAdapter.findByIdsIn(ids)
 
     suspend fun getTeamSchedule(teamId: String, seasonYear: String, seasonType: String) =
         schedulesDBAdapter.findById("${SiteRoute.FOOTBALL}-$teamId-$seasonYear-$seasonType")?.let { schedule ->

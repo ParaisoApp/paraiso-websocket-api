@@ -17,12 +17,13 @@ import com.paraiso.database.admin.PostReportsDBAdapterImpl
 import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
 import com.paraiso.database.sports.AthletesDBAdapterImpl
+import com.paraiso.database.sports.BoxscoresDBAdapterImpl
 import com.paraiso.database.sports.CoachesDBAdapterImpl
 import com.paraiso.database.sports.CompetitionsDBAdapterImpl
 import com.paraiso.database.sports.LeadersDBAdapterImpl
 import com.paraiso.database.sports.RostersDBAdapterImpl
 import com.paraiso.database.sports.SchedulesDBAdapterImpl
-import com.paraiso.database.sports.ScoreboardDBAdapterImpl
+import com.paraiso.database.sports.ScoreboardsDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
@@ -78,7 +79,8 @@ fun main() {
     val athletesDBAdapter = AthletesDBAdapterImpl(database)
     val coachesDBAdapter = CoachesDBAdapterImpl(database)
     val schedulesDBAdapter = SchedulesDBAdapterImpl(database)
-    val scoreboardDBAdapter = ScoreboardDBAdapterImpl(database)
+    val scoreboardDBAdapter = ScoreboardsDBAdapterImpl(database)
+    val boxscoresDBAdapter = BoxscoresDBAdapterImpl(database)
     val competitionsDBAdapter = CompetitionsDBAdapterImpl(database)
     val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
 
@@ -93,6 +95,7 @@ fun main() {
             standingsDBAdapterImpl,
             schedulesDBAdapter,
             scoreboardDBAdapter,
+            boxscoresDBAdapter,
             competitionsDBAdapter,
             leadersDBAdapterImpl
         ).bootJobs()
@@ -108,6 +111,7 @@ fun main() {
             standingsDBAdapterImpl,
             schedulesDBAdapter,
             scoreboardDBAdapter,
+            boxscoresDBAdapter,
             competitionsDBAdapter,
             leadersDBAdapterImpl
         ).bootJobs()
@@ -123,6 +127,7 @@ fun main() {
         standingsDBAdapterImpl,
         schedulesDBAdapter,
         scoreboardDBAdapter,
+        boxscoresDBAdapter,
         competitionsDBAdapter,
         leadersDBAdapterImpl
     )
@@ -134,6 +139,7 @@ fun main() {
         standingsDBAdapterImpl,
         schedulesDBAdapter,
         scoreboardDBAdapter,
+        boxscoresDBAdapter,
         competitionsDBAdapter,
         leadersDBAdapterImpl
     )

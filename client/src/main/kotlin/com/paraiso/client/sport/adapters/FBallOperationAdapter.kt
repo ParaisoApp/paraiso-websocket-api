@@ -58,9 +58,9 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
             null
         }
     }
-    override suspend fun getGameStats(gameId: String): BoxScoreDomain? = withContext(dispatcher) {
+    override suspend fun getGameStats(competitionId: String): BoxScoreDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.siteBaseUrl}${clientConfig.fballStatsUri}/summary?event=$gameId"
+            val url = "${clientConfig.siteBaseUrl}${clientConfig.fballStatsUri}/summary?event=$competitionId"
             val response: RestGameStats = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -69,7 +69,7 @@ class FBallOperationAdapter() : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL)
+            response.toDomain(SiteRoute.FOOTBALL, competitionId)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

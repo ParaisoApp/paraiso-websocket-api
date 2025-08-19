@@ -1,18 +1,18 @@
 package com.paraiso.domain.sport.sports.fball
 
 import com.paraiso.domain.posts.Post
-import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.adapters.AthletesDBAdapter
+import com.paraiso.domain.sport.adapters.BoxscoresDBAdapter
 import com.paraiso.domain.sport.adapters.CoachesDBAdapter
 import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
 import com.paraiso.domain.sport.adapters.LeadersDBAdapter
 import com.paraiso.domain.sport.adapters.RostersDBAdapter
 import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
-import com.paraiso.domain.sport.adapters.ScoreboardDBAdapter
+import com.paraiso.domain.sport.adapters.ScoreboardsDBAdapter
 import com.paraiso.domain.sport.adapters.StandingsDBAdapter
 import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Competition
@@ -20,7 +20,6 @@ import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
-import com.paraiso.domain.sport.sports.bball.BBallState
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
@@ -45,7 +44,8 @@ class FBallHandler(
     private val coachesDBAdapter: CoachesDBAdapter,
     private val standingsDBAdapter: StandingsDBAdapter,
     private val schedulesDBAdapter: SchedulesDBAdapter,
-    private val scoreboardDBAdapter: ScoreboardDBAdapter,
+    private val scoreboardsDBAdapter: ScoreboardsDBAdapter,
+    private val boxscoresDBAdapter: BoxscoresDBAdapter,
     private val competitionsDBAdapter: CompetitionsDBAdapter,
     private val leadersDBAdapter: LeadersDBAdapter
 ) : Klogging {
@@ -188,7 +188,7 @@ class FBallHandler(
             var delayBoxScore = 1
             while (isActive) {
                 delay(10 * 1000)
-                scoreboardDBAdapter.findById(SiteRoute.FOOTBALL.toString())?.competitions?.let { competitionIds ->
+                scoreboardsDBAdapter.findById(SiteRoute.FOOTBALL.toString())?.competitions?.let { competitionIds ->
                     competitionsDBAdapter.findByIdIn(competitionIds).let { competitions ->
                         val earliestTime = competitions.minOf { Instant.parse(it.date) }
                         val allStates = competitions.map { it.status.state }.toSet()
@@ -224,7 +224,7 @@ class FBallHandler(
         enableBoxScore: Boolean
     ) = coroutineScope {
         if(competitions.isNotEmpty()){
-            scoreboardDBAdapter.save(listOf(scoreboard.toEntity()))
+            scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
             competitionsDBAdapter.save(competitions)
             if(enableBoxScore) getBoxscores(competitions.map { it.id })
         }
@@ -237,7 +237,7 @@ class FBallHandler(
             }
         }.awaitAll().filterNotNull().also { newBoxScores ->
             // map result to teams
-            BBallState.boxScores = newBoxScores.flatMap { it.teams }
+            boxscoresDBAdapter.save(newBoxScores)
         }
     }
 }
