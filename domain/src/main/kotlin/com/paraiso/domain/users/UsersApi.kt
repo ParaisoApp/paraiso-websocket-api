@@ -15,7 +15,9 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-class UsersApi {
+class UsersApi(
+    private val usersDBAdapter: UsersDBAdapter
+) {
 
     companion object {
         const val PARTIAL_RETRIEVE_LIM = 5

@@ -26,26 +26,27 @@ import com.paraiso.domain.users.UsersDBAdapter
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 
 class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     private val collection = database.getCollection("users", User::class.java)
 
-    suspend fun findById(id: String) =
+    override suspend fun findById(id: String) =
         collection.find(eq(ID, id)).firstOrNull()
 
-    suspend fun findByName(name: String) =
+    override suspend fun findByName(name: String) =
         collection.find(eq(User::name.name, name)).firstOrNull()
 
-    suspend fun existsByName(name: String): Boolean =
+    override suspend fun existsByName(name: String) =
         collection.find(eq(User::name.name, name))
             .limit(1)
             .firstOrNull() != null
 
-    suspend fun findByPartial(partial: String): FindFlow<User> =
-        collection.find(regex(User::name.name, partial, "i"))
+    override suspend fun findByPartial(partial: String) =
+        collection.find(regex(User::name.name, partial, "i")).toList()
 
-    fun getUserList(filters: FilterTypes, followingList: Set<String>) =
+    override suspend fun getUserList(filters: FilterTypes, followingList: Set<String>) =
         collection.find(
             and(
                 ne(User::status.name, UserStatus.DISCONNECTED),
@@ -57,15 +58,15 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                     )
                 )
             )
-        )
+        ).toList()
 
-    fun getFollowingById(id: String) =
-        collection.find(eq(User::following.name, id))
+    override suspend fun getFollowingById(id: String) =
+        collection.find(eq(User::following.name, id)).toList()
 
-    fun getFollowersById(id: String) =
-        collection.find(eq(User::followers.name, id))
+    override suspend fun getFollowersById(id: String) =
+        collection.find(eq(User::followers.name, id)).toList()
 
-    suspend fun save(users: List<User>): Int {
+    override suspend fun save(users: List<User>): Int {
         val bulkOps = users.map { user ->
             ReplaceOneModel(
                 eq(ID, user.id),
@@ -76,24 +77,24 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         return collection.bulkWrite(bulkOps).modifiedCount
     }
 
-    suspend fun setMentions(id: String, replyId: String) =
+    override suspend fun setMentions(id: String, replyId: String) =
         collection.updateOne(
             eq(ID, id),
             combine(
                 set("${User::replies.name}.$replyId", false),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
-    suspend fun setSettings(id: String, settings: UserSettings) =
+        ).modifiedCount
+    override suspend fun setSettings(id: String, settings: UserSettings) =
         collection.updateOne(
             eq(ID, id),
             combine(
                 set(User::settings.name, settings),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun markNotifsRead(
+    override suspend fun markNotifsRead(
         id: String,
         chats: Map<String, ChatRef>,
         replies: Map<String, Boolean>
@@ -112,9 +113,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                     set(User::updatedOn.name, Clock.System.now())
             )
         )
-    }
+    }.modifiedCount
 
-    suspend fun markReportNotifsRead(
+    override suspend fun markReportNotifsRead(
         id: String,
         userReports: Map<String, Boolean>,
         postReports: Map<String, Boolean>
@@ -133,9 +134,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                     set(User::updatedOn.name, Clock.System.now())
             )
         )
-    }
+    }.modifiedCount
 
-    suspend fun addUserReport(
+    override suspend fun addUserReport(
         id: String
     ) =
         collection.updateOne(
@@ -144,9 +145,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::userReports.name, id),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addPostReport(
+    override suspend fun addPostReport(
         id: String
     ) =
         collection.updateOne(
@@ -155,9 +156,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::postReports.name, id),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addFollowers(
+    override suspend fun addFollowers(
         id: String,
         followerUserId: String
     ) =
@@ -167,9 +168,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::followers.name, followerUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeFollowers(
+    override suspend fun removeFollowers(
         id: String,
         followerUserId: String
     ) =
@@ -179,9 +180,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 pull(User::followers.name, followerUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addFollowing(
+    override suspend fun addFollowing(
         id: String,
         followingUserId: String
     ) =
@@ -191,9 +192,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::following.name, followingUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeFollowing(
+    override suspend fun removeFollowing(
         id: String,
         followingUserId: String
     ) =
@@ -203,9 +204,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 pull(User::following.name, followingUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addToBlocklist(
+    override suspend fun addToBlocklist(
         id: String,
         blockUserId: String
     ) =
@@ -215,9 +216,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::blockList.name, blockUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeFromBlocklist(
+    override suspend fun removeFromBlocklist(
         id: String,
         blockUserId: String
     ) =
@@ -227,9 +228,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 pull(User::blockList.name, blockUserId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addFavoriteRoute(
+    override suspend fun addFavoriteRoute(
         id: String,
         routeFavorite: String
     ) =
@@ -239,9 +240,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::routeFavorites.name, routeFavorite),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeFavoriteRoute(
+    override suspend fun removeFavoriteRoute(
         id: String,
         routeFavorite: String
     ) =
@@ -251,9 +252,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 pull(User::routeFavorites.name, routeFavorite),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addPost(
+    override suspend fun addPost(
         id: String,
         postId: String
     ) =
@@ -263,9 +264,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 addToSet(User::posts.name, postId),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun setUserChat(
+    override suspend fun setUserChat(
         id: String,
         chatId: String,
         chatRef: ChatRef
@@ -276,9 +277,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 set("${User::chats.name}.$chatId", chatRef),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun setUserTag(
+    override suspend fun setUserTag(
         tag: Tag
     ) =
         collection.updateOne(
@@ -287,9 +288,9 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 set(User::tag.name, tag.tag),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun setUserBanned(
+    override suspend fun setUserBanned(
         ban: Ban
     ) =
         collection.updateOne(
@@ -298,5 +299,5 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
                 set(User::banned.name, true),
                 set(User::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 }
