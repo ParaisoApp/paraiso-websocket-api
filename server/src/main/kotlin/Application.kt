@@ -27,6 +27,7 @@ import com.paraiso.database.sports.ScoreboardsDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
+import com.paraiso.database.users.UsersDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
@@ -145,7 +146,7 @@ fun main() {
     )
 
     val postsApi = PostsApi()
-    val usersApi = UsersApi()
+    val usersApi = UsersApi(UsersDBAdapterImpl(database))
     val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
     val adminApi = AdminApi(PostReportsDBAdapterImpl(database), UserReportsDBAdapterImpl(database))
     val handler = WebSocketHandler(

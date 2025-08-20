@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import java.util.concurrent.ConcurrentHashMap
 
 object ServerState {
-    val userList: ConcurrentHashMap<String, User> = ConcurrentHashMap()
     val posts: ConcurrentHashMap<String, Post> = ConcurrentHashMap()
 
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)

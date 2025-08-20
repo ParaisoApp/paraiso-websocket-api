@@ -9,21 +9,25 @@ interface UsersDBAdapter{
     suspend fun findByName(name: String): User?
     suspend fun existsByName(name: String): Boolean
     suspend fun findByPartial(partial: String): List<User>
-    suspend fun getUserList(filters: FilterTypes, followingList: Set<String>): List<User>
+    suspend fun getUserList(
+        filters: FilterTypes,
+        followingList: List<String>
+    ): List<User>
     suspend fun getFollowingById(id: String): List<User>
     suspend fun getFollowersById(id: String): List<User>
     suspend fun save(users: List<User>): Int
-    suspend fun setMentions(id: String, replyId: String): Long
+    suspend fun addMentions(id: String, replyId: String): String?
+    suspend fun addMentionsByName(name: String, replyId: String): String?
     suspend fun setSettings(id: String, settings: UserSettings): Long
     suspend fun markNotifsRead(
         id: String,
-        chats: Map<String, ChatRef>,
-        replies: Map<String, Boolean>
+        chats: Set<String>,
+        replies: Set<String>
     ): Long
     suspend fun markReportNotifsRead(
         id: String,
-        userReports: Map<String, Boolean>,
-        postReports: Map<String, Boolean>
+        userReports: Set<String>,
+        postReports: Set<String>
     ): Long
     suspend fun addUserReport(
         id: String
@@ -57,7 +61,7 @@ interface UsersDBAdapter{
     ): Long
     suspend fun addFavoriteRoute(
         id: String,
-        routeFavorite: String
+        routeFavorite: UserFavorite
     ): Long
     suspend fun removeFavoriteRoute(
         id: String,

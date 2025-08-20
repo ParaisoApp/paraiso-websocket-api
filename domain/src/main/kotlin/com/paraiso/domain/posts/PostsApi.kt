@@ -59,7 +59,7 @@ class PostsApi {
     ) =
         // grab 100 most recent posts at given super level
         getRange(rangeModifier, sortType).let { range ->
-            val userFollowing = ServerState.userList[userId]?.following ?: setOf()
+            //val userFollowing = setOf<String>()
             ServerState.posts.asSequence().filter { (_, post) ->
                 ( // check for base post or user if profile nav
                     post.parentId == postSearchId ||
@@ -69,11 +69,12 @@ class PostsApi {
                     post.createdOn != null &&
                     post.createdOn > range &&
                     post.status != PostStatus.DELETED &&
-                    filters.postTypes.contains(post.type) &&
-                    (
-                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                        )
+                    filters.postTypes.contains(post.type)
+                        //&&
+//                    (
+//                        filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+//                            (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+//                        )
             }.sortedBy { getSort(it, sortType) } // get and apply sort by
                 .take(RETRIEVE_LIM)
                 .map { it.key }.toSet() // generate base post and post tree off of given inputs
@@ -99,7 +100,7 @@ class PostsApi {
     ) =
         LinkedHashMap<String, PostResponse>().let { returnPosts ->
             basePost.toResponse().let { root -> // build tree with bfs
-                val userFollowing = ServerState.userList[userId]?.following ?: setOf()
+                //val userFollowing = setOf<String>()
                 if (root.id != null) returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
                 ServerState.posts
@@ -121,11 +122,12 @@ class PostsApi {
                             post.createdOn != null &&
                                 post.createdOn > range &&
                                 post.status != PostStatus.DELETED &&
-                                filters.postTypes.contains(post.type) &&
-                                (
-                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
-                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
-                                    )
+                                filters.postTypes.contains(post.type)
+                                    //&&
+//                                (
+//                                    filters.userRoles.contains(ServerState.userList[post.userId]?.roles) ||
+//                                        (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.contains(post.userId))
+//                                    )
                         }.sortedBy { getSort(it, sortType) }
                         .take(RETRIEVE_LIM)
                         .associateTo(LinkedHashMap()) { (id, post) ->

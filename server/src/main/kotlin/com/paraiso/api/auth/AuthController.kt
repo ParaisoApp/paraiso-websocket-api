@@ -14,9 +14,9 @@ fun Route.authController(authApi: AuthApi) {
     route("auth") {
         post {
             // fake auth controller
-            authApi.getAuth(call.receive<Login>())?.let { role ->
-                call.respond(HttpStatusCode.OK, role)
-            }
+//            authApi.getAuth(call.receive<Login>())?.let { role ->
+                call.respond(HttpStatusCode.OK)
+//            }
         }
     }
 }

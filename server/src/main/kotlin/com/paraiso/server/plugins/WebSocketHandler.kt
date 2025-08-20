@@ -14,6 +14,7 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.users.UserChatsApi
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
@@ -74,18 +75,18 @@ class WebSocketHandler(
 
     suspend fun handleUser(session: WebSocketServerSession) {
         // check cookies to see if existing user
-        ServerState.userList[session.call.request.cookies["guest_id"] ?: ""]?.let { currentUser ->
-            currentUser.buildUserResponse().copy(
+        usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "")?.let { currentUser ->
+            currentUser.copy(
                 status = UserStatus.CONNECTED
             ).let { reconnectUser ->
-                ServerState.userList[reconnectUser.id] = reconnectUser.toUser()
-                userToSocket[reconnectUser.id] = session // map userid to socket
+                usersApi.saveUser(reconnectUser)
+                userToSocket[reconnectUser.id] = session // TODO map userid to socket
                 session.joinChat(reconnectUser)
             }
         } ?: run { // otherwise generate guest
             UUID.randomUUID().toString().let { id ->
                 val currentUser = UserResponseDomain.newUser(id)
-                ServerState.userList[id] = currentUser.toUser()
+                usersApi.saveUser(currentUser)
                 userToSocket[id] = session // map userid to socket
                 session.joinChat(currentUser)
             }
@@ -123,12 +124,15 @@ class WebSocketHandler(
         }
     }
 
-    private fun validateMessage(sessionUserId: String, blockList: Map<String, Boolean>, postType: PostType, userId: String?) =
+    private suspend fun validateMessage(sessionUserId: String, blockList: Map<String, Boolean>, postType: PostType, userId: String?) =
         sessionUserId == userId || // message is from the cur user or
             (
                 !blockList.contains(userId) && // user isnt in cur user's blocklist
                     sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
-                    sessionState.filterTypes.userRoles.contains(ServerState.userList[userId]?.roles ?: UserRole.GUEST)
+                    userId != null &&
+                    sessionState.filterTypes.userRoles.contains(
+                        usersApi.getUserById(userId)?.roles ?: UserRole.GUEST
+                    )
                 )
 
     private suspend fun WebSocketServerSession.joinChat(user: UserResponseDomain) {
@@ -216,29 +220,27 @@ class WebSocketHandler(
                                     userId = sessionUser.id
                                 ).let { dmWithData ->
                                     launch { sendTypedMessage(MessageType.DM, dmWithData) }
+                                    val userReceiveBlocklist = usersApi.getUserById(dmWithData.userReceiveId)?.blockList
                                     if (
                                         !sessionUser.banned &&
-                                        ServerState.userList[dmWithData.userReceiveId]?.blockList?.contains(sessionUser.id) == false
+                                        userReceiveBlocklist?.contains(sessionUser.id) == false
                                     ) {
-                                        Clock.System.now().let { updatedOn ->
-                                            launch {
-                                                usersApi.updateChatForUser(
-                                                    dmWithData,
-                                                    dmWithData.userId,
-                                                    dmWithData.userReceiveId,
-                                                    true,
-                                                    updatedOn
-                                                )
-                                            } // update chat for receiving user
-                                            launch {
-                                                usersApi.updateChatForUser(
-                                                    dmWithData,
-                                                    dmWithData.userReceiveId,
-                                                    dmWithData.userId,
-                                                    false,
-                                                    updatedOn
-                                                )
-                                            } // update chat for receiving user
+                                        launch {
+                                            usersApi.updateChatForUser(
+                                                dmWithData,
+                                                dmWithData.userId,
+                                                dmWithData.userReceiveId,
+                                                true
+                                            )
+                                        } // update chat for receiving user
+                                        launch {
+                                            usersApi.updateChatForUser(
+                                                dmWithData,
+                                                dmWithData.userReceiveId,
+                                                dmWithData.userId,
+                                                false
+                                            )
+                                            // update chat for receiving user
                                             launch { userChatsApi.putDM(dmWithData) }
                                         }
                                         userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
@@ -356,15 +358,15 @@ class WebSocketHandler(
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            ServerState.userList[sessionUser.id]?.copy(
+            sessionUser.copy(
                 status = UserStatus.DISCONNECTED,
                 lastSeen = System.currentTimeMillis(),
                 updatedOn = Clock.System.now()
-            )?.let { userDisconnected ->
-                ServerState.userUpdateFlowMut.emit(userDisconnected.buildUserResponse())
-                ServerState.userList[sessionUser.id] = userDisconnected
+            ).let { userDisconnected ->
+                ServerState.userUpdateFlowMut.emit(userDisconnected)
+                usersApi.saveUser(userDisconnected)
+                userToSocket[userDisconnected.id]?.close()
             }
-            userToSocket[sessionUser.id]?.close()
         }
     }
 }

@@ -6,8 +6,10 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
+import com.mongodb.client.model.FindOneAndUpdateOptions
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -19,6 +21,7 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.users.ChatRef
 import com.paraiso.domain.users.User
+import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UserStatus
@@ -30,6 +33,10 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 
 class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
+    companion object {
+        const val PARTIAL_RETRIEVE_LIM = 5
+    }
+
     private val collection = database.getCollection("users", User::class.java)
 
     override suspend fun findById(id: String) =
@@ -44,9 +51,11 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
             .firstOrNull() != null
 
     override suspend fun findByPartial(partial: String) =
-        collection.find(regex(User::name.name, partial, "i")).toList()
+        collection.find(regex(User::name.name, partial, "i"))
+            .limit(PARTIAL_RETRIEVE_LIM)
+            .toList()
 
-    override suspend fun getUserList(filters: FilterTypes, followingList: Set<String>) =
+    override suspend fun getUserList(filters: FilterTypes, followingList: List<String>) =
         collection.find(
             and(
                 ne(User::status.name, UserStatus.DISCONNECTED),
@@ -77,14 +86,24 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         return collection.bulkWrite(bulkOps).modifiedCount
     }
 
-    override suspend fun setMentions(id: String, replyId: String) =
-        collection.updateOne(
+    override suspend fun addMentions(id: String, replyId: String) =
+        collection.findOneAndUpdate(
             eq(ID, id),
             combine(
                 set("${User::replies.name}.$replyId", false),
                 set(User::updatedOn.name, Clock.System.now())
-            )
-        ).modifiedCount
+            ),
+            FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+        )?.id
+    override suspend fun addMentionsByName(name: String, replyId: String) =
+        collection.findOneAndUpdate(
+            eq(User::name.name, name),
+            combine(
+                set("${User::replies.name}.$replyId", false),
+                set(User::updatedOn.name, Clock.System.now())
+            ),
+            FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+        )?.id
     override suspend fun setSettings(id: String, settings: UserSettings) =
         collection.updateOne(
             eq(ID, id),
@@ -96,14 +115,14 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
 
     override suspend fun markNotifsRead(
         id: String,
-        chats: Map<String, ChatRef>,
-        replies: Map<String, Boolean>
+        chats: Set<String>,
+        replies: Set<String>
     ) = coroutineScope {
-        val chatUpdates = chats.map { (k, v) ->
-            set("${User::chats.name}.$k", v)
+        val chatUpdates = chats.map { id ->
+            set("${User::chats.name}.$id.viewed", true)
         }
-        val replyUpdates = replies.map { (k, v) ->
-            set("${User::replies.name}.$k", v)
+        val replyUpdates = replies.map { id ->
+            set("${User::replies.name}.$id", true)
         }
         collection.updateOne(
             eq(ID, id),
@@ -117,14 +136,14 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
 
     override suspend fun markReportNotifsRead(
         id: String,
-        userReports: Map<String, Boolean>,
-        postReports: Map<String, Boolean>
+        userReports: Set<String>,
+        postReports: Set<String>
     ) = coroutineScope {
-        val userReportUpdates = userReports.map { (k, v) ->
-            set("${User::userReports.name}.$k", v)
+        val userReportUpdates = userReports.map { id ->
+            set("${User::userReports.name}.$id", true)
         }
-        val postReportUpdates = postReports.map { (k, v) ->
-            set("${User::postReports.name}.$k", v)
+        val postReportUpdates = postReports.map { id ->
+            set("${User::postReports.name}.$id", true)
         }
         collection.updateOne(
             eq(ID, id),
@@ -139,10 +158,10 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
     override suspend fun addUserReport(
         id: String
     ) =
-        collection.updateOne(
+        collection.updateMany(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
-                addToSet(User::userReports.name, id),
+                set("${User::userReports.name}.$id", false),
                 set(User::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
@@ -153,7 +172,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         collection.updateOne(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
-                addToSet(User::postReports.name, id),
+                addToSet("${User::postReports.name}.$id", false),
                 set(User::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
@@ -232,7 +251,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
 
     override suspend fun addFavoriteRoute(
         id: String,
-        routeFavorite: String
+        routeFavorite: UserFavorite
     ) =
         collection.updateOne(
             eq(ID, id),
