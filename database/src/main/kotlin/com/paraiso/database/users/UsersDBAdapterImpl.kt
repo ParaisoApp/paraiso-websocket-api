@@ -172,7 +172,7 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
         collection.updateOne(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
-                addToSet("${User::postReports.name}.$id", false),
+                set("${User::postReports.name}.$id", false),
                 set(User::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
@@ -251,12 +251,13 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
 
     override suspend fun addFavoriteRoute(
         id: String,
+        route: String,
         routeFavorite: UserFavorite
     ) =
         collection.updateOne(
             eq(ID, id),
             combine(
-                addToSet(User::routeFavorites.name, routeFavorite),
+                set("${User::routeFavorites.name}.$route", routeFavorite),
                 set(User::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount

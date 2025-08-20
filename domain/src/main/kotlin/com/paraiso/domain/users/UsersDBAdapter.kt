@@ -61,6 +61,7 @@ interface UsersDBAdapter{
     ): Long
     suspend fun addFavoriteRoute(
         id: String,
+        route: String,
         routeFavorite: UserFavorite
     ): Long
     suspend fun removeFavoriteRoute(

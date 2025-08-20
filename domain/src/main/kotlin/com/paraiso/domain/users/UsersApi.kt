@@ -110,7 +110,7 @@ class UsersApi(
         }
     }
 
-    suspend fun toggleFavoriteRoute(favorite: Favorite, now: Instant) {
+    suspend fun toggleFavoriteRoute(favorite: Favorite) {
         // toggle favorite from User
         if(favorite.userId != null) {
             usersDBAdapter.findById(favorite.userId)?.let { user ->
@@ -119,6 +119,7 @@ class UsersApi(
                 } else {
                     usersDBAdapter.addFavoriteRoute(
                         favorite.userId,
+                        favorite.route,
                         UserFavorite(favorite.favorite, favorite.icon)
                     )
                 }

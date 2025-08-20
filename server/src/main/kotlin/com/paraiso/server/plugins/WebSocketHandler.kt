@@ -265,10 +265,8 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    Clock.System.now().let { updatedOn ->
-                                        launch { usersApi.toggleFavoriteRoute(follow, updatedOn) }
-                                        launch { routesApi.toggleFavoriteRoute(follow) }
-                                    }
+                                    launch { usersApi.toggleFavoriteRoute(follow) }
+                                    launch { routesApi.toggleFavoriteRoute(follow) }
                                     ServerState.favoriteFlowMut.emit(follow)
                                 }
                             }
@@ -358,11 +356,11 @@ class WebSocketHandler(
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            sessionUser.copy(
+            usersApi.getUserById(sessionUser.id)?.copy(
                 status = UserStatus.DISCONNECTED,
                 lastSeen = System.currentTimeMillis(),
                 updatedOn = Clock.System.now()
-            ).let { userDisconnected ->
+            )?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 usersApi.saveUser(userDisconnected)
                 userToSocket[userDisconnected.id]?.close()
