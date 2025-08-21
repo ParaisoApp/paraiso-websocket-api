@@ -62,7 +62,7 @@ import com.paraiso.domain.routes.Route as RouteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(
-    private val sessionId: String,
+    private val serverId: String,
     private val usersApi: UsersApi,
     private val userSessionsApi: UserSessionsApi,
     private val userChatsApi: UserChatsApi,
@@ -98,7 +98,7 @@ class WebSocketHandler(
                         UserSessionResponse(
                             id = UUID.randomUUID().toString(),
                             userId = currentUser.id,
-                            serverId = sessionId,
+                            serverId = serverId,
                             status = UserStatus.CONNECTED,
                             lastSeen = Clock.System.now(),
                         ).toDomain()

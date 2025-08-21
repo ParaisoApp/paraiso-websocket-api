@@ -5,21 +5,12 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.adapters.AthletesDBAdapter
-import com.paraiso.domain.sport.adapters.BoxscoresDBAdapter
-import com.paraiso.domain.sport.adapters.CoachesDBAdapter
-import com.paraiso.domain.sport.adapters.CompetitionsDBAdapter
-import com.paraiso.domain.sport.adapters.LeadersDBAdapter
-import com.paraiso.domain.sport.adapters.RostersDBAdapter
-import com.paraiso.domain.sport.adapters.SchedulesDBAdapter
-import com.paraiso.domain.sport.adapters.ScoreboardsDBAdapter
-import com.paraiso.domain.sport.adapters.StandingsDBAdapter
-import com.paraiso.domain.sport.adapters.TeamsDBAdapter
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
+import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
@@ -38,16 +29,7 @@ import kotlin.time.Duration.Companion.hours
 class BBallHandler(
     private val bBallOperation: BBallOperation,
     private val routesApi: RoutesApi,
-    private val teamsDBAdapter: TeamsDBAdapter,
-    private val rostersDBAdapter: RostersDBAdapter,
-    private val athletesDBAdapter: AthletesDBAdapter,
-    private val coachesDBAdapter: CoachesDBAdapter,
-    private val standingsDBAdapter: StandingsDBAdapter,
-    private val schedulesDBAdapter: SchedulesDBAdapter,
-    private val scoreboardsDBAdapter: ScoreboardsDBAdapter,
-    private val boxscoresDBAdapter: BoxscoresDBAdapter,
-    private val competitionsDBAdapter: CompetitionsDBAdapter,
-    private val leadersDBAdapter: LeadersDBAdapter
+    private val sportDBs: SportDBs
 ) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
@@ -63,7 +45,7 @@ class BBallHandler(
         while (isActive) {
             bBallOperation.getStandings().also { standingsRes ->
                 if (standingsRes != null) {
-                    standingsDBAdapter.save(listOf(standingsRes))
+                    sportDBs.standingsDBAdapter.save(listOf(standingsRes))
                 }
             }
             delay(12 * 60 * 60 * 1000)
@@ -76,7 +58,7 @@ class BBallHandler(
                 launch {
                     addTeamRoutes(teamsRes)
                 }
-                teamsDBAdapter.save(teamsRes)
+                sportDBs.teamsDBAdapter.save(teamsRes)
             }
         }
     }
@@ -102,7 +84,7 @@ class BBallHandler(
     private suspend fun getLeaders() = coroutineScope {
         while (isActive) {
             bBallOperation.getLeaders()?.let { leadersRes ->
-                leadersDBAdapter.save(listOf(leadersRes))
+                sportDBs.leadersDBAdapter.save(listOf(leadersRes))
             }
             delay(6 * 60 * 60 * 1000)
         }
@@ -110,15 +92,15 @@ class BBallHandler(
 
     private suspend fun getSchedules() = coroutineScope {
         if (autoBuild) {
-            val teams = teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
+            val teams = sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
             teams.map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getSchedule(teamId)
                 }
             }.awaitAll().filterNotNull().also { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
-                    schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
-                    competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
+                    sportDBs.schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
+                    sportDBs.competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
                     addGamePosts(teams, schedulesRes)
                 }
             }
@@ -170,15 +152,15 @@ class BBallHandler(
 
     private suspend fun getRosters() = coroutineScope {
         if (autoBuild) {
-            teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.teamId }.map { teamId ->
+            sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getRoster(teamId)
                 }
             }.awaitAll().filterNotNull().also { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
-                    rostersDBAdapter.save(rostersRes.map { it.toEntity() })
-                    athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
-                    coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
+                    sportDBs.rostersDBAdapter.save(rostersRes.map { it.toEntity() })
+                    sportDBs.athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
+                    sportDBs.coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
                 }
             }
         }
@@ -191,8 +173,8 @@ class BBallHandler(
             var delayBoxScore = 1
             while (isActive) {
                 delay(10 * 1000)
-                scoreboardsDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.competitions?.let { competitionIds ->
-                    competitionsDBAdapter.findByIdIn(competitionIds).let { competitions ->
+                sportDBs.scoreboardsDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.competitions?.let { competitionIds ->
+                    sportDBs.competitionsDBAdapter.findByIdIn(competitionIds).let { competitions ->
                         val earliestTime = competitions.minOf { Instant.parse(it.date) }
                         val allStates = competitions.map { it.status.state }.toSet()
                         // if current time is beyond the earliest start time start fetching the scoreboard
@@ -227,8 +209,8 @@ class BBallHandler(
         enableBoxScore: Boolean
     ) = coroutineScope {
         if(competitions.isNotEmpty()){
-            scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
-            competitionsDBAdapter.save(competitions)
+            sportDBs.scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
+            sportDBs.competitionsDBAdapter.save(competitions)
             if(enableBoxScore) getBoxscores(competitions.map { it.id })
         }
     }
@@ -240,7 +222,7 @@ class BBallHandler(
             }
         }.awaitAll().filterNotNull().also { newBoxScores ->
             // map result to teams
-            boxscoresDBAdapter.save(newBoxScores)
+            sportDBs.boxscoresDBAdapter.save(newBoxScores)
         }
     }
 }

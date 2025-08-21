@@ -3,6 +3,7 @@ package com.paraiso
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.client.sport.adapters.BBallOperationAdapter
 import com.paraiso.client.sport.adapters.FBallOperationAdapter
+import com.paraiso.com.paraiso.AppServices
 import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
@@ -35,21 +36,23 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
-import com.paraiso.domain.users.UserSessionsDBAdapter
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
+import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.config.HoconApplicationConfig
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -74,117 +77,8 @@ fun main() {
     val job = Job()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
 
-    val uri = "mongodb://localhost:27017"
-    val mongoClient = MongoClient.create(uri)
-    val database = mongoClient.getDatabase("ekoes")
-
-    val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
-    val standingsDBAdapterImpl = StandingsDBAdapterImpl(database)
-    val teamsDBAdapterImpl = TeamsDBAdapterImpl(database)
-    val rostersDBAdapter = RostersDBAdapterImpl(database)
-    val athletesDBAdapter = AthletesDBAdapterImpl(database)
-    val coachesDBAdapter = CoachesDBAdapterImpl(database)
-    val schedulesDBAdapter = SchedulesDBAdapterImpl(database)
-    val scoreboardDBAdapter = ScoreboardsDBAdapterImpl(database)
-    val boxscoresDBAdapter = BoxscoresDBAdapterImpl(database)
-    val competitionsDBAdapter = CompetitionsDBAdapterImpl(database)
-    val leadersDBAdapterImpl = LeadersDBAdapterImpl(database)
-
-    jobScope.launch {
-        BBallHandler(
-            BBallOperationAdapter(),
-            routesApi,
-            teamsDBAdapterImpl,
-            rostersDBAdapter,
-            athletesDBAdapter,
-            coachesDBAdapter,
-            standingsDBAdapterImpl,
-            schedulesDBAdapter,
-            scoreboardDBAdapter,
-            boxscoresDBAdapter,
-            competitionsDBAdapter,
-            leadersDBAdapterImpl
-        ).bootJobs()
-    }
-    jobScope.launch {
-        FBallHandler(
-            FBallOperationAdapter(),
-            routesApi,
-            teamsDBAdapterImpl,
-            rostersDBAdapter,
-            athletesDBAdapter,
-            coachesDBAdapter,
-            standingsDBAdapterImpl,
-            schedulesDBAdapter,
-            scoreboardDBAdapter,
-            boxscoresDBAdapter,
-            competitionsDBAdapter,
-            leadersDBAdapterImpl
-        ).bootJobs()
-    }
-    jobScope.launch {
-        ServerHandler(routesApi).bootJobs()
-    }
-    val bballApi = BBallApi(
-        teamsDBAdapterImpl,
-        rostersDBAdapter,
-        athletesDBAdapter,
-        coachesDBAdapter,
-        standingsDBAdapterImpl,
-        schedulesDBAdapter,
-        scoreboardDBAdapter,
-        boxscoresDBAdapter,
-        competitionsDBAdapter,
-        leadersDBAdapterImpl
-    )
-    val fballApi = FBallApi(
-        teamsDBAdapterImpl,
-        rostersDBAdapter,
-        athletesDBAdapter,
-        coachesDBAdapter,
-        standingsDBAdapterImpl,
-        schedulesDBAdapter,
-        scoreboardDBAdapter,
-        boxscoresDBAdapter,
-        competitionsDBAdapter,
-        leadersDBAdapterImpl
-    )
-
-    val usersDb = UsersDBAdapterImpl(database)
-    val postsApi = PostsApi()
-    val usersApi = UsersApi(usersDb)
-    val userSessionsApi = UserSessionsApi(
-        usersDb,
-        UserSessionsDBAdapterImpl(database)
-    )
-    val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
-    val adminApi = AdminApi(PostReportsDBAdapterImpl(database), UserReportsDBAdapterImpl(database))
-    val handler = WebSocketHandler(
-        sessionId = UUID.randomUUID().toString(),
-        usersApi,
-        userSessionsApi,
-        userChatsApi,
-        postsApi,
-        adminApi,
-        routesApi,
-        bballApi,
-        fballApi
-    )
-
     val server = embeddedServer(Netty, port = 8080) {
-        configureSockets(
-            handler,
-            adminApi,
-            routesApi,
-            postsApi,
-            usersApi,
-            userSessionsApi,
-            userChatsApi,
-            AuthApi(),
-            bballApi,
-            fballApi,
-            MetadataApi()
-        )
+        module(jobScope)
     }.start(wait = true)
 
     Runtime.getRuntime().addShutdownHook(
@@ -198,19 +92,90 @@ fun main() {
     )
 }
 
-fun Application.configureSockets(
-    handler: WebSocketHandler,
-    adminApi: AdminApi,
-    routesApi: RoutesApi,
-    postsApi: PostsApi,
-    usersApi: UsersApi,
-    userSessionsApi: UserSessionsApi,
-    userChatsApi: UserChatsApi,
-    authApi: AuthApi,
-    bBallApi: BBallApi,
-    fBallApi: FBallApi,
-    metadataApi: MetadataApi
-) {
+fun Application.module(jobScope: CoroutineScope){
+    val config = HoconApplicationConfig(ConfigFactory.load())
+    val serverId = config.property("server.id").getString()
+    val mongoUrl = config.property("mongodb.url").getString()
+    val mongoDB = config.property("mongodb.database").getString()
+    //val redisUrl = config.property("redis.url").getString()
+
+    //setup DB
+    val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
+    val sportsDBs = SportDBs(
+        StandingsDBAdapterImpl(database),
+        TeamsDBAdapterImpl(database),
+        RostersDBAdapterImpl(database),
+        AthletesDBAdapterImpl(database),
+        CoachesDBAdapterImpl(database),
+        SchedulesDBAdapterImpl(database),
+        ScoreboardsDBAdapterImpl(database),
+        BoxscoresDBAdapterImpl(database),
+        CompetitionsDBAdapterImpl(database),
+        LeadersDBAdapterImpl(database)
+    )
+    val usersDb = UsersDBAdapterImpl(database)
+    val userSessionsDb = UserSessionsDBAdapterImpl(database)
+    val userChatsDb = UserChatsDBAdapterImpl(database)
+    val userReportsDb = UserReportsDBAdapterImpl(database)
+    val postReportsDb = PostReportsDBAdapterImpl(database)
+
+    //setup apis and scopes
+    val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
+    jobScope.launch {
+        BBallHandler(
+            BBallOperationAdapter(),
+            routesApi,
+            sportsDBs
+        ).bootJobs()
+    }
+    jobScope.launch {
+        FBallHandler(
+            FBallOperationAdapter(),
+            routesApi,
+            sportsDBs
+        ).bootJobs()
+    }
+    jobScope.launch {
+        ServerHandler(routesApi).bootJobs()
+    }
+    val authApi = AuthApi()
+    val bballApi = BBallApi(sportsDBs)
+    val fballApi = FBallApi(sportsDBs)
+    val postsApi = PostsApi()
+    val usersApi = UsersApi(usersDb)
+    val userSessionsApi = UserSessionsApi(usersDb, userSessionsDb)
+    val userChatsApi = UserChatsApi(userChatsDb)
+    val adminApi = AdminApi(postReportsDb, userReportsDb)
+    val metadataApi = MetadataApi()
+
+    val services = AppServices(
+        authApi,
+        adminApi,
+        postsApi,
+        routesApi,
+        usersApi,
+        userSessionsApi,
+        userChatsApi,
+        bballApi,
+        fballApi,
+        metadataApi
+    )
+
+    val handler = WebSocketHandler(
+        serverId = serverId,
+        services.usersApi,
+        services.userSessionsApi,
+        services.userChatsApi,
+        services.postsApi,
+        services.adminApi,
+        services.routesApi,
+        services.bBallApi,
+        services.fBallApi
+    )
+
+    configureSockets(handler, services)
+}
+fun Application.configureFeatures() {
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
         pingPeriod = Duration.ofSeconds(30)
@@ -218,22 +183,20 @@ fun Application.configureSockets(
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
-    install(CORS) {
-        // Replace with your frontend origin (e.g., localhost:3000)
-        anyHost() // 🚨 Use only for development. In prod, specify exact host.
 
+    install(CORS) {
+        anyHost() // 🚨 dev only
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Accept)
         allowHeader(HttpHeaders.Authorization)
-
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Delete)
-
         allowCredentials = true
         allowNonSimpleContentTypes = true
     }
+
     install(ContentNegotiation) {
         json(
             Json {
@@ -244,21 +207,25 @@ fun Application.configureSockets(
             }
         )
     }
+}
+
+fun Application.configureSockets(handler: WebSocketHandler, services: AppServices) {
+    configureFeatures()
     routing {
         webSocket("chat") {
             handler.handleUser(this)
         }
         route("paraiso_api/v1") {
-            authController(authApi)
-            postsController(postsApi)
-            usersController(usersApi)
-            userSessionsController(userSessionsApi)
-            userChatsController(userChatsApi)
-            bballController(bBallApi)
-            fballController(fBallApi)
-            metadataController(metadataApi)
-            adminController(adminApi)
-            routesController(routesApi)
+            authController(services.authApi)
+            postsController(services.postsApi)
+            usersController(services.usersApi)
+            userSessionsController(services.userSessionsApi)
+            userChatsController(services.userChatsApi)
+            bballController(services.bBallApi)
+            fballController(services.fBallApi)
+            metadataController(services.metadataApi)
+            adminController(services.adminApi)
+            routesController(services.routesApi)
         }
     }
 }
