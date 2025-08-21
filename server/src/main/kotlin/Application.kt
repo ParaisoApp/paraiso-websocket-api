@@ -71,7 +71,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
-import java.util.UUID
+import io.lettuce.core.RedisClient
+
 
 fun main() {
     val job = Job()
@@ -97,7 +98,7 @@ fun Application.module(jobScope: CoroutineScope){
     val serverId = config.property("server.id").getString()
     val mongoUrl = config.property("mongodb.url").getString()
     val mongoDB = config.property("mongodb.database").getString()
-    //val redisUrl = config.property("redis.url").getString()
+    val redisUrl = config.property("redis.url").getString()
 
     //setup DB
     val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
@@ -118,6 +119,9 @@ fun Application.module(jobScope: CoroutineScope){
     val userChatsDb = UserChatsDBAdapterImpl(database)
     val userReportsDb = UserReportsDBAdapterImpl(database)
     val postReportsDb = PostReportsDBAdapterImpl(database)
+
+    //setup redis
+    val redisClient = RedisClient.create(redisUrl)
 
     //setup apis and scopes
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
