@@ -1,6 +1,5 @@
 package com.paraiso.com.paraiso.api.users
 
-import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.users.UserNotifs
 import com.paraiso.domain.users.UserReportNotifs
 import com.paraiso.domain.users.UserResponse
@@ -21,14 +20,6 @@ fun Route.usersController(usersApi: UsersApi) {
             usersApi.saveUser(
                 call.receive<UserResponse>()
             )
-        }
-        post("/userList") {
-            usersApi.getUserList(
-                call.receive<FilterTypes>(),
-                call.request.queryParameters["id"] ?: ""
-            )?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/getByName") {
             usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {

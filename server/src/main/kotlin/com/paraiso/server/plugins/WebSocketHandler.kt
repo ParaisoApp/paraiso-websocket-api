@@ -16,10 +16,14 @@ import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.users.UserSession
+import com.paraiso.domain.users.UserSessionResponse
+import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.newUser
+import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.users.toUser
 import com.paraiso.domain.util.ServerState
 import com.paraiso.server.util.cleanAndType
@@ -31,12 +35,17 @@ import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import java.net.InetAddress
 import java.util.UUID
 import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
@@ -53,7 +62,9 @@ import com.paraiso.domain.routes.Route as RouteDomain
 import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(
+    private val sessionId: String,
     private val usersApi: UsersApi,
+    private val userSessionsApi: UserSessionsApi,
     private val userChatsApi: UserChatsApi,
     private val postsApi: PostsApi,
     private val adminApi: AdminApi,
@@ -73,24 +84,33 @@ class WebSocketHandler(
     // session state
     private val sessionState = SessionState()
 
-    suspend fun handleUser(session: WebSocketServerSession) {
+    suspend fun handleUser(session: WebSocketServerSession) = coroutineScope {
         // check cookies to see if existing user
-        usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "")?.let { currentUser ->
-            currentUser.copy(
-                status = UserStatus.CONNECTED
-            ).let { reconnectUser ->
-                usersApi.saveUser(reconnectUser)
-                userToSocket[reconnectUser.id] = session // TODO map userid to socket
-                session.joinChat(reconnectUser)
-            }
-        } ?: run { // otherwise generate guest
-            UUID.randomUUID().toString().let { id ->
-                val currentUser = UserResponseDomain.newUser(id)
-                usersApi.saveUser(currentUser)
-                userToSocket[id] = session // map userid to socket
-                session.joinChat(currentUser)
+        val currentUser = usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "") ?:
+            UserResponseDomain.newUser(UUID.randomUUID().toString())
+        launch{
+            //create or update session connected status
+            userSessionsApi.getByUserId(currentUser.id)?.let {userSession ->
+                userSessionsApi.setConnected(userSession.id, UserStatus.CONNECTED)
+            } ?: run {
+                userSessionsApi.save(
+                    listOf(
+                        UserSessionResponse(
+                            id = UUID.randomUUID().toString(),
+                            userId = currentUser.id,
+                            serverId = sessionId,
+                            status = UserStatus.CONNECTED,
+                            lastSeen = Clock.System.now(),
+                        ).toDomain()
+                    )
+                )
             }
         }
+        launch {
+            usersApi.saveUser(currentUser)
+        }
+        userToSocket[currentUser.id] = session
+        session.joinChat(currentUser)
     }
 
     private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
@@ -356,11 +376,8 @@ class WebSocketHandler(
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            usersApi.getUserById(sessionUser.id)?.copy(
-                status = UserStatus.DISCONNECTED,
-                lastSeen = System.currentTimeMillis(),
-                updatedOn = Clock.System.now()
-            )?.let { userDisconnected ->
+            userSessionsApi.setConnected(sessionUser.id, UserStatus.DISCONNECTED)
+            usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 usersApi.saveUser(userDisconnected)
                 userToSocket[userDisconnected.id]?.close()

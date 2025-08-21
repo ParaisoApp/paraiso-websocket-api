@@ -11,6 +11,7 @@ import com.paraiso.com.paraiso.api.routes.routesController
 import com.paraiso.com.paraiso.api.sports.bball.bballController
 import com.paraiso.com.paraiso.api.sports.fball.fballController
 import com.paraiso.com.paraiso.api.users.userChatsController
+import com.paraiso.com.paraiso.api.users.userSessionsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.database.admin.PostReportsDBAdapterImpl
@@ -27,6 +28,7 @@ import com.paraiso.database.sports.ScoreboardsDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
+import com.paraiso.database.users.UserSessionsDBAdapterImpl
 import com.paraiso.database.users.UsersDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
@@ -38,6 +40,8 @@ import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
+import com.paraiso.domain.users.UserSessionsApi
+import com.paraiso.domain.users.UserSessionsDBAdapter
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.server.plugins.WebSocketHandler
 import io.ktor.http.HttpHeaders
@@ -64,6 +68,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
+import java.util.UUID
 
 fun main() {
     val job = Job()
@@ -145,12 +150,19 @@ fun main() {
         leadersDBAdapterImpl
     )
 
+    val usersDb = UsersDBAdapterImpl(database)
     val postsApi = PostsApi()
-    val usersApi = UsersApi(UsersDBAdapterImpl(database))
+    val usersApi = UsersApi(usersDb)
+    val userSessionsApi = UserSessionsApi(
+        usersDb,
+        UserSessionsDBAdapterImpl(database)
+    )
     val userChatsApi = UserChatsApi(UserChatsDBAdapterImpl(database))
     val adminApi = AdminApi(PostReportsDBAdapterImpl(database), UserReportsDBAdapterImpl(database))
     val handler = WebSocketHandler(
+        sessionId = UUID.randomUUID().toString(),
         usersApi,
+        userSessionsApi,
         userChatsApi,
         postsApi,
         adminApi,
@@ -166,6 +178,7 @@ fun main() {
             routesApi,
             postsApi,
             usersApi,
+            userSessionsApi,
             userChatsApi,
             AuthApi(),
             bballApi,
@@ -191,6 +204,7 @@ fun Application.configureSockets(
     routesApi: RoutesApi,
     postsApi: PostsApi,
     usersApi: UsersApi,
+    userSessionsApi: UserSessionsApi,
     userChatsApi: UserChatsApi,
     authApi: AuthApi,
     bBallApi: BBallApi,
@@ -238,6 +252,7 @@ fun Application.configureSockets(
             authController(authApi)
             postsController(postsApi)
             usersController(usersApi)
+            userSessionsController(userSessionsApi)
             userChatsController(userChatsApi)
             bballController(bBallApi)
             fballController(fBallApi)

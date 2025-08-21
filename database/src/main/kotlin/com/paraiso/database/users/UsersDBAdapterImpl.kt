@@ -1,9 +1,9 @@
 package com.paraiso.database.users
 
+import com.mongodb.client.model.Aggregates.addFields
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
-import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.FindOneAndUpdateOptions
@@ -14,7 +14,6 @@ import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
-import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
@@ -24,7 +23,6 @@ import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings
-import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersDBAdapter
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.coroutineScope
@@ -55,10 +53,14 @@ class UsersDBAdapterImpl(database: MongoDatabase) : UsersDBAdapter {
             .limit(PARTIAL_RETRIEVE_LIM)
             .toList()
 
-    override suspend fun getUserList(filters: FilterTypes, followingList: List<String>) =
+    override suspend fun getUserList(
+        userIds: List<String>,
+        filters: FilterTypes,
+        followingList: List<String>
+    ) =
         collection.find(
             and(
-                ne(User::status.name, UserStatus.DISCONNECTED),
+                `in`(ID, userIds),
                 or(
                     `in`(User::roles.name, filters.userRoles),
                     and(

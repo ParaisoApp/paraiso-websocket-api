@@ -28,10 +28,8 @@ data class User(
     val chats: Map<String, ChatRef>,
     val roles: UserRole,
     val banned: Boolean,
-    val status: UserStatus,
     val blockList: Set<String>,
     val image: UserImage,
-    val lastSeen: Long,
     val tag: String?,
     val settings: UserSettings,
     val createdOn: Instant,
@@ -87,10 +85,8 @@ data class UserResponse(
     val postReports: Map<String, Boolean>,
     val roles: UserRole,
     val banned: Boolean,
-    val status: UserStatus,
     val blockList: Map<String, Boolean>,
     val image: UserImage,
-    val lastSeen: Long,
     val tag: String?,
     val settings: UserSettings,
     val createdOn: Instant,
@@ -138,10 +134,8 @@ fun User.toUserResponse(
         postReports = postReports,
         roles = roles,
         banned = banned,
-        status = status,
         blockList = blockList.associateWith { true },
         image = image,
-        lastSeen = lastSeen,
         settings = settings,
         tag = tag,
         createdOn = createdOn,
@@ -167,10 +161,8 @@ fun UserResponse.toUser() =
         chats = chats,
         roles = roles,
         banned = banned,
-        status = status,
         blockList = blockList.keys,
         image = image,
-        lastSeen = lastSeen,
         settings = settings,
         tag = tag,
         createdOn = createdOn,
@@ -202,10 +194,8 @@ fun UserResponse.Companion.newUser(
             postReports = emptyMap(),
             roles = UserRole.GUEST,
             banned = false,
-            status = UserStatus.CONNECTED,
             blockList = emptyMap(),
             image = UserImage.initImage(),
-            lastSeen = now.toEpochMilliseconds(),
             settings = UserSettings.initSettings(),
             tag = null,
             createdOn = now,
@@ -250,7 +240,10 @@ fun User.buildUserResponse(): UserResponse {
                 }
             }
         }
-    return this.toUserResponse(posts, comments)
+    return this.toUserResponse(
+        posts,
+        comments
+    )
 }
 
 @Serializable

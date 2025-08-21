@@ -16,10 +16,6 @@ import kotlinx.datetime.Instant
 class UsersApi(
     private val usersDBAdapter: UsersDBAdapter
 ) {
-
-    companion object {
-        const val PARTIAL_RETRIEVE_LIM = 5
-    }
     suspend fun getUserById(userId: String) =
         usersDBAdapter.findById(userId)?.buildUserResponse()
 
@@ -32,11 +28,6 @@ class UsersApi(
     suspend fun getUserByPartial(search: String) =
         usersDBAdapter.findByPartial(search)
             .map { it.buildUserResponse() }
-
-    suspend fun getUserList(filters: FilterTypes, userId: String) =
-        usersDBAdapter.getFollowingById(userId).let { followingList ->
-            usersDBAdapter.getUserList(filters, followingList.map { it.id })
-        }.associate { user -> user.id to user.buildUserResponse() }
 
     suspend fun getFollowingById(userId: String) =
         usersDBAdapter.getFollowingById(userId)

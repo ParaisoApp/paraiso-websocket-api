@@ -10,6 +10,7 @@ interface UsersDBAdapter{
     suspend fun existsByName(name: String): Boolean
     suspend fun findByPartial(partial: String): List<User>
     suspend fun getUserList(
+        userIds: List<String>,
         filters: FilterTypes,
         followingList: List<String>
     ): List<User>
