@@ -21,7 +21,7 @@ fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        post("/userList") {
+        post("userList") {
             userSessionsApi.getUserList(
                 call.receive<FilterTypes>(),
                 call.request.queryParameters["id"] ?: ""

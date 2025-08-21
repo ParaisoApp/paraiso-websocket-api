@@ -11,13 +11,12 @@ class UserSessionsApi(
         const val RETRIEVE_LIM = 5
     }
 
-    suspend fun getUserList(filters: FilterTypes, userId: String) {
-        userSessionsDBAdapter.get().map { it.userId }.let{activeUserIds ->
+    suspend fun getUserList(filters: FilterTypes, userId: String) =
+        userSessionsDBAdapter.get().map { it.userId }.let{ activeUserIds ->
             usersDBAdapter.getFollowingById(userId).let { followingList ->
                 usersDBAdapter.getUserList(activeUserIds, filters, followingList.map { it.id })
             }.associate { user -> user.id to user.buildUserResponse() }
         }
-    }
     suspend fun getByUserId(userId: String) =
         userSessionsDBAdapter.findByUserId(userId)?.toResponse()
 
