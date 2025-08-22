@@ -29,10 +29,11 @@ import com.paraiso.database.sports.ScoreboardsDBAdapterImpl
 import com.paraiso.database.sports.StandingsDBAdapterImpl
 import com.paraiso.database.sports.TeamsDBAdapterImpl
 import com.paraiso.database.users.UserChatsDBAdapterImpl
-import com.paraiso.database.users.UserSessionsDBAdapterImpl
 import com.paraiso.database.users.UsersDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
+import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
@@ -44,14 +45,16 @@ import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
-import com.paraiso.events.EventService
+import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
+import com.paraiso.server.util.sendTypedMessage
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.config.HoconApplicationConfig
 import io.ktor.server.engine.embeddedServer
@@ -75,6 +78,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import io.lettuce.core.RedisClient
+import kotlinx.serialization.SerializationException
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -119,7 +123,6 @@ fun Application.module(jobScope: CoroutineScope){
         LeadersDBAdapterImpl(database)
     )
     val usersDb = UsersDBAdapterImpl(database)
-    val userSessionsDb = UserSessionsDBAdapterImpl(database)
     val userChatsDb = UserChatsDBAdapterImpl(database)
     val userReportsDb = UserReportsDBAdapterImpl(database)
     val postReportsDb = PostReportsDBAdapterImpl(database)
@@ -127,12 +130,17 @@ fun Application.module(jobScope: CoroutineScope){
     //setup redis
     val userSessions = ConcurrentHashMap<String, WebSocketServerSession>()
     val redisClient = RedisClient.create(redisUrl)
-    val eventService = EventService(serverId, redisClient)
+    val eventServiceImpl = EventServiceImpl(serverId, redisClient)
 
     launch {
-        eventService.subscribe { message ->
+        eventServiceImpl.subscribe { message ->
             val (userId, payload) = message.split(":", limit = 2)
-            userSessions[userId]?.send(Frame.Text(payload))
+            val dm: DirectMessage? = try {
+                Json.decodeFromString<DirectMessage>(payload)
+            } catch (e: SerializationException) {
+                null
+            }
+            userSessions[userId]?.sendTypedMessage(MessageType.DM, dm)
         }
     }
 
@@ -160,7 +168,7 @@ fun Application.module(jobScope: CoroutineScope){
     val fballApi = FBallApi(sportsDBs)
     val postsApi = PostsApi()
     val usersApi = UsersApi(usersDb)
-    val userSessionsApi = UserSessionsApi(usersDb, userSessionsDb)
+    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi()
@@ -180,9 +188,9 @@ fun Application.module(jobScope: CoroutineScope){
 
     val handler = WebSocketHandler(
         serverId = serverId,
+        eventServiceImpl,
         userSessions,
         services.usersApi,
-        services.userSessionsApi,
         services.userChatsApi,
         services.postsApi,
         services.adminApi,
@@ -192,6 +200,10 @@ fun Application.module(jobScope: CoroutineScope){
     )
 
     configureSockets(handler, services)
+
+    environment.monitor.subscribe(ApplicationStopped) {
+        eventServiceImpl.close()
+    }
 }
 fun Application.configureFeatures() {
     install(WebSockets) {

@@ -14,18 +14,15 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.users.UserChatsApi
-import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserSession
 import com.paraiso.domain.users.UserSessionResponse
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
-import com.paraiso.domain.users.buildUserResponse
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toDomain
-import com.paraiso.domain.users.toUser
 import com.paraiso.domain.util.ServerState
+import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.getMentions
@@ -35,17 +32,13 @@ import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import java.net.InetAddress
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import com.paraiso.domain.messageTypes.Ban as BanDomain
@@ -64,9 +57,9 @@ import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(
     private val serverId: String,
+    private val eventServiceImpl: EventServiceImpl,
     private val userSessions: ConcurrentHashMap<String, WebSocketServerSession>,
     private val usersApi: UsersApi,
-    private val userSessionsApi: UserSessionsApi,
     private val userChatsApi: UserChatsApi,
     private val postsApi: PostsApi,
     private val adminApi: AdminApi,
@@ -89,21 +82,14 @@ class WebSocketHandler(
             UserResponseDomain.newUser(UUID.randomUUID().toString())
         launch{
             //create or update session connected status
-            userSessionsApi.getByUserId(currentUser.id)?.let {userSession ->
-                userSessionsApi.setConnected(userSession.id, UserStatus.CONNECTED)
-            } ?: run {
-                userSessionsApi.save(
-                    listOf(
-                        UserSessionResponse(
-                            id = UUID.randomUUID().toString(),
-                            userId = currentUser.id,
-                            serverId = serverId,
-                            status = UserStatus.CONNECTED,
-                            lastSeen = Clock.System.now(),
-                        ).toDomain()
-                    )
-                )
-            }
+            eventServiceImpl.saveUserSession(
+                UserSessionResponse(
+                    id = UUID.randomUUID().toString(),
+                    userId = currentUser.id,
+                    serverId = serverId,
+                    status = UserStatus.CONNECTED
+                ).toDomain()
+            )
         }
         launch {
             usersApi.saveUser(currentUser)
@@ -262,7 +248,13 @@ class WebSocketHandler(
                                             // update chat for receiving user
                                             launch { userChatsApi.putDM(dmWithData) }
                                         }
-                                        userSessions[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+//                                        if(userSessions[dmWithData.userReceiveId] != null){
+//                                            userSessions[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+//                                        }else{
+                                        eventServiceImpl.publishToServer(
+                                            serverId,
+                                            "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
+                                        )
                                     }
                                 }
                             }
@@ -375,7 +367,7 @@ class WebSocketHandler(
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            userSessionsApi.setConnected(sessionUser.id, UserStatus.DISCONNECTED)
+            eventServiceImpl.deleteUserSession(sessionUser.id)
             usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 usersApi.saveUser(userDisconnected)

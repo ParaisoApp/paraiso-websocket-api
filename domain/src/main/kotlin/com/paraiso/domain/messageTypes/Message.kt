@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Message(
-    val id: String?,
+    val id: String? = null,
     val userId: String?,
     @Serializable(with = RecordSerializer::class)
     val userReceiveIds: Set<String>,
@@ -27,7 +27,7 @@ data class Message(
 
 @Serializable
 data class DirectMessage(
-    val id: String?,
+    val id: String? = null,
     val chatId: String,
     val userId: String?,
     val userReceiveId: String,
