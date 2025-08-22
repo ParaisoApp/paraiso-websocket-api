@@ -274,19 +274,16 @@ class WebSocketHandler(
                                         }
                                         //if user is on this server then grab session on send dm to user
                                         val curUserSessions = userSessions[dmWithData.userReceiveId]
-                                        if(curUserSessions != null){
-                                            curUserSessions.forEach { session ->
-                                                launch {
-                                                    session.sendTypedMessage(MessageType.DM, dmWithData)
-                                                }
+                                        curUserSessions?.forEach { session ->
+                                            launch {
+                                                session.sendTypedMessage(MessageType.DM, dmWithData)
                                             }
-                                        }else {
-                                            //otherwise publish and map to respective server subscriber
-                                            eventServiceImpl.publishToServer(
-                                                serverId,
-                                                "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
-                                            )
                                         }
+                                        //otherwise publish and map to respective server subscriber
+                                        eventServiceImpl.publishToServer(
+                                            serverId,
+                                            "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
+                                        )
                                     }
                                 }
                             }

@@ -10,6 +10,8 @@ import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -29,9 +31,9 @@ class EventServiceImpl(
     override suspend fun subscribe(onMessage: suspend (String) -> Unit) = coroutineScope {
         val reactive: RedisPubSubReactiveCommands<String, String> = pubSubConnection.reactive()
 
-        reactive.subscribe("server:$serverId").subscribe()
+        reactive.subscribe("server:$serverId").awaitFirstOrNull()
 
-        reactive.observeChannels().subscribe { msg ->
+        reactive.observeChannels().asFlow().collect { msg ->
             launch {
                 onMessage(msg.message)
             }
