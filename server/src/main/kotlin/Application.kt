@@ -148,7 +148,7 @@ fun Application.module(jobScope: CoroutineScope){
 
     launch {
         //pick up dms directed at this server - find active user and send typed message
-        eventServiceImpl.subscribe { message ->
+        eventServiceImpl.subscribe("server:$serverId") { message ->
             val (userId, payload) = message.split(":", limit = 2)
             try {
                 val dm = Json.decodeFromString<DirectMessage>(payload)

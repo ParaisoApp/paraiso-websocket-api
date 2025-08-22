@@ -24,14 +24,17 @@ class EventServiceImpl(
     private val pubConnection = client.connect()
     private val pub = pubConnection.async()
 
-    override fun publishToServer(targetServerId: String, message: String) {
-        pub.publish("server:$targetServerId", message)
+    override fun publish(key: String, message: String) {
+        pub.publish(key, message)
     }
 
-    override suspend fun subscribe(onMessage: suspend (String) -> Unit) = coroutineScope {
+    override suspend fun subscribe(
+        key: String,
+        onMessage: suspend (String) -> Unit
+    ) = coroutineScope {
         val reactive: RedisPubSubReactiveCommands<String, String> = pubSubConnection.reactive()
 
-        reactive.subscribe("server:$serverId").awaitFirstOrNull()
+        reactive.subscribe(key).awaitFirstOrNull()
 
         reactive.observeChannels().asFlow().collect { msg ->
             launch {

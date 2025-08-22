@@ -280,8 +280,8 @@ class WebSocketHandler(
                                             }
                                         }
                                         //otherwise publish and map to respective server subscriber
-                                        eventServiceImpl.publishToServer(
-                                            serverId,
+                                        eventServiceImpl.publish(
+                                            "server:$serverId",
                                             "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
                                         )
                                     }
