@@ -81,6 +81,7 @@ import kotlinx.serialization.json.Json
 import java.time.Duration
 import io.lettuce.core.RedisClient
 import kotlinx.serialization.SerializationException
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -133,7 +134,7 @@ fun Application.module(jobScope: CoroutineScope){
     val postReportsDb = PostReportsDBAdapterImpl(database)
 
     //setup redis
-    val userSessions = ConcurrentHashMap<String, WebSocketServerSession>()
+    val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
     val eventServiceImpl = EventServiceImpl(serverId, redisClient)
 
@@ -143,7 +144,9 @@ fun Application.module(jobScope: CoroutineScope){
             val (userId, payload) = message.split(":", limit = 2)
             try {
                 val dm = Json.decodeFromString<DirectMessage>(payload)
-                userSessions[userId]?.sendTypedMessage(MessageType.DM, dm)
+                userSessions[userId]?.forEach { session ->
+                    launch { session.sendTypedMessage(MessageType.DM, dm) }
+                }
             } catch (e: SerializationException) {
                 logger.error(e) { "Error deserializing: $payload" }
             }

@@ -16,7 +16,6 @@ import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
-import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.newUser
@@ -58,54 +57,62 @@ import com.paraiso.domain.users.UserResponse as UserResponseDomain
 class WebSocketHandler(
     private val serverId: String,
     private val eventServiceImpl: EventServiceImpl,
-    private val userSessions: ConcurrentHashMap<String, WebSocketServerSession>,
+    private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
     private val usersApi: UsersApi,
     private val userChatsApi: UserChatsApi,
     private val postsApi: PostsApi,
     private val adminApi: AdminApi,
     private val routesApi: RoutesApi,
-    bBallApi: BBallApi,
-    fBallApi: FBallApi
+    private val bBallApi: BBallApi,
+    private val fBallApi: FBallApi
 ) : Klogging {
-    // jobs
-    private val homeJobs = HomeJobs()
-    private val profileJobs = ProfileJobs()
-    private val bBallJobs = BBallJobs(bBallApi)
-    private val fBallJobs = FBallJobs(fBallApi)
 
-    // session state
-    private val sessionState = SessionState()
-
-    suspend fun handleUser(session: WebSocketServerSession) = coroutineScope {
+    suspend fun handleUser(
+        session: WebSocketServerSession
+    ) = coroutineScope {
+        val sessionId = UUID.randomUUID().toString()
+        // session state
+        val sessionState = SessionState()
         // check cookies to see if existing user
         val currentUser = usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "") ?:
             UserResponseDomain.newUser(UUID.randomUUID().toString())
         launch{
             //create or update session connected status
-            eventServiceImpl.saveUserSession(
-                UserSessionResponse(
-                    id = UUID.randomUUID().toString(),
-                    userId = currentUser.id,
-                    serverId = serverId,
-                    status = UserStatus.CONNECTED
-                ).toDomain()
-            )
+            eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->
+                eventServiceImpl.saveUserSession(
+                    existingSession.copy(
+                        sessionIds = existingSession.sessionIds + sessionId
+                    )
+                )
+            } ?: run {
+                eventServiceImpl.saveUserSession(
+                    UserSessionResponse(
+                        id = UUID.randomUUID().toString(),
+                        userId = currentUser.id,
+                        serverId = serverId,
+                        status = UserStatus.CONNECTED,
+                        sessionIds = setOf(sessionId)
+                    ).toDomain()
+                )
+            }
         }
         launch {
             usersApi.saveUser(currentUser)
         }
-        userSessions[currentUser.id] = session
-        session.joinChat(currentUser)
+        val curUserSessions = userSessions[currentUser.id] ?: emptySet()
+        userSessions[currentUser.id] = curUserSessions + session
+
+        session.joinChat(currentUser, sessionId, sessionState)
     }
 
     private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
         when (route.route) {
-            SiteRoute.HOME -> homeJobs.homeJobs(session)
-            SiteRoute.PROFILE -> profileJobs.profileJobs(route.content, session)
+            SiteRoute.HOME -> HomeJobs().homeJobs(session)
+            SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
             SiteRoute.SPORT -> {
                 when (route.modifier) {
-                    SiteRoute.BASKETBALL -> bBallJobs.sportJobs(session)
-                    SiteRoute.FOOTBALL -> fBallJobs.sportJobs(session)
+                    SiteRoute.BASKETBALL -> BBallJobs(bBallApi).sportJobs(session)
+                    SiteRoute.FOOTBALL -> FBallJobs(fBallApi).sportJobs(session)
                     else -> {
                         logger.error("Unrecognized Sport: $route")
                         emptyList()
@@ -114,8 +121,8 @@ class WebSocketHandler(
             }
             SiteRoute.TEAM -> {
                 when (route.modifier) {
-                    SiteRoute.BASKETBALL -> bBallJobs.teamJobs(route.content, session)
-                    SiteRoute.FOOTBALL -> fBallJobs.teamJobs(route.content, session)
+                    SiteRoute.BASKETBALL -> BBallJobs(bBallApi).teamJobs(route.content, session)
+                    SiteRoute.FOOTBALL -> FBallJobs(fBallApi).teamJobs(route.content, session)
                     else -> {
                         logger.error("Unrecognized Team: $route")
                         emptyList()
@@ -129,7 +136,12 @@ class WebSocketHandler(
         }
     }
 
-    private suspend fun validateMessage(sessionUserId: String, blockList: Map<String, Boolean>, postType: PostType, userId: String?) =
+    private suspend fun validateMessage(
+        sessionUserId: String,
+        blockList: Map<String, Boolean>,
+        postType: PostType, userId: String?,
+        sessionState: SessionState
+    ) =
         sessionUserId == userId || // message is from the cur user or
             (
                 !blockList.contains(userId) && // user isnt in cur user's blocklist
@@ -140,7 +152,11 @@ class WebSocketHandler(
                     )
                 )
 
-    private suspend fun WebSocketServerSession.joinChat(user: UserResponseDomain) {
+    private suspend fun WebSocketServerSession.joinChat(
+        user: UserResponseDomain,
+        sessionId: String,
+        sessionState: SessionState
+    ) {
         var sessionUser = user.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
@@ -150,7 +166,15 @@ class WebSocketHandler(
                     when (type) {
                         MessageType.MSG -> {
                             (message as? MessageDomain)?.let { newMessage ->
-                                if (validateMessage(sessionUser.id, sessionUser.blockList, newMessage.type, newMessage.userId)) {
+                                if (
+                                    validateMessage(
+                                        sessionUser.id,
+                                        sessionUser.blockList,
+                                        newMessage.type,
+                                        newMessage.userId,
+                                        sessionState
+                                    )
+                                ) {
                                     sendTypedMessage(type, newMessage)
                                 }
                             }
@@ -249,8 +273,13 @@ class WebSocketHandler(
                                             launch { userChatsApi.putDM(dmWithData) }
                                         }
                                         //if user is on this server then grab session on send dm to user
-                                        if(userSessions[dmWithData.userReceiveId] != null){
-                                            userSessions[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+                                        val curUserSessions = userSessions[dmWithData.userReceiveId]
+                                        if(curUserSessions != null){
+                                            curUserSessions.forEach { session ->
+                                                launch {
+                                                    session.sendTypedMessage(MessageType.DM, dmWithData)
+                                                }
+                                            }
                                         }else {
                                             //otherwise publish and map to respective server subscriber
                                             eventServiceImpl.publishToServer(
@@ -370,11 +399,26 @@ class WebSocketHandler(
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            eventServiceImpl.deleteUserSession(sessionUser.id)
+            //create or update session connected status
+            eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->
+                val remainingSessions = existingSession.sessionIds - sessionId
+                if(remainingSessions.isEmpty()){
+                    eventServiceImpl.deleteUserSession(sessionUser.id)
+                } else {
+                    eventServiceImpl.saveUserSession(
+                        existingSession.copy(
+                            sessionIds = remainingSessions
+                        )
+                    )
+                }
+            }
             usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
-                usersApi.saveUser(userDisconnected)
-                userSessions[userDisconnected.id]?.close()
+                //remove current user session from sessions map
+                val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
+                //if user has no more sessions, remove user from server user sessions
+                if(curUserSessions.isEmpty()) userSessions.remove(userDisconnected.id)
+                this.close()
             }
         }
     }

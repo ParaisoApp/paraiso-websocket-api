@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 data class UserSession (
     val id: String,
     val userId: String,
-    val serverId: String
+    val serverId: String,
+    val sessionIds: Set<String>
 )
 
 @Serializable
@@ -15,14 +16,16 @@ data class UserSessionResponse (
     val id: String,
     val userId: String,
     val serverId: String,
-    val status: UserStatus
+    val status: UserStatus,
+    val sessionIds: Set<String>
 )
 
 fun UserSessionResponse.toDomain() =
     UserSession(
         id = id,
         userId = userId,
-        serverId = serverId
+        serverId = serverId,
+        sessionIds = sessionIds
     )
 
 fun UserSession.toResponse(status: UserStatus) =
@@ -30,5 +33,6 @@ fun UserSession.toResponse(status: UserStatus) =
         id = id,
         userId = userId,
         serverId = serverId,
-        status = status
+        status = status,
+        sessionIds = sessionIds
     )

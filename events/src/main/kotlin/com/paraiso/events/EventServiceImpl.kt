@@ -46,9 +46,9 @@ class EventServiceImpl(
     }
     override suspend fun getUserSession(userId: String): UserSession? {
         return try {
-            Json.decodeFromString<UserSession>(
-                pubConnection.sync().get("user:session:$userId")
-            )
+            pubConnection.sync().get("user:session:$userId")?.let {
+                Json.decodeFromString<UserSession>(it)
+            }
         } catch (e: SerializationException) {
             logger.error { e }
             null
