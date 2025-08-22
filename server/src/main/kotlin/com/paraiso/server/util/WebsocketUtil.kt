@@ -1,5 +1,6 @@
 package com.paraiso.server.util
 
+import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.MessageType
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
@@ -7,6 +8,7 @@ import io.ktor.server.websocket.sendSerialized
 import io.ktor.util.reflect.typeInfo
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -117,6 +119,14 @@ fun getMentions(content: String?): Set<String> {
 
 fun UserResponseDomain.validateUser(): Boolean =
     this.name?.replace("\\s+".toRegex(), "")?.length != 0
+
+inline fun <reified T> decodeMessage(payload: String): T? =
+    try {
+        Json.decodeFromString<T>(payload)
+    } catch (e: SerializationException) {
+        println("Error deserializing: $payload")
+        null
+    }
 
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
     sendSerialized<TypeMappingDomain<T>>(

@@ -8,7 +8,6 @@ import io.lettuce.core.RedisClient
 import io.lettuce.core.ScanArgs
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
@@ -18,30 +17,32 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class EventServiceImpl(
+    private val serverId: String,
     private val client: RedisClient
 ): EventService, Klogging {
     private val pubSubConnection: StatefulRedisPubSubConnection<String, String> = client.connectPubSub()
     private val pubConnection = client.connect()
     private val pub = pubConnection.async()
+    private val reactive: RedisPubSubReactiveCommands<String, String> = pubSubConnection.reactive()
 
     override fun publish(key: String, message: String) {
         pub.publish(key, message)
     }
 
+    override suspend fun addChannels(keys: List<String>) =
+        keys.forEach {key ->
+            reactive.subscribe(key).awaitFirstOrNull()
+        }
+
     override suspend fun subscribe(
-        key: String,
-        onMessage: suspend (String) -> Unit
+        onMessage: suspend (Pair<String, String>) -> Unit
     ) = coroutineScope {
-        val reactive: RedisPubSubReactiveCommands<String, String> = pubSubConnection.reactive()
-
-        reactive.subscribe(key).awaitFirstOrNull()
-
         reactive.observeChannels().asFlow().collect { msg ->
-            launch {
-                onMessage(msg.message)
+                launch {
+                    onMessage(Pair(msg.channel, msg.message))
+                }
             }
         }
-    }
 
     override fun saveUserSession(userSession: UserSession) {
         pubConnection.sync().set(

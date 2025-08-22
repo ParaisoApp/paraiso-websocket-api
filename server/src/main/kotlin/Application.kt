@@ -148,23 +148,13 @@ fun Application.module(jobScope: CoroutineScope){
     //setup redis
     val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
-    val eventServiceImpl = EventServiceImpl(redisClient)
+    val eventServiceImpl = EventServiceImpl(serverId, redisClient)
 
     //subscriber to all incoming messages from other servers
-    //val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
+    val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
 
     jobScope.launch {
-        eventServiceImpl.subscribe("${MessageType.VOTE.name}:") { message ->
-            val (incomingServerId, payload) = message.split(":", limit = 2)
-            if(incomingServerId != serverId){
-                try {
-                    val vote = Json.decodeFromString<Vote>(payload)
-                    ServerState.voteFlowMut.emit(vote)
-                } catch (e: SerializationException) {
-                    logger.error(e) { "Error deserializing: $payload" }
-                }
-            }
-        }
+        messageHandler.messageJobs()
     }
 
     //setup apis and scopes

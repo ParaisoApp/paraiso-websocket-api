@@ -13,6 +13,7 @@ import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.events.EventServiceImpl
+import com.paraiso.server.util.decodeMessage
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
@@ -29,160 +30,113 @@ class MessageHandler(
     private val eventServiceImpl: EventServiceImpl,
 ): Klogging {
     suspend fun messageJobs() = coroutineScope {
+        eventServiceImpl.addChannels(
+            listOf(
+                "server:$serverId",
+                MessageType.USER_UPDATE.name,
+                MessageType.MSG.name,
+                MessageType.FOLLOW.name,
+                MessageType.FAVORITE.name,
+                MessageType.VOTE.name,
+                MessageType.DELETE.name,
+                MessageType.BAN.name,
+                MessageType.TAG.name,
+                MessageType.REPORT_USER.name,
+                MessageType.REPORT_POST.name,
+            )
+        )
         //pick up dms directed at this server - find active user and send typed message
         launch{
-            eventServiceImpl.subscribe("server:$serverId") { message ->
-                val (userId, payload) = message.split(":", limit = 2)
-                try {
-                    val dm = Json.decodeFromString<DirectMessage>(payload)
-                    userSessions[userId]?.forEach { session ->
-                        session.sendTypedMessage(MessageType.DM, dm)
+            eventServiceImpl.subscribe { (channel, message) ->
+                when(channel){
+                    "server:$serverId" -> {
+                        val (userId, payload) = message.split(":", limit = 2)
+                        decodeMessage<DirectMessage>(payload)?.let {dm ->
+                            userSessions[userId]?.forEach { session ->
+                                session.sendTypedMessage(MessageType.DM, dm)
+                            }
+                        }
                     }
-                } catch (e: SerializationException) {
-                    logger.error(e) { "Error deserializing: $payload" }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.USER_UPDATE.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                //only emit messages coming from other servers
-                if(incomingServerId != serverId){
-                    try {
-                        val userUpdate = Json.decodeFromString<UserResponse>(payload)
-                        ServerState.userUpdateFlowMut.emit(userUpdate)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.USER_UPDATE.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        //only emit messages coming from other servers
+                        if(incomingServerId != serverId){
+                            decodeMessage<UserResponse>(payload)?.let {userUpdate ->
+                                ServerState.userUpdateFlowMut.emit(userUpdate)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.MSG.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val parsedMessage = Json.decodeFromString<Message>(payload)
-                        ServerState.messageFlowMut.emit(parsedMessage)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.MSG.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Message>(payload)?.let {parsedMessage ->
+                                ServerState.messageFlowMut.emit(parsedMessage)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.FOLLOW.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val follow = Json.decodeFromString<Follow>(payload)
-                        ServerState.followFlowMut.emit(follow)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.FOLLOW.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Follow>(payload)?.let {follow ->
+                                ServerState.followFlowMut.emit(follow)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.FAVORITE.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val favorite = Json.decodeFromString<Favorite>(payload)
-                        ServerState.favoriteFlowMut.emit(favorite)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.FAVORITE.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Favorite>(payload)?.let {favorite ->
+                                ServerState.favoriteFlowMut.emit(favorite)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.VOTE.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val vote = Json.decodeFromString<Vote>(payload)
-                        ServerState.voteFlowMut.emit(vote)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.VOTE.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Vote>(payload)?.let {vote ->
+                                ServerState.voteFlowMut.emit(vote)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.DELETE.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val delete = Json.decodeFromString<Delete>(payload)
-                        ServerState.deleteFlowMut.emit(delete)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.DELETE.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Delete>(payload)?.let {delete ->
+                                ServerState.deleteFlowMut.emit(delete)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.BAN.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val ban = Json.decodeFromString<Ban>(payload)
-                        ServerState.banUserFlowMut.emit(ban)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.BAN.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Ban>(payload)?.let {ban ->
+                                ServerState.banUserFlowMut.emit(ban)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.TAG.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val tag = Json.decodeFromString<Tag>(payload)
-                        ServerState.tagUserFlowMut.emit(tag)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.TAG.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Tag>(payload)?.let {tag ->
+                                ServerState.tagUserFlowMut.emit(tag)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.REPORT_USER.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val reportUser = Json.decodeFromString<Report>(payload)
-                        ServerState.reportUserFlowMut.emit(reportUser)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.REPORT_USER.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Report>(payload)?.let {reportUser ->
+                                ServerState.reportUserFlowMut.emit(reportUser)
+                            }
+                        }
                     }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.REPORT_POST.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val reportPost = Json.decodeFromString<Report>(payload)
-                        ServerState.reportPostFlowMut.emit(reportPost)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
-                    }
-                }
-            }
-        }
-        launch{
-            eventServiceImpl.subscribe("${MessageType.REPORT_POST.name}:") { message ->
-                val (incomingServerId, payload) = message.split(":", limit = 2)
-                if(incomingServerId != serverId){
-                    try {
-                        val reportPost = Json.decodeFromString<Report>(payload)
-                        ServerState.reportPostFlowMut.emit(reportPost)
-                    } catch (e: SerializationException) {
-                        logger.error(e) { "Error deserializing: $payload" }
+                    MessageType.REPORT_POST.name -> {
+                        val (incomingServerId, payload) = message.split(":", limit = 2)
+                        if(incomingServerId != serverId){
+                            decodeMessage<Report>(payload)?.let {reportPost ->
+                                ServerState.reportPostFlowMut.emit(reportPost)
+                            }
+                        }
                     }
                 }
             }

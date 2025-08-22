@@ -323,7 +323,7 @@ class WebSocketHandler(
                                     sendTypedMessage(MessageType.VOTE, vote)
                                 } else {
                                     launch { postsApi.votePost(vote) }
-                                    //ServerState.voteFlowMut.emit(vote)
+                                    ServerState.voteFlowMut.emit(vote)
                                     eventServiceImpl.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
                                 }
                             }
