@@ -151,7 +151,7 @@ fun Application.module(jobScope: CoroutineScope){
     val eventServiceImpl = EventServiceImpl(redisClient)
 
     //subscriber to all incoming messages from other servers
-    val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
+    //val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
 
     jobScope.launch {
         eventServiceImpl.subscribe("${MessageType.VOTE.name}:") { message ->
