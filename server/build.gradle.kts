@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":client"))
     implementation(project(":database"))
+    implementation(project(":events"))
 
     // ktor server
     implementation("io.ktor:ktor-server-core:$ktorVersion ")

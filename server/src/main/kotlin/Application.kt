@@ -44,6 +44,7 @@ import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.events.EventService
 import com.paraiso.server.plugins.WebSocketHandler
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
@@ -59,10 +60,12 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -72,6 +75,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import io.lettuce.core.RedisClient
+import java.util.concurrent.ConcurrentHashMap
 
 
 fun main() {
@@ -121,7 +125,16 @@ fun Application.module(jobScope: CoroutineScope){
     val postReportsDb = PostReportsDBAdapterImpl(database)
 
     //setup redis
+    val userSessions = ConcurrentHashMap<String, WebSocketServerSession>()
     val redisClient = RedisClient.create(redisUrl)
+    val eventService = EventService(serverId, redisClient)
+
+    launch {
+        eventService.subscribe { message ->
+            val (userId, payload) = message.split(":", limit = 2)
+            userSessions[userId]?.send(Frame.Text(payload))
+        }
+    }
 
     //setup apis and scopes
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
@@ -167,6 +180,7 @@ fun Application.module(jobScope: CoroutineScope){
 
     val handler = WebSocketHandler(
         serverId = serverId,
+        userSessions,
         services.usersApi,
         services.userSessionsApi,
         services.userChatsApi,

@@ -47,6 +47,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.net.InetAddress
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import com.paraiso.domain.messageTypes.Ban as BanDomain
 import com.paraiso.domain.messageTypes.Delete as DeleteDomain
 import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
@@ -63,6 +64,7 @@ import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(
     private val serverId: String,
+    private val userSessions: ConcurrentHashMap<String, WebSocketServerSession>,
     private val usersApi: UsersApi,
     private val userSessionsApi: UserSessionsApi,
     private val userChatsApi: UserChatsApi,
@@ -77,9 +79,6 @@ class WebSocketHandler(
     private val profileJobs = ProfileJobs()
     private val bBallJobs = BBallJobs(bBallApi)
     private val fBallJobs = FBallJobs(fBallApi)
-
-    // users
-    private val userToSocket: MutableMap<String, WebSocketServerSession> = mutableMapOf()
 
     // session state
     private val sessionState = SessionState()
@@ -109,7 +108,7 @@ class WebSocketHandler(
         launch {
             usersApi.saveUser(currentUser)
         }
-        userToSocket[currentUser.id] = session
+        userSessions[currentUser.id] = session
         session.joinChat(currentUser)
     }
 
@@ -263,7 +262,7 @@ class WebSocketHandler(
                                             // update chat for receiving user
                                             launch { userChatsApi.putDM(dmWithData) }
                                         }
-                                        userToSocket[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+                                        userSessions[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
                                     }
                                 }
                             }
@@ -380,7 +379,7 @@ class WebSocketHandler(
             usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 usersApi.saveUser(userDisconnected)
-                userToSocket[userDisconnected.id]?.close()
+                userSessions[userDisconnected.id]?.close()
             }
         }
     }
