@@ -248,13 +248,16 @@ class WebSocketHandler(
                                             // update chat for receiving user
                                             launch { userChatsApi.putDM(dmWithData) }
                                         }
-//                                        if(userSessions[dmWithData.userReceiveId] != null){
-//                                            userSessions[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
-//                                        }else{
-                                        eventServiceImpl.publishToServer(
-                                            serverId,
-                                            "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
-                                        )
+                                        //if user is on this server then grab session on send dm to user
+                                        if(userSessions[dmWithData.userReceiveId] != null){
+                                            userSessions[dmWithData.userReceiveId]?.sendTypedMessage(MessageType.DM, dmWithData)
+                                        }else {
+                                            //otherwise publish and map to respective server subscriber
+                                            eventServiceImpl.publishToServer(
+                                                serverId,
+                                                "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
+                                            )
+                                        }
                                     }
                                 }
                             }

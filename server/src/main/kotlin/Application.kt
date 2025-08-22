@@ -50,6 +50,7 @@ import com.paraiso.server.plugins.WebSocketHandler
 import com.paraiso.server.util.sendTypedMessage
 import com.typesafe.config.ConfigFactory
 import io.klogging.Klogging
+import io.klogging.logger
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
@@ -103,6 +104,9 @@ fun main() {
 }
 
 fun Application.module(jobScope: CoroutineScope){
+    //Application level logger
+    val logger = logger("Application")
+    //load config
     val config = HoconApplicationConfig(ConfigFactory.load())
     val serverId = config.property("server.id").getString()
     val mongoUrl = config.property("mongodb.url").getString()
@@ -134,14 +138,14 @@ fun Application.module(jobScope: CoroutineScope){
     val eventServiceImpl = EventServiceImpl(serverId, redisClient)
 
     launch {
+        //pick up dms directed at this server - find active user and send typed message
         eventServiceImpl.subscribe { message ->
             val (userId, payload) = message.split(":", limit = 2)
             try {
                 val dm = Json.decodeFromString<DirectMessage>(payload)
                 userSessions[userId]?.sendTypedMessage(MessageType.DM, dm)
             } catch (e: SerializationException) {
-                //TODO log
-                println(e)
+                logger.error(e) { "Error deserializing: $payload" }
             }
         }
     }
