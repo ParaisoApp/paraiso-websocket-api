@@ -49,6 +49,7 @@ import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
 import com.paraiso.server.util.sendTypedMessage
 import com.typesafe.config.ConfigFactory
+import io.klogging.Klogging
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
@@ -135,12 +136,13 @@ fun Application.module(jobScope: CoroutineScope){
     launch {
         eventServiceImpl.subscribe { message ->
             val (userId, payload) = message.split(":", limit = 2)
-            val dm: DirectMessage? = try {
-                Json.decodeFromString<DirectMessage>(payload)
+            try {
+                val dm = Json.decodeFromString<DirectMessage>(payload)
+                userSessions[userId]?.sendTypedMessage(MessageType.DM, dm)
             } catch (e: SerializationException) {
-                null
+                //TODO log
+                println(e)
             }
-            userSessions[userId]?.sendTypedMessage(MessageType.DM, dm)
         }
     }
 
