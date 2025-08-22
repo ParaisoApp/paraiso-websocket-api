@@ -56,6 +56,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.config.HoconApplicationConfig
@@ -80,13 +81,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import io.lettuce.core.RedisClient
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.SerializationException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 
 fun main() {
-    val job = Job()
+    val job = SupervisorJob()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
 
     val server = embeddedServer(Netty, port = 8080) {
@@ -95,11 +97,17 @@ fun main() {
 
     Runtime.getRuntime().addShutdownHook(
         Thread {
-            println("Shutting down server...")
-            runBlocking {
-                job.cancelAndJoin() // Cancel background jobs
+            try {
+                println("Shutting down server...")
+                runBlocking {
+                    job.cancelAndJoin() // Cancel background jobs
+                }
+                server.stop(1000, 2000)
+            } catch (ex: Exception) {
+                // Log the exception instead of letting it bubble up
+                println("Exception during shutdown: ${ex.message}")
+                ex.printStackTrace()
             }
-            server.stop(1000, 2000)
         }
     )
 }
