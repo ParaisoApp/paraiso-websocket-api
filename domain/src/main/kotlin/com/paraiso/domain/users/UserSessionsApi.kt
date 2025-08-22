@@ -13,7 +13,7 @@ class UserSessionsApi(
                 usersDBAdapter.getUserList(activeUserIds, filters, followingList.map { it.id })
             }.associate { user -> user.id to user.buildUserResponse() }
         }
-    fun getByUserId(userId: String) =
+    suspend fun getByUserId(userId: String) =
         eventService.getUserSession(userId)?.toResponse(UserStatus.CONNECTED)
 
 }

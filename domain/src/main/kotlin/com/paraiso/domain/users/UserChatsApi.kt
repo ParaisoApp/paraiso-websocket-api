@@ -12,7 +12,7 @@ class UserChatsApi(private val userChatsDBAdapter: UserChatsDBAdapter) {
     }
 
     suspend fun getOrPutUserChat(chatId: String, userId: String, otherUserId: String) =
-        userChatsDBAdapter.findById(chatId) ?: run {
+        (userChatsDBAdapter.findById(chatId) ?: run {
             val now = Clock.System.now()
             UUID.randomUUID().toString().let { newChatId ->
                 val newUserChat = UserChat(
@@ -23,9 +23,9 @@ class UserChatsApi(private val userChatsDBAdapter: UserChatsDBAdapter) {
                     updatedOn = now
                 )
                 userChatsDBAdapter.save(listOf(newUserChat))
-                newUserChat.toReturn()
+                newUserChat
             }
-        }
+        }).toReturn()
 
     suspend fun putDM(dm: DirectMessage) = coroutineScope {
         userChatsDBAdapter.addToUserChat(dm.chatId, dm)
