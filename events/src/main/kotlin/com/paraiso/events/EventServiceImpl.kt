@@ -8,29 +8,36 @@ import io.lettuce.core.RedisClient
 import io.lettuce.core.ScanArgs
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import reactor.core.Disposable
 
 class EventServiceImpl(
-    private val serverId: String,
     private val client: RedisClient
 ): EventService, Klogging {
     private val pubSubConnection: StatefulRedisPubSubConnection<String, String> = client.connectPubSub()
     private val pubConnection = client.connect()
     private val pub = pubConnection.async()
 
-    override fun publishToServer(targetServerId: String, message: String) {
-        pub.publish("server:$targetServerId", message)
+    override fun publish(key: String, message: String) {
+        pub.publish(key, message)
     }
 
-    override suspend fun subscribe(onMessage: suspend (String) -> Unit) = coroutineScope {
+    override suspend fun subscribe(
+        key: String,
+        onMessage: suspend (String) -> Unit
+    ) = coroutineScope {
         val reactive: RedisPubSubReactiveCommands<String, String> = pubSubConnection.reactive()
 
-        reactive.subscribe("server:$serverId").subscribe()
+        // Subscribe to the channel
+        val subscribeMono = reactive.subscribe(key)
+        subscribeMono.subscribe()  // async
 
+        // Observe messages
         reactive.observeChannels().subscribe { msg ->
             launch {
                 onMessage(msg.message)

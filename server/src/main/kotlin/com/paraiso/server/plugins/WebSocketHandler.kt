@@ -153,11 +153,11 @@ class WebSocketHandler(
                 )
 
     private suspend fun WebSocketServerSession.joinChat(
-        user: UserResponseDomain,
+        incomingUser: UserResponseDomain,
         sessionId: String,
         sessionState: SessionState
     ) {
-        var sessionUser = user.copy()
+        var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
         val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
@@ -209,6 +209,7 @@ class WebSocketHandler(
         }
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
+        eventServiceImpl.publish("${MessageType.USER_UPDATE.name}:$serverId:", Json.encodeToString(sessionUser))
         // holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -236,6 +237,7 @@ class WebSocketHandler(
                                             launch { postsApi.putPost(messageWithData) }
                                             launch { usersApi.putPost(sessionUser.id, messageId) }
                                             ServerState.messageFlowMut.emit(messageWithData)
+                                            eventServiceImpl.publish("${MessageType.MSG.name}:$serverId:", Json.encodeToString(messageWithData))
                                         }
                                     }
                                 }
@@ -272,20 +274,21 @@ class WebSocketHandler(
                                             // update chat for receiving user
                                             launch { userChatsApi.putDM(dmWithData) }
                                         }
-                                        //if user is on this server then grab session on send dm to user
-                                        val curUserSessions = userSessions[dmWithData.userReceiveId]
-                                        if(curUserSessions != null){
-                                            curUserSessions.forEach { session ->
-                                                launch {
-                                                    session.sendTypedMessage(MessageType.DM, dmWithData)
-                                                }
+                                        //if user is on this server then grab session and send dm to user
+                                        userSessions[dmWithData.userReceiveId]?.let {receiveUserSessions ->
+                                            receiveUserSessions.forEach { session ->
+                                                session.sendTypedMessage(MessageType.DM, dmWithData)
                                             }
-                                        }else {
-                                            //otherwise publish and map to respective server subscriber
-                                            eventServiceImpl.publishToServer(
-                                                serverId,
-                                                "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
-                                            )
+                                        }
+                                        //find any other user server sessions, publish, and map to respective server subscriber
+                                        eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let {receiveUserSessions ->
+                                            val dmString = Json.encodeToString(dmWithData)
+                                            receiveUserSessions.sessionIds.forEach { userServerId ->
+                                                eventServiceImpl.publish(
+                                                    "server:$userServerId",
+                                                    "${dmWithData.userReceiveId}:${dmString}"
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -299,18 +302,20 @@ class WebSocketHandler(
                                 } else {
                                     launch { usersApi.follow(follow) }
                                     ServerState.followFlowMut.emit(follow)
+                                    eventServiceImpl.publish("${MessageType.FOLLOW.name}:$serverId:", Json.encodeToString(follow))
                                 }
                             }
                     }
                     MessageType.FAVORITE -> {
                         converter?.cleanAndType<TypeMappingDomain<FavoriteDomain>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { follow ->
+                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { favorite ->
                                 if (sessionUser.banned) {
-                                    sendTypedMessage(MessageType.FOLLOW, follow)
+                                    sendTypedMessage(MessageType.FAVORITE, favorite)
                                 } else {
-                                    launch { usersApi.toggleFavoriteRoute(follow) }
-                                    launch { routesApi.toggleFavoriteRoute(follow) }
-                                    ServerState.favoriteFlowMut.emit(follow)
+                                    launch { usersApi.toggleFavoriteRoute(favorite) }
+                                    launch { routesApi.toggleFavoriteRoute(favorite) }
+                                    ServerState.favoriteFlowMut.emit(favorite)
+                                    eventServiceImpl.publish("${MessageType.FAVORITE.name}:$serverId:", Json.encodeToString(favorite))
                                 }
                             }
                     }
@@ -321,7 +326,8 @@ class WebSocketHandler(
                                     sendTypedMessage(MessageType.VOTE, vote)
                                 } else {
                                     launch { postsApi.votePost(vote) }
-                                    ServerState.voteFlowMut.emit(vote)
+                                    //ServerState.voteFlowMut.emit(vote)
+                                    eventServiceImpl.publish("${MessageType.VOTE.name}:$serverId:", Json.encodeToString(vote))
                                 }
                             }
                     }
@@ -331,6 +337,7 @@ class WebSocketHandler(
                                 if (user.validateUser()) {
                                     launch { usersApi.saveUser(user) }
                                     ServerState.userUpdateFlowMut.emit(user)
+                                    eventServiceImpl.publish("${MessageType.USER_UPDATE.name}:$serverId:", Json.encodeToString(user))
                                 }
                             }
                     }
@@ -345,6 +352,7 @@ class WebSocketHandler(
                             ?.typeMapping?.entries?.first()?.value?.let { delete ->
                                 launch { postsApi.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
+                                eventServiceImpl.publish("${MessageType.DELETE.name}:$serverId:", Json.encodeToString(delete))
                             }
                     }
                     MessageType.BAN -> {
@@ -353,6 +361,7 @@ class WebSocketHandler(
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { usersApi.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
+                                    eventServiceImpl.publish("${MessageType.BAN.name}:$serverId:", Json.encodeToString(ban))
                                 }
                             }
                     }
@@ -362,6 +371,7 @@ class WebSocketHandler(
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { usersApi.tagUser(tag) }
                                     ServerState.tagUserFlowMut.emit(tag)
+                                    eventServiceImpl.publish("${MessageType.TAG.name}:$serverId:", Json.encodeToString(tag))
                                 }
                             }
                     }
@@ -371,6 +381,7 @@ class WebSocketHandler(
                                 launch { adminApi.reportUser(sessionUser.id, reportUser) }
                                 launch { usersApi.addUserReport(reportUser) }
                                 ServerState.reportUserFlowMut.emit(reportUser)
+                                eventServiceImpl.publish("${MessageType.REPORT_USER.name}:$serverId:", Json.encodeToString(reportUser))
                             }
                     }
                     MessageType.REPORT_POST -> {
@@ -379,6 +390,7 @@ class WebSocketHandler(
                                 launch { adminApi.reportPost(sessionUser.id, reportPost) }
                                 launch { usersApi.addPostReport(reportPost) }
                                 ServerState.reportPostFlowMut.emit(reportPost)
+                                eventServiceImpl.publish("${MessageType.REPORT_POST.name}:$serverId:", Json.encodeToString(reportPost))
                             }
                     }
                     MessageType.ROUTE -> {
@@ -414,6 +426,7 @@ class WebSocketHandler(
             }
             usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
+                eventServiceImpl.publish("${MessageType.USER_UPDATE.name}:$serverId:", Json.encodeToString(userDisconnected))
                 //remove current user session from sessions map
                 val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
                 //if user has no more sessions, remove user from server user sessions

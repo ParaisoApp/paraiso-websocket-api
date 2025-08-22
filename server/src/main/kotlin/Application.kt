@@ -15,6 +15,7 @@ import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.userSessionsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
+import com.paraiso.com.paraiso.server.plugins.jobs.MessageHandler
 import com.paraiso.database.admin.PostReportsDBAdapterImpl
 import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
@@ -33,7 +34,9 @@ import com.paraiso.database.users.UsersDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
@@ -43,8 +46,10 @@ import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.util.ServerState
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
 import com.paraiso.server.util.sendTypedMessage
@@ -83,7 +88,6 @@ import java.time.Duration
 import io.lettuce.core.RedisClient
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.SerializationException
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -144,19 +148,21 @@ fun Application.module(jobScope: CoroutineScope){
     //setup redis
     val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
-    val eventServiceImpl = EventServiceImpl(serverId, redisClient)
+    val eventServiceImpl = EventServiceImpl(redisClient)
 
-    launch {
-        //pick up dms directed at this server - find active user and send typed message
-        eventServiceImpl.subscribe { message ->
-            val (userId, payload) = message.split(":", limit = 2)
-            try {
-                val dm = Json.decodeFromString<DirectMessage>(payload)
-                userSessions[userId]?.forEach { session ->
-                    launch { session.sendTypedMessage(MessageType.DM, dm) }
+    //subscriber to all incoming messages from other servers
+    val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
+
+    jobScope.launch {
+        eventServiceImpl.subscribe("${MessageType.VOTE.name}:") { message ->
+            val (incomingServerId, payload) = message.split(":", limit = 2)
+            if(incomingServerId != serverId){
+                try {
+                    val vote = Json.decodeFromString<Vote>(payload)
+                    ServerState.voteFlowMut.emit(vote)
+                } catch (e: SerializationException) {
+                    logger.error(e) { "Error deserializing: $payload" }
                 }
-            } catch (e: SerializationException) {
-                logger.error(e) { "Error deserializing: $payload" }
             }
         }
     }
