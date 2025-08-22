@@ -47,93 +47,74 @@ class MessageHandler(
         )
         //pick up dms directed at this server - find active user and send typed message
         launch{
-            eventServiceImpl.subscribe { (channel, message) ->
-                when(channel){
-                    "server:$serverId" -> {
-                        val (userId, payload) = message.split(":", limit = 2)
-                        decodeMessage<DirectMessage>(payload)?.let {dm ->
-                            userSessions[userId]?.forEach { session ->
-                                session.sendTypedMessage(MessageType.DM, dm)
+            eventServiceImpl.subscribe { (channel, messageWithServer) ->
+                val (incomingServerId, message) = messageWithServer.split(":", limit = 2)
+                //only emit messages coming from other servers
+                if(incomingServerId != serverId) {
+                    when (channel) {
+                        "server:$serverId" -> {
+                            val (userId, payload) = message.split(":", limit = 2)
+                            decodeMessage<DirectMessage>(payload)?.let { dm ->
+                                userSessions[userId]?.forEach { session ->
+                                    session.sendTypedMessage(MessageType.DM, dm)
+                                }
                             }
                         }
-                    }
-                    MessageType.USER_UPDATE.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        //only emit messages coming from other servers
-                        if(incomingServerId != serverId){
-                            decodeMessage<UserResponse>(payload)?.let {userUpdate ->
+                        MessageType.USER_UPDATE.name -> {
+                            decodeMessage<UserResponse>(message)?.let { userUpdate ->
                                 ServerState.userUpdateFlowMut.emit(userUpdate)
                             }
                         }
-                    }
-                    MessageType.MSG.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Message>(payload)?.let {parsedMessage ->
+                        MessageType.MSG.name -> {
+                            decodeMessage<Message>(message)?.let { parsedMessage ->
                                 ServerState.messageFlowMut.emit(parsedMessage)
                             }
                         }
-                    }
-                    MessageType.FOLLOW.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Follow>(payload)?.let {follow ->
+
+                        MessageType.FOLLOW.name -> {
+                            decodeMessage<Follow>(message)?.let { follow ->
                                 ServerState.followFlowMut.emit(follow)
                             }
                         }
-                    }
-                    MessageType.FAVORITE.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Favorite>(payload)?.let {favorite ->
+
+                        MessageType.FAVORITE.name -> {
+                            decodeMessage<Favorite>(message)?.let { favorite ->
                                 ServerState.favoriteFlowMut.emit(favorite)
                             }
                         }
-                    }
-                    MessageType.VOTE.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Vote>(payload)?.let {vote ->
+
+                        MessageType.VOTE.name -> {
+                            decodeMessage<Vote>(message)?.let { vote ->
                                 ServerState.voteFlowMut.emit(vote)
                             }
                         }
-                    }
-                    MessageType.DELETE.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Delete>(payload)?.let {delete ->
+
+                        MessageType.DELETE.name -> {
+                            decodeMessage<Delete>(message)?.let { delete ->
                                 ServerState.deleteFlowMut.emit(delete)
                             }
                         }
-                    }
-                    MessageType.BAN.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Ban>(payload)?.let {ban ->
+
+                        MessageType.BAN.name -> {
+                            decodeMessage<Ban>(message)?.let { ban ->
                                 ServerState.banUserFlowMut.emit(ban)
                             }
                         }
-                    }
-                    MessageType.TAG.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Tag>(payload)?.let {tag ->
+
+                        MessageType.TAG.name -> {
+                            decodeMessage<Tag>(message)?.let { tag ->
                                 ServerState.tagUserFlowMut.emit(tag)
                             }
                         }
-                    }
-                    MessageType.REPORT_USER.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Report>(payload)?.let {reportUser ->
+
+                        MessageType.REPORT_USER.name -> {
+                            decodeMessage<Report>(message)?.let { reportUser ->
                                 ServerState.reportUserFlowMut.emit(reportUser)
                             }
                         }
-                    }
-                    MessageType.REPORT_POST.name -> {
-                        val (incomingServerId, payload) = message.split(":", limit = 2)
-                        if(incomingServerId != serverId){
-                            decodeMessage<Report>(payload)?.let {reportPost ->
+
+                        MessageType.REPORT_POST.name -> {
+                            decodeMessage<Report>(message)?.let { reportPost ->
                                 ServerState.reportPostFlowMut.emit(reportPost)
                             }
                         }

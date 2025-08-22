@@ -284,7 +284,7 @@ class WebSocketHandler(
                                         eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let {receiveUserSessions ->
                                             val dmString = Json.encodeToString(dmWithData)
                                             receiveUserSessions.sessionIds.forEach { userServerId ->
-                                                eventServiceImpl.publish("server:$userServerId", "${dmWithData.userReceiveId}:${dmString}")
+                                                eventServiceImpl.publish("server:$userServerId", "$serverId:${dmWithData.userReceiveId}:${dmString}")
                                             }
                                         }
                                     }
