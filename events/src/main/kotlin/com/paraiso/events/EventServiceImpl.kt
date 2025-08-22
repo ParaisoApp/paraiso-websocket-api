@@ -16,7 +16,6 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import reactor.core.Disposable
 
 class EventServiceImpl(
     private val client: RedisClient
