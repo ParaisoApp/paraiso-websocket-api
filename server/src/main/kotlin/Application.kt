@@ -34,6 +34,7 @@ import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
@@ -45,6 +46,7 @@ import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.util.ServerState
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
 import com.paraiso.server.util.sendTypedMessage
@@ -157,6 +159,19 @@ fun Application.module(jobScope: CoroutineScope){
                 }
             } catch (e: SerializationException) {
                 logger.error(e) { "Error deserializing: $payload" }
+            }
+        }
+    }
+    launch{
+        eventServiceImpl.subscribe(MessageType.VOTE.name) { message ->
+            val (incomingServerId, payload) = message.split(":", limit = 2)
+            if(incomingServerId != serverId){
+                try {
+                    val vote = Json.decodeFromString<Vote>(payload)
+                    ServerState.voteFlowMut.emit(vote)
+                } catch (e: SerializationException) {
+                    logger.error(e) { "Error deserializing: $payload" }
+                }
             }
         }
     }
