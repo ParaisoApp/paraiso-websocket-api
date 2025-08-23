@@ -6,6 +6,7 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
@@ -38,6 +39,8 @@ class BBallHandler(
     private val sportDBs: SportDBs,
     private val eventService: EventService
 ) : Klogging {
+    private var lastSentScoreboard: Scoreboard? = null
+    private var lastSentBoxScores = listOf<BoxScore>()
 
     suspend fun bootJobs() = coroutineScope {
         launch { buildScoreboard() }
@@ -175,7 +178,12 @@ class BBallHandler(
     private suspend fun buildScoreboard() {
         coroutineScope {
             bBallOperation.getScoreboard()?.let { scoreboard ->
-                saveScoreboardAndGetBoxscores(scoreboard, scoreboard.competitions, true)
+                saveScoreboardAndGetBoxscores(
+                    scoreboard,
+                    scoreboard.competitions,
+                    true,
+                    emptyList()
+                )
             }
             var delayBoxScore = 1
             while (isActive) {
@@ -188,7 +196,13 @@ class BBallHandler(
                         if (Clock.System.now() > earliestTime) {
                             bBallOperation.getScoreboard()?.let { scoreboard ->
                                 val activeCompetitions = competitions.filter { it.status.state == "in" }
-                                saveScoreboardAndGetBoxscores(scoreboard, activeCompetitions, delayBoxScore == 0)
+                                val inactiveCompetitions = competitions.filter { it.status.state != "in" }
+                                saveScoreboardAndGetBoxscores(
+                                    scoreboard,
+                                    activeCompetitions,
+                                    delayBoxScore == 0,
+                                    inactiveCompetitions.map { it.toString() }
+                                )
                                 if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
                                     // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                                     delay(60 * 60 * 1000)
@@ -213,7 +227,8 @@ class BBallHandler(
     private suspend fun saveScoreboardAndGetBoxscores(
         scoreboard: Scoreboard,
         competitions: List<Competition>,
-        enableBoxScore: Boolean
+        enableBoxScore: Boolean,
+        inactiveCompetitionIds: List<String>,
     ) = coroutineScope {
         if(competitions.isNotEmpty()){
             sportDBs.scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
@@ -222,22 +237,31 @@ class BBallHandler(
                 MessageType.SCOREBOARD.name,
                 "${SiteRoute.BASKETBALL}:${Json.encodeToString(scoreboard)}"
             )
-            if(enableBoxScore) getBoxscores(competitions.map { it.id })
+            if(enableBoxScore) getBoxscores(competitions.map { it.id }, inactiveCompetitionIds)
         }
     }
 
-    private suspend fun getBoxscores(gameIds: List<String>) = coroutineScope {
-        gameIds.map { gameId ->
+    private suspend fun getBoxscores(
+        competitionIds: List<String>,
+        inactiveCompetitionIds: List<String>
+    ) = coroutineScope {
+        competitionIds.map { gameId ->
             async {
                 bBallOperation.getGameStats(gameId)
             }
-        }.awaitAll().filterNotNull().also { newBoxScores ->
+        }.awaitAll().filterNotNull().let { newBoxScores ->
+            //add inactive boxscores
+            val allBoxScores = newBoxScores + lastSentBoxScores.filter { inactiveCompetitionIds.contains(it.id) }
             // map result to teams
-            sportDBs.boxscoresDBAdapter.save(newBoxScores)
-            eventService.publish(
-                MessageType.BOX_SCORES.name,
-                "${SiteRoute.BASKETBALL}:${Json.encodeToString(newBoxScores)}"
-            )
+            if(allBoxScores != lastSentBoxScores) {
+                // map result to teams
+                sportDBs.boxscoresDBAdapter.save(newBoxScores)
+                eventService.publish(
+                    MessageType.BOX_SCORES.name,
+                    "${SiteRoute.BASKETBALL}:${Json.encodeToString(newBoxScores)}"
+                )
+                lastSentBoxScores = allBoxScores
+            }
         }
     }
 }

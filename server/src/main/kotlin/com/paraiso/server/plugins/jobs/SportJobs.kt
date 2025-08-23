@@ -16,8 +16,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class SportJobs() {
-    private var lastSentScoreboard: ScoreboardResponse? = null
-    private var lastSentBoxScores = listOf<BoxScoreResponse>()
     suspend fun sportJobs(
         session: WebSocketServerSession,
         sport: String
@@ -25,20 +23,15 @@ class SportJobs() {
         listOf(
             launch {
                 SportState.getScoreboardFlow(sport).collect { sb ->
-                    val sbResponse = sb.toResponse()
-                    if (lastSentScoreboard != sbResponse) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, sbResponse)
-                        lastSentScoreboard = sbResponse
-                    }
+                    session.sendTypedMessage(MessageType.SCOREBOARD, sb.toResponse())
                 }
             },
             launch {
                 SportState.getBoxscoreFlow(sport).collect { boxscores ->
-                    val boxScoresResponse = boxscores.map { it.toResponse() }
-                    if (lastSentBoxScores != boxScoresResponse) {
-                        session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse.flatMap { it.teams })
-                        lastSentBoxScores = boxScoresResponse
-                    }
+                    session.sendTypedMessage(
+                        MessageType.BOX_SCORES,
+                        boxscores.flatMap { it.teams }.map { it.toResponse() }
+                    )
                 }
             }
         )
@@ -55,10 +48,7 @@ class SportJobs() {
                         competitions = sb.competitions
                             .filter { comp -> comp.teams.map { it.teamId }.contains(content) }
                     ).toResponse()
-                    if (lastSentScoreboard != sbResponse) {
-                        session.sendTypedMessage(MessageType.SCOREBOARD, sbResponse)
-                        lastSentScoreboard = sbResponse
-                    }
+                    session.sendTypedMessage(MessageType.SCOREBOARD, sbResponse)
                 }
             },
             launch {
@@ -67,10 +57,7 @@ class SportJobs() {
                         .filter { boxScore ->
                             boxScore.teams.map { it.teamId }.contains(content)
                         }.map { it.toResponse() }
-                    if (lastSentBoxScores != boxScoresResponse) {
-                        session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse.flatMap { it.teams })
-                        lastSentBoxScores = boxScoresResponse
-                    }
+                    session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse.flatMap { it.teams })
                 }
             }
         )

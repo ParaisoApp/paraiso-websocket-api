@@ -6,9 +6,12 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.BoxScore
+import com.paraiso.domain.sport.data.BoxScoreResponse
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.sport.sports.SportDBs
@@ -38,6 +41,8 @@ class FBallHandler(
     private val sportDBs: SportDBs,
     private val eventService: EventService
 ) : Klogging {
+    private var lastSentScoreboard: Scoreboard? = null
+    private var lastSentBoxScores = listOf<BoxScore>()
 
     suspend fun bootJobs() = coroutineScope {
         launch { getScoreboard() }
@@ -172,7 +177,12 @@ class FBallHandler(
     private suspend fun getScoreboard() {
         coroutineScope {
             fBallOperation.getScoreboard()?.let { scoreboard ->
-                saveScoreboardAndGetBoxscores(scoreboard, scoreboard.competitions, true)
+                saveScoreboardAndGetBoxscores(
+                    scoreboard,
+                    scoreboard.competitions,
+                    true,
+                    emptyList()
+                )
             }
             var delayBoxScore = 1
             while (isActive) {
@@ -185,7 +195,13 @@ class FBallHandler(
                         if (Clock.System.now() > earliestTime) {
                             fBallOperation.getScoreboard()?.let { scoreboard ->
                                 val activeCompetitions = competitions.filter { it.status.state == "in" }
-                                saveScoreboardAndGetBoxscores(scoreboard, activeCompetitions, delayBoxScore == 0)
+                                val inactiveCompetitions = competitions.filter { it.status.state != "in" }
+                                saveScoreboardAndGetBoxscores(
+                                    scoreboard,
+                                    activeCompetitions,
+                                    delayBoxScore == 0,
+                                    inactiveCompetitions.map { it.toString() }
+                                )
                                 if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
                                     // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                                     delay(60 * 60 * 1000)
@@ -210,31 +226,43 @@ class FBallHandler(
     private suspend fun saveScoreboardAndGetBoxscores(
         scoreboard: Scoreboard,
         competitions: List<Competition>,
-        enableBoxScore: Boolean
+        enableBoxScore: Boolean,
+        inactiveCompetitionIds: List<String>,
     ) = coroutineScope {
-        if(competitions.isNotEmpty()){
+        if(competitions.isNotEmpty() && scoreboard != lastSentScoreboard){
             sportDBs.scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
             sportDBs.competitionsDBAdapter.save(competitions)
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "${SiteRoute.FOOTBALL}:${Json.encodeToString(scoreboard)}"
             )
-            if(enableBoxScore) getBoxscores(competitions.map { it.id })
+            lastSentScoreboard = scoreboard
+            if(enableBoxScore) getBoxscores(competitions.map { it.id }, inactiveCompetitionIds)
         }
     }
 
-    private suspend fun getBoxscores(gameIds: List<String>) = coroutineScope {
-        gameIds.map { gameId ->
+    private suspend fun getBoxscores(
+        competitionIds: List<String>,
+        inactiveCompetitionIds: List<String>
+    ) = coroutineScope {
+        competitionIds.map { gameId ->
             async {
                 fBallOperation.getGameStats(gameId)
             }
-        }.awaitAll().filterNotNull().also { newBoxScores ->
+        }.awaitAll().filterNotNull().let { newBoxScores ->
+            //add inactive boxscores
+            val allBoxScores = newBoxScores + lastSentBoxScores.filter { inactiveCompetitionIds.contains(it.id) }
             // map result to teams
-            sportDBs.boxscoresDBAdapter.save(newBoxScores)
-            eventService.publish(
-                MessageType.BOX_SCORES.name,
-                "${SiteRoute.FOOTBALL}:${Json.encodeToString(newBoxScores)}"
-            )
+            if(allBoxScores != lastSentBoxScores){
+                //only save the potentially updated ones
+                sportDBs.boxscoresDBAdapter.save(newBoxScores)
+                //publish and set state to all boxscores (active and inactive)
+                eventService.publish(
+                    MessageType.BOX_SCORES.name,
+                    "${SiteRoute.FOOTBALL}:${Json.encodeToString(allBoxScores)}"
+                )
+                lastSentBoxScores = allBoxScores
+            }
         }
     }
 }
