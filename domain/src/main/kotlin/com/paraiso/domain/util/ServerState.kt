@@ -10,7 +10,6 @@ import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.routes.Favorite
-import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserResponse
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -42,4 +41,5 @@ object ServerState {
         Pair(MessageType.REPORT_USER, reportUserFlowMut.asSharedFlow()),
         Pair(MessageType.REPORT_POST, reportPostFlowMut.asSharedFlow())
     )
+
 }
