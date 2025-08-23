@@ -92,22 +92,6 @@ class WebSocketHandler(
         session.joinChat(currentUser, sessionId, sessionState)
     }
 
-    private suspend fun validateMessage(
-        sessionUserId: String,
-        blockList: Map<String, Boolean>,
-        postType: PostType, userId: String?,
-        sessionState: SessionState
-    ) =
-        sessionUserId == userId || // message is from the cur user or
-            (
-                !blockList.contains(userId) && // user isnt in cur user's blocklist
-                    sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
-                    userId != null &&
-                    sessionState.filterTypes.userRoles.contains(
-                        services.usersApi.getUserById(userId)?.roles ?: UserRole.GUEST
-                    )
-                )
-
     private suspend fun WebSocketServerSession.joinChat(
         incomingUser: UserResponseDomain,
         sessionId: String,
@@ -169,6 +153,21 @@ class WebSocketHandler(
         this.parseAndRouteMessages(sessionUser, sessionId, sessionState, messageCollectionJobs)
     }
 
+    private suspend fun validateMessage(
+        sessionUserId: String,
+        blockList: Map<String, Boolean>,
+        postType: PostType, userId: String?,
+        sessionState: SessionState
+    ) =
+        sessionUserId == userId || // message is from the cur user or
+            (
+                !blockList.contains(userId) && // user isnt in cur user's blocklist
+                        sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
+                        userId != null &&
+                        sessionState.filterTypes.userRoles.contains(
+                            services.usersApi.getUserById(userId)?.roles ?: UserRole.GUEST
+                        )
+                )
 
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
         sessionUser: UserResponseDomain,

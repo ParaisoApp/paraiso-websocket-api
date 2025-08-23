@@ -44,6 +44,7 @@ import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.util.Constants.MAIN_SERVER
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
 import com.typesafe.config.ConfigFactory
@@ -81,11 +82,10 @@ import java.util.concurrent.ConcurrentHashMap
 fun main() {
     val job = SupervisorJob()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
-
     val server = embeddedServer(Netty, port = 8080) {
         module(jobScope)
     }.start(wait = true)
-
+    //cancel all coroutines on shutdown
     Runtime.getRuntime().addShutdownHook(
         Thread {
             try {
@@ -104,14 +104,13 @@ fun main() {
 }
 
 fun Application.module(jobScope: CoroutineScope){
-    //load config
+    // load config
     val config = HoconApplicationConfig(ConfigFactory.load())
     val serverId = config.property("server.id").getString()
     val mongoUrl = config.property("mongodb.url").getString()
     val mongoDB = config.property("mongodb.database").getString()
     val redisUrl = config.property("redis.url").getString()
-
-    //setup DB
+    // setup DB
     val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
     val sportsDBs = SportDBs(
         StandingsDBAdapterImpl(database),
@@ -129,23 +128,40 @@ fun Application.module(jobScope: CoroutineScope){
     val userChatsDb = UserChatsDBAdapterImpl(database)
     val userReportsDb = UserReportsDBAdapterImpl(database)
     val postReportsDb = PostReportsDBAdapterImpl(database)
-
-    //setup redis
+    // setup redis
     val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
     val eventServiceImpl = EventServiceImpl(redisClient)
-
-    //subscriber to all incoming messages from other servers
+    // subscriber to all incoming messages from other servers
     val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
-
     jobScope.launch {
         messageHandler.messageJobs()
     }
-
-    //setup apis and scopes
+    // setup apis and scopes
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
-    //only launch data fetching jobs on a single server - will split off to microservice
-    if(serverId == "server-1"){
+    val authApi = AuthApi()
+    val bballApi = BBallApi(sportsDBs)
+    val fballApi = FBallApi(sportsDBs)
+    val postsApi = PostsApi()
+    val usersApi = UsersApi(usersDb)
+    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
+    val userChatsApi = UserChatsApi(userChatsDb)
+    val adminApi = AdminApi(postReportsDb, userReportsDb)
+    val metadataApi = MetadataApi()
+    val services = AppServices(
+        authApi,
+        adminApi,
+        postsApi,
+        routesApi,
+        usersApi,
+        userSessionsApi,
+        userChatsApi,
+        bballApi,
+        fballApi,
+        metadataApi
+    )
+    // only launch data fetching jobs on a single server - will split off to microservice
+    if(serverId == MAIN_SERVER){
         jobScope.launch {
             BBallHandler(
                 BBallOperationAdapter(),
@@ -166,38 +182,15 @@ fun Application.module(jobScope: CoroutineScope){
             ServerHandler(routesApi).bootJobs()
         }
     }
-    val authApi = AuthApi()
-    val bballApi = BBallApi(sportsDBs)
-    val fballApi = FBallApi(sportsDBs)
-    val postsApi = PostsApi()
-    val usersApi = UsersApi(usersDb)
-    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
-    val userChatsApi = UserChatsApi(userChatsDb)
-    val adminApi = AdminApi(postReportsDb, userReportsDb)
-    val metadataApi = MetadataApi()
-
-    val services = AppServices(
-        authApi,
-        adminApi,
-        postsApi,
-        routesApi,
-        usersApi,
-        userSessionsApi,
-        userChatsApi,
-        bballApi,
-        fballApi,
-        metadataApi
-    )
-
+    //build handler and configure sockets
     val handler = WebSocketHandler(
         serverId = serverId,
         eventServiceImpl,
         userSessions,
         services
     )
-
     configureSockets(handler, services)
-
+    //close subscription to redis
     environment.monitor.subscribe(ApplicationStopped) {
         eventServiceImpl.close()
     }
@@ -210,7 +203,6 @@ fun Application.configureFeatures() {
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
-
     install(CORS) {
         anyHost() // 🚨 dev only
         allowHeader(HttpHeaders.ContentType)
@@ -223,7 +215,6 @@ fun Application.configureFeatures() {
         allowCredentials = true
         allowNonSimpleContentTypes = true
     }
-
     install(ContentNegotiation) {
         json(
             Json {

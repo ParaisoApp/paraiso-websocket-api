@@ -16,6 +16,9 @@
     <!-- Suppress Netty internal DEBUG logs -->
     <logger name="io.netty" level="WARN"/>
 
+    <!-- Allow klogger logs -->
+    <logger name="io.github.oshai.kotlinlogging" level="DEBUG"/>
+
     <!-- Root logger at INFO level -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

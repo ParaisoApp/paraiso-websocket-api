@@ -1,6 +1,7 @@
 package com.paraiso.domain.util
 
 object Constants {
+    const val MAIN_SERVER = "server-1"
     const val UNKNOWN = "UNKNOWN"
     const val SYSTEM = "SYSTEM"
     const val USER_PREFIX = "USER-"
