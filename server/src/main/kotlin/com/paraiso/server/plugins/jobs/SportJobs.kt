@@ -1,0 +1,78 @@
+package com.paraiso.com.paraiso.server.plugins.jobs
+
+import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.sport.data.BoxScoreResponse
+import com.paraiso.domain.sport.data.FullTeam
+import com.paraiso.domain.sport.data.FullTeamResponse
+import com.paraiso.domain.sport.data.ScoreboardResponse
+import com.paraiso.domain.sport.data.toResponse
+import com.paraiso.domain.sport.sports.SportState
+import com.paraiso.domain.sport.sports.bball.BBallApi
+import com.paraiso.server.util.sendTypedMessage
+import io.ktor.server.websocket.WebSocketServerSession
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+class SportJobs() {
+    private var lastSentScoreboard: ScoreboardResponse? = null
+    private var lastSentBoxScores = listOf<BoxScoreResponse>()
+    suspend fun sportJobs(
+        session: WebSocketServerSession,
+        sport: String
+    ) = coroutineScope {
+        listOf(
+            launch {
+                SportState.getScoreboardFlow(sport).collect { sb ->
+                    val sbResponse = sb.toResponse()
+                    if (lastSentScoreboard != sbResponse) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, sbResponse)
+                        lastSentScoreboard = sbResponse
+                    }
+                }
+            },
+            launch {
+                SportState.getBoxscoreFlow(sport).collect { boxscores ->
+                    val boxScoresResponse = boxscores.map { it.toResponse() }
+                    if (lastSentBoxScores != boxScoresResponse) {
+                        session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse.flatMap { it.teams })
+                        lastSentBoxScores = boxScoresResponse
+                    }
+                }
+            }
+        )
+    }
+    suspend fun teamJobs(
+        content: String?,
+        session: WebSocketServerSession,
+        sport: String
+    ) = coroutineScope {
+        listOf(
+            launch {
+                SportState.getScoreboardFlow(sport).collect { sb ->
+                    val sbResponse = sb.copy(
+                        competitions = sb.competitions
+                            .filter { comp -> comp.teams.map { it.teamId }.contains(content) }
+                    ).toResponse()
+                    if (lastSentScoreboard != sbResponse) {
+                        session.sendTypedMessage(MessageType.SCOREBOARD, sbResponse)
+                        lastSentScoreboard = sbResponse
+                    }
+                }
+            },
+            launch {
+                SportState.getBoxscoreFlow(sport).collect { boxscores ->
+                    val boxScoresResponse = boxscores
+                        .filter { boxScore ->
+                            boxScore.teams.map { it.teamId }.contains(content)
+                        }.map { it.toResponse() }
+                    if (lastSentBoxScores != boxScoresResponse) {
+                        session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse.flatMap { it.teams })
+                        lastSentBoxScores = boxScoresResponse
+                    }
+                }
+            }
+        )
+    }
+}

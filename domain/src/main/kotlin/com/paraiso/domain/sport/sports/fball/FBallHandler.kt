@@ -1,5 +1,6 @@
 package com.paraiso.domain.sport.sports.fball
 
+import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.RouteDetails
@@ -21,6 +22,7 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.sport.sports.SportDBs
+import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
@@ -34,12 +36,15 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.hours
 
 class FBallHandler(
     private val fBallOperation: FBallOperation,
     private val routesApi: RoutesApi,
-    private val sportDBs: SportDBs
+    private val sportDBs: SportDBs,
+    private val eventService: EventService
 ) : Klogging {
 
     suspend fun bootJobs() = coroutineScope {
@@ -218,6 +223,10 @@ class FBallHandler(
         if(competitions.isNotEmpty()){
             sportDBs.scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
             sportDBs.competitionsDBAdapter.save(competitions)
+            eventService.publish(
+                MessageType.SCOREBOARD.name,
+                "${SiteRoute.FOOTBALL}:${Json.encodeToString(scoreboard)}"
+            )
             if(enableBoxScore) getBoxscores(competitions.map { it.id })
         }
     }
@@ -230,6 +239,10 @@ class FBallHandler(
         }.awaitAll().filterNotNull().also { newBoxScores ->
             // map result to teams
             sportDBs.boxscoresDBAdapter.save(newBoxScores)
+            eventService.publish(
+                MessageType.BOX_SCORES.name,
+                "${SiteRoute.FOOTBALL}:${Json.encodeToString(newBoxScores)}"
+            )
         }
     }
 }

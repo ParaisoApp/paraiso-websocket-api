@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.server.plugins.jobs
+package com.paraiso.com.paraiso.server.plugins
 
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
@@ -10,6 +10,9 @@ import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.routes.Favorite
+import com.paraiso.domain.sport.data.BoxScore
+import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.events.EventServiceImpl
@@ -19,9 +22,6 @@ import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import reactor.core.Disposable
 import java.util.concurrent.ConcurrentHashMap
 
 class MessageHandler(
@@ -43,14 +43,16 @@ class MessageHandler(
                 MessageType.TAG.name,
                 MessageType.REPORT_USER.name,
                 MessageType.REPORT_POST.name,
+                MessageType.SCOREBOARD.name,
+                MessageType.BOX_SCORES.name,
             )
         )
         //pick up dms directed at this server - find active user and send typed message
         launch{
             eventServiceImpl.subscribe { (channel, messageWithServer) ->
-                val (incomingServerId, message) = messageWithServer.split(":", limit = 2)
+                val (incomingModifier, message) = messageWithServer.split(":", limit = 2)
                 //only emit messages coming from other servers
-                if(incomingServerId != serverId) {
+                if(incomingModifier != serverId) {
                     when (channel) {
                         "server:$serverId" -> {
                             val (userId, payload) = message.split(":", limit = 2)
@@ -116,6 +118,18 @@ class MessageHandler(
                         MessageType.REPORT_POST.name -> {
                             decodeMessage<Report>(message)?.let { reportPost ->
                                 ServerState.reportPostFlowMut.emit(reportPost)
+                            }
+                        }
+
+                        MessageType.SCOREBOARD.name -> {
+                            decodeMessage<Scoreboard>(message)?.let { scoreboard ->
+                                SportState.updateScoreboard(incomingModifier, scoreboard)
+                            }
+                        }
+
+                        MessageType.BOX_SCORES.name -> {
+                            decodeMessage<List<BoxScore>>(message)?.let { boxScores ->
+                                SportState.updateBoxscore(incomingModifier, boxScores)
                             }
                         }
                     }

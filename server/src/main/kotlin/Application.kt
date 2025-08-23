@@ -15,7 +15,7 @@ import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.userSessionsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
-import com.paraiso.com.paraiso.server.plugins.jobs.MessageHandler
+import com.paraiso.com.paraiso.server.plugins.MessageHandler
 import com.paraiso.database.admin.PostReportsDBAdapterImpl
 import com.paraiso.database.admin.UserReportsDBAdapterImpl
 import com.paraiso.database.routes.RoutesDBAdapterImpl
@@ -33,10 +33,6 @@ import com.paraiso.database.users.UserChatsDBAdapterImpl
 import com.paraiso.database.users.UsersDBAdapterImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
-import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.messageTypes.Message
-import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
@@ -46,22 +42,16 @@ import com.paraiso.domain.sport.sports.bball.BBallHandler
 import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
-import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
-import com.paraiso.domain.util.ServerState
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
-import com.paraiso.server.util.sendTypedMessage
 import com.typesafe.config.ConfigFactory
-import io.klogging.Klogging
-import io.klogging.logger
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.config.HoconApplicationConfig
@@ -76,10 +66,8 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
-import io.ktor.websocket.Frame
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -87,7 +75,6 @@ import kotlinx.serialization.json.Json
 import java.time.Duration
 import io.lettuce.core.RedisClient
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.serialization.SerializationException
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -157,22 +144,27 @@ fun Application.module(jobScope: CoroutineScope){
 
     //setup apis and scopes
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
-    jobScope.launch {
-        BBallHandler(
-            BBallOperationAdapter(),
-            routesApi,
-            sportsDBs
-        ).bootJobs()
-    }
-    jobScope.launch {
-        FBallHandler(
-            FBallOperationAdapter(),
-            routesApi,
-            sportsDBs
-        ).bootJobs()
-    }
-    jobScope.launch {
-        ServerHandler(routesApi).bootJobs()
+    //only launch data fetching jobs on a single server - will split off to microservice
+    if(serverId == "server-1"){
+        jobScope.launch {
+            BBallHandler(
+                BBallOperationAdapter(),
+                routesApi,
+                sportsDBs,
+                eventServiceImpl
+            ).bootJobs()
+        }
+        jobScope.launch {
+            FBallHandler(
+                FBallOperationAdapter(),
+                routesApi,
+                sportsDBs,
+                eventServiceImpl
+            ).bootJobs()
+        }
+        jobScope.launch {
+            ServerHandler(routesApi).bootJobs()
+        }
     }
     val authApi = AuthApi()
     val bballApi = BBallApi(sportsDBs)

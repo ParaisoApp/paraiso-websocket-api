@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class Scoreboard(
     val id: String,
     val competitions: List<Competition>
-)
+) { companion object }
 
 @Serializable
 data class TeamGameStats(
@@ -105,4 +105,10 @@ fun Scoreboard.toEntity() =
     ScoreboardEntity(
         id = id,
         competitions = competitions.map { it.id }
+    )
+
+fun Scoreboard.Companion.init() =
+    Scoreboard(
+        id = "UNKNOWN",
+        competitions = emptyList()
     )

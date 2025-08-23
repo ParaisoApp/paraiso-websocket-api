@@ -3,22 +3,14 @@ package com.paraiso.server.plugins
 import com.paraiso.com.paraiso.AppServices
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
-import com.paraiso.com.paraiso.server.plugins.jobs.sports.BBallJobs
-import com.paraiso.com.paraiso.server.plugins.jobs.sports.FBallJobs
+import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
-import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.PostType
-import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.sports.bball.BBallApi
-import com.paraiso.domain.sport.sports.fball.FBallApi
-import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
 import com.paraiso.domain.users.UserStatus
-import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.ServerState
@@ -100,37 +92,6 @@ class WebSocketHandler(
         session.joinChat(currentUser, sessionId, sessionState)
     }
 
-    private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
-        when (route.route) {
-            SiteRoute.HOME -> HomeJobs().homeJobs(session)
-            SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
-            SiteRoute.SPORT -> {
-                when (route.modifier) {
-                    SiteRoute.BASKETBALL -> BBallJobs(services.bBallApi).sportJobs(session)
-                    SiteRoute.FOOTBALL -> FBallJobs(services.fBallApi).sportJobs(session)
-                    else -> {
-                        logger.error("Unrecognized Sport: $route")
-                        emptyList()
-                    }
-                }
-            }
-            SiteRoute.TEAM -> {
-                when (route.modifier) {
-                    SiteRoute.BASKETBALL -> BBallJobs(services.bBallApi).teamJobs(route.content, session)
-                    SiteRoute.FOOTBALL -> FBallJobs(services.fBallApi).teamJobs(route.content, session)
-                    else -> {
-                        logger.error("Unrecognized Team: $route")
-                        emptyList()
-                    }
-                }
-            }
-            else -> {
-                logger.error("Unrecognized Route: $route")
-                emptyList()
-            }
-        }
-    }
-
     private suspend fun validateMessage(
         sessionUserId: String,
         blockList: Map<String, Boolean>,
@@ -205,6 +166,16 @@ class WebSocketHandler(
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
         eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
+        this.parseAndRouteMessages(sessionUser, sessionId, sessionState, messageCollectionJobs)
+    }
+
+
+    private suspend fun WebSocketServerSession.parseAndRouteMessages(
+        sessionUser: UserResponseDomain,
+        sessionId: String,
+        sessionState: SessionState,
+        messageCollectionJobs: List<Job>
+    ) {
         // holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -424,6 +395,37 @@ class WebSocketHandler(
                 //if user has no more sessions, remove user from server user sessions
                 if(curUserSessions.isEmpty()) userSessions.remove(userDisconnected.id)
                 this.close()
+            }
+        }
+    }
+
+    private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
+        when (route.route) {
+            SiteRoute.HOME -> HomeJobs().homeJobs(session)
+            SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
+            SiteRoute.SPORT -> {
+                when (route.modifier) {
+                    SiteRoute.BASKETBALL -> SportJobs().sportJobs(session, SiteRoute.BASKETBALL.name)
+                    SiteRoute.FOOTBALL -> SportJobs().sportJobs(session, SiteRoute.FOOTBALL.name)
+                    else -> {
+                        logger.error("Unrecognized Sport: $route")
+                        emptyList()
+                    }
+                }
+            }
+            SiteRoute.TEAM -> {
+                when (route.modifier) {
+                    SiteRoute.BASKETBALL -> SportJobs().teamJobs(route.content, session, SiteRoute.BASKETBALL.name)
+                    SiteRoute.FOOTBALL -> SportJobs().teamJobs(route.content, session, SiteRoute.FOOTBALL.name)
+                    else -> {
+                        logger.error("Unrecognized Team: $route")
+                        emptyList()
+                    }
+                }
+            }
+            else -> {
+                logger.error("Unrecognized Route: $route")
+                emptyList()
             }
         }
     }
