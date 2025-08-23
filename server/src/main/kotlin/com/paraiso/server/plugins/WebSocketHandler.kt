@@ -5,9 +5,22 @@ import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
 import com.paraiso.com.paraiso.server.util.SessionState
+import com.paraiso.domain.messageTypes.Ban
+import com.paraiso.domain.messageTypes.Delete
+import com.paraiso.domain.messageTypes.DirectMessage
+import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.Tag
+import com.paraiso.domain.messageTypes.TypeMapping
+import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.routes.Favorite
+import com.paraiso.domain.routes.Route
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
 import com.paraiso.domain.users.UserStatus
@@ -33,19 +46,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import com.paraiso.domain.messageTypes.Ban as BanDomain
-import com.paraiso.domain.messageTypes.Delete as DeleteDomain
-import com.paraiso.domain.messageTypes.DirectMessage as DirectMessageDomain
-import com.paraiso.domain.messageTypes.FilterTypes as FilterTypesDomain
-import com.paraiso.domain.messageTypes.Follow as FollowDomain
-import com.paraiso.domain.messageTypes.Message as MessageDomain
-import com.paraiso.domain.messageTypes.Report as ReportDomain
-import com.paraiso.domain.messageTypes.Tag as TagDomain
-import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
-import com.paraiso.domain.messageTypes.Vote as VoteDomain
-import com.paraiso.domain.routes.Favorite as FavoriteDomain
-import com.paraiso.domain.routes.Route as RouteDomain
-import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 class WebSocketHandler(
     private val serverId: String,
@@ -62,7 +62,7 @@ class WebSocketHandler(
         val sessionState = SessionState()
         // check cookies to see if existing user
         val currentUser = services.usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "") ?:
-            UserResponseDomain.newUser(UUID.randomUUID().toString())
+            UserResponse.newUser(UUID.randomUUID().toString())
         launch{
             //create or update session connected status
             eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->
@@ -93,7 +93,7 @@ class WebSocketHandler(
     }
 
     private suspend fun WebSocketServerSession.joinChat(
-        incomingUser: UserResponseDomain,
+        incomingUser: UserResponse,
         sessionId: String,
         sessionState: SessionState
     ) {
@@ -105,7 +105,7 @@ class WebSocketHandler(
                 sharedFlow.collect { message ->
                     when (type) {
                         MessageType.MSG -> {
-                            (message as? MessageDomain)?.let { newMessage ->
+                            (message as? Message)?.let { newMessage ->
                                 if (
                                     validateMessage(
                                         sessionUser.id,
@@ -120,22 +120,22 @@ class WebSocketHandler(
                             }
                         }
                         MessageType.VOTE -> {
-                            (message as? VoteDomain)?.let { newVote ->
+                            (message as? Vote)?.let { newVote ->
                                 if (sessionState.filterTypes.postTypes.contains(newVote.type)) {
                                     sendTypedMessage(type, newVote)
                                 }
                             }
                         }
-                        MessageType.FOLLOW -> sendTypedMessage(type, message as FollowDomain)
-                        MessageType.DELETE -> sendTypedMessage(type, message as DeleteDomain)
+                        MessageType.FOLLOW -> sendTypedMessage(type, message as Follow)
+                        MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_UPDATE -> sendTypedMessage(type, message as UserResponseDomain)
-                        MessageType.REPORT_USER -> sendTypedMessage(type, message as ReportDomain)
-                        MessageType.REPORT_POST -> sendTypedMessage(type, message as ReportDomain)
-                        MessageType.TAG -> sendTypedMessage(type, message as TagDomain)
-                        MessageType.FAVORITE -> sendTypedMessage(type, message as FavoriteDomain)
+                        MessageType.USER_UPDATE -> sendTypedMessage(type, message as UserResponse)
+                        MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
+                        MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
+                        MessageType.TAG -> sendTypedMessage(type, message as Tag)
+                        MessageType.FAVORITE -> sendTypedMessage(type, message as Favorite)
                         MessageType.BAN -> {
-                            val ban = message as? BanDomain
+                            val ban = message as? Ban
                             ban?.let { bannedMsg ->
                                 if (sessionUser.id == bannedMsg.userId) {
                                     sessionUser = sessionUser.copy(banned = true)
@@ -170,7 +170,7 @@ class WebSocketHandler(
                 )
 
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
-        sessionUser: UserResponseDomain,
+        sessionUser: UserResponse,
         sessionId: String,
         sessionState: SessionState,
         messageCollectionJobs: List<Job>
@@ -182,7 +182,7 @@ class WebSocketHandler(
                 val messageType = determineMessageType(frame)
                 when (messageType) {
                     MessageType.MSG -> {
-                        converter?.cleanAndType<TypeMappingDomain<MessageDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Message>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 UUID.randomUUID().toString().let { messageId ->
                                     val userIdMentions = services.usersApi.addMentions(
@@ -209,7 +209,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.DM -> {
-                        converter?.cleanAndType<TypeMappingDomain<DirectMessageDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<DirectMessage>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
                                 dm.copy(
                                     id = UUID.randomUUID().toString(),
@@ -257,7 +257,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.FOLLOW -> {
-                        converter?.cleanAndType<TypeMappingDomain<FollowDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Follow>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
@@ -269,7 +269,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.FAVORITE -> {
-                        converter?.cleanAndType<TypeMappingDomain<FavoriteDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Favorite>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { favorite ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FAVORITE, favorite)
@@ -282,7 +282,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.VOTE -> {
-                        converter?.cleanAndType<TypeMappingDomain<VoteDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Vote>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.VOTE, vote)
@@ -294,7 +294,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.USER_UPDATE -> {
-                        converter?.cleanAndType<TypeMappingDomain<UserResponseDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<UserResponse>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
                                 if (user.validateUser()) {
                                     launch { services.usersApi.saveUser(user) }
@@ -304,13 +304,13 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.FILTER_TYPES -> {
-                        converter?.cleanAndType<TypeMappingDomain<FilterTypesDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<FilterTypes>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
                                 sessionState.filterTypes = newFilterTypes
                             }
                     }
                     MessageType.DELETE -> {
-                        converter?.cleanAndType<TypeMappingDomain<DeleteDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Delete>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { delete ->
                                 launch { services.postsApi.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
@@ -318,7 +318,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.BAN -> {
-                        converter?.cleanAndType<TypeMappingDomain<BanDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Ban>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { ban ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { services.usersApi.banUser(ban) }
@@ -328,7 +328,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.TAG -> {
-                        converter?.cleanAndType<TypeMappingDomain<TagDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Tag>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { tag ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { services.usersApi.tagUser(tag) }
@@ -338,7 +338,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.REPORT_USER -> {
-                        converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Report>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
                                 launch { services.adminApi.reportUser(sessionUser.id, reportUser) }
                                 launch { services.usersApi.addUserReport(reportUser) }
@@ -347,7 +347,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.REPORT_POST -> {
-                        converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Report>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
                                 launch { services.adminApi.reportPost(sessionUser.id, reportPost) }
                                 launch { services.usersApi.addPostReport(reportPost) }
@@ -356,7 +356,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.ROUTE -> {
-                        converter?.cleanAndType<TypeMappingDomain<RouteDomain>>(frame)
+                        converter?.cleanAndType<TypeMapping<Route>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { route ->
                                 activeJobs?.cancelAndJoin()
                                 val session = this
@@ -398,7 +398,7 @@ class WebSocketHandler(
         }
     }
 
-    private suspend fun handleRoute(route: RouteDomain, session: WebSocketServerSession): List<Job> = coroutineScope {
+    private suspend fun handleRoute(route: Route, session: WebSocketServerSession): List<Job> = coroutineScope {
         when (route.route) {
             SiteRoute.HOME -> HomeJobs().homeJobs(session)
             SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
