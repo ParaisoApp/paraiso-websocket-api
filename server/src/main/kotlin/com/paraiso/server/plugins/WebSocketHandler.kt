@@ -1,5 +1,6 @@
 package com.paraiso.server.plugins
 
+import com.paraiso.com.paraiso.AppServices
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.sports.BBallJobs
@@ -58,13 +59,7 @@ class WebSocketHandler(
     private val serverId: String,
     private val eventServiceImpl: EventServiceImpl,
     private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
-    private val usersApi: UsersApi,
-    private val userChatsApi: UserChatsApi,
-    private val postsApi: PostsApi,
-    private val adminApi: AdminApi,
-    private val routesApi: RoutesApi,
-    private val bBallApi: BBallApi,
-    private val fBallApi: FBallApi
+    private val services: AppServices
 ) : Klogging {
 
     suspend fun handleUser(
@@ -74,7 +69,7 @@ class WebSocketHandler(
         // session state
         val sessionState = SessionState()
         // check cookies to see if existing user
-        val currentUser = usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "") ?:
+        val currentUser = services.usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "") ?:
             UserResponseDomain.newUser(UUID.randomUUID().toString())
         launch{
             //create or update session connected status
@@ -97,7 +92,7 @@ class WebSocketHandler(
             }
         }
         launch {
-            usersApi.saveUser(currentUser)
+            services.usersApi.saveUser(currentUser)
         }
         val curUserSessions = userSessions[currentUser.id] ?: emptySet()
         userSessions[currentUser.id] = curUserSessions + session
@@ -111,8 +106,8 @@ class WebSocketHandler(
             SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
             SiteRoute.SPORT -> {
                 when (route.modifier) {
-                    SiteRoute.BASKETBALL -> BBallJobs(bBallApi).sportJobs(session)
-                    SiteRoute.FOOTBALL -> FBallJobs(fBallApi).sportJobs(session)
+                    SiteRoute.BASKETBALL -> BBallJobs(services.bBallApi).sportJobs(session)
+                    SiteRoute.FOOTBALL -> FBallJobs(services.fBallApi).sportJobs(session)
                     else -> {
                         logger.error("Unrecognized Sport: $route")
                         emptyList()
@@ -121,8 +116,8 @@ class WebSocketHandler(
             }
             SiteRoute.TEAM -> {
                 when (route.modifier) {
-                    SiteRoute.BASKETBALL -> BBallJobs(bBallApi).teamJobs(route.content, session)
-                    SiteRoute.FOOTBALL -> FBallJobs(fBallApi).teamJobs(route.content, session)
+                    SiteRoute.BASKETBALL -> BBallJobs(services.bBallApi).teamJobs(route.content, session)
+                    SiteRoute.FOOTBALL -> FBallJobs(services.fBallApi).teamJobs(route.content, session)
                     else -> {
                         logger.error("Unrecognized Team: $route")
                         emptyList()
@@ -148,16 +143,16 @@ class WebSocketHandler(
                     sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
                     userId != null &&
                     sessionState.filterTypes.userRoles.contains(
-                        usersApi.getUserById(userId)?.roles ?: UserRole.GUEST
+                        services.usersApi.getUserById(userId)?.roles ?: UserRole.GUEST
                     )
                 )
 
     private suspend fun WebSocketServerSession.joinChat(
-        user: UserResponseDomain,
+        incomingUser: UserResponseDomain,
         sessionId: String,
         sessionState: SessionState
     ) {
-        var sessionUser = user.copy()
+        var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
         val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
@@ -209,6 +204,7 @@ class WebSocketHandler(
         }
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
+        eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
         // holds the active jobs for given route
         var activeJobs: Job? = null
         try {
@@ -219,7 +215,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<MessageDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 UUID.randomUUID().toString().let { messageId ->
-                                    val userIdMentions = usersApi.addMentions(
+                                    val userIdMentions = services.usersApi.addMentions(
                                         getMentions(message.content),
                                         message.userReceiveIds.firstOrNull(),
                                         messageId
@@ -233,9 +229,10 @@ class WebSocketHandler(
                                         if (sessionUser.banned) {
                                             sendTypedMessage(MessageType.MSG, messageWithData)
                                         } else {
-                                            launch { postsApi.putPost(messageWithData) }
-                                            launch { usersApi.putPost(sessionUser.id, messageId) }
+                                            launch { services.postsApi.putPost(messageWithData) }
+                                            launch { services.usersApi.putPost(sessionUser.id, messageId) }
                                             ServerState.messageFlowMut.emit(messageWithData)
+                                            eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
                                         }
                                     }
                                 }
@@ -249,13 +246,13 @@ class WebSocketHandler(
                                     userId = sessionUser.id
                                 ).let { dmWithData ->
                                     launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                    val userReceiveBlocklist = usersApi.getUserById(dmWithData.userReceiveId)?.blockList
+                                    val userReceiveBlocklist = services.usersApi.getUserById(dmWithData.userReceiveId)?.blockList
                                     if (
                                         !sessionUser.banned &&
                                         userReceiveBlocklist?.contains(sessionUser.id) == false
                                     ) {
                                         launch {
-                                            usersApi.updateChatForUser(
+                                            services.usersApi.updateChatForUser(
                                                 dmWithData,
                                                 dmWithData.userId,
                                                 dmWithData.userReceiveId,
@@ -263,27 +260,28 @@ class WebSocketHandler(
                                             )
                                         } // update chat for receiving user
                                         launch {
-                                            usersApi.updateChatForUser(
+                                            services.usersApi.updateChatForUser(
                                                 dmWithData,
                                                 dmWithData.userReceiveId,
                                                 dmWithData.userId,
                                                 false
                                             )
                                             // update chat for receiving user
-                                            launch { userChatsApi.putDM(dmWithData) }
+                                            launch { services.userChatsApi.putDM(dmWithData) }
                                         }
-                                        //if user is on this server then grab session on send dm to user
-                                        val curUserSessions = userSessions[dmWithData.userReceiveId]
-                                        curUserSessions?.forEach { session ->
-                                            launch {
+                                        //if user is on this server then grab session and send dm to user
+                                        userSessions[dmWithData.userReceiveId]?.let {receiveUserSessions ->
+                                            receiveUserSessions.forEach { session ->
                                                 session.sendTypedMessage(MessageType.DM, dmWithData)
                                             }
                                         }
-                                        //otherwise publish and map to respective server subscriber
-                                        eventServiceImpl.publish(
-                                            "server:$serverId",
-                                            "${dmWithData.userReceiveId}:${Json.encodeToString(dmWithData)}"
-                                        )
+                                        //find any other user server sessions, publish, and map to respective server subscriber
+                                        eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let {receiveUserSessions ->
+                                            val dmString = Json.encodeToString(dmWithData)
+                                            receiveUserSessions.sessionIds.forEach { userServerId ->
+                                                eventServiceImpl.publish("server:$userServerId", "$serverId:${dmWithData.userReceiveId}:${dmString}")
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -294,20 +292,22 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    launch { usersApi.follow(follow) }
+                                    launch { services.usersApi.follow(follow) }
                                     ServerState.followFlowMut.emit(follow)
+                                    eventServiceImpl.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
                                 }
                             }
                     }
                     MessageType.FAVORITE -> {
                         converter?.cleanAndType<TypeMappingDomain<FavoriteDomain>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { follow ->
+                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { favorite ->
                                 if (sessionUser.banned) {
-                                    sendTypedMessage(MessageType.FOLLOW, follow)
+                                    sendTypedMessage(MessageType.FAVORITE, favorite)
                                 } else {
-                                    launch { usersApi.toggleFavoriteRoute(follow) }
-                                    launch { routesApi.toggleFavoriteRoute(follow) }
-                                    ServerState.favoriteFlowMut.emit(follow)
+                                    launch { services.usersApi.toggleFavoriteRoute(favorite) }
+                                    launch { services.routesApi.toggleFavoriteRoute(favorite) }
+                                    ServerState.favoriteFlowMut.emit(favorite)
+                                    eventServiceImpl.publish(MessageType.FAVORITE.name, "$serverId:${Json.encodeToString(favorite)}")
                                 }
                             }
                     }
@@ -317,7 +317,7 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.VOTE, vote)
                                 } else {
-                                    launch { postsApi.votePost(vote) }
+                                    launch { services.postsApi.votePost(vote) }
                                     ServerState.voteFlowMut.emit(vote)
                                     eventServiceImpl.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
                                 }
@@ -327,8 +327,9 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<UserResponseDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
                                 if (user.validateUser()) {
-                                    launch { usersApi.saveUser(user) }
+                                    launch { services.usersApi.saveUser(user) }
                                     ServerState.userUpdateFlowMut.emit(user)
+                                    eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                                 }
                             }
                     }
@@ -341,16 +342,18 @@ class WebSocketHandler(
                     MessageType.DELETE -> {
                         converter?.cleanAndType<TypeMappingDomain<DeleteDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { delete ->
-                                launch { postsApi.deletePost(delete, sessionUser.id) }
+                                launch { services.postsApi.deletePost(delete, sessionUser.id) }
                                 ServerState.deleteFlowMut.emit(delete)
+                                eventServiceImpl.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
                             }
                     }
                     MessageType.BAN -> {
                         converter?.cleanAndType<TypeMappingDomain<BanDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { ban ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { usersApi.banUser(ban) }
+                                    launch { services.usersApi.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
+                                    eventServiceImpl.publish(MessageType.BAN.name, "$serverId:${Json.encodeToString(ban)}")
                                 }
                             }
                     }
@@ -358,25 +361,28 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMappingDomain<TagDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { tag ->
                                 if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { usersApi.tagUser(tag) }
+                                    launch { services.usersApi.tagUser(tag) }
                                     ServerState.tagUserFlowMut.emit(tag)
+                                    eventServiceImpl.publish(MessageType.TAG.name, "$serverId:${Json.encodeToString(tag)}")
                                 }
                             }
                     }
                     MessageType.REPORT_USER -> {
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
-                                launch { adminApi.reportUser(sessionUser.id, reportUser) }
-                                launch { usersApi.addUserReport(reportUser) }
+                                launch { services.adminApi.reportUser(sessionUser.id, reportUser) }
+                                launch { services.usersApi.addUserReport(reportUser) }
                                 ServerState.reportUserFlowMut.emit(reportUser)
+                                eventServiceImpl.publish(MessageType.REPORT_USER.name, "$serverId:${Json.encodeToString(reportUser)}")
                             }
                     }
                     MessageType.REPORT_POST -> {
                         converter?.cleanAndType<TypeMappingDomain<ReportDomain>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
-                                launch { adminApi.reportPost(sessionUser.id, reportPost) }
-                                launch { usersApi.addPostReport(reportPost) }
+                                launch { services.adminApi.reportPost(sessionUser.id, reportPost) }
+                                launch { services.usersApi.addPostReport(reportPost) }
                                 ServerState.reportPostFlowMut.emit(reportPost)
+                                eventServiceImpl.publish(MessageType.REPORT_POST.name, "$serverId:${Json.encodeToString(reportPost)}")
                             }
                     }
                     MessageType.ROUTE -> {
@@ -410,8 +416,9 @@ class WebSocketHandler(
                     )
                 }
             }
-            usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
+            services.usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
+                eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
                 //remove current user session from sessions map
                 val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
                 //if user has no more sessions, remove user from server user sessions
