@@ -117,8 +117,6 @@ fun main() {
 }
 
 fun Application.module(jobScope: CoroutineScope){
-    //Application level logger
-    val logger = logger("Application")
     //load config
     val config = HoconApplicationConfig(ConfigFactory.load())
     val serverId = config.property("server.id").getString()
@@ -148,7 +146,7 @@ fun Application.module(jobScope: CoroutineScope){
     //setup redis
     val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
-    val eventServiceImpl = EventServiceImpl(serverId, redisClient)
+    val eventServiceImpl = EventServiceImpl(redisClient)
 
     //subscriber to all incoming messages from other servers
     val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
@@ -203,13 +201,7 @@ fun Application.module(jobScope: CoroutineScope){
         serverId = serverId,
         eventServiceImpl,
         userSessions,
-        services.usersApi,
-        services.userChatsApi,
-        services.postsApi,
-        services.adminApi,
-        services.routesApi,
-        services.bBallApi,
-        services.fBallApi
+        services
     )
 
     configureSockets(handler, services)

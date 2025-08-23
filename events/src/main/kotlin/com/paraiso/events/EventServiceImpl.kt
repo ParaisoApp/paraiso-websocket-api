@@ -17,7 +17,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class EventServiceImpl(
-    private val serverId: String,
     private val client: RedisClient
 ): EventService, Klogging {
     private val pubSubConnection: StatefulRedisPubSubConnection<String, String> = client.connectPubSub()
