@@ -15,6 +15,6 @@ interface FBallOperation {
     suspend fun getStandings(): AllStandings?
     suspend fun getTeams(): List<Team>
     suspend fun getRoster(teamId: String): Roster?
-    suspend fun getLeaders(): StatLeaders?
+    suspend fun getLeaders(season: String, type: String): StatLeaders?
     suspend fun getSchedule(teamId: String): Schedule?
 }

@@ -14,6 +14,8 @@ import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants.GAME_PREFIX
+import com.paraiso.domain.util.Constants.SEASON
+import com.paraiso.domain.util.Constants.SEASON_TYPE_REG
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
@@ -88,7 +90,7 @@ class BBallHandler(
 
     private suspend fun getLeaders() = coroutineScope {
         while (isActive) {
-            bBallOperation.getLeaders()?.let { leadersRes ->
+            bBallOperation.getLeaders(SEASON, SEASON_TYPE_REG)?.let { leadersRes ->
                 sportDBs.leadersDBAdapter.save(listOf(leadersRes))
             }
             delay(6 * 60 * 60 * 1000)

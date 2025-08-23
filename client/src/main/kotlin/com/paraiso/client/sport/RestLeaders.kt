@@ -41,8 +41,11 @@ data class RestAthleteLeader(
     val id: Int
 )
 
-fun RestLeaders.toDomain(sport: SiteRoute) = StatLeadersDomain(
-    id = sport.toString(),
+fun RestLeaders.toDomain(sport: SiteRoute, season: String, type: String) = StatLeadersDomain(
+    id = "$sport-$season-$type",
+    sport = sport.name,
+    season = season,
+    type = type,
     categories = categories.map { it.toDomain() }
 )
 

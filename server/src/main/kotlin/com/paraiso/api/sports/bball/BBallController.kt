@@ -19,7 +19,10 @@ fun Route.bballController(bBallApi: BBallApi) {
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/leaders") {
-            bBallApi.getLeaders()?.let {
+            bBallApi.getLeaders(
+                call.request.queryParameters["seasonYear"] ?: "",
+                call.request.queryParameters["seasonType"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }

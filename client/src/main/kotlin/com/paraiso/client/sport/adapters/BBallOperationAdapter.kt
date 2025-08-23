@@ -119,9 +119,9 @@ class BBallOperationAdapter : BBallOperation, BaseAdapter, Klogging {
             null
         }
     }
-    override suspend fun getLeaders(): StatLeadersDomain? = withContext(dispatcher) {
+    override suspend fun getLeaders(season: String, type: String): StatLeadersDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.bballCoreUri}/leaders?limit=$LIMIT"
+            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.bballCoreUri}/seasons/$season/types/$type/leaders"
             val response: RestLeaders = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -130,7 +130,7 @@ class BBallOperationAdapter : BBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.BASKETBALL)
+            response.toDomain(SiteRoute.BASKETBALL, season, type)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

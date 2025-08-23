@@ -26,7 +26,8 @@ class BBallApi(private val sportDBs: SportDBs) {
     suspend fun getStandings() = sportDBs.standingsDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.standingsGroups?.associate { standingsGroup ->
         standingsGroup.confAbbr to standingsGroup.standings.map { it.toResponse() }
     }
-    suspend fun getLeaders() = sportDBs.leadersDBAdapter.findBySport(SiteRoute.BASKETBALL)?.categories?.let { categories ->
+    suspend fun getLeaders(season: String, type: String) =
+        sportDBs.leadersDBAdapter.findBySportAndSeasonAndType(SiteRoute.BASKETBALL, season, type)?.categories?.let { categories ->
         // grab athletes from DB and associate with their id
         val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
             sportDBs.athletesDBAdapter.findByIdsIn(athleteIds.map { it.toString() })

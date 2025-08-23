@@ -28,7 +28,8 @@ class FBallApi(private val sportDBs: SportDBs) {
     }?.associate { standingsSubGroup ->
         standingsSubGroup.divName to standingsSubGroup.standings.map { it.toResponse() }
     }
-    suspend fun getLeaders() = sportDBs.leadersDBAdapter.findBySport(SiteRoute.FOOTBALL)?.categories?.let { categories ->
+    suspend fun getLeaders(season: String, type: String) =
+        sportDBs.leadersDBAdapter.findBySportAndSeasonAndType(SiteRoute.FOOTBALL, season, type)?.categories?.let { categories ->
         // grab athletes from DB and associate with their id
         val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
             sportDBs.athletesDBAdapter.findByIdsIn(athleteIds.map { it.toString() })
