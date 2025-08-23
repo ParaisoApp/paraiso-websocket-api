@@ -19,6 +19,7 @@ import com.paraiso.domain.sport.data.toResponse
 import com.paraiso.domain.sport.sports.SportDBs
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.Instant
 
 class FBallApi(private val sportDBs: SportDBs) {
     suspend fun getTeamByAbbr(teamAbbr: String) = sportDBs.teamsDBAdapter.findById("${SiteRoute.FOOTBALL}-$teamAbbr")?.toResponse()
@@ -77,6 +78,7 @@ class FBallApi(private val sportDBs: SportDBs) {
     suspend fun getTeamSchedule(teamId: String, seasonYear: String, seasonType: String) =
         sportDBs.schedulesDBAdapter.findById("${SiteRoute.FOOTBALL}-$teamId-$seasonYear-$seasonType")?.let { schedule ->
             val competitions = sportDBs.competitionsDBAdapter.findByIdIn(schedule.events)
+                .sortedBy { Instant.parse(it.date) }
             schedule.toDomain(competitions)
         }?.toResponse()
 }
