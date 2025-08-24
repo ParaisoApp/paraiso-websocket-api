@@ -1,4 +1,4 @@
-package com.paraiso.client.sport
+package com.paraiso.client.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard

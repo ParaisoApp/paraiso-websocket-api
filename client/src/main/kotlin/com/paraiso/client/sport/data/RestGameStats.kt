@@ -1,6 +1,5 @@
-package com.paraiso.client.sport
+package com.paraiso.client.sport.data
 
-import com.paraiso.domain.routes.SiteRoute
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Athlete as AthleteDomain
 import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain

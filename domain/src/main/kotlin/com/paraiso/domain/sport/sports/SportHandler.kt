@@ -1,4 +1,4 @@
-package com.paraiso.domain.sport.sports.bball
+package com.paraiso.domain.sport.sports
 
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.Post
@@ -12,11 +12,8 @@ import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
-import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants.GAME_PREFIX
-import com.paraiso.domain.util.Constants.SEASON
-import com.paraiso.domain.util.Constants.SEASON_TYPE_REG
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
@@ -33,8 +30,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.hours
 
-class BBallHandler(
-    private val bBallOperation: BBallOperation,
+class SportHandler(
+    private val sportOperation: SportOperation,
     private val routesApi: RoutesApi,
     private val sportDBs: SportDBs,
     private val eventService: EventService
@@ -42,50 +39,50 @@ class BBallHandler(
     private var lastSentScoreboard: Scoreboard? = null
     private var lastSentBoxScores = listOf<BoxScore>()
 
-    suspend fun bootJobs() = coroutineScope {
-        launch { getLeague() }
-        launch { buildScoreboard() }
-        launch { getStandings() }
-        launch { getTeams() }
-        launch { getLeaders() }
-        launch { getRosters() }
-        launch { getSchedules() }
+    suspend fun bootJobs(sport: SiteRoute) = coroutineScope {
+        launch { getLeague(sport) }
+        launch { buildScoreboard(sport) }
+        launch { getStandings(sport) }
+        launch { getTeams(sport) }
+        launch { getLeaders(sport) }
+        launch { getRosters(sport) }
+        launch { getSchedules(sport) }
     }
 
-    private suspend fun getLeague() = coroutineScope {
+    private suspend fun getLeague(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            bBallOperation.getLeague()?.let { leagueRes ->
+            sportOperation.getLeague(sport)?.let { leagueRes ->
                 sportDBs.leaguesDBAdapter.save(listOf(leagueRes))
             }
         }
     }
 
-    private suspend fun getStandings() = coroutineScope {
+    private suspend fun getStandings(sport: SiteRoute) = coroutineScope {
         while (isActive) {
-            bBallOperation.getStandings()?.let { standingsRes ->
+            sportOperation.getStandings(sport)?.let { standingsRes ->
                 sportDBs.standingsDBAdapter.save(listOf(standingsRes))
             }
             delay(12 * 60 * 60 * 1000)
         }
     }
 
-    private suspend fun getTeams() = coroutineScope {
+    private suspend fun getTeams(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            bBallOperation.getTeams().let { teamsRes ->
+            sportOperation.getTeams(sport).let { teamsRes ->
                 launch {
-                    addTeamRoutes(teamsRes)
+                    addTeamRoutes(sport, teamsRes)
                 }
                 sportDBs.teamsDBAdapter.save(teamsRes)
             }
         }
     }
 
-    private suspend fun addTeamRoutes(teams: List<Team>) {
+    private suspend fun addTeamRoutes(sport: SiteRoute, teams: List<Team>) {
         teams.map {
             val now = Clock.System.now()
             RouteDetails(
-                id = "/s/basketball/t/${it.abbreviation}",
-                route = SiteRoute.BASKETBALL,
+                id = "/s/${sport.name.lowercase()}/t/${it.abbreviation}",
+                route = sport,
                 modifier = it.abbreviation,
                 title = it.displayName,
                 userFavorites = emptySet(),
@@ -98,33 +95,36 @@ class BBallHandler(
         }
     }
 
-    private suspend fun getLeaders() = coroutineScope {
+    private suspend fun getLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
-            bBallOperation.getLeaders(SEASON, SEASON_TYPE_REG)?.let { leadersRes ->
-                sportDBs.leadersDBAdapter.save(listOf(leadersRes))
+            sportDBs.leaguesDBAdapter.findBySport(sport.name)?.let { league ->
+                sportOperation.getLeaders(sport, league.activeSeasonYear, league.activeSeasonType)?.let { leadersRes ->
+                    sportDBs.leadersDBAdapter.save(listOf(leadersRes))
+                }
             }
             delay(6 * 60 * 60 * 1000)
         }
     }
 
-    private suspend fun getSchedules() = coroutineScope {
+    private suspend fun getSchedules(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            val teams = sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL.name)
+            val teams = sportDBs.teamsDBAdapter.findBySport(sport.name)
             teams.map { it.teamId }.map { teamId ->
                 async {
-                    bBallOperation.getSchedule(teamId)
+                    sportOperation.getSchedule(sport, teamId)
                 }
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
-                    addGamePosts(teams, schedulesRes)
+                    addGamePosts(sport, teams, schedulesRes)
                 }
             }
         }
     }
 
     private fun addGamePosts(
+        sport: SiteRoute,
         teams: List<Team>,
         schedules: List<Schedule>
     ) {
@@ -143,7 +143,7 @@ class BBallHandler(
                             title = competition.shortName,
                             content = "${competition.date}-${competition.shortName}",
                             type = PostType.GAME,
-                            parentId = "/s/${SiteRoute.BASKETBALL}/t/$key",
+                            parentId = "/s/${sport.name.lowercase()}/t/$key",
                             rootId = "$TEAM_PREFIX${competition.id}-$key",
                             data = "$TEAM_PREFIX${competition.id}-$key",
                         )
@@ -158,7 +158,7 @@ class BBallHandler(
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,
-                        parentId = SiteRoute.BASKETBALL.name,
+                        parentId = sport.name,
                         rootId = "$GAME_PREFIX${competition.id}",
                         data = "${competition.date}-${competition.shortName}",
                     )
@@ -167,11 +167,11 @@ class BBallHandler(
         }
     }
 
-    private suspend fun getRosters() = coroutineScope {
+    private suspend fun getRosters(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL.name).map { it.teamId }.map { teamId ->
+            sportDBs.teamsDBAdapter.findBySport(sport.name).map { it.teamId }.map { teamId ->
                 async {
-                    bBallOperation.getRoster(teamId)
+                    sportOperation.getRoster(sport, teamId)
                 }
             }.awaitAll().filterNotNull().let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
@@ -182,46 +182,47 @@ class BBallHandler(
             }
         }
     }
-    private suspend fun buildScoreboard() {
+    private suspend fun buildScoreboard(sport: SiteRoute) {
         coroutineScope {
-            bBallOperation.getScoreboard()?.let { scoreboard ->
+            sportOperation.getScoreboard(sport)?.let { scoreboard ->
                 saveScoreboardAndGetBoxscores(
+                    sport,
                     scoreboard,
                     scoreboard.competitions,
                     true,
                     emptyList()
                 )
+                lastSentScoreboard = scoreboard
             }
             var delayBoxScore = 1
             while (isActive) {
                 delay(10 * 1000)
-                sportDBs.scoreboardsDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.competitions?.let { competitionIds ->
-                    sportDBs.competitionsDBAdapter.findByIdIn(competitionIds).let { competitions ->
-                        val earliestTime = competitions.minOf { Instant.parse(it.date) }
-                        val allStates = competitions.map { it.status.state }.toSet()
-                        // if current time is beyond the earliest start time start fetching the scoreboard
-                        if (Clock.System.now() > earliestTime) {
-                            bBallOperation.getScoreboard()?.let { scoreboard ->
-                                val activeCompetitions = competitions.filter { it.status.state == "in" }
-                                val inactiveCompetitions = competitions.filter { it.status.state != "in" }
-                                saveScoreboardAndGetBoxscores(
-                                    scoreboard,
-                                    activeCompetitions,
-                                    delayBoxScore == 0,
-                                    inactiveCompetitions.map { it.toString() }
-                                )
-                                if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
-                                    // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
-                                    delay(60 * 60 * 1000)
-                                }
+                lastSentScoreboard?.competitions?.let { competitions ->
+                    val earliestTime = competitions.minOf { Instant.parse(it.date) }
+                    val allStates = competitions.map { it.status.state }.toSet()
+                    // if current time is beyond the earliest start time start fetching the scoreboard
+                    if (Clock.System.now() > earliestTime) {
+                        sportOperation.getScoreboard(sport)?.let { scoreboard ->
+                            val activeCompetitions = competitions.filter { it.status.state == "in" }
+                            val inactiveCompetitions = competitions.filter { it.status.state != "in" }
+                            saveScoreboardAndGetBoxscores(
+                                sport,
+                                scoreboard,
+                                activeCompetitions,
+                                delayBoxScore == 0,
+                                inactiveCompetitions.map { it.toString() }
+                            )
+                            if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
+                                // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
+                                delay(60 * 60 * 1000)
                             }
-                            // else if current time is before the earliest time, delay until the earliest time
-                        } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
-                            delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
-                            delayBoxScore = 0
-                        } else {
-                            delay(1 * 60 * 1000) // delay one minute (game start not always in sync with clock)
                         }
+                        // else if current time is before the earliest time, delay until the earliest time
+                    } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
+                        delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
+                        delayBoxScore = 0
+                    } else {
+                        delay(1 * 60 * 1000) // delay one minute (game start not always in sync with clock)
                     }
                 }
                 //delay boxscore for 30 ticks of delay (every 5 minutes)
@@ -232,6 +233,7 @@ class BBallHandler(
     }
 
     private suspend fun saveScoreboardAndGetBoxscores(
+        sport: SiteRoute,
         scoreboard: Scoreboard,
         competitions: List<Competition>,
         enableBoxScore: Boolean,
@@ -242,20 +244,21 @@ class BBallHandler(
             sportDBs.competitionsDBAdapter.save(competitions)
             eventService.publish(
                 MessageType.SCOREBOARD.name,
-                "${SiteRoute.BASKETBALL}:${Json.encodeToString(scoreboard)}"
+                "$sport:${Json.encodeToString(scoreboard)}"
             )
             lastSentScoreboard = scoreboard
-            if(enableBoxScore) getBoxscores(competitions.map { it.id }, inactiveCompetitionIds)
+            if(enableBoxScore) getBoxscores(sport, competitions.map { it.id }, inactiveCompetitionIds)
         }
     }
 
     private suspend fun getBoxscores(
+        sport: SiteRoute,
         competitionIds: List<String>,
         inactiveCompetitionIds: List<String>
     ) = coroutineScope {
         competitionIds.map { gameId ->
             async {
-                bBallOperation.getGameStats(gameId)
+                sportOperation.getGameStats(sport, gameId)
             }
         }.awaitAll().filterNotNull().let { newBoxScores ->
             //add inactive boxscores
@@ -266,7 +269,7 @@ class BBallHandler(
                 sportDBs.boxscoresDBAdapter.save(newBoxScores)
                 eventService.publish(
                     MessageType.BOX_SCORES.name,
-                    "${SiteRoute.BASKETBALL}:${Json.encodeToString(newBoxScores)}"
+                    "$sport:${Json.encodeToString(newBoxScores)}"
                 )
                 lastSentBoxScores = allBoxScores
             }

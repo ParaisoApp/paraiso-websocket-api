@@ -8,7 +8,7 @@ import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-class SportJobs() {
+class SportJobs {
     suspend fun sportJobs(
         session: WebSocketServerSession,
         sport: String

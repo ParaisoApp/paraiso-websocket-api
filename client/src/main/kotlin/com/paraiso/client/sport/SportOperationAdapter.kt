@@ -1,19 +1,19 @@
-package com.paraiso.client.sport.adapters
+package com.paraiso.client.sport
 
-import com.paraiso.client.sport.RestGameStats
-import com.paraiso.client.sport.RestLeaders
-import com.paraiso.client.sport.RestLeague
-import com.paraiso.client.sport.RestRosterNested
-import com.paraiso.client.sport.RestSchedule
-import com.paraiso.client.sport.RestScoreboard
-import com.paraiso.client.sport.RestStandingsContainer
-import com.paraiso.client.sport.RestTeams
-import com.paraiso.client.sport.toDomain
+import com.paraiso.client.sport.data.RestGameStats
+import com.paraiso.client.sport.data.RestLeaders
+import com.paraiso.client.sport.data.RestLeague
+import com.paraiso.client.sport.data.RestRoster
+import com.paraiso.client.sport.data.RestSchedule
+import com.paraiso.client.sport.data.RestScoreboard
+import com.paraiso.client.sport.data.RestStandingsContainer
+import com.paraiso.client.sport.data.RestTeams
+import com.paraiso.client.sport.data.toDomain
 import com.paraiso.client.util.BaseAdapter
 import com.paraiso.client.util.ClientConfig
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.League
-import com.paraiso.domain.sport.sports.fball.FBallOperation
+import com.paraiso.domain.sport.sports.SportOperation
 import io.klogging.Klogging
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -28,24 +28,22 @@ import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 import com.paraiso.domain.sport.data.Team as TeamDomain
 
-class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
+class SportOperationAdapter : SportOperation, BaseAdapter, Klogging {
 
     companion object {
-        private const val SEASON = 2025
-        private const val REGULAR = 2
         private const val LIMIT = 10
         private val dispatcher = Dispatchers.IO
         private val clientConfig = ClientConfig()
-
-        // private const val PLAYOFFS = 1
-        // private const val EAST = 5
-        // private const val WEST = 6
-        // private const val OVERALL = 0
     }
 
-    override suspend fun getLeague(): League? = withContext(dispatcher) {
+    override suspend fun getLeague(sport: SiteRoute): League? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.fballCoreUri}"
+            var url = clientConfig.coreApiBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
             val response: RestLeague = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -54,15 +52,22 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL)
+            response.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
         }
     }
-    override suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {
+
+    override suspend fun getScoreboard(sport: SiteRoute): ScoreboardDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/scoreboard"
+            var url = clientConfig.statsBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/scoreboard"
             val response: RestScoreboard = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -71,15 +76,21 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL)
+            response.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
         }
     }
-    override suspend fun getGameStats(competitionId: String): BoxScoreDomain? = withContext(dispatcher) {
+    override suspend fun getGameStats(sport: SiteRoute, competitionId: String): BoxScoreDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.siteBaseUrl}${clientConfig.fballStatsUri}/summary?event=$competitionId"
+            var url = clientConfig.statsBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/summary?event=$competitionId"
             val response: RestGameStats = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -94,26 +105,38 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
             null
         }
     }
-    override suspend fun getStandings(): AllStandingsDomain? = withContext(dispatcher) {
+    override suspend fun getStandings(sport: SiteRoute): AllStandingsDomain? = withContext(dispatcher) {
         try {
-            val westUrl = "${clientConfig.cdnApiBaseUrl}${clientConfig.fballCdnUri}/standings?xhr=1"
+            var url = clientConfig.cdnApiBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballCdnUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballCdnUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/standings?xhr=1"
             val standingsResponse: RestStandingsContainer = getHttpClient().use { httpClient ->
-                httpClient.get(westUrl).let {
+                httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
                     }
                     it.body()
                 }
             }
-            standingsResponse.toDomain(SiteRoute.FOOTBALL)
+            standingsResponse.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
         }
     }
-    override suspend fun getTeams(): List<TeamDomain> = withContext(dispatcher) {
+    override suspend fun getTeams(sport: SiteRoute): List<TeamDomain> = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams"
+            var url = clientConfig.statsBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/teams"
             val response: RestTeams = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -122,16 +145,22 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL)
+            response.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             emptyList()
         }
     }
-    override suspend fun getRoster(teamId: String): RosterDomain? = withContext(dispatcher) {
+    override suspend fun getRoster(sport: SiteRoute, teamId: String): RosterDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/roster"
-            val response: RestRosterNested = getHttpClient().use { httpClient ->
+            var url = clientConfig.statsBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/teams/$teamId/roster"
+            val response: RestRoster = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -139,15 +168,21 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL)
+            response.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
         }
     }
-    override suspend fun getLeaders(season: String, type: String): StatLeadersDomain? = withContext(dispatcher) {
+    override suspend fun getLeaders(sport: SiteRoute, season: String, type: String): StatLeadersDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.fballCoreUri}/seasons/$season/types/$type/leaders"
+            var url = clientConfig.coreApiBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/seasons/$season/types/$type/leaders"
             val response: RestLeaders = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -156,15 +191,21 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL, season, type)
+            response.toDomain(sport, season, type)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
         }
     }
-    override suspend fun getSchedule(teamId: String): ScheduleDomain? = withContext(dispatcher) {
+    override suspend fun getSchedule(sport: SiteRoute, teamId: String): ScheduleDomain? = withContext(dispatcher) {
         try {
-            val url = "${clientConfig.statsBaseUrl}${clientConfig.fballStatsUri}/teams/$teamId/schedule"
+            var url = clientConfig.statsBaseUrl
+            when(sport){
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                else -> {logger.info { "Unrecognized sport $sport" }}
+            }
+            url += "/teams/$teamId/schedule"
             val response: RestSchedule = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
@@ -173,7 +214,7 @@ class FBallOperationAdapter : FBallOperation, BaseAdapter, Klogging {
                     it.body()
                 }
             }
-            response.toDomain(SiteRoute.FOOTBALL)
+            response.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null

@@ -1,8 +1,7 @@
 package com.paraiso
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.paraiso.client.sport.adapters.BBallOperationAdapter
-import com.paraiso.client.sport.adapters.FBallOperationAdapter
+import com.paraiso.client.sport.SportOperationAdapter
 import com.paraiso.com.paraiso.AppServices
 import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
@@ -36,10 +35,10 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportDBs
-import com.paraiso.domain.sport.sports.bball.BBallHandler
-import com.paraiso.domain.sport.sports.fball.FBallHandler
+import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
@@ -160,21 +159,22 @@ fun Application.module(jobScope: CoroutineScope){
     )
     // only launch data fetching jobs on a single server - will split off to microservice
     if(serverId == MAIN_SERVER){
+        val sportOperationAdapter = SportOperationAdapter()
         jobScope.launch {
-            BBallHandler(
-                BBallOperationAdapter(),
+            SportHandler(
+                sportOperationAdapter,
                 routesApi,
                 sportsDBs,
                 eventServiceImpl
-            ).bootJobs()
+            ).bootJobs(SiteRoute.FOOTBALL)
         }
         jobScope.launch {
-            FBallHandler(
-                FBallOperationAdapter(),
+            SportHandler(
+                sportOperationAdapter,
                 routesApi,
                 sportsDBs,
                 eventServiceImpl
-            ).bootJobs()
+            ).bootJobs(SiteRoute.BASKETBALL)
         }
         jobScope.launch {
             ServerHandler(routesApi).bootJobs()
