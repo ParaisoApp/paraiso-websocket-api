@@ -1,7 +1,7 @@
 package com.paraiso
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.paraiso.client.sport.SportOperationAdapter
+import com.paraiso.client.sport.SportOperationImpl
 import com.paraiso.com.paraiso.AppServices
 import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
@@ -14,22 +14,22 @@ import com.paraiso.com.paraiso.api.users.userSessionsController
 import com.paraiso.com.paraiso.api.users.usersController
 import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.com.paraiso.server.plugins.MessageHandler
-import com.paraiso.database.admin.PostReportsDBAdapterImpl
-import com.paraiso.database.admin.UserReportsDBAdapterImpl
-import com.paraiso.database.routes.RoutesDBAdapterImpl
-import com.paraiso.database.sports.AthletesDBAdapterImpl
-import com.paraiso.database.sports.BoxscoresDBAdapterImpl
-import com.paraiso.database.sports.CoachesDBAdapterImpl
-import com.paraiso.database.sports.CompetitionsDBAdapterImpl
-import com.paraiso.database.sports.LeadersDBAdapterImpl
-import com.paraiso.database.sports.LeaguesDBAdapterImpl
-import com.paraiso.database.sports.RostersDBAdapterImpl
-import com.paraiso.database.sports.SchedulesDBAdapterImpl
-import com.paraiso.database.sports.ScoreboardsDBAdapterImpl
-import com.paraiso.database.sports.StandingsDBAdapterImpl
-import com.paraiso.database.sports.TeamsDBAdapterImpl
-import com.paraiso.database.users.UserChatsDBAdapterImpl
-import com.paraiso.database.users.UsersDBAdapterImpl
+import com.paraiso.database.admin.PostReportsDBImpl
+import com.paraiso.database.admin.UserReportsDBImpl
+import com.paraiso.database.routes.RoutesDBImpl
+import com.paraiso.database.sports.AthletesDBImpl
+import com.paraiso.database.sports.BoxscoresDBImpl
+import com.paraiso.database.sports.CoachesDBImpl
+import com.paraiso.database.sports.CompetitionsDBImpl
+import com.paraiso.database.sports.LeadersDBImpl
+import com.paraiso.database.sports.LeaguesDBImpl
+import com.paraiso.database.sports.RostersDBImpl
+import com.paraiso.database.sports.SchedulesDBImpl
+import com.paraiso.database.sports.ScoreboardsDBImpl
+import com.paraiso.database.sports.StandingsDBImpl
+import com.paraiso.database.sports.TeamsDBImpl
+import com.paraiso.database.users.UserChatsDBImpl
+import com.paraiso.database.users.UsersDBImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
@@ -111,22 +111,22 @@ fun Application.module(jobScope: CoroutineScope){
     // setup DB
     val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
     val sportsDBs = SportDBs(
-        LeaguesDBAdapterImpl(database),
-        StandingsDBAdapterImpl(database),
-        TeamsDBAdapterImpl(database),
-        RostersDBAdapterImpl(database),
-        AthletesDBAdapterImpl(database),
-        CoachesDBAdapterImpl(database),
-        SchedulesDBAdapterImpl(database),
-        ScoreboardsDBAdapterImpl(database),
-        BoxscoresDBAdapterImpl(database),
-        CompetitionsDBAdapterImpl(database),
-        LeadersDBAdapterImpl(database)
+        LeaguesDBImpl(database),
+        StandingsDBImpl(database),
+        TeamsDBImpl(database),
+        RostersDBImpl(database),
+        AthletesDBImpl(database),
+        CoachesDBImpl(database),
+        SchedulesDBImpl(database),
+        ScoreboardsDBImpl(database),
+        BoxscoresDBImpl(database),
+        CompetitionsDBImpl(database),
+        LeadersDBImpl(database)
     )
-    val usersDb = UsersDBAdapterImpl(database)
-    val userChatsDb = UserChatsDBAdapterImpl(database)
-    val userReportsDb = UserReportsDBAdapterImpl(database)
-    val postReportsDb = PostReportsDBAdapterImpl(database)
+    val usersDb = UsersDBImpl(database)
+    val userChatsDb = UserChatsDBImpl(database)
+    val userReportsDb = UserReportsDBImpl(database)
+    val postReportsDb = PostReportsDBImpl(database)
     // setup redis
     val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
@@ -137,7 +137,7 @@ fun Application.module(jobScope: CoroutineScope){
         messageHandler.messageJobs()
     }
     // setup apis and scopes
-    val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
+    val routesApi = RoutesApi(RoutesDBImpl(database))
     val authApi = AuthApi()
     val sportApi = SportApi(sportsDBs)
     val postsApi = PostsApi()
@@ -159,10 +159,10 @@ fun Application.module(jobScope: CoroutineScope){
     )
     // only launch data fetching jobs on a single server - will split off to microservice
     if(serverId == MAIN_SERVER){
-        val sportOperationAdapter = SportOperationAdapter()
+        val sportOperationImpl = SportOperationImpl()
         jobScope.launch {
             SportHandler(
-                sportOperationAdapter,
+                sportOperationImpl,
                 routesApi,
                 sportsDBs,
                 eventServiceImpl
@@ -170,7 +170,7 @@ fun Application.module(jobScope: CoroutineScope){
         }
         jobScope.launch {
             SportHandler(
-                sportOperationAdapter,
+                sportOperationImpl,
                 routesApi,
                 sportsDBs,
                 eventServiceImpl

@@ -52,7 +52,7 @@ class SportHandler(
     private suspend fun getLeague(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
             sportOperation.getLeague(sport)?.let { leagueRes ->
-                sportDBs.leaguesDBAdapter.save(listOf(leagueRes))
+                sportDBs.leaguesDB.save(listOf(leagueRes))
             }
         }
     }
@@ -60,7 +60,7 @@ class SportHandler(
     private suspend fun getStandings(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportOperation.getStandings(sport)?.let { standingsRes ->
-                sportDBs.standingsDBAdapter.save(listOf(standingsRes))
+                sportDBs.standingsDB.save(listOf(standingsRes))
             }
             delay(12 * 60 * 60 * 1000)
         }
@@ -72,7 +72,7 @@ class SportHandler(
                 launch {
                     addTeamRoutes(sport, teamsRes)
                 }
-                sportDBs.teamsDBAdapter.save(teamsRes)
+                sportDBs.teamsDB.save(teamsRes)
             }
         }
     }
@@ -97,9 +97,9 @@ class SportHandler(
 
     private suspend fun getLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
-            sportDBs.leaguesDBAdapter.findBySport(sport.name)?.let { league ->
+            sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
                 sportOperation.getLeaders(sport, league.activeSeasonYear, league.activeSeasonType)?.let { leadersRes ->
-                    sportDBs.leadersDBAdapter.save(listOf(leadersRes))
+                    sportDBs.leadersDB.save(listOf(leadersRes))
                 }
             }
             delay(6 * 60 * 60 * 1000)
@@ -108,15 +108,15 @@ class SportHandler(
 
     private suspend fun getSchedules(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            val teams = sportDBs.teamsDBAdapter.findBySport(sport.name)
+            val teams = sportDBs.teamsDB.findBySport(sport.name)
             teams.map { it.teamId }.map { teamId ->
                 async {
                     sportOperation.getSchedule(sport, teamId)
                 }
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
-                    sportDBs.schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
-                    sportDBs.competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
+                    sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
+                    sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
                     addGamePosts(sport, teams, schedulesRes)
                 }
             }
@@ -169,15 +169,15 @@ class SportHandler(
 
     private suspend fun getRosters(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            sportDBs.teamsDBAdapter.findBySport(sport.name).map { it.teamId }.map { teamId ->
+            sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.map { teamId ->
                 async {
                     sportOperation.getRoster(sport, teamId)
                 }
             }.awaitAll().filterNotNull().let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
-                    sportDBs.rostersDBAdapter.save(rostersRes.map { it.toEntity() })
-                    sportDBs.athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
-                    sportDBs.coachesDBAdapter.save(rostersRes.mapNotNull { it.coach })
+                    sportDBs.rostersDB.save(rostersRes.map { it.toEntity() })
+                    sportDBs.athletesDB.save(rostersRes.flatMap { it.athletes })
+                    sportDBs.coachesDB.save(rostersRes.mapNotNull { it.coach })
                 }
             }
         }
@@ -240,8 +240,8 @@ class SportHandler(
         inactiveCompetitionIds: List<String>,
     ) = coroutineScope {
         if(competitions.isNotEmpty() && scoreboard != lastSentScoreboard){
-            sportDBs.scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
-            sportDBs.competitionsDBAdapter.save(competitions)
+            sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
+            sportDBs.competitionsDB.save(competitions)
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboard)}"
@@ -266,7 +266,7 @@ class SportHandler(
             // map result to teams
             if(allBoxScores != lastSentBoxScores) {
                 // map result to teams
-                sportDBs.boxscoresDBAdapter.save(newBoxScores)
+                sportDBs.boxscoresDB.save(newBoxScores)
                 eventService.publish(
                     MessageType.BOX_SCORES.name,
                     "$sport:${Json.encodeToString(allBoxScores)}"

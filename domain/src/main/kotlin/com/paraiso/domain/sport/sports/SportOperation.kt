@@ -17,6 +17,16 @@ interface SportOperation {
     suspend fun getStandings(sport: SiteRoute): AllStandings?
     suspend fun getTeams(sport: SiteRoute): List<Team>
     suspend fun getRoster(sport: SiteRoute, teamId: String): Roster?
-    suspend fun getLeaders(sport: SiteRoute, season: String, type: String): StatLeaders?
+    suspend fun getLeaders(
+        sport: SiteRoute,
+        season: String,
+        type: String
+    ): StatLeaders?
+    suspend fun getTeamLeaders(
+        sport: SiteRoute,
+        season: String,
+        type: String,
+        teamId: String
+    ): StatLeaders?
     suspend fun getSchedule(sport: SiteRoute, teamId: String): Schedule?
 }

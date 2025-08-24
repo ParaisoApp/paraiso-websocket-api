@@ -1,31 +1,30 @@
 package com.paraiso.domain.admin
 
 import com.paraiso.domain.messageTypes.Report
-import com.paraiso.domain.posts.toResponse
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 class AdminApi(
-    private val postReportsDBAdapter: PostReportsDBAdapter,
-    private val userReportsDBAdapter: UserReportsDBAdapter
+    private val postReportsDB: PostReportsDB,
+    private val userReportsDB: UserReportsDB
 ) {
     suspend fun getUserReports() =
-        userReportsDBAdapter.getAll().map { userReport ->
+        userReportsDB.getAll().map { userReport ->
             userReport.toResponse()
         }
 
     suspend fun getPostReports() =
-        postReportsDBAdapter.getAll().map { postReport ->
+        postReportsDB.getAll().map { postReport ->
             postReport.toResponse()
         }
 
     suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
         launch {
-            val modifiedCount = userReportsDBAdapter.addUserReport(report.id, sessionUserId)
+            val modifiedCount = userReportsDB.addUserReport(report.id, sessionUserId)
             if (modifiedCount == 0L) {
-                userReportsDBAdapter.save(
+                userReportsDB.save(
                     listOf(
                         UserReport(
                             id = report.id,
@@ -42,9 +41,9 @@ class AdminApi(
     suspend fun reportPost(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
         launch {
-            val modifiedCount = postReportsDBAdapter.addPostReport(report.id, sessionUserId)
+            val modifiedCount = postReportsDB.addPostReport(report.id, sessionUserId)
             if (modifiedCount == 0L) {
-                postReportsDBAdapter.save(
+                postReportsDB.save(
                     listOf(
                         PostReport(
                             id = report.id,
