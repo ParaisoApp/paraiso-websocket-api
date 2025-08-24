@@ -139,54 +139,56 @@ class SportHandler(
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
-                    addGamePosts(sport, teams, schedulesRes)
+                    addTeamPosts(sport, teams, schedulesRes)
                 }
             }
         }
     }
 
-    private fun addGamePosts(
+    private fun addTeamPosts(
         sport: SiteRoute,
         teams: List<Team>,
         schedules: List<Schedule>
     ) {
-        if (
-            !ServerState.posts.map { it.key }
-                .contains(schedules.firstOrNull()?.events?.firstOrNull()?.id)
-        ) {
-            // add posts for team sport route - separate for focused discussion
-            ServerState.posts.putAll(
-                schedules.associate {
-                    teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
-                }.flatMap { (key, values) ->
-                    values.map { competition ->
-                        "$TEAM_PREFIX${competition.id}-$key" to Post(
-                            id = "$TEAM_PREFIX${competition.id}-$key",
-                            title = competition.shortName,
-                            content = "${competition.date}-${competition.shortName}",
-                            type = PostType.GAME,
-                            parentId = "/s/${sport.name.lowercase()}/t/$key",
-                            rootId = "$TEAM_PREFIX${competition.id}-$key",
-                            data = "$TEAM_PREFIX${competition.id}-$key",
-                        )
-                    }
-                }
-            )
-            // add posts for base sport route
-            ServerState.posts.putAll(
-                schedules.flatMap { it.events }.toSet().associate { competition ->
-                    "$GAME_PREFIX${competition.id}" to Post(
-                        id = "$GAME_PREFIX${competition.id}",
+        // add posts for team sport route - separate for focused discussion
+        ServerState.posts.putAll(
+            schedules.associate {
+                teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
+            }.flatMap { (key, values) ->
+                values.map { competition ->
+                    "$TEAM_PREFIX${competition.id}-$key" to Post(
+                        id = "$TEAM_PREFIX${competition.id}-$key",
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,
-                        parentId = sport.name,
-                        rootId = "$GAME_PREFIX${competition.id}",
-                        data = "${competition.date}-${competition.shortName}",
+                        parentId = "/s/${sport.name.lowercase()}/t/$key",
+                        rootId = "$TEAM_PREFIX${competition.id}-$key",
+                        data = "$TEAM_PREFIX${competition.id}-$key",
                     )
                 }
-            )
-        }
+            }
+        )
+    }
+
+
+    private fun addGamePosts(
+        sport: SiteRoute,
+        competitions: List<Competition>
+    ) {
+        // add posts for base sport route
+        ServerState.posts.putAll(
+            competitions.associate { competition ->
+                "$GAME_PREFIX${competition.id}" to Post(
+                    id = "$GAME_PREFIX${competition.id}",
+                    title = competition.shortName,
+                    content = "${competition.date}-${competition.shortName}",
+                    type = PostType.GAME,
+                    parentId = sport.name,
+                    rootId = "$GAME_PREFIX${competition.id}",
+                    data = "${competition.date}-${competition.shortName}",
+                )
+            }
+        )
     }
 
     private suspend fun getRosters(sport: SiteRoute) = coroutineScope {
@@ -214,7 +216,6 @@ class SportHandler(
                     true,
                     emptyList()
                 )
-                lastSentScoreboard = scoreboard
             }
             var delayBoxScore = 1
             while (isActive) {
@@ -268,8 +269,12 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboard)}"
             )
-            lastSentScoreboard = scoreboard
             if(enableBoxScore) getBoxscores(sport, competitions.map { it.id }, inactiveCompetitionIds)
+            if(scoreboard.competitions.map { it.id } != lastSentScoreboard?.competitions?.map { it.id }){
+                //generate game posts first time scoreboard is seen
+                addGamePosts(sport, scoreboard.competitions)
+            }
+            lastSentScoreboard = scoreboard
         }
     }
 

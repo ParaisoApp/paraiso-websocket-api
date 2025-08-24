@@ -5,6 +5,12 @@ import com.paraiso.domain.users.UserRole
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class PostSearchInfo(
+    val postSearchIds: Set<String>,
+    val postFilters: FilterTypes
+)
+
+@Serializable
 data class Ban(
     val userId: String
 )

@@ -141,16 +141,16 @@ fun Post.toResponse() = PostResponse(
     updatedOn = updatedOn
 )
 
-fun generateBasePost(basePostId: String, basePostName: String, subPosts: Set<String>) = Post(
-    id = basePostId,
+fun generateBasePost(id: String?, name: String?, subPosts: Set<String>) = Post(
+    id = id,
     userId = null,
-    title = basePostName,
+    title = name,
     content = null,
     type = PostType.SUPER,
     media = null,
     votes = emptyMap(),
     parentId = Constants.SYSTEM,
-    rootId = basePostId,
+    rootId = id,
     status = PostStatus.ACTIVE,
     data = null,
     subPosts = subPosts,

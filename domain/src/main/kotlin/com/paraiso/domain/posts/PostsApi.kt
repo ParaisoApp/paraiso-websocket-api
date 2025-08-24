@@ -39,6 +39,10 @@ class PostsApi {
     fun getByIdBasic(postSearchId: String) =
         ServerState.posts[postSearchId]
 
+    fun getByIdsBasic(
+        postSearchIds: Set<String>
+    ) = ServerState.posts.filter { (key, _) -> postSearchIds.contains(key)}
+
     // search by partial for autocomplete
     fun getByPartial(search: String) =
         ServerState.posts.values.filter {
