@@ -170,27 +170,6 @@ class SportHandler(
         )
     }
 
-
-    private fun addGamePosts(
-        sport: SiteRoute,
-        competitions: List<Competition>
-    ) {
-        // add posts for base sport route
-        ServerState.posts.putAll(
-            competitions.associate { competition ->
-                "$GAME_PREFIX${competition.id}" to Post(
-                    id = "$GAME_PREFIX${competition.id}",
-                    title = competition.shortName,
-                    content = "${competition.date}-${competition.shortName}",
-                    type = PostType.GAME,
-                    parentId = sport.name,
-                    rootId = "$GAME_PREFIX${competition.id}",
-                    data = "${competition.date}-${competition.shortName}",
-                )
-            }
-        )
-    }
-
     private suspend fun getRosters(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
             sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.map { teamId ->
@@ -208,6 +187,7 @@ class SportHandler(
     }
     private suspend fun buildScoreboard(sport: SiteRoute) {
         coroutineScope {
+            //send full scoreboard on initial startup
             sportClient.getScoreboard(sport)?.let { scoreboard ->
                 saveScoreboardAndGetBoxscores(
                     sport,
@@ -220,6 +200,7 @@ class SportHandler(
             var delayBoxScore = 1
             while (isActive) {
                 delay(10 * 1000)
+                //use existing competitions to delay data transfer where possible
                 lastSentScoreboard?.competitions?.let { competitions ->
                     val earliestTime = competitions.minOf { Instant.parse(it.date) }
                     val allStates = competitions.map { it.status.state }.toSet()
@@ -301,5 +282,25 @@ class SportHandler(
                 lastSentBoxScores = allBoxScores
             }
         }
+    }
+
+    private fun addGamePosts(
+        sport: SiteRoute,
+        competitions: List<Competition>
+    ) {
+        // add posts for base sport route
+        ServerState.posts.putAll(
+            competitions.associate { competition ->
+                "$GAME_PREFIX${competition.id}" to Post(
+                    id = "$GAME_PREFIX${competition.id}",
+                    title = competition.shortName,
+                    content = "${competition.date}-${competition.shortName}",
+                    type = PostType.GAME,
+                    parentId = sport.name,
+                    rootId = "$GAME_PREFIX${competition.id}",
+                    data = "${competition.date}-${competition.shortName}",
+                )
+            }
+        )
     }
 }
