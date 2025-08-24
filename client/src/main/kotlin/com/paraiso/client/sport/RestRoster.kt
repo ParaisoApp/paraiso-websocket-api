@@ -47,6 +47,7 @@ data class RestCoach(
 
 fun RestRosterNested.toDomain(sport: SiteRoute) = RosterDomain(
     id = "$sport-${team.id}",
+    sport = sport,
     athletes = athletes.flatMap { restAthleteNested -> restAthleteNested.items.map { it.toDomain(team.abbreviation) } },
     coach = coach.firstOrNull()?.toDomain(),
     teamId = team.id
@@ -54,6 +55,7 @@ fun RestRosterNested.toDomain(sport: SiteRoute) = RosterDomain(
 
 fun RestRoster.toDomain(sport: SiteRoute) = RosterDomain(
     id = "$sport-${team.id}",
+    sport = sport,
     athletes = athletes.map { it.toDomain(team.abbreviation) },
     coach = coach.firstOrNull()?.toDomain(),
     teamId = team.id

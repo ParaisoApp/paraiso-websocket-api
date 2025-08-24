@@ -109,7 +109,7 @@ class BBallHandler(
 
     private suspend fun getSchedules() = coroutineScope {
         if (autoBuild) {
-            val teams = sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL)
+            val teams = sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL.name)
             teams.map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getSchedule(teamId)
@@ -169,7 +169,7 @@ class BBallHandler(
 
     private suspend fun getRosters() = coroutineScope {
         if (autoBuild) {
-            sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.teamId }.map { teamId ->
+            sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL.name).map { it.teamId }.map { teamId ->
                 async {
                     bBallOperation.getRoster(teamId)
                 }

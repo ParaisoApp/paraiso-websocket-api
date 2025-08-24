@@ -1,18 +1,11 @@
 package com.paraiso.com.paraiso.server.plugins.jobs
 
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.sport.data.BoxScoreResponse
-import com.paraiso.domain.sport.data.FullTeam
-import com.paraiso.domain.sport.data.FullTeamResponse
-import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.toResponse
 import com.paraiso.domain.sport.sports.SportState
-import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.server.util.sendTypedMessage
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class SportJobs() {

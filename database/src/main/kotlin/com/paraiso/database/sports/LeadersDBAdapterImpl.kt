@@ -16,11 +16,11 @@ import kotlinx.coroutines.flow.firstOrNull
 class LeadersDBAdapterImpl(database: MongoDatabase) : LeadersDBAdapter {
     private val collection = database.getCollection("leaders", StatLeaders::class.java)
 
-    override suspend fun findBySport(sport: SiteRoute) =
+    override suspend fun findBySport(sport: String) =
         collection.find(eq(ID, sport)).firstOrNull()
 
     override suspend fun findBySportAndSeasonAndType(
-        sport: SiteRoute,
+        sport: String,
         season: String,
         type: String
     ) =

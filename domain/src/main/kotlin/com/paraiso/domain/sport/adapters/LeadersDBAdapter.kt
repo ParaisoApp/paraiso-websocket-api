@@ -5,9 +5,9 @@ import com.paraiso.domain.sport.data.Season
 import com.paraiso.domain.sport.data.StatLeaders
 
 interface LeadersDBAdapter {
-    suspend fun findBySport(sport: SiteRoute): StatLeaders?
+    suspend fun findBySport(sport: String): StatLeaders?
     suspend fun findBySportAndSeasonAndType(
-        sport: SiteRoute,
+        sport: String,
         season: String,
         type: String
     ): StatLeaders?

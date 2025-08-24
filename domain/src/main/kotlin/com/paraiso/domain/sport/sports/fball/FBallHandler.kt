@@ -11,7 +11,6 @@ import com.paraiso.domain.sport.data.BoxScoreResponse
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
-import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.sport.sports.SportDBs
@@ -111,7 +110,7 @@ class FBallHandler(
 
     private suspend fun getSchedules() = coroutineScope {
         if (autoBuild) {
-            val teams = sportDBs.teamsDBAdapter.findBySport(SiteRoute.FOOTBALL)
+            val teams = sportDBs.teamsDBAdapter.findBySport(SiteRoute.FOOTBALL.name)
             teams.map { it.teamId }.map { teamId ->
                 async {
                     fBallOperation.getSchedule(teamId)
@@ -170,7 +169,7 @@ class FBallHandler(
 
     private suspend fun getRosters() = coroutineScope {
         if (autoBuild) {
-            sportDBs.teamsDBAdapter.findBySport(SiteRoute.FOOTBALL).map { it.teamId }.map { teamId ->
+            sportDBs.teamsDBAdapter.findBySport(SiteRoute.FOOTBALL.name).map { it.teamId }.map { teamId ->
                 async {
                     fBallOperation.getRoster(teamId)
                 }

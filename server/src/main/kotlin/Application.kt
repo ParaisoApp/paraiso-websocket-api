@@ -9,8 +9,7 @@ import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
 import com.paraiso.com.paraiso.api.posts.postsController
 import com.paraiso.com.paraiso.api.routes.routesController
-import com.paraiso.com.paraiso.api.sports.bball.bballController
-import com.paraiso.com.paraiso.api.sports.fball.fballController
+import com.paraiso.com.paraiso.api.sports.sportController
 import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.userSessionsController
 import com.paraiso.com.paraiso.api.users.usersController
@@ -37,10 +36,9 @@ import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportDBs
-import com.paraiso.domain.sport.sports.bball.BBallApi
 import com.paraiso.domain.sport.sports.bball.BBallHandler
-import com.paraiso.domain.sport.sports.fball.FBallApi
 import com.paraiso.domain.sport.sports.fball.FBallHandler
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
@@ -142,8 +140,7 @@ fun Application.module(jobScope: CoroutineScope){
     // setup apis and scopes
     val routesApi = RoutesApi(RoutesDBAdapterImpl(database))
     val authApi = AuthApi()
-    val bballApi = BBallApi(sportsDBs)
-    val fballApi = FBallApi(sportsDBs)
+    val sportApi = SportApi(sportsDBs)
     val postsApi = PostsApi()
     val usersApi = UsersApi(usersDb)
     val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
@@ -158,8 +155,7 @@ fun Application.module(jobScope: CoroutineScope){
         usersApi,
         userSessionsApi,
         userChatsApi,
-        bballApi,
-        fballApi,
+        sportApi,
         metadataApi
     )
     // only launch data fetching jobs on a single server - will split off to microservice
@@ -241,8 +237,7 @@ fun Application.configureSockets(handler: WebSocketHandler, services: AppService
             usersController(services.usersApi)
             userSessionsController(services.userSessionsApi)
             userChatsController(services.userChatsApi)
-            bballController(services.bBallApi)
-            fballController(services.fBallApi)
+            sportController(services.sportApi)
             metadataController(services.metadataApi)
             adminController(services.adminApi)
             routesController(services.routesApi)

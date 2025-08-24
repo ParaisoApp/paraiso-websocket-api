@@ -1,5 +1,6 @@
 package com.paraiso.domain.sport.data
 
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,6 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Schedule(
     @SerialName(ID) val id: String,
+    val sport: SiteRoute,
     val season: Season,
     val teamId: String,
     val events: List<Competition>
@@ -93,6 +95,7 @@ data class VenueResponse(
 @Serializable
 data class ScheduleEntity(
     @SerialName(ID) val id: String,
+    val sport: SiteRoute,
     val season: SeasonEntity,
     val teamId: String,
     val events: List<String>
@@ -152,6 +155,7 @@ fun Venue.toResponse() =
 fun Schedule.toEntity() =
     ScheduleEntity(
         id = id,
+        sport = sport,
         season = season.toEntity(),
         teamId = teamId,
         events = events.map { it.id }
@@ -168,6 +172,7 @@ fun Season.toEntity() =
 fun ScheduleEntity.toDomain(events: List<Competition>) =
     Schedule(
         id = id,
+        sport = sport,
         season = season.toDomain(),
         teamId = teamId,
         events = events

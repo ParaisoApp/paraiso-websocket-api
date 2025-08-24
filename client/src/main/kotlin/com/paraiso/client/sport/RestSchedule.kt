@@ -92,6 +92,7 @@ data class RestSeason(
 
 fun RestSchedule.toDomain(sport: SiteRoute) = ScheduleDomain(
     id = "$sport-${team.id}-${season.year}-${season.type}",
+    sport = sport,
     teamId = team.id,
     season = season.toDomain(),
     events = events.map { it.competitions.first().toDomain(it.name, it.shortName) }

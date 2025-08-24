@@ -16,7 +16,7 @@ class LeaguesDBAdapterImpl(database: MongoDatabase) : LeaguesDBAdapter {
     override suspend fun findById(id: String) =
         collection.find(Filters.eq(ID, id)).firstOrNull()
 
-    override suspend fun findBySport(sport: SiteRoute) =
+    override suspend fun findBySport(sport: String) =
         collection.find(Filters.eq(League::sport.name, sport)).firstOrNull()
 
     override suspend fun save(leagues: List<League>): Int {

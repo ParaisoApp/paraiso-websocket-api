@@ -1,6 +1,6 @@
-package com.paraiso.com.paraiso.api.sports.fball
+package com.paraiso.com.paraiso.api.sports
 
-import com.paraiso.domain.sport.sports.fball.FBallApi
+import com.paraiso.domain.sport.sports.SportApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
@@ -8,23 +8,30 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 
-fun Route.fballController(fBallApi: FBallApi) {
-    route("football") {
-        get("/league") {
-            fBallApi.getLeague()?.let {
+fun Route.sportController(sportApi: SportApi) {
+    route("s") {
+        get("/leagues") {
+            sportApi.getLeague(
+                call.request.queryParameters["sport"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/teams") {
-            call.respond(HttpStatusCode.OK, fBallApi.getTeams())
+            call.respond(HttpStatusCode.OK, sportApi.getTeams(
+                call.request.queryParameters["sport"] ?: ""
+            ))
         }
         get("/standings") {
-            fBallApi.getStandings()?.let {
+            sportApi.getStandings(
+                call.request.queryParameters["sport"] ?: ""
+                )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/leaders") {
-            fBallApi.getLeaders(
+            sportApi.getLeaders(
+                call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["seasonYear"] ?: "",
                 call.request.queryParameters["seasonType"] ?: ""
             )?.let {
@@ -32,25 +39,34 @@ fun Route.fballController(fBallApi: FBallApi) {
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/leader_cats") {
-            fBallApi.getLeaderCategories()?.let {
+            sportApi.getLeaderCategories(
+                call.request.queryParameters["sport"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/findTeamByAbbr") {
-            fBallApi.getTeamByAbbr(call.request.queryParameters["teamAbbr"] ?: "")?.let {
+            sportApi.getTeamByAbbr(
+                call.request.queryParameters["sport"] ?: "",
+                call.request.queryParameters["teamAbbr"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/team_roster") {
-            fBallApi.getTeamRoster(call.request.queryParameters["teamId"] ?: "")?.let {
+            sportApi.getTeamRoster(
+                call.request.queryParameters["sport"] ?: "",
+                call.request.queryParameters["teamId"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
         get("/team_schedule") {
-            fBallApi.getTeamSchedule(
+            sportApi.getTeamSchedule(
+                call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamId"] ?: "",
-                call.request.queryParameters["seasonYear"] ?: "",
-                call.request.queryParameters["seasonType"] ?: ""
+                call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
+                call.request.queryParameters["seasonType"]?.toIntOrNull() ?: 0
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
