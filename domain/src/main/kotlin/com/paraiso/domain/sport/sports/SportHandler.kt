@@ -187,49 +187,50 @@ class SportHandler(
     }
     private suspend fun buildScoreboard(sport: SiteRoute) {
         coroutineScope {
-            //send full scoreboard on initial startup
-            sportClient.getScoreboard(sport)?.let { scoreboard ->
-                saveScoreboardAndGetBoxscores(
-                    sport,
-                    scoreboard,
-                    scoreboard.competitions,
-                    true,
-                    emptyList()
-                )
-            }
-            var delayBoxScore = 1
+            var delayBoxScore = 0
             while (isActive) {
-                delay(10 * 1000)
-                //use existing competitions to delay data transfer where possible
-                lastSentScoreboard?.competitions?.let { competitions ->
-                    val earliestTime = competitions.minOf { Instant.parse(it.date) }
-                    val allStates = competitions.map { it.status.state }.toSet()
-                    // if current time is beyond the earliest start time start fetching the scoreboard
-                    if (Clock.System.now() > earliestTime) {
-                        sportClient.getScoreboard(sport)?.let { scoreboard ->
-                            val activeCompetitions = competitions.filter { it.status.state == "in" }
-                            val inactiveCompetitions = competitions.filter { it.status.state != "in" }
+                sportClient.getScoreboard(sport)?.let { scoreboard ->
+                    //if completely new scoreboard save it and generate game posts
+                    if(scoreboard.competitions.map { it.id } != lastSentScoreboard?.competitions?.map { it.id }){
+                        saveScoreboardAndGetBoxscores(
+                            sport,
+                            scoreboard,
+                            scoreboard.competitions,
+                            true,
+                            emptyList()
+                        )
+                        addGamePosts(sport, scoreboard.competitions)
+                    }else{
+                        //grab earliest game's start time and state of all games
+                        val earliestTime = scoreboard.competitions.minOf { Instant.parse(it.date) }
+                        val allStates = scoreboard.competitions.map { it.status.state }.toSet()
+                        //if some games are past the earliest start time update scoreboard and box scores
+                        if (Clock.System.now() > earliestTime) {
                             saveScoreboardAndGetBoxscores(
                                 sport,
                                 scoreboard,
-                                activeCompetitions,
+                                scoreboard.competitions.filter { it.status.state == "in" },
                                 delayBoxScore == 0,
-                                inactiveCompetitions.map { it.toString() }
+                                scoreboard.competitions.filter { it.status.state != "in" }.map { it.toString() }
                             )
-                            if (!allStates.contains("pre") && !allStates.contains("in") && Clock.System.now() > earliestTime.plus(1.hours)) {
-                                // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
+                            // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
+                            if (
+                                !allStates.contains("pre") &&
+                                !allStates.contains("in") &&
+                                Clock.System.now() > earliestTime.plus(1.hours)
+                            ) {
                                 delay(60 * 60 * 1000)
                             }
+                            // else if current time is before the earliest time, delay until the earliest time
+                        } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
+                            delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
+                            delayBoxScore = 0
                         }
-                        // else if current time is before the earliest time, delay until the earliest time
-                    } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
-                        delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
-                        delayBoxScore = 0
-                    } else {
-                        delay(1 * 60 * 1000) // delay one minute (game start not always in sync with clock)
                     }
                 }
-                //delay boxscore for 30 ticks of delay (every 5 minutes)
+                //retrieve scoreboard every ten seconds
+                delay(10 * 1000)
+                //delay boxscore fetch for 30 ticks of delay (every 5 minutes)
                 if(delayBoxScore == 30) delayBoxScore = 0
                 else delayBoxScore++
             }
@@ -239,22 +240,19 @@ class SportHandler(
     private suspend fun saveScoreboardAndGetBoxscores(
         sport: SiteRoute,
         scoreboard: Scoreboard,
-        competitions: List<Competition>,
+        activeCompetitions: List<Competition>,
         enableBoxScore: Boolean,
         inactiveCompetitionIds: List<String>,
     ) = coroutineScope {
-        if(competitions.isNotEmpty() && scoreboard != lastSentScoreboard){
+        //if some competitions are active and there's a change in the scoreboard update
+        if(activeCompetitions.isNotEmpty() && scoreboard != lastSentScoreboard){
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
-            sportDBs.competitionsDB.save(competitions)
+            sportDBs.competitionsDB.save(activeCompetitions)
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboard)}"
             )
-            if(enableBoxScore) getBoxscores(sport, competitions.map { it.id }, inactiveCompetitionIds)
-            if(scoreboard.competitions.map { it.id } != lastSentScoreboard?.competitions?.map { it.id }){
-                //generate game posts first time scoreboard is seen
-                addGamePosts(sport, scoreboard.competitions)
-            }
+            if(enableBoxScore) getBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
             lastSentScoreboard = scoreboard
         }
     }
