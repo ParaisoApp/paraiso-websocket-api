@@ -32,8 +32,8 @@ fun Route.sportController(sportApi: SportApi) {
         get("/leaders") {
             sportApi.getLeaders(
                 call.request.queryParameters["sport"] ?: "",
-                call.request.queryParameters["seasonYear"] ?: "",
-                call.request.queryParameters["seasonType"] ?: ""
+                call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
+                call.request.queryParameters["seasonType"]?.toIntOrNull() ?: 0
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
@@ -53,7 +53,7 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        get("/team_roster") {
+        get("/teamRoster") {
             sportApi.getTeamRoster(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamId"] ?: ""
@@ -61,8 +61,18 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
-        get("/team_schedule") {
+        get("/teamSchedule") {
             sportApi.getTeamSchedule(
+                call.request.queryParameters["sport"] ?: "",
+                call.request.queryParameters["teamId"] ?: "",
+                call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
+                call.request.queryParameters["seasonType"]?.toIntOrNull() ?: 0
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
+        get("/teamLeaders") {
+            sportApi.getTeamLeaders(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamId"] ?: "",
                 call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,

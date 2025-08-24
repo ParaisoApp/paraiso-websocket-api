@@ -18,8 +18,8 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
 
     override suspend fun findBySportAndSeasonAndType(
         sport: String,
-        season: String,
-        type: String
+        season: Int,
+        type: Int
     ) =
         collection.find(
             and(
@@ -28,6 +28,20 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
                 eq(StatLeaders::type.name, type),
             )
         ).firstOrNull()
+
+    override suspend fun findBySportAndSeasonAndTypeAndTeam(
+        sport: String,
+        teamId: String,
+        season: Int,
+        type: Int
+    ): StatLeaders?=
+    collection.find(
+        and(
+            eq(StatLeaders::sport.name, sport),
+            eq(StatLeaders::season.name, season),
+            eq(StatLeaders::type.name, type),
+        )
+    ).firstOrNull()
 
     override suspend fun save(statLeaders: List<StatLeaders>): Int {
         val bulkOps = statLeaders.map { statLeader ->

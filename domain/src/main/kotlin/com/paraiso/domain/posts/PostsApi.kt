@@ -103,6 +103,7 @@ class PostsApi {
                 //val userFollowing = setOf<String>()
                 if (root.id != null) returnPosts[root.id] = root
                 val refQueue = ArrayDeque(listOf(basePost))
+                //TODO FIX GAME POSTS FETCH FOR FRONTEND - REF SCOREBOARD FOR IDS
                 ServerState.posts
                     .filter { (_, gamePost) ->
                         gamePost.type == PostType.GAME &&

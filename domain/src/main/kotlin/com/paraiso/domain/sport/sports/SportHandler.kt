@@ -31,7 +31,7 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.hours
 
 class SportHandler(
-    private val sportOperation: SportOperation,
+    private val sportClient: SportClient,
     private val routesApi: RoutesApi,
     private val sportDBs: SportDBs,
     private val eventService: EventService
@@ -45,13 +45,14 @@ class SportHandler(
         launch { getStandings(sport) }
         launch { getTeams(sport) }
         launch { getLeaders(sport) }
+        launch { getTeamLeaders(sport) }
         launch { getRosters(sport) }
         launch { getSchedules(sport) }
     }
 
     private suspend fun getLeague(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            sportOperation.getLeague(sport)?.let { leagueRes ->
+            sportClient.getLeague(sport)?.let { leagueRes ->
                 sportDBs.leaguesDB.save(listOf(leagueRes))
             }
         }
@@ -59,7 +60,7 @@ class SportHandler(
 
     private suspend fun getStandings(sport: SiteRoute) = coroutineScope {
         while (isActive) {
-            sportOperation.getStandings(sport)?.let { standingsRes ->
+            sportClient.getStandings(sport)?.let { standingsRes ->
                 sportDBs.standingsDB.save(listOf(standingsRes))
             }
             delay(12 * 60 * 60 * 1000)
@@ -68,7 +69,7 @@ class SportHandler(
 
     private suspend fun getTeams(sport: SiteRoute) = coroutineScope {
         if (autoBuild) {
-            sportOperation.getTeams(sport).let { teamsRes ->
+            sportClient.getTeams(sport).let { teamsRes ->
                 launch {
                     addTeamRoutes(sport, teamsRes)
                 }
@@ -98,8 +99,29 @@ class SportHandler(
     private suspend fun getLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
-                sportOperation.getLeaders(sport, league.activeSeasonYear, league.activeSeasonType)?.let { leadersRes ->
+                sportClient.getLeaders(
+                    sport, league.activeSeasonYear, league.activeSeasonType
+                )?.let { leadersRes ->
                     sportDBs.leadersDB.save(listOf(leadersRes))
+                }
+            }
+            delay(6 * 60 * 60 * 1000)
+        }
+    }
+
+    private suspend fun getTeamLeaders(sport: SiteRoute) = coroutineScope {
+        while (isActive) {
+            sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
+                sportDBs.teamsDB.findBySport(sport.name).map { team ->
+                    async {
+                        sportClient.getTeamLeaders(
+                            sport, league.activeSeasonYear, league.activeSeasonType, team.teamId
+                        )
+                    }
+                }.awaitAll().filterNotNull().let { leadersRes ->
+                    if(leadersRes.isNotEmpty()){
+                        sportDBs.leadersDB.save(leadersRes)
+                    }
                 }
             }
             delay(6 * 60 * 60 * 1000)
@@ -111,7 +133,7 @@ class SportHandler(
             val teams = sportDBs.teamsDB.findBySport(sport.name)
             teams.map { it.teamId }.map { teamId ->
                 async {
-                    sportOperation.getSchedule(sport, teamId)
+                    sportClient.getSchedule(sport, teamId)
                 }
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
@@ -171,7 +193,7 @@ class SportHandler(
         if (autoBuild) {
             sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.map { teamId ->
                 async {
-                    sportOperation.getRoster(sport, teamId)
+                    sportClient.getRoster(sport, teamId)
                 }
             }.awaitAll().filterNotNull().let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
@@ -184,7 +206,7 @@ class SportHandler(
     }
     private suspend fun buildScoreboard(sport: SiteRoute) {
         coroutineScope {
-            sportOperation.getScoreboard(sport)?.let { scoreboard ->
+            sportClient.getScoreboard(sport)?.let { scoreboard ->
                 saveScoreboardAndGetBoxscores(
                     sport,
                     scoreboard,
@@ -202,7 +224,7 @@ class SportHandler(
                     val allStates = competitions.map { it.status.state }.toSet()
                     // if current time is beyond the earliest start time start fetching the scoreboard
                     if (Clock.System.now() > earliestTime) {
-                        sportOperation.getScoreboard(sport)?.let { scoreboard ->
+                        sportClient.getScoreboard(sport)?.let { scoreboard ->
                             val activeCompetitions = competitions.filter { it.status.state == "in" }
                             val inactiveCompetitions = competitions.filter { it.status.state != "in" }
                             saveScoreboardAndGetBoxscores(
@@ -258,7 +280,7 @@ class SportHandler(
     ) = coroutineScope {
         competitionIds.map { gameId ->
             async {
-                sportOperation.getGameStats(sport, gameId)
+                sportClient.getGameStats(sport, gameId)
             }
         }.awaitAll().filterNotNull().let { newBoxScores ->
             //add inactive boxscores

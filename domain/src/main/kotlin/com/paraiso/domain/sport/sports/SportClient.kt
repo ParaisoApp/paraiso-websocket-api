@@ -10,7 +10,7 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.StatLeaders
 import com.paraiso.domain.sport.data.Team
 
-interface SportOperation {
+interface SportClient {
     suspend fun getLeague(sport: SiteRoute): League?
     suspend fun getScoreboard(sport: SiteRoute): Scoreboard?
     suspend fun getGameStats(sport: SiteRoute, competitionId: String): BoxScore?
