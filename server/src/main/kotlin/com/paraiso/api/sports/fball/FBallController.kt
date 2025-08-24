@@ -10,6 +10,11 @@ import io.ktor.server.routing.route
 
 fun Route.fballController(fBallApi: FBallApi) {
     route("football") {
+        get("/league") {
+            fBallApi.getLeague()?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
         get("/teams") {
             call.respond(HttpStatusCode.OK, fBallApi.getTeams())
         }

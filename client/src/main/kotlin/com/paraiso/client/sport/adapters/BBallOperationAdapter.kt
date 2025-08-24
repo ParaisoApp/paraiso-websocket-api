@@ -2,6 +2,7 @@ package com.paraiso.client.sport.adapters
 
 import com.paraiso.client.sport.RestGameStats
 import com.paraiso.client.sport.RestLeaders
+import com.paraiso.client.sport.RestLeague
 import com.paraiso.client.sport.RestRoster
 import com.paraiso.client.sport.RestSchedule
 import com.paraiso.client.sport.RestScoreboard
@@ -11,6 +12,7 @@ import com.paraiso.client.sport.toDomain
 import com.paraiso.client.util.BaseAdapter
 import com.paraiso.client.util.ClientConfig
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.League
 import com.paraiso.domain.sport.sports.bball.BBallOperation
 import io.klogging.Klogging
 import io.ktor.client.call.body
@@ -32,6 +34,24 @@ class BBallOperationAdapter : BBallOperation, BaseAdapter, Klogging {
         private const val LIMIT = 10
         private val dispatcher = Dispatchers.IO
         private val clientConfig = ClientConfig()
+    }
+
+    override suspend fun getLeague(): League? = withContext(dispatcher) {
+        try {
+            val url = "${clientConfig.coreApiBaseUrl}${clientConfig.bballCoreUri}"
+            val response: RestLeague = getHttpClient().use { httpClient ->
+                httpClient.get(url).let {
+                    if (it.status != HttpStatusCode.OK) {
+                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                    }
+                    it.body()
+                }
+            }
+            response.toDomain(SiteRoute.BASKETBALL)
+        } catch (ex: Exception) {
+            logger.error("ex: $ex")
+            null
+        }
     }
 
     override suspend fun getScoreboard(): ScoreboardDomain? = withContext(dispatcher) {

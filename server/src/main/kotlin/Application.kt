@@ -24,6 +24,7 @@ import com.paraiso.database.sports.BoxscoresDBAdapterImpl
 import com.paraiso.database.sports.CoachesDBAdapterImpl
 import com.paraiso.database.sports.CompetitionsDBAdapterImpl
 import com.paraiso.database.sports.LeadersDBAdapterImpl
+import com.paraiso.database.sports.LeaguesDBAdapterImpl
 import com.paraiso.database.sports.RostersDBAdapterImpl
 import com.paraiso.database.sports.SchedulesDBAdapterImpl
 import com.paraiso.database.sports.ScoreboardsDBAdapterImpl
@@ -113,6 +114,7 @@ fun Application.module(jobScope: CoroutineScope){
     // setup DB
     val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
     val sportsDBs = SportDBs(
+        LeaguesDBAdapterImpl(database),
         StandingsDBAdapterImpl(database),
         TeamsDBAdapterImpl(database),
         RostersDBAdapterImpl(database),

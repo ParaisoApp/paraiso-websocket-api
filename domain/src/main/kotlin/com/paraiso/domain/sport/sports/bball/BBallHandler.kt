@@ -43,6 +43,7 @@ class BBallHandler(
     private var lastSentBoxScores = listOf<BoxScore>()
 
     suspend fun bootJobs() = coroutineScope {
+        launch { getLeague() }
         launch { buildScoreboard() }
         launch { getStandings() }
         launch { getTeams() }
@@ -51,12 +52,18 @@ class BBallHandler(
         launch { getSchedules() }
     }
 
+    private suspend fun getLeague() = coroutineScope {
+        if (autoBuild) {
+            bBallOperation.getLeague()?.let { leagueRes ->
+                sportDBs.leaguesDBAdapter.save(listOf(leagueRes))
+            }
+        }
+    }
+
     private suspend fun getStandings() = coroutineScope {
         while (isActive) {
-            bBallOperation.getStandings().also { standingsRes ->
-                if (standingsRes != null) {
-                    sportDBs.standingsDBAdapter.save(listOf(standingsRes))
-                }
+            bBallOperation.getStandings()?.let { standingsRes ->
+                sportDBs.standingsDBAdapter.save(listOf(standingsRes))
             }
             delay(12 * 60 * 60 * 1000)
         }
@@ -64,7 +71,7 @@ class BBallHandler(
 
     private suspend fun getTeams() = coroutineScope {
         if (autoBuild) {
-            bBallOperation.getTeams().also { teamsRes ->
+            bBallOperation.getTeams().let { teamsRes ->
                 launch {
                     addTeamRoutes(teamsRes)
                 }
@@ -107,7 +114,7 @@ class BBallHandler(
                 async {
                     bBallOperation.getSchedule(teamId)
                 }
-            }.awaitAll().filterNotNull().also { schedulesRes ->
+            }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
@@ -166,7 +173,7 @@ class BBallHandler(
                 async {
                     bBallOperation.getRoster(teamId)
                 }
-            }.awaitAll().filterNotNull().also { rostersRes ->
+            }.awaitAll().filterNotNull().let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
                     sportDBs.rostersDBAdapter.save(rostersRes.map { it.toEntity() })
                     sportDBs.athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
@@ -230,13 +237,14 @@ class BBallHandler(
         enableBoxScore: Boolean,
         inactiveCompetitionIds: List<String>,
     ) = coroutineScope {
-        if(competitions.isNotEmpty()){
+        if(competitions.isNotEmpty() && scoreboard != lastSentScoreboard){
             sportDBs.scoreboardsDBAdapter.save(listOf(scoreboard.toEntity()))
             sportDBs.competitionsDBAdapter.save(competitions)
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "${SiteRoute.BASKETBALL}:${Json.encodeToString(scoreboard)}"
             )
+            lastSentScoreboard = scoreboard
             if(enableBoxScore) getBoxscores(competitions.map { it.id }, inactiveCompetitionIds)
         }
     }

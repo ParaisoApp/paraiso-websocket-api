@@ -11,11 +11,11 @@ data class RestTeams(
 
 @Serializable
 data class Sport(
-    val leagues: List<League>
+    val leagues: List<RestLeagueTeams>
 )
 
 @Serializable
-data class League(
+data class RestLeagueTeams(
     val teams: List<TeamContainer>
 )
 

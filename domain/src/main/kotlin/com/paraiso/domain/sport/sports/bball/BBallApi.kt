@@ -22,6 +22,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Instant
 
 class BBallApi(private val sportDBs: SportDBs) {
+    suspend fun getLeague() = sportDBs.leaguesDBAdapter.findBySport(SiteRoute.BASKETBALL)?.toResponse()
     suspend fun getTeamByAbbr(teamAbbr: String) = sportDBs.teamsDBAdapter.findById("${SiteRoute.BASKETBALL}-$teamAbbr")?.toResponse()
     suspend fun getTeams() = sportDBs.teamsDBAdapter.findBySport(SiteRoute.BASKETBALL).map { it.toResponse() }.associateBy { it.id }
     suspend fun getStandings() = sportDBs.standingsDBAdapter.findById(SiteRoute.BASKETBALL.toString())?.standingsGroups?.associate { standingsGroup ->

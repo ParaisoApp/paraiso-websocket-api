@@ -45,12 +45,21 @@ class FBallHandler(
     private var lastSentBoxScores = listOf<BoxScore>()
 
     suspend fun bootJobs() = coroutineScope {
+        launch { getLeague() }
         launch { getScoreboard() }
         launch { getStandings() }
         launch { getTeams() }
         launch { getLeaders() }
         launch { getRosters() }
         launch { getSchedules() }
+    }
+
+    private suspend fun getLeague() = coroutineScope {
+        if (autoBuild) {
+            fBallOperation.getLeague()?.let { leagueRes ->
+                sportDBs.leaguesDBAdapter.save(listOf(leagueRes))
+            }
+        }
     }
 
     private suspend fun getStandings() = coroutineScope {
@@ -107,7 +116,7 @@ class FBallHandler(
                 async {
                     fBallOperation.getSchedule(teamId)
                 }
-            }.awaitAll().filterNotNull().also { schedulesRes ->
+            }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDBAdapter.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDBAdapter.save(schedulesRes.flatMap { it.events })
@@ -165,7 +174,7 @@ class FBallHandler(
                 async {
                     fBallOperation.getRoster(teamId)
                 }
-            }.awaitAll().filterNotNull().also { rostersRes ->
+            }.awaitAll().filterNotNull().let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
                     sportDBs.rostersDBAdapter.save(rostersRes.map { it.toEntity() })
                     sportDBs.athletesDBAdapter.save(rostersRes.flatMap { it.athletes })
