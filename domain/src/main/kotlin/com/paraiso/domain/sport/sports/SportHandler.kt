@@ -269,7 +269,7 @@ class SportHandler(
                 sportDBs.boxscoresDBAdapter.save(newBoxScores)
                 eventService.publish(
                     MessageType.BOX_SCORES.name,
-                    "$sport:${Json.encodeToString(newBoxScores)}"
+                    "$sport:${Json.encodeToString(allBoxScores)}"
                 )
                 lastSentBoxScores = allBoxScores
             }
