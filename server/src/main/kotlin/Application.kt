@@ -1,7 +1,7 @@
 package com.paraiso
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.paraiso.client.sport.SportOperationImpl
+import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.com.paraiso.AppServices
 import com.paraiso.com.paraiso.api.admin.adminController
 import com.paraiso.com.paraiso.api.auth.authController
@@ -159,7 +159,7 @@ fun Application.module(jobScope: CoroutineScope){
     )
     // only launch data fetching jobs on a single server - will split off to microservice
     if(serverId == MAIN_SERVER){
-        val sportOperationImpl = SportOperationImpl()
+        val sportOperationImpl = SportClientImpl()
         jobScope.launch {
             SportHandler(
                 sportOperationImpl,

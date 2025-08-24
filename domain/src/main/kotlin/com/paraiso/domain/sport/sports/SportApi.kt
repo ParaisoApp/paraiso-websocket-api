@@ -25,8 +25,29 @@ class SportApi(private val sportDBs: SportDBs) {
                 standingsSubGroup.divName to standingsSubGroup.standings.map { it.toResponse() }
             }
         }
-    suspend fun getLeaders(sport: String, season: String, type: String) =
+    suspend fun getLeaders(sport: String, season: Int, type: Int) =
         sportDBs.leadersDB.findBySportAndSeasonAndType(sport, season, type)?.categories?.let { categories ->
+            // grab athletes from DB and associate with their id
+            val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
+                sportDBs.athletesDB.findByIdsIn(athleteIds.map { it.toString() })
+            }.associateBy { it.id }
+            // associate each category with athlete name and stats
+            categories.associate {
+                it.displayName to it.leaders.mapNotNull { leader ->
+                    athletes[leader.athleteId.toString()]?.let { athlete ->
+                        LeaderResponse(
+                            athleteName = athlete.shortName,
+                            leaderStat = leader.value,
+                            teamAbbr = athlete.teamAbbr
+                        )
+                    }
+                }
+            }
+        }
+    suspend fun getTeamLeaders(sport: String, teamId: String, season: Int, type: Int) =
+        sportDBs.leadersDB.findBySportAndSeasonAndTypeAndTeam(
+            sport, teamId, season, type,
+        )?.categories?.let { categories ->
             // grab athletes from DB and associate with their id
             val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
                 sportDBs.athletesDB.findByIdsIn(athleteIds.map { it.toString() })
