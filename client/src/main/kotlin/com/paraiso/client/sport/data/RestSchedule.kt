@@ -86,8 +86,8 @@ data class RestScore(
 data class RestSeason(
     val year: Int,
     val type: Int,
-    val name: String,
-    val displayName: String
+    val name: String? = null,
+    val displayName: String? = null
 )
 
 fun RestSchedule.toDomain(sport: SiteRoute) = ScheduleDomain(

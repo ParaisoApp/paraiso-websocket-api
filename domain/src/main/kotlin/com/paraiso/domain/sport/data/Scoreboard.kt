@@ -1,6 +1,5 @@
 package com.paraiso.domain.sport.data
 
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -8,6 +7,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Scoreboard(
     val id: String,
+    val season: Season,
+    val week: Int?,
+    val day: String?,
     val competitions: List<Competition>
 ) { companion object }
 
@@ -38,6 +40,9 @@ data class Record(
 
 @Serializable
 data class ScoreboardResponse(
+    val season: Season,
+    val week: Int?,
+    val day: String?,
     val competitions: List<CompetitionResponse>
 )
 
@@ -68,11 +73,17 @@ data class TeamYearStatsResponse(
 @Serializable
 data class ScoreboardEntity(
     @SerialName(ID) val id: String,
+    val season: Season,
+    val week: Int?,
+    val day: String?,
     val competitions: List<String>
 )
 
 fun Scoreboard.toResponse() =
     ScoreboardResponse(
+        season = season,
+        week = week,
+        day = day,
         competitions = competitions.map { it.toResponse() }
     )
 
@@ -104,11 +115,22 @@ fun TeamYearStats.toResponse() =
 fun Scoreboard.toEntity() =
     ScoreboardEntity(
         id = id,
+        season = season,
+        week = week,
+        day = day,
         competitions = competitions.map { it.id }
     )
 
 fun Scoreboard.Companion.init() =
     Scoreboard(
         id = "UNKNOWN",
+        season = Season(
+            year = 1900,
+            type = 1,
+            name = null,
+            displayName = null
+        ),
+        week = null,
+        day = null,
         competitions = emptyList()
     )

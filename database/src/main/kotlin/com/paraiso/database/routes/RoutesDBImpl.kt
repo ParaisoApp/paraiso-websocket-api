@@ -20,6 +20,10 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
     override suspend fun findById(id: String) =
         collection.find(Filters.eq(ID, id)).firstOrNull()
 
+    //username stored in title for profile routes
+    override suspend fun findByUserName(userName: String): RouteDetails? =
+        collection.find(Filters.eq(RouteDetails::title.name, userName)).firstOrNull()
+
     override suspend fun save(routes: List<RouteDetails>): Int {
         val bulkOps = routes.map { route ->
             ReplaceOneModel(

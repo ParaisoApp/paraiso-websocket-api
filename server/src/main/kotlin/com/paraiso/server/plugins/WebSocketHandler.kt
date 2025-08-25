@@ -19,6 +19,7 @@ import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
@@ -42,6 +43,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -61,8 +63,28 @@ class WebSocketHandler(
         // session state
         val sessionState = SessionState()
         // check cookies to see if existing user
-        val currentUser = services.usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "") ?:
-            UserResponse.newUser(UUID.randomUUID().toString())
+        val checkExistingUser = services.usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "")
+        val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
+        launch{
+            // new user so create new route entry
+            if(checkExistingUser == null){
+                val now = Clock.System.now()
+                services.routesApi.saveRoutes(
+                    listOf(
+                        RouteDetails(
+                            id = "/p/${currentUser.id}",
+                            route = SiteRoute.PROFILE,
+                            modifier = null,
+                            title = currentUser.name ?: "UNKNOWN",
+                            userFavorites = emptySet(),
+                            about = null,
+                            createdOn = now,
+                            updatedOn = now
+                        )
+                    )
+                )
+            }
+        }
         launch{
             //create or update session connected status
             eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->

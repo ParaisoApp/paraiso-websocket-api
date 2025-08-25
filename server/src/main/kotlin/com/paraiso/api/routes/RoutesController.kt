@@ -15,5 +15,10 @@ fun Route.routesController(routesApi: RoutesApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.InternalServerError) }
         }
+        get("byUserName") {
+            routesApi.getById(call.request.queryParameters["name"] ?: "")?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+        }
     }
 }

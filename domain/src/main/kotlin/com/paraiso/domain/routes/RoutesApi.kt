@@ -2,6 +2,7 @@ package com.paraiso.domain.routes
 
 class RoutesApi(private val routesDB: RoutesDB) {
     suspend fun getById(id: String) = routesDB.findById(id)?.toResponse()
+    suspend fun getByUserName(userName: String) = routesDB.findByUserName(userName)?.toResponse()
 
     suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDB.save(routeDetails)
 

@@ -9,7 +9,20 @@ import com.paraiso.domain.sport.data.TeamYearStats as TeamYearStatsDomain
 
 @Serializable
 data class RestScoreboard(
+    val season: RestSeason,
+    val week: RestWeek? = null,
+    val day: RestDay? = null,
     val events: List<RestEvent>
+)
+
+@Serializable
+data class RestWeek(
+    val number: Int
+)
+
+@Serializable
+data class RestDay(
+    val date: String
 )
 
 @Serializable
@@ -45,10 +58,18 @@ data class Type(
     val completed: Boolean
 )
 
-fun RestScoreboard.toDomain(sport: SiteRoute) = Scoreboard(
-    id = sport.toString(),
-    competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName) }
-)
+fun RestScoreboard.toDomain(sport: SiteRoute) : Scoreboard{
+    var id = "$sport-${season.type}-${season.year}"
+    if(week != null) id += "-${week.number}"
+    if(day != null) id += "-${day.date}"
+    return Scoreboard(
+        id = id,
+        season = season.toDomain(),
+        week = week?.number,
+        day = day?.date,
+        competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName) }
+    )
+}
 
 fun TeamYearStats.toDomain() = TeamYearStatsDomain(
     name = name,

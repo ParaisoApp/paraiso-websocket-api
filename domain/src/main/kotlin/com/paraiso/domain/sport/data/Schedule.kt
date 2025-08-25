@@ -29,8 +29,8 @@ data class Competition(
 data class Season(
     val year: Int,
     val type: Int,
-    val name: String,
-    val displayName: String
+    val name: String?,
+    val displayName: String?
 )
 
 @Serializable
@@ -72,8 +72,8 @@ data class CompetitionResponse(
 data class SeasonResponse(
     val year: Int,
     val type: Int,
-    val name: String,
-    val displayName: String
+    val name: String?,
+    val displayName: String?
 )
 
 @Serializable
@@ -105,8 +105,8 @@ data class ScheduleEntity(
 data class SeasonEntity(
     val year: Int,
     val type: Int,
-    val name: String,
-    val displayName: String
+    val name: String?,
+    val displayName: String?
 )
 
 fun Schedule.toResponse() =
