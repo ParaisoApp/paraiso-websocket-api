@@ -40,25 +40,25 @@ class SportHandler(
     private var lastSentBoxScores = listOf<BoxScore>()
 
     suspend fun bootJobs(sport: SiteRoute) = coroutineScope {
-        launch { getLeague(sport) }
+        launch { buildLeague(sport, manual = false) }
         launch { buildScoreboard(sport) }
-        launch { getStandings(sport) }
-        launch { getTeams(sport) }
-        launch { getLeaders(sport) }
-        launch { getTeamLeaders(sport) }
-        launch { getRosters(sport) }
-        launch { getSchedules(sport) }
+        launch { buildStandings(sport) }
+        launch { buildTeams(sport, manual = false) }
+        launch { buildLeaders(sport) }
+        launch { buildTeamLeaders(sport) }
+        launch { buildRosters(sport, manual = false) }
+        launch { buildSchedules(sport, manual = false) }
     }
 
-    private suspend fun getLeague(sport: SiteRoute) = coroutineScope {
-        if (autoBuild) {
+    suspend fun buildLeague(sport: SiteRoute, manual: Boolean) = coroutineScope {
+        if (autoBuild || manual) {
             sportClient.getLeague(sport)?.let { leagueRes ->
                 sportDBs.leaguesDB.save(listOf(leagueRes))
             }
         }
     }
 
-    private suspend fun getStandings(sport: SiteRoute) = coroutineScope {
+    private suspend fun buildStandings(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportClient.getStandings(sport)?.let { standingsRes ->
                 sportDBs.standingsDB.save(listOf(standingsRes))
@@ -67,8 +67,8 @@ class SportHandler(
         }
     }
 
-    private suspend fun getTeams(sport: SiteRoute) = coroutineScope {
-        if (autoBuild) {
+    suspend fun buildTeams(sport: SiteRoute, manual: Boolean) = coroutineScope {
+        if (autoBuild || manual) {
             sportClient.getTeams(sport).let { teamsRes ->
                 launch {
                     addTeamRoutes(sport, teamsRes)
@@ -96,7 +96,7 @@ class SportHandler(
         }
     }
 
-    private suspend fun getLeaders(sport: SiteRoute) = coroutineScope {
+    private suspend fun buildLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
                 sportClient.getLeaders(
@@ -109,7 +109,7 @@ class SportHandler(
         }
     }
 
-    private suspend fun getTeamLeaders(sport: SiteRoute) = coroutineScope {
+    private suspend fun buildTeamLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
                 sportDBs.teamsDB.findBySport(sport.name).map { team ->
@@ -128,8 +128,8 @@ class SportHandler(
         }
     }
 
-    private suspend fun getSchedules(sport: SiteRoute) = coroutineScope {
-        if (autoBuild) {
+    suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
+        if (autoBuild || manual) {
             val teams = sportDBs.teamsDB.findBySport(sport.name)
             teams.map { it.teamId }.map { teamId ->
                 async {
@@ -170,8 +170,8 @@ class SportHandler(
         )
     }
 
-    private suspend fun getRosters(sport: SiteRoute) = coroutineScope {
-        if (autoBuild) {
+    suspend fun buildRosters(sport: SiteRoute, manual: Boolean) = coroutineScope {
+        if (autoBuild || manual) {
             sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.map { teamId ->
                 async {
                     sportClient.getRoster(sport, teamId)
@@ -252,12 +252,12 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboard)}"
             )
-            if(enableBoxScore) getBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
+            if(enableBoxScore) buildBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
             lastSentScoreboard = scoreboard
         }
     }
 
-    private suspend fun getBoxscores(
+    private suspend fun buildBoxscores(
         sport: SiteRoute,
         competitionIds: List<String>,
         inactiveCompetitionIds: List<String>

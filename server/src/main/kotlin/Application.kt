@@ -8,6 +8,7 @@ import com.paraiso.com.paraiso.api.auth.authController
 import com.paraiso.com.paraiso.api.metadata.metadataController
 import com.paraiso.com.paraiso.api.posts.postsController
 import com.paraiso.com.paraiso.api.routes.routesController
+import com.paraiso.com.paraiso.api.sports.dataGenerationController
 import com.paraiso.com.paraiso.api.sports.sportController
 import com.paraiso.com.paraiso.api.users.userChatsController
 import com.paraiso.com.paraiso.api.users.userSessionsController
@@ -157,27 +158,25 @@ fun Application.module(jobScope: CoroutineScope){
         sportApi,
         metadataApi
     )
+    //build handlers early - for data generation
+    val sportOperationImpl = SportClientImpl()
+    val sportHandler = SportHandler(
+        sportOperationImpl,
+        routesApi,
+        sportsDBs,
+        eventServiceImpl
+    )
+    val serverHandler = ServerHandler(routesApi)
     // only launch data fetching jobs on a single server - will split off to microservice
     if(serverId == MAIN_SERVER){
-        val sportOperationImpl = SportClientImpl()
         jobScope.launch {
-            SportHandler(
-                sportOperationImpl,
-                routesApi,
-                sportsDBs,
-                eventServiceImpl
-            ).bootJobs(SiteRoute.FOOTBALL)
+            sportHandler.bootJobs(SiteRoute.FOOTBALL)
         }
         jobScope.launch {
-            SportHandler(
-                sportOperationImpl,
-                routesApi,
-                sportsDBs,
-                eventServiceImpl
-            ).bootJobs(SiteRoute.BASKETBALL)
+            sportHandler.bootJobs(SiteRoute.BASKETBALL)
         }
         jobScope.launch {
-            ServerHandler(routesApi).bootJobs()
+            serverHandler.bootJobs()
         }
     }
     //build handler and configure sockets
@@ -187,10 +186,36 @@ fun Application.module(jobScope: CoroutineScope){
         userSessions,
         services
     )
-    configureSockets(handler, services)
+    configureSockets(handler, services, serverHandler, sportHandler)
     //close subscription to redis
     environment.monitor.subscribe(ApplicationStopped) {
         eventServiceImpl.close()
+    }
+}
+
+fun Application.configureSockets(
+    handler: WebSocketHandler,
+    services: AppServices,
+    serverHandler: ServerHandler,
+    sportHandler: SportHandler
+) {
+    configureFeatures()
+    routing {
+        webSocket("chat") {
+            handler.handleUser(this)
+        }
+        route("paraiso_api/v1") {
+            authController(services.authApi)
+            postsController(services.postsApi)
+            usersController(services.usersApi)
+            userSessionsController(services.userSessionsApi)
+            userChatsController(services.userChatsApi)
+            sportController(services.sportApi)
+            metadataController(services.metadataApi)
+            adminController(services.adminApi)
+            routesController(services.routesApi)
+            dataGenerationController(serverHandler, sportHandler)
+        }
     }
 }
 fun Application.configureFeatures() {
@@ -222,25 +247,5 @@ fun Application.configureFeatures() {
                 encodeDefaults = true
             }
         )
-    }
-}
-
-fun Application.configureSockets(handler: WebSocketHandler, services: AppServices) {
-    configureFeatures()
-    routing {
-        webSocket("chat") {
-            handler.handleUser(this)
-        }
-        route("paraiso_api/v1") {
-            authController(services.authApi)
-            postsController(services.postsApi)
-            usersController(services.usersApi)
-            userSessionsController(services.userSessionsApi)
-            userChatsController(services.userChatsApi)
-            sportController(services.sportApi)
-            metadataController(services.metadataApi)
-            adminController(services.adminApi)
-            routesController(services.routesApi)
-        }
     }
 }
