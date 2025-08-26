@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UsersDB
+import com.paraiso.domain.util.Constants.UNKNOWN
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -27,11 +28,11 @@ class PostsApi(
         }
 
     suspend fun getByIdBasic(postSearchId: String) =
-        postsDB.findById(postSearchId)
+        postsDB.findById(postSearchId)?.toResponse()
 
     suspend fun getByIdsBasic(
         postSearchIds: Set<String>
-    ) = postsDB.findByIdsIn(postSearchIds)
+    ): Map<String, PostResponse> = postsDB.findByIdsIn(postSearchIds).associate { (it.id ?: UNKNOWN) to it.toResponse() }
 
     // search by partial for autocomplete
     suspend fun getByPartial(search: String) =
