@@ -13,7 +13,7 @@ fun Route.metadataController(metadataApi: MetadataApi) {
         get {
             metadataApi.getMetadata(call.request.queryParameters["url"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
     }
 }

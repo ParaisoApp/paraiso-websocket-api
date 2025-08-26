@@ -13,12 +13,12 @@ fun Route.routesController(routesApi: RoutesApi) {
         get("byId") {
             routesApi.getById(call.request.queryParameters["id"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("byUserName") {
             routesApi.getById(call.request.queryParameters["name"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
     }
 }

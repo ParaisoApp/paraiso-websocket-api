@@ -159,13 +159,13 @@ class SportHandler(
             }.flatMap { (key, values) ->
                 values.map { competition ->
                     Post(
-                        id = "$TEAM_PREFIX${competition.id}-$key",
+                        id = "$TEAM_PREFIX$key-${competition.id}",
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
                         type = PostType.GAME,
                         parentId = "/s/${sport.name.lowercase()}/t/$key",
-                        rootId = "$TEAM_PREFIX${competition.id}-$key",
-                        data = "$TEAM_PREFIX${competition.id}-$key",
+                        rootId = "$TEAM_PREFIX$key-${competition.id}",
+                        data = "$TEAM_PREFIX$key-${competition.id}",
                     )
                 }
             }

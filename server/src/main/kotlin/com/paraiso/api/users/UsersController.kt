@@ -24,12 +24,12 @@ fun Route.usersController(usersApi: UsersApi) {
         get("/getByName") {
             usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/getById") {
             usersApi.getUserById(call.request.queryParameters["id"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.InternalServerError) }
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/getByPartial") {
             usersApi.getUserByPartial(call.request.queryParameters["search"] ?: "").let {
