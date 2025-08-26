@@ -5,6 +5,7 @@ import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
+import com.paraiso.domain.messageTypes.Vote
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.Favorite
 import kotlinx.coroutines.async
@@ -13,29 +14,28 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 class UsersApi(
-    private val usersDB: UsersDB,
-    private val postsDB: PostsDB
+    private val usersDB: UsersDB
 ) {
     suspend fun getUserById(userId: String) =
-        usersDB.findById(userId)?.buildUserResponse(postsDB)
+        usersDB.findById(userId)?.toResponse()
 
     suspend fun getUserByName(userName: String): UserResponse? =
-        usersDB.findByName(userName)?.buildUserResponse(postsDB)
+        usersDB.findByName(userName)?.toResponse()
 
     suspend fun exists(search: String) =
         usersDB.existsByName(search)
 
     suspend fun getUserByPartial(search: String) =
         usersDB.findByPartial(search)
-            .map { it.buildUserResponse(postsDB) }
+            .map { it.toResponse() }
 
     suspend fun getFollowingById(userId: String) =
         usersDB.getFollowingById(userId)
-            .map { it.buildUserResponse(postsDB) }
+            .map { it.toResponse() }
 
     suspend fun getFollowersById(userId: String) =
         usersDB.getFollowersById(userId)
-            .map { it.buildUserResponse(postsDB) }
+            .map { it.toResponse() }
 
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
@@ -120,6 +120,17 @@ class UsersApi(
 
     suspend fun putPost(userId: String, messageId: String) =
         usersDB.addPost(userId, messageId)
+
+    suspend fun votePost(vote: Vote) =
+        usersDB.findById(vote.voteeId)?.posts?.let { posts ->
+            if(
+                posts[vote.postId]?.get(vote.voterId) == vote.upvote
+            ){
+                usersDB.removeVotes(vote.voteeId, vote.postId, vote.voterId)
+            }else{
+                usersDB.addVotes(vote.voteeId, vote.postId, vote.voterId, vote.upvote)
+            }
+        }
 
     suspend fun updateChatForUser(
         dm: DirectMessage,

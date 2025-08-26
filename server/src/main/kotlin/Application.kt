@@ -147,8 +147,8 @@ fun Application.module(jobScope: CoroutineScope){
         postsDb,
         usersDb
     )
-    val usersApi = UsersApi(usersDb, postsDb)
-    val userSessionsApi = UserSessionsApi(usersDb, postsDb, eventServiceImpl)
+    val usersApi = UsersApi(usersDb)
+    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi()

@@ -9,6 +9,7 @@ import com.mongodb.client.model.FindOneAndUpdateOptions
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.ReturnDocument
+import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
@@ -17,6 +18,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
+import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.ChatRef
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserFavorite
@@ -282,8 +284,35 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         collection.updateOne(
             eq(ID, id),
             combine(
-                addToSet(User::posts.name, postId),
+                set("${User::posts.name}.$postId.$id", true),
                 set(User::updatedOn.name, Clock.System.now())
+            )
+        ).modifiedCount
+
+    override suspend fun addVotes(
+        id: String,
+        postId: String,
+        voteUserId: String,
+        upvote: Boolean
+    ) =
+        collection.updateOne(
+            eq(ID, id),
+            combine(
+                set("${User::posts.name}.$postId.$voteUserId", upvote),
+                set(Post::updatedOn.name, Clock.System.now())
+            )
+        ).modifiedCount
+
+    override suspend fun removeVotes(
+        id: String,
+        postId: String,
+        voteUserId: String
+    ) =
+        collection.updateOne(
+            eq(ID, id),
+            combine(
+                Updates.unset("${User::posts.name}.$postId.$voteUserId"),
+                set(Post::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
 

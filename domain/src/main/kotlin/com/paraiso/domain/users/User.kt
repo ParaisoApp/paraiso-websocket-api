@@ -19,7 +19,7 @@ data class User(
     val about: String?,
     val location: Location?,
     val birthday: Instant?,
-    val posts: Set<String>,
+    val posts: Map<String, Map<String, Boolean>>,
     val replies: Map<String, Boolean>,
     val followers: Set<String>,
     val following: Set<String>,
@@ -76,7 +76,6 @@ data class UserResponse(
     val location: Location?,
     val birthday: Instant?,
     val posts: Map<String, Map<String, Boolean>>,
-    val comments: Map<String, Map<String, Boolean>>,
     val chats: Map<String, ChatRef>,
     val replies: Map<String, Boolean>,
     val followers: Map<String, Boolean>,
@@ -112,29 +111,7 @@ data class UserFavorite(
     val icon: String?
 )
 
-suspend fun User.buildUserResponse(postsDB: PostsDB): UserResponse {
-    val posts = mutableMapOf<String, Map<String, Boolean>>()
-    val comments = mutableMapOf<String, Map<String, Boolean>>()
-    postsDB.findByUserId(this.id)
-        .map { post ->
-            if (post.id != null) {
-                if (post.type == PostType.SUB) {
-                    posts[post.id] = post.votes
-                } else {
-                    comments[post.id] = post.votes
-                }
-            }
-        }
-    return this.toUserResponse(
-        posts,
-        comments
-    )
-}
-
-fun User.toUserResponse(
-    posts: Map<String, Map<String, Boolean>>,
-    comments: Map<String, Map<String, Boolean>>
-) =
+fun User.toResponse() =
     UserResponse(
         id = id,
         name = name,
@@ -144,7 +121,6 @@ fun User.toUserResponse(
         location = location,
         birthday = birthday,
         posts = posts,
-        comments = comments,
         chats = chats,
         replies = replies,
         followers = followers.associateWith { true },
@@ -171,7 +147,7 @@ fun UserResponse.toUser() =
         about = about,
         location = location,
         birthday = birthday,
-        posts = posts.keys + comments.keys,
+        posts = posts,
         replies = replies,
         followers = followers.keys,
         following = following.keys,
@@ -204,7 +180,6 @@ fun UserResponse.Companion.newUser(
             location = null,
             birthday = null,
             posts = emptyMap(),
-            comments = emptyMap(),
             replies = emptyMap(),
             chats = emptyMap(),
             followers = emptyMap(),

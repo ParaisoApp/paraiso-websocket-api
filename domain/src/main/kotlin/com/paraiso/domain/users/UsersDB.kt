@@ -73,6 +73,17 @@ interface UsersDB{
         id: String,
         postId: String
     ): Long
+    suspend fun addVotes(
+        id: String,
+        postId: String,
+        voteUserId: String,
+        upvote: Boolean
+    ): Long
+    suspend fun removeVotes(
+        id: String,
+        postId: String,
+        voteUserId: String
+    ): Long
     suspend fun setUserChat(
         id: String,
         chatId: String,
