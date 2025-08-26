@@ -22,6 +22,7 @@ import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostsDB
@@ -32,6 +33,7 @@ import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.bson.Document
@@ -40,14 +42,24 @@ import org.bson.conversions.Bson
 class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
         const val RETRIEVE_LIM = 50
-        const val PARTIAL_RETRIEVE_LIM = 5
+        const val PARTIAL_RETRIEVE_LIM = 10
         const val TIME_WEIGHTING = 10000000000
     }
 
     private val collection = database.getCollection("posts", Post::class.java)
 
-    suspend fun findById(id: String) =
+    override suspend fun findById(id: String) =
         collection.find(eq(ID, id)).firstOrNull()
+
+    override suspend fun findByIdsIn(ids: Set<String>) =
+        collection.find(`in`(ID, ids)).toList()
+
+    override suspend fun findByPartial(partial: String): List<Post> =
+        collection.find(Filters.regex(Post::title.name, partial, "i"))
+            .limit(PARTIAL_RETRIEVE_LIM).toList()
+
+    override suspend fun findByUserId(userId: String) =
+        collection.find(eq(Post::userId.name, userId)).toList()
 
     private fun getInitAggPipeline(
         initialFilter: Bson
@@ -90,35 +102,17 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         }
         return match(Document("\$expr", Document("\$or", orConditions)))
     }
-    private fun getSort(
-        sortType: SortType
-    ) =
-        when (sortType) {
-            SortType.NEW -> Document("\$sort", Document(Post::createdOn.name, -1))
-            SortType.TOP -> Document(
-                "\$sort",
-                Document(
-                    "score",
-                    Document(
-                        "\$sum",
-                        listOf(
-                            Document(
-                                "\$map",
-                                Document()
-                                    .append("input", Document("\$objectToArray", "\$votes"))
-                                    .append("as", "vote")
-                                    .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
-                            )
-                        )
-                    )
-                )
+    private fun getSort(sortType: SortType): List<Bson> {
+        return when (sortType) {
+            SortType.NEW -> listOf(
+                Document("\$sort", Document(Post::createdOn.name, 1))
             )
-            SortType.HOT -> Document(
-                "\$sort",
+
+            SortType.TOP -> listOf(
                 Document(
-                    "\$multiply",
-                    listOf(
-                        Document("\$divide", listOf("\$createdOn", TIME_WEIGHTING)),
+                    "\$addFields",
+                    Document(
+                        "score",
                         Document(
                             "\$sum",
                             listOf(
@@ -132,17 +126,59 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                             )
                         )
                     )
-                )
+                ),
+                Document("\$sort", Document("score", 1))
+            )
+
+            SortType.HOT -> listOf(
+                Document(
+                    "\$addFields",
+                    Document(
+                        "hotScore",
+                        Document(
+                            "\$multiply",
+                            listOf(
+                                Document(
+                                    "\$divide",
+                                    listOf(
+                                        Document(
+                                            "\$toLong",
+                                            Document(
+                                                "\$dateFromString",
+                                                Document("dateString", "\$createdOn")
+                                            )
+                                        ),
+                                        TIME_WEIGHTING
+                                    )
+                                ),
+                                Document(
+                                    "\$sum",
+                                    listOf(
+                                        Document(
+                                            "\$map",
+                                            Document()
+                                                .append("input", Document("\$objectToArray", "\$votes"))
+                                                .append("as", "vote")
+                                                .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                Document("\$sort", Document("hotScore", 1))
             )
         }
+    }
 
-    suspend fun findByBaseCriteria(
+    override suspend fun findByBaseCriteria(
         postSearchId: String,
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
-    ) = coroutineScope {
+    ): List<Post> {
         val homeFilters = mutableListOf(
             eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
         )
@@ -164,22 +200,18 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
         val pipeline = getInitAggPipeline(initialFilter)
         pipeline.add(getUserRoleCondition(filters, userFollowing))
-        pipeline.add(getSort(sortType))
+        pipeline.addAll(getSort(sortType))
 
-        collection.aggregate<Post>(pipeline)
+        return collection.aggregate<Post>(pipeline).toList()
     }
 
-    suspend fun findBySubpostIds(
-        ids: Set<String>,
-        range: Instant,
-        sortType: SortType,
-        filters: FilterTypes,
+    override suspend fun findBySubpostIds(
         subPostIds: Set<String>,
+        range: Instant,
+        filters: FilterTypes,
+        sortType: SortType,
         userFollowing: Set<String>
-    ) = coroutineScope {
-        collection.find(`in`(ID, ids))
-            .limit(RETRIEVE_LIM)
-
+    ): List<Post> {
         val initialFilter = and(
             `in`(ID, subPostIds),
             gt(Post::createdOn.name, range),
@@ -189,15 +221,11 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
         val pipeline = getInitAggPipeline(initialFilter)
         pipeline.add(getUserRoleCondition(filters, userFollowing))
-        pipeline.add(getSort(sortType))
-        collection.aggregate<Post>(pipeline)
+        pipeline.addAll(getSort(sortType))
+        return collection.aggregate<Post>(pipeline).toList()
     }
 
-    suspend fun findByPartial(partial: String): FindFlow<Post> =
-        collection.find(Filters.regex(Post::title.name, partial, "i"))
-            .limit(PARTIAL_RETRIEVE_LIM)
-
-    suspend fun save(posts: List<Post>): Int {
+    override suspend fun save(posts: List<Post>): Int {
         val bulkOps = posts.map { post ->
             ReplaceOneModel(
                 eq(ID, post.id),
@@ -208,25 +236,19 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         return collection.bulkWrite(bulkOps).modifiedCount
     }
 
-    suspend fun editPost(
-        id: String,
-        title: String,
-        content: String,
-        media: String,
-        data: String
-    ) =
+    override suspend fun editPost(message: Message) =
         collection.updateOne(
-            eq(ID, id),
+            eq(ID, message.id),
             combine(
-                set(Post::title.name, title),
-                set(Post::content.name, content),
-                set(Post::media.name, media),
-                set(Post::data.name, data),
+                set(Post::title.name, message.title),
+                set(Post::content.name, message.content),
+                set(Post::media.name, message.media),
+                set(Post::data.name, message.data),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addSubpostToParent(
+    override suspend fun addSubpostToParent(
         id: String,
         subPostId: String
     ) =
@@ -234,12 +256,11 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 addToSet(Post::subPosts.name, subPostId),
-                inc(Post::count.name, 1),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeSubpostFromParent(
+    override suspend fun removeSubpostFromParent(
         id: String,
         subPostId: String
     ) =
@@ -250,9 +271,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 inc(Post::count.name, -1),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun addVotes(
+    override suspend fun addVotes(
         id: String,
         voteUserId: String,
         upvote: Boolean
@@ -263,9 +284,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 set("${Post::votes.name}.$voteUserId", upvote),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun removeVotes(
+    override suspend fun removeVotes(
         id: String,
         voteUserId: String
     ) =
@@ -275,9 +296,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 unset("${Post::votes.name}.$voteUserId"),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun setPostDeleted(
+    override suspend fun setPostDeleted(
         id: String
     ) =
         collection.updateOne(
@@ -286,9 +307,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 set(Post::status.name, PostStatus.DELETED),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 
-    suspend fun setCount(
+    override suspend fun setCount(
         id: String,
         increment: Int // +1 for inc | -1 for dec
     ) =
@@ -298,5 +319,5 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 inc(Post::count.name, 1 * increment),
                 set(Post::updatedOn.name, Clock.System.now())
             )
-        )
+        ).modifiedCount
 }

@@ -17,6 +17,7 @@ import com.paraiso.com.paraiso.server.plugins.ServerHandler
 import com.paraiso.com.paraiso.server.plugins.MessageHandler
 import com.paraiso.database.admin.PostReportsDBImpl
 import com.paraiso.database.admin.UserReportsDBImpl
+import com.paraiso.database.posts.PostsDBImpl
 import com.paraiso.database.routes.RoutesDBImpl
 import com.paraiso.database.sports.AthletesDBImpl
 import com.paraiso.database.sports.BoxscoresDBImpl
@@ -124,6 +125,7 @@ fun Application.module(jobScope: CoroutineScope){
         CompetitionsDBImpl(database),
         LeadersDBImpl(database)
     )
+    val postsDb = PostsDBImpl(database)
     val usersDb = UsersDBImpl(database)
     val userChatsDb = UserChatsDBImpl(database)
     val userReportsDb = UserReportsDBImpl(database)
@@ -141,9 +143,12 @@ fun Application.module(jobScope: CoroutineScope){
     val routesApi = RoutesApi(RoutesDBImpl(database))
     val authApi = AuthApi()
     val sportApi = SportApi(sportsDBs)
-    val postsApi = PostsApi()
-    val usersApi = UsersApi(usersDb)
-    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
+    val postsApi = PostsApi(
+        postsDb,
+        usersDb
+    )
+    val usersApi = UsersApi(usersDb, postsDb)
+    val userSessionsApi = UserSessionsApi(usersDb, postsDb, eventServiceImpl)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi()
@@ -164,7 +169,8 @@ fun Application.module(jobScope: CoroutineScope){
         sportOperationImpl,
         routesApi,
         sportsDBs,
-        eventServiceImpl
+        eventServiceImpl,
+        postsDb
     )
     val serverHandler = ServerHandler(routesApi)
     // only launch data fetching jobs on a single server - will split off to microservice

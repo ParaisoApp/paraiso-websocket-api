@@ -2,6 +2,7 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
@@ -110,6 +111,25 @@ data class UserFavorite(
     val favorite: Boolean,
     val icon: String?
 )
+
+suspend fun User.buildUserResponse(postsDB: PostsDB): UserResponse {
+    val posts = mutableMapOf<String, Map<String, Boolean>>()
+    val comments = mutableMapOf<String, Map<String, Boolean>>()
+    postsDB.findByUserId(this.id)
+        .map { post ->
+            if (post.id != null) {
+                if (post.type == PostType.SUB) {
+                    posts[post.id] = post.votes
+                } else {
+                    comments[post.id] = post.votes
+                }
+            }
+        }
+    return this.toUserResponse(
+        posts,
+        comments
+    )
+}
 
 fun User.toUserResponse(
     posts: Map<String, Map<String, Boolean>>,
@@ -224,27 +244,6 @@ fun UserImage.Companion.initImage() =
         posY = 0,
         scale = 1f
     )
-
-fun User.buildUserResponse(): UserResponse {
-    val posts = mutableMapOf<String, Map<String, Boolean>>()
-    val comments = mutableMapOf<String, Map<String, Boolean>>()
-    ServerState.posts
-        .filterValues { it.userId == id }
-        .values
-        .map { post ->
-            if (post.id != null) {
-                if (post.type == PostType.SUB) {
-                    posts[post.id] = post.votes
-                } else {
-                    comments[post.id] = post.votes
-                }
-            }
-        }
-    return this.toUserResponse(
-        posts,
-        comments
-    )
-}
 
 @Serializable
 enum class UserRole {

@@ -206,26 +206,25 @@ class WebSocketHandler(
                     MessageType.MSG -> {
                         converter?.cleanAndType<TypeMapping<Message>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
-                                UUID.randomUUID().toString().let { messageId ->
-                                    val userIdMentions = services.usersApi.addMentions(
-                                        getMentions(message.content),
-                                        message.userReceiveIds.firstOrNull(),
-                                        messageId
-                                    )
-                                    message.copy(
-                                        id = messageId,
-                                        userId = sessionUser.id,
-                                        rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
-                                        userReceiveIds = message.userReceiveIds.plus(userIdMentions)
-                                    ).let { messageWithData ->
-                                        if (sessionUser.banned) {
-                                            sendTypedMessage(MessageType.MSG, messageWithData)
-                                        } else {
-                                            launch { services.postsApi.putPost(messageWithData) }
-                                            launch { services.usersApi.putPost(sessionUser.id, messageId) }
-                                            ServerState.messageFlowMut.emit(messageWithData)
-                                            eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
-                                        }
+                                val messageId: String = message.editId ?: UUID.randomUUID().toString()
+                                val userIdMentions = services.usersApi.addMentions(
+                                    getMentions(message.content),
+                                    message.userReceiveIds.firstOrNull(),
+                                    messageId
+                                )
+                                message.copy(
+                                    id = messageId,
+                                    userId = sessionUser.id,
+                                    rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
+                                    userReceiveIds = message.userReceiveIds.plus(userIdMentions)
+                                ).let { messageWithData ->
+                                    if (sessionUser.banned) {
+                                        sendTypedMessage(MessageType.MSG, messageWithData)
+                                    } else {
+                                        launch { services.postsApi.putPost(messageWithData) }
+                                        launch { services.usersApi.putPost(sessionUser.id, messageId) }
+                                        ServerState.messageFlowMut.emit(messageWithData)
+                                        eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
                                     }
                                 }
                             }

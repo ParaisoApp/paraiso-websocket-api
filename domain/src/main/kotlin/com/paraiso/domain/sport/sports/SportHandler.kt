@@ -3,6 +3,7 @@ package com.paraiso.domain.sport.sports
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
@@ -34,7 +35,8 @@ class SportHandler(
     private val sportClient: SportClient,
     private val routesApi: RoutesApi,
     private val sportDBs: SportDBs,
-    private val eventService: EventService
+    private val eventService: EventService,
+    private val postsDB: PostsDB
 ) : Klogging {
     private var lastSentScoreboard: Scoreboard? = null
     private var lastSentBoxScores = listOf<BoxScore>()
@@ -145,18 +147,18 @@ class SportHandler(
         }
     }
 
-    private fun addTeamPosts(
+    private suspend fun addTeamPosts(
         sport: SiteRoute,
         teams: List<Team>,
         schedules: List<Schedule>
     ) {
         // add posts for team sport route - separate for focused discussion
-        ServerState.posts.putAll(
+        postsDB.save(
             schedules.associate {
                 teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
             }.flatMap { (key, values) ->
                 values.map { competition ->
-                    "$TEAM_PREFIX${competition.id}-$key" to Post(
+                    Post(
                         id = "$TEAM_PREFIX${competition.id}-$key",
                         title = competition.shortName,
                         content = "${competition.date}-${competition.shortName}",
@@ -282,14 +284,14 @@ class SportHandler(
         }
     }
 
-    private fun addGamePosts(
+    private suspend fun addGamePosts(
         sport: SiteRoute,
         competitions: List<Competition>
     ) {
         // add posts for base sport route
-        ServerState.posts.putAll(
-            competitions.associate { competition ->
-                "$GAME_PREFIX${competition.id}" to Post(
+        postsDB.save(
+            competitions.map { competition ->
+                Post(
                     id = "$GAME_PREFIX${competition.id}",
                     title = competition.shortName,
                     content = "${competition.date}-${competition.shortName}",

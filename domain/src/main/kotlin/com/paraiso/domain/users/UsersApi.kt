@@ -5,6 +5,7 @@ import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
+import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.Favorite
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -12,28 +13,29 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 class UsersApi(
-    private val usersDB: UsersDB
+    private val usersDB: UsersDB,
+    private val postsDB: PostsDB
 ) {
     suspend fun getUserById(userId: String) =
-        usersDB.findById(userId)?.buildUserResponse()
+        usersDB.findById(userId)?.buildUserResponse(postsDB)
 
     suspend fun getUserByName(userName: String): UserResponse? =
-        usersDB.findByName(userName)?.buildUserResponse()
+        usersDB.findByName(userName)?.buildUserResponse(postsDB)
 
     suspend fun exists(search: String) =
         usersDB.existsByName(search)
 
     suspend fun getUserByPartial(search: String) =
         usersDB.findByPartial(search)
-            .map { it.buildUserResponse() }
+            .map { it.buildUserResponse(postsDB) }
 
     suspend fun getFollowingById(userId: String) =
         usersDB.getFollowingById(userId)
-            .map { it.buildUserResponse() }
+            .map { it.buildUserResponse(postsDB) }
 
     suspend fun getFollowersById(userId: String) =
         usersDB.getFollowersById(userId)
-            .map { it.buildUserResponse() }
+            .map { it.buildUserResponse(postsDB) }
 
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
