@@ -4,9 +4,12 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Vote
+import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UsersDB
+import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
 import com.paraiso.domain.util.Constants.UNKNOWN
+import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -23,16 +26,20 @@ class PostsApi(
         postsDB.findById(postSearchId)?.let { post ->
             val userFollowing = usersDB.getFollowingById(userId).map { it.id }.toSet()
             generatePostTree(
-                post, getRange(rangeModifier, sortType), sortType, filters, userFollowing
+                post, getRange(rangeModifier, sortType), sortType, filters, userFollowing, filter = true
             )
         }
 
     suspend fun getByIdBasic(postSearchId: String) =
         postsDB.findById(postSearchId)?.toResponse()
 
-    suspend fun getByIdsBasic(
+    suspend fun getByIds(
         postSearchIds: Set<String>
-    ): Map<String, PostResponse> = postsDB.findByIdsIn(postSearchIds).associate { (it.id ?: UNKNOWN) to it.toResponse() }
+    ): Map<String, PostResponse> =
+        generatePostTree(
+            generateBasePost(PLACEHOLDER_ID, PLACEHOLDER_ID, postSearchIds),
+            getRange(Range.DAY, SortType.NEW), SortType.NEW, FilterTypes.init(), emptySet(), filter = false
+        ) - PLACEHOLDER_ID // remove unnecessary base post
 
     // search by partial for autocomplete
     suspend fun getByPartial(search: String) =
@@ -59,7 +66,7 @@ class PostsApi(
             .let { subPosts ->
                 generatePostTree(
                     generateBasePost(postSearchId, basePostName, subPosts),
-                    range, sortType, filters, userFollowing
+                    range, sortType, filters, userFollowing, filter = true
                 )
             }
     }
@@ -69,7 +76,8 @@ class PostsApi(
         range: Instant,
         sortType: SortType,
         filters: FilterTypes,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        filter: Boolean
     ) =
         LinkedHashMap<String, PostResponse>().let { returnPosts ->
             basePost.toResponse().let { root -> // build tree with bfs
@@ -78,7 +86,7 @@ class PostsApi(
                 while (refQueue.isNotEmpty()) {
                     val nextRefNode = refQueue.removeFirst()
                     postsDB.findBySubpostIds(
-                        nextRefNode.subPosts, range, filters, sortType, userFollowing
+                        nextRefNode.subPosts, range, filters, sortType, userFollowing, filter
                     ).map { post ->
                         if (post.id != null) {
                             returnPosts[post.id] = post.toResponse()

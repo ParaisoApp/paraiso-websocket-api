@@ -7,6 +7,7 @@ object Constants {
     const val SEASON_TYPE_REG = "2"
     const val SEASON_TYPE_POST = "3"
     const val UNKNOWN = "UNKNOWN"
+    const val PLACEHOLDER_ID = "NONE"
     const val SYSTEM = "SYSTEM"
     const val USER_PREFIX = "USER-"
     const val TEAM_PREFIX = "TEAM-"

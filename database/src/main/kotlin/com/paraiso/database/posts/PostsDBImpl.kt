@@ -18,7 +18,6 @@ import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.client.model.Updates.unset
-import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
@@ -210,8 +209,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        filter: Boolean
     ): List<Post> {
+        if(!filter){
+            return collection.find(`in`(ID, subPostIds)).toList()
+        }
         val initialFilter = and(
             `in`(ID, subPostIds),
             gt(Post::createdOn.name, range),

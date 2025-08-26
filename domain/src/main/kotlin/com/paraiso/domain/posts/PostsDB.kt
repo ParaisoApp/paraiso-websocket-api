@@ -21,7 +21,8 @@ interface PostsDB{
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        filter: Boolean
     ): List<Post>
     suspend fun save(posts: List<Post>): Int
     suspend fun editPost(message: Message): Long
