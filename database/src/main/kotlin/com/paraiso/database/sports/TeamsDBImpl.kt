@@ -17,6 +17,14 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
     override suspend fun findById(id: String) =
         collection.find(eq(ID, id)).firstOrNull()
 
+    override suspend fun findBySportAndTeamId(sport: String, teamId: String) =
+        collection.find(
+            and(
+                eq(Team::sport.name, sport),
+                eq(Team::teamId.name, teamId)
+            )
+        ).firstOrNull()
+
     override suspend fun findBySportAndAbbr(sport: String, abbr: String) =
         collection.find(
             and(

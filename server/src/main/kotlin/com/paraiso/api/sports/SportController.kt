@@ -22,6 +22,21 @@ fun Route.sportController(sportApi: SportApi) {
                 call.request.queryParameters["sport"] ?: ""
             ))
         }
+        get("/teamById") {
+            sportApi.getTeamById(
+                call.request.queryParameters["sport"] ?: "",
+                call.request.queryParameters["id"] ?: ""
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
+        get("/competitionById") {
+            sportApi.getCompetitionById(
+                call.request.queryParameters["id"] ?: ""
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
         get("/standings") {
             sportApi.getStandings(
                 call.request.queryParameters["sport"] ?: ""
@@ -34,13 +49,6 @@ fun Route.sportController(sportApi: SportApi) {
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
                 call.request.queryParameters["seasonType"]?.toIntOrNull() ?: 0
-            )?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
-        }
-        get("/leader_cats") {
-            sportApi.getLeaderCategories(
-                call.request.queryParameters["sport"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }

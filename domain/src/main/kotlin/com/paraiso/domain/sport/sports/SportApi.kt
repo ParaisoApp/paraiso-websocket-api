@@ -13,6 +13,8 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun getLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
     suspend fun getTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)?.toResponse()
     suspend fun getTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
+    suspend fun getTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
+    suspend fun getCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
     suspend fun getStandings(sport: String) =
         if(sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
@@ -66,7 +68,6 @@ class SportApi(private val sportDBs: SportDBs) {
             }
         }
 
-    suspend fun getLeaderCategories(sport: String) = sportDBs.leadersDB.findBySport(sport)?.categories?.map { it.displayName }
     suspend fun getTeamRoster(sport: String, teamId: String) = coroutineScope {
         sportDBs.rostersDB.findBySportAndTeamId(sport, teamId)?.let { rosterEntity ->
             val athletes = async {
