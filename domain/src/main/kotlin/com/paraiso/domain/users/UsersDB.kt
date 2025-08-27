@@ -67,7 +67,7 @@ interface UsersDB{
     ): Long
     suspend fun removeFavoriteRoute(
         id: String,
-        routeFavorite: String
+        route: String
     ): Long
     suspend fun addPost(
         id: String,

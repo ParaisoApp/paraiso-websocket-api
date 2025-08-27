@@ -1,5 +1,6 @@
 package com.paraiso.database.users
 
+import com.mongodb.client.model.Aggregates.unset
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
@@ -30,6 +31,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
+import org.bson.Document
 
 class UsersDBImpl(database: MongoDatabase) : UsersDB {
     companion object {
@@ -267,12 +269,12 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun removeFavoriteRoute(
         id: String,
-        routeFavorite: String
+        route: String
     ) =
         collection.updateOne(
             eq(ID, id),
             combine(
-                pull(User::routeFavorites.name, routeFavorite),
+                Document("\$unset", Document("routeFavorites.$route", "")),
                 set(User::updatedOn.name, Clock.System.now())
             )
         ).modifiedCount
