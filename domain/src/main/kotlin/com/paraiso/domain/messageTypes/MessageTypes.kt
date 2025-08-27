@@ -55,7 +55,7 @@ data class Tag(
 @Serializable
 data class Vote(
     val voterId: String,
-    val voteeId: String,
+    val voteeId: String? = null,
     val type: PostType,
     val postId: String,
     val upvote: Boolean
@@ -64,7 +64,8 @@ data class Vote(
 fun FilterTypes.Companion.init() = FilterTypes(
     postTypes = setOf(
         PostType.COMMENT,
-        PostType.SUB
+        PostType.SUB,
+        PostType.GAME
     ),
     userRoles = setOf(
         UserRole.FOLLOWING,

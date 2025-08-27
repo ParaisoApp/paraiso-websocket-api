@@ -122,13 +122,15 @@ class UsersApi(
         usersDB.addPost(userId, messageId)
 
     suspend fun votePost(vote: Vote) =
-        usersDB.findById(vote.voteeId)?.posts?.let { posts ->
-            if(
-                posts[vote.postId]?.get(vote.voterId) == vote.upvote
-            ){
-                usersDB.removeVotes(vote.voteeId, vote.postId, vote.voterId)
-            }else{
-                usersDB.addVotes(vote.voteeId, vote.postId, vote.voterId, vote.upvote)
+        vote.voteeId?.let { voteeId ->
+            usersDB.findById(voteeId)?.posts?.let { posts ->
+                if(
+                    posts[vote.postId]?.get(vote.voterId) == vote.upvote
+                ){
+                    usersDB.removeVotes(voteeId, vote.postId, vote.voterId)
+                }else{
+                    usersDB.addVotes(voteeId, vote.postId, vote.voterId, vote.upvote)
+                }
             }
         }
 
