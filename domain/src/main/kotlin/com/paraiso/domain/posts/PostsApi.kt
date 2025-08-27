@@ -95,7 +95,13 @@ class PostsApi(
                     }
                 }
             }
-            returnPosts
+            // Reverse the finalized LinkedHashMap so UI can insert new posts at the end
+            val reversedMap = LinkedHashMap<String, PostResponse>()
+            returnPosts.entries.reversed().forEach { (key, value) ->
+                reversedMap[key] = value
+            }
+
+            reversedMap
         }
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =

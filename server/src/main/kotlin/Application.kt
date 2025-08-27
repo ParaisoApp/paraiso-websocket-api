@@ -42,9 +42,12 @@ import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.domain.users.UserChatsApi
+import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.Constants.MAIN_SERVER
+import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
 import com.typesafe.config.ConfigFactory
@@ -192,6 +195,11 @@ fun Application.module(jobScope: CoroutineScope){
         userSessions,
         services
     )
+    if(autoBuild){
+        runBlocking {
+            usersApi.saveUser(UserResponse.systemUser())
+        }
+    }
     configureSockets(handler, services, serverHandler, sportHandler)
     //close subscription to redis
     environment.monitor.subscribe(ApplicationStopped) {

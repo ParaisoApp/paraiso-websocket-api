@@ -15,6 +15,7 @@ import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants.GAME_PREFIX
+import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerState
@@ -29,6 +30,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.hours
 
 class SportHandler(
@@ -38,7 +40,7 @@ class SportHandler(
     private val eventService: EventService,
     private val postsDB: PostsDB
 ) : Klogging {
-    private var lastSentScoreboard: Scoreboard? = null
+    private var lastSentScoreboard = ConcurrentHashMap<SiteRoute, Scoreboard>()
     private var lastSentBoxScores = listOf<BoxScore>()
 
     suspend fun bootJobs(sport: SiteRoute) = coroutineScope {
@@ -160,6 +162,7 @@ class SportHandler(
                 values.map { competition ->
                     Post(
                         id = "$TEAM_PREFIX$key-${competition.id}",
+                        userId = SYSTEM,
                         title = competition.shortName,
                         content = "${competition.date}||${competition.shortName}",
                         type = PostType.GAME,
@@ -193,7 +196,7 @@ class SportHandler(
             while (isActive) {
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     //if completely new scoreboard save it and generate game posts
-                    if(scoreboard.competitions.map { it.id } != lastSentScoreboard?.competitions?.map { it.id }){
+                    if(scoreboard.competitions.map { it.id }.toSet() != lastSentScoreboard[sport]?.competitions?.map { it.id }?.toSet()){
                         saveScoreboardAndGetBoxscores(
                             sport,
                             scoreboard,
@@ -247,7 +250,7 @@ class SportHandler(
         inactiveCompetitionIds: List<String>,
     ) = coroutineScope {
         //if some competitions are active and there's a change in the scoreboard update
-        if(activeCompetitions.isNotEmpty() && scoreboard != lastSentScoreboard){
+        if(activeCompetitions.isNotEmpty() && scoreboard != lastSentScoreboard[sport]){
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
             sportDBs.competitionsDB.save(activeCompetitions)
             eventService.publish(
@@ -255,7 +258,7 @@ class SportHandler(
                 "$sport:${Json.encodeToString(scoreboard)}"
             )
             if(enableBoxScore) buildBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
-            lastSentScoreboard = scoreboard
+            lastSentScoreboard[sport] = scoreboard
         }
     }
 
@@ -293,6 +296,7 @@ class SportHandler(
             competitions.map { competition ->
                 Post(
                     id = "$GAME_PREFIX${competition.id}",
+                    userId = SYSTEM,
                     title = competition.shortName,
                     content = "${competition.date}||${competition.shortName}",
                     type = PostType.GAME,

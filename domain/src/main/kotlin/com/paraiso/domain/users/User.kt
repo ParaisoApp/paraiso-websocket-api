@@ -4,6 +4,7 @@ import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -188,6 +189,34 @@ fun UserResponse.Companion.newUser(
             userReports = emptyMap(),
             postReports = emptyMap(),
             roles = UserRole.GUEST,
+            banned = false,
+            blockList = emptyMap(),
+            image = UserImage.initImage(),
+            settings = UserSettings.initSettings(),
+            tag = null,
+            createdOn = now,
+            updatedOn = now
+        )
+    }
+fun UserResponse.Companion.systemUser() =
+    Clock.System.now().let { now ->
+        UserResponse(
+            id = SYSTEM,
+            name = SYSTEM,
+            fullName = null,
+            email = null,
+            about = null,
+            location = null,
+            birthday = null,
+            posts = emptyMap(),
+            replies = emptyMap(),
+            chats = emptyMap(),
+            followers = emptyMap(),
+            following = emptyMap(),
+            routeFavorites = emptyMap(),
+            userReports = emptyMap(),
+            postReports = emptyMap(),
+            roles = UserRole.ADMIN,
             banned = false,
             blockList = emptyMap(),
             image = UserImage.initImage(),

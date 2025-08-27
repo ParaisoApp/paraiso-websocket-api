@@ -3,7 +3,6 @@ package com.paraiso.database.posts
 import com.mongodb.client.model.Aggregates.limit
 import com.mongodb.client.model.Aggregates.lookup
 import com.mongodb.client.model.Aggregates.match
-import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
@@ -21,6 +20,7 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.client.model.Updates.unset
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
+import com.paraiso.database.util.fieldsEq
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.Post
@@ -31,7 +31,6 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.USER_PREFIX
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
@@ -78,8 +77,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 Post::userId.name, // localField
                 ID, // foreignField
                 "userInfo" // as
-            ),
-            limit(RETRIEVE_LIM)
+            )
         )
 
     private fun getUserRoleCondition(
@@ -109,7 +107,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     private fun getSort(sortType: SortType): List<Bson> {
         return when (sortType) {
             SortType.NEW -> listOf(
-                Document("\$sort", Document(Post::createdOn.name, 1))
+                Document("\$sort", Document(Post::createdOn.name, -1))
             )
 
             SortType.TOP -> listOf(
@@ -131,7 +129,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                         )
                     )
                 ),
-                Document("\$sort", Document("score", 1))
+                Document("\$sort", Document("score", -1))
             )
 
             SortType.HOT -> listOf(
@@ -171,7 +169,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                         )
                     )
                 ),
-                Document("\$sort", Document("hotScore", 1))
+                Document("\$sort", Document("hotScore", -1))
             )
         }
     }
@@ -190,10 +188,11 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             homeFilters.add(eqId(Post::rootId))
         }
 
-        val orConditions = mutableListOf<Bson>()
-        orConditions += eq(Post::parentId.name, postSearchId)
-        orConditions += eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
-        orConditions += and(homeFilters)
+        val orConditions = listOf(
+            eq(Post::parentId.name, postSearchId),
+            eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX)),
+            or(homeFilters)
+        )
 
         val initialFilter = and(
             or(orConditions),
@@ -205,6 +204,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         val pipeline = getInitAggPipeline(initialFilter)
         pipeline.add(getUserRoleCondition(filters, userFollowing))
         pipeline.addAll(getSort(sortType))
+        pipeline.add(limit(RETRIEVE_LIM))
 
         return collection.aggregate<Post>(pipeline).toList()
     }
