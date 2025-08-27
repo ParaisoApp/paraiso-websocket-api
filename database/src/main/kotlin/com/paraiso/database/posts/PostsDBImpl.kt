@@ -10,6 +10,7 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
+import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.addToSet
@@ -54,8 +55,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         collection.find(`in`(ID, ids)).toList()
 
     override suspend fun findByPartial(partial: String): List<Post> =
-        collection.find(Filters.regex(Post::title.name, partial, "i"))
-            .limit(PARTIAL_RETRIEVE_LIM).toList()
+        collection.find(
+            or(
+                regex(Post::title.name, partial, "i"),
+                regex(Post::content.name, partial, "i")
+            )
+        ).limit(PARTIAL_RETRIEVE_LIM).toList()
 
     override suspend fun findByUserId(userId: String) =
         collection.find(eq(Post::userId.name, userId)).toList()
