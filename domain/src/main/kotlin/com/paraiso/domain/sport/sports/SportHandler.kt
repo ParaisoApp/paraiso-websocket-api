@@ -161,11 +161,11 @@ class SportHandler(
                     Post(
                         id = "$TEAM_PREFIX$key-${competition.id}",
                         title = competition.shortName,
-                        content = "${competition.date}-${competition.shortName}",
+                        content = "${competition.date}||${competition.shortName}",
                         type = PostType.GAME,
                         parentId = "/s/${sport.name.lowercase()}/t/$key",
                         rootId = "$TEAM_PREFIX$key-${competition.id}",
-                        data = "$TEAM_PREFIX$key-${competition.id}",
+                        data = sport.name,
                     )
                 }
             }
@@ -294,11 +294,11 @@ class SportHandler(
                 Post(
                     id = "$GAME_PREFIX${competition.id}",
                     title = competition.shortName,
-                    content = "${competition.date}-${competition.shortName}",
+                    content = "${competition.date}||${competition.shortName}",
                     type = PostType.GAME,
-                    parentId = sport.name,
+                    parentId = "/${sport.name}",
                     rootId = "$GAME_PREFIX${competition.id}",
-                    data = "${competition.date}-${competition.shortName}",
+                    data = sport.name,
                 )
             }
         )
