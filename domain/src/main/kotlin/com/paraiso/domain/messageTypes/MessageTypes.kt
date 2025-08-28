@@ -65,7 +65,7 @@ fun FilterTypes.Companion.init() = FilterTypes(
     postTypes = setOf(
         PostType.COMMENT,
         PostType.SUB,
-        PostType.GAME
+        PostType.EVENT
     ),
     userRoles = setOf(
         UserRole.FOLLOWING,

@@ -61,8 +61,8 @@ enum class PostType {
     @SerialName("COMMENT")
     COMMENT,
 
-    @SerialName("GAME")
-    GAME
+    @SerialName("EVENT")
+    EVENT
 }
 
 @Serializable
