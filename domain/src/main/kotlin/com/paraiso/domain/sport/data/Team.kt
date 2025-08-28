@@ -20,6 +20,7 @@ data class Team(
 @Serializable
 data class TeamResponse(
     val id: String,
+    val teamId: String,
     val location: String,
     val name: String?,
     val abbreviation: String,
@@ -29,7 +30,8 @@ data class TeamResponse(
 
 fun Team.toResponse() =
     TeamResponse(
-        id = teamId,
+        id = "$sport-$teamId",
+        teamId = teamId,
         location = location,
         name = name,
         abbreviation = abbreviation,
