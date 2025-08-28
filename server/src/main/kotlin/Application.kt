@@ -200,7 +200,7 @@ fun Application.module(jobScope: CoroutineScope){
             usersApi.saveUser(UserResponse.systemUser())
         }
     }
-    configureSockets(handler, services, serverHandler, sportHandler)
+    configureSockets(config, handler, services, serverHandler, sportHandler)
     //close subscription to redis
     environment.monitor.subscribe(ApplicationStopped) {
         eventServiceImpl.close()
@@ -208,12 +208,13 @@ fun Application.module(jobScope: CoroutineScope){
 }
 
 fun Application.configureSockets(
+    config: HoconApplicationConfig,
     handler: WebSocketHandler,
     services: AppServices,
     serverHandler: ServerHandler,
     sportHandler: SportHandler
 ) {
-    configureFeatures()
+    configureFeatures(config)
     routing {
         webSocket("chat") {
             handler.handleUser(this)
@@ -232,7 +233,10 @@ fun Application.configureSockets(
         }
     }
 }
-fun Application.configureFeatures() {
+fun Application.configureFeatures(config: HoconApplicationConfig) {
+    val frontendHost = config.property("api.frontendHost").getString()
+    val backendHost = config.property("api.backendHost").getString()
+    val scheme = config.property("api.scheme").getString()
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
         pingPeriod = Duration.ofSeconds(30)
@@ -241,7 +245,8 @@ fun Application.configureFeatures() {
         masking = false
     }
     install(CORS) {
-        anyHost() // 🚨 dev only
+        allowHost(frontendHost, schemes = listOf(scheme))
+        allowHost(backendHost, schemes = listOf(scheme))
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Accept)
         allowHeader(HttpHeaders.Authorization)
