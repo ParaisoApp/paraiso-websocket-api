@@ -37,6 +37,13 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
+        get("/boxScoresById") {
+            sportApi.getBoxScoresById(
+                call.request.queryParameters["id"] ?: ""
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
         get("/standings") {
             sportApi.getStandings(
                 call.request.queryParameters["sport"] ?: ""

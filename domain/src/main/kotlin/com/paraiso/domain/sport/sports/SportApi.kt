@@ -15,6 +15,7 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun getTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
     suspend fun getTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
     suspend fun getCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
+    suspend fun getBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.teams
     suspend fun getStandings(sport: String) =
         if(sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
