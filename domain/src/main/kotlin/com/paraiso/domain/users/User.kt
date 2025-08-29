@@ -90,6 +90,7 @@ data class UserResponse(
     val image: UserImage,
     val tag: String?,
     val settings: UserSettings,
+    val status: UserStatus?,
     val createdOn: Instant,
     val updatedOn: Instant
 ) { companion object }
@@ -112,7 +113,7 @@ data class UserFavorite(
     val icon: String?
 )
 
-fun User.toResponse() =
+fun User.toResponse(status: UserStatus?) =
     UserResponse(
         id = id,
         name = name,
@@ -135,6 +136,7 @@ fun User.toResponse() =
         image = image,
         settings = settings,
         tag = tag,
+        status = status,
         createdOn = createdOn,
         updatedOn = updatedOn
     )
@@ -194,6 +196,7 @@ fun UserResponse.Companion.newUser(
             image = UserImage.initImage(),
             settings = UserSettings.initSettings(),
             tag = null,
+            status = UserStatus.CONNECTED,
             createdOn = now,
             updatedOn = now
         )
@@ -222,6 +225,7 @@ fun UserResponse.Companion.systemUser() =
             image = UserImage.initImage(),
             settings = UserSettings.initSettings(),
             tag = null,
+            status = UserStatus.DISCONNECTED,
             createdOn = now,
             updatedOn = now
         )

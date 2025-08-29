@@ -14,12 +14,35 @@ import io.ktor.server.routing.route
 
 fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
     route("userSessions") {
-        get("byUserId") {
-            userSessionsApi.getByUserId(
-                call.request.queryParameters["id"] ?: "",
-            )?.let {
+        get("/getByName") {
+            userSessionsApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
+        get("/getById") {
+            userSessionsApi.getUserById(call.request.queryParameters["id"] ?: "")?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
+        get("/getByPartial") {
+            userSessionsApi.getUserByPartial(call.request.queryParameters["search"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+        get("/exists") {
+            userSessionsApi.exists(call.request.queryParameters["search"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+        get("/getFollowingById") {
+            userSessionsApi.getFollowingById(call.request.queryParameters["id"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+        get("/getFollowersById") {
+            userSessionsApi.getFollowersById(call.request.queryParameters["id"] ?: "").let {
+                call.respond(HttpStatusCode.OK, it)
+            }
         }
         post("userList") {
             userSessionsApi.getUserList(

@@ -21,36 +21,6 @@ fun Route.usersController(usersApi: UsersApi) {
                 call.receive<UserResponse>()
             )
         }
-        get("/getByName") {
-            usersApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
-        }
-        get("/getById") {
-            usersApi.getUserById(call.request.queryParameters["id"] ?: "")?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
-        }
-        get("/getByPartial") {
-            usersApi.getUserByPartial(call.request.queryParameters["search"] ?: "").let {
-                call.respond(HttpStatusCode.OK, it)
-            }
-        }
-        get("/exists") {
-            usersApi.exists(call.request.queryParameters["search"] ?: "").let {
-                call.respond(HttpStatusCode.OK, it)
-            }
-        }
-        get("/getFollowingById") {
-            usersApi.getFollowingById(call.request.queryParameters["id"] ?: "").let {
-                call.respond(HttpStatusCode.OK, it)
-            }
-        }
-        get("/getFollowersById") {
-            usersApi.getFollowersById(call.request.queryParameters["id"] ?: "").let {
-                call.respond(HttpStatusCode.OK, it)
-            }
-        }
         post("/settings") {
             usersApi.setSettings(
                 call.request.queryParameters["id"] ?: "",

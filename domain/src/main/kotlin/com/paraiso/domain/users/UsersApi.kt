@@ -16,27 +16,6 @@ import kotlinx.coroutines.launch
 class UsersApi(
     private val usersDB: UsersDB
 ) {
-    suspend fun getUserById(userId: String) =
-        usersDB.findById(userId)?.toResponse()
-
-    suspend fun getUserByName(userName: String): UserResponse? =
-        usersDB.findByName(userName)?.toResponse()
-
-    suspend fun exists(search: String) =
-        usersDB.existsByName(search)
-
-    suspend fun getUserByPartial(search: String) =
-        usersDB.findByPartial(search)
-            .map { it.toResponse() }
-
-    suspend fun getFollowingById(userId: String) =
-        usersDB.getFollowingById(userId)
-            .map { it.toResponse() }
-
-    suspend fun getFollowersById(userId: String) =
-        usersDB.getFollowersById(userId)
-            .map { it.toResponse() }
-
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
 

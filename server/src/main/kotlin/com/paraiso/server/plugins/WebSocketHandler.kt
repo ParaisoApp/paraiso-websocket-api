@@ -63,7 +63,7 @@ class WebSocketHandler(
         // session state
         val sessionState = SessionState()
         // check cookies to see if existing user
-        val checkExistingUser = services.usersApi.getUserById(session.call.request.cookies["guest_id"] ?: "")
+        val checkExistingUser = services.userSessionsApi.getUserById(session.call.request.cookies["guest_id"] ?: "")
         val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
         launch{
             // new user so create new route entry
@@ -187,7 +187,7 @@ class WebSocketHandler(
                         sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
                         userId != null &&
                         sessionState.filterTypes.userRoles.contains(
-                            services.usersApi.getUserById(userId)?.roles ?: UserRole.GUEST
+                            services.userSessionsApi.getUserById(userId)?.roles ?: UserRole.GUEST
                         )
                 )
 
@@ -237,7 +237,7 @@ class WebSocketHandler(
                                     userId = sessionUser.id
                                 ).let { dmWithData ->
                                     launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                    val userReceiveBlocklist = services.usersApi.getUserById(dmWithData.userReceiveId)?.blockList
+                                    val userReceiveBlocklist = services.userSessionsApi.getUserById(dmWithData.userReceiveId)?.blockList
                                     if (
                                         !sessionUser.banned &&
                                         userReceiveBlocklist?.contains(sessionUser.id) == false
@@ -408,7 +408,7 @@ class WebSocketHandler(
                     )
                 }
             }
-            services.usersApi.getUserById(sessionUser.id)?.let { userDisconnected ->
+            services.userSessionsApi.getUserById(sessionUser.id)?.copy(status = UserStatus.DISCONNECTED)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
                 //remove current user session from sessions map
