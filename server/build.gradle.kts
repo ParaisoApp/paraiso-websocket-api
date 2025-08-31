@@ -33,3 +33,17 @@ dependencies {
 application {
     mainClass.set("com.paraiso.Application")
 }
+
+tasks.register<Jar>("fatJar") {
+    archiveBaseName.set("server-all")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.get().output)
+
+    // Include all runtime dependencies (modules + external libs)
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get()
+            .filter { it.name.endsWith("jar") }
+            .map { zipTree(it) }
+    })
+}
