@@ -36,14 +36,20 @@ application {
 
 tasks.register<Jar>("fatJar") {
     archiveBaseName.set("server-all")
+    archiveVersion.set("") // optional, removes version suffix
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(sourceSets.main.get().output)
 
-    // Include all runtime dependencies (modules + external libs)
     dependsOn(configurations.runtimeClasspath)
     from({
         configurations.runtimeClasspath.get()
             .filter { it.name.endsWith("jar") }
             .map { zipTree(it) }
     })
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.paraiso.Application"
+        )
+    }
 }

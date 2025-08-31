@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso
+package com.paraiso
 
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi

@@ -1,6 +1,6 @@
 package com.paraiso.server.plugins
 
-import com.paraiso.com.paraiso.AppServices
+import com.paraiso.AppServices
 import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
