@@ -47,3 +47,4 @@ server/src/main/resources/application.yml
 server/src/main/resources/.env
 server/src/main/resources/envs/alpha.env
 server/src/main/resources/envs/local.env
+.env
