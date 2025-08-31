@@ -84,11 +84,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 fun main() {
     // === MongoDB ===
-    val mongoUser = System.getenv("MONGO_USER")?.trim() ?: error("MONGO_USER not set")
-    val mongoPassword = System.getenv("MONGO_PASSWORD")?.trim() ?: error("MONGO_PASSWORD not set")
-    val mongoHost = System.getenv("MONGO_HOST")?.trim() ?: error("MONGO_HOST not set")
-    val mongoPort = System.getenv("MONGO_PORT")?.trim() ?: error("MONGO_PORT not set")
-    val mongoDb = System.getenv("MONGO_DB")?.trim() ?: error("MONGO_DB not set")
+    val mongoUser = System.getenv("MONGO_USER") ?: error("MONGO_USER not set")
+    val mongoPassword = System.getenv("MONGO_PASSWORD") ?: error("MONGO_PASSWORD not set")
+    val mongoHost = System.getenv("MONGO_HOST") ?: error("MONGO_HOST not set")
+    val mongoPort = System.getenv("MONGO_PORT") ?: error("MONGO_PORT not set")
+    val mongoDb = System.getenv("MONGO_DB") ?: error("MONGO_DB not set")
 
     // Print values for debugging
     println("Mongo User: $mongoUser")
@@ -131,6 +131,7 @@ fun Application.module(jobScope: CoroutineScope){
     val mongoUrl = config.property("mongodb.url").getString()
     val mongoDB = config.property("mongodb.database").getString()
     val redisUrl = config.property("redis.url").getString()
+    println("resolved mongoURL from conf: $mongoUrl")
     // setup DB
     val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
     val sportsDBs = SportDBs(
