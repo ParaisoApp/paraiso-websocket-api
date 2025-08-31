@@ -109,6 +109,7 @@ fun main() {
 fun Application.module(jobScope: CoroutineScope){
     // load config
     val resolvedConfig = ConfigFactory.load().resolve()
+    println("system env seen by hocon: ${ConfigFactory.systemEnvironment()}")
     println("resolved config: $resolvedConfig")
     val config = HoconApplicationConfig(resolvedConfig)
     println("built config: $config")
