@@ -8,9 +8,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 
     //redis
-    implementation("io.lettuce:lettuce-core:6.2.0.RELEASE")
+    implementation("io.lettuce:lettuce-core:6.8.0.RELEASE")
 }
 
 application {
-    mainClass.set("com.paraiso.Application")
+    mainClass.set("com.paraiso.ApplicationKt")
 }

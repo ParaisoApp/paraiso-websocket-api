@@ -31,12 +31,12 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.paraiso.Application")
+    mainClass.set("com.paraiso.ApplicationKt")
 }
 
 tasks.register<Jar>("fatJar") {
     archiveBaseName.set("server-all")
-    archiveVersion.set("") // optional, removes version suffix
+    archiveVersion.set("")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(sourceSets.main.get().output)
 
@@ -49,7 +49,7 @@ tasks.register<Jar>("fatJar") {
 
     manifest {
         attributes(
-            "Main-Class" to "com.paraiso.Application"
+            "Main-Class" to "com.paraiso.ApplicationKt"
         )
     }
 }

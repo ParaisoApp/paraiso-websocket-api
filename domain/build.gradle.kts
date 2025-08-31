@@ -8,5 +8,5 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.paraiso.Application")
+    mainClass.set("com.paraiso.ApplicationKt")
 }
