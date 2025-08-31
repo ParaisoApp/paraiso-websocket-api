@@ -108,16 +108,11 @@ fun main() {
 
 fun Application.module(jobScope: CoroutineScope){
     // load config
-    val resolvedConfig = ConfigFactory.load().resolve()
-    println("system env seen by hocon: ${ConfigFactory.systemEnvironment()}")
-    println("resolved config: $resolvedConfig")
-    val config = HoconApplicationConfig(resolvedConfig)
-    println("built config: $config")
+    val config = HoconApplicationConfig(ConfigFactory.load().resolve())
     val serverId = config.property("server.id").getString()
     val mongoUrl = config.property("mongodb.url").getString()
     val mongoDB = config.property("mongodb.database").getString()
     val redisUrl = config.property("redis.url").getString()
-    println("resolved mongoURL from conf: $mongoUrl")
     // setup DB
     val database = MongoClient.create(mongoUrl).getDatabase(mongoDB)
     val sportsDBs = SportDBs(
