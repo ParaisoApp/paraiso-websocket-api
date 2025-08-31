@@ -108,7 +108,7 @@ fun main() {
 
 fun Application.module(jobScope: CoroutineScope){
     // load config
-    val config = HoconApplicationConfig(ConfigFactory.load())
+    val config = HoconApplicationConfig(ConfigFactory.load().resolve())
     val serverId = config.property("server.id").getString()
     val mongoUrl = config.property("mongodb.url").getString()
     val mongoDB = config.property("mongodb.database").getString()
