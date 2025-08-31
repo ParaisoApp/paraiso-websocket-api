@@ -83,24 +83,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 
 fun main() {
-    // === MongoDB ===
-    val mongoUser = System.getenv("MONGO_USER") ?: error("MONGO_USER not set")
-    val mongoPassword = System.getenv("MONGO_PASSWORD") ?: error("MONGO_PASSWORD not set")
-    val mongoHost = System.getenv("MONGO_HOST") ?: error("MONGO_HOST not set")
-    val mongoPort = System.getenv("MONGO_PORT") ?: error("MONGO_PORT not set")
-    val mongoDb = System.getenv("MONGO_DB") ?: error("MONGO_DB not set")
-
-    // Print values for debugging
-    println("Mongo User: $mongoUser")
-    println("Mongo Password: $mongoPassword")
-    println("Mongo Host: $mongoHost")
-    println("Mongo Port: $mongoPort")
-    println("Mongo DB: $mongoDb")
-
-    // Construct Mongo URI safely
-    val mongoUri = "mongodb://$mongoUser:$mongoPassword@$mongoHost:$mongoPort/$mongoDb?authSource=admin"
-    println("Mongo URI: $mongoUri")
-
     val job = SupervisorJob()
     val jobScope = CoroutineScope(Dispatchers.Default + job)
     val server = embeddedServer(Netty, port = 8080) {
