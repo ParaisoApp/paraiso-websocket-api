@@ -85,6 +85,9 @@ enum class SortType {
     @SerialName("HOT")
     HOT,
 
+    @SerialName("RISING")
+    RISING,
+
     @SerialName("TOP")
     TOP
 }

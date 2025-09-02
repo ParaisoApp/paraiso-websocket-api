@@ -25,6 +25,7 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
@@ -42,7 +43,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
         const val RETRIEVE_LIM = 50
         const val PARTIAL_RETRIEVE_LIM = 10
-        const val TIME_WEIGHTING = 10000000000
+        val TIME_WEIGHTING = 10_000_000_000L
+        val RISING_TIME_MULTIPLIER = 2.0
+        const val COMMENT_WEIGHTING = 2
     }
 
     private val collection = database.getCollection("posts", Post::class.java)
@@ -104,6 +107,93 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         }
         return match(Document("\$expr", Document("\$or", orConditions)))
     }
+
+    // (voteSum + 2 * count)
+    private fun getScore(): Document {
+        return Document(
+            "\$add",
+            listOf(
+                Document(
+                    "\$sum",
+                    listOf(
+                        Document(
+                            "\$map",
+                            Document()
+                                .append("input", Document("\$objectToArray", "\$votes"))
+                                .append("as", "vote")
+                                .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
+                        )
+                    )
+                ),
+                Document("\$multiply", listOf(COMMENT_WEIGHTING, "\$count"))
+            )
+        )
+    }
+
+    /*
+     * weightedScore = sign(s) * log10(max(|s|, 1)) + RISING_MULT * (timestamp(createdOn) / TIME_WEIGHTING)
+     * where:
+     *   s = sum of votes (+1/-1) + COMMENT_WEIGHTING * count
+     *   RISING_MULT = multiplier for boosting newer posts
+     *   TIME_WEIGHTING = scaling factor to normalize timestamp
+     */
+    private fun getTimeAndVoteWeighting(risingMult: Double): Document {
+        return Document(
+                "\$addFields",
+                Document(
+                    "weightedScore",
+                    Document(
+                        "\$let",
+                        Document("vars", Document("s", getScore()))
+                            .append("in",
+                                Document(
+                                    "\$add", listOf(
+                                        // sign(s) * log10(max(|s|,1))
+                                        Document(
+                                            "\$multiply", listOf(
+                                                Document(
+                                                    "\$cond", listOf(
+                                                        Document("\$gt", listOf("\$\$s", 0)), 1,
+                                                        Document(
+                                                            "\$cond", listOf(
+                                                                Document("\$lt", listOf("\$\$s", 0)), -1, 0
+                                                            )
+                                                        )
+                                                    )
+                                                ),
+                                                Document(
+                                                    "\$log10", Document(
+                                                        "\$max", listOf(
+                                                            Document("\$abs", "\$\$s"), 1
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        ),
+                                        // time factor: createdOnTimestamp / TIME_WEIGHTING
+                                        Document(
+                                            "\$multiply", listOf(
+                                                risingMult,
+                                                Document(
+                                                    "\$divide", listOf(
+                                                        Document(
+                                                            "\$toLong", Document(
+                                                                "\$dateFromString", Document("dateString", "\$createdOn")
+                                                            )
+                                                        ),
+                                                        TIME_WEIGHTING
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                    )
+                )
+            )
+    }
+
     private fun getSort(sortType: SortType): List<Bson> {
         return when (sortType) {
             SortType.NEW -> listOf(
@@ -115,62 +205,23 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                     "\$addFields",
                     Document(
                         "score",
-                        Document(
-                            "\$sum",
-                            listOf(
-                                Document(
-                                    "\$map",
-                                    Document()
-                                        .append("input", Document("\$objectToArray", "\$votes"))
-                                        .append("as", "vote")
-                                        .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
-                                )
-                            )
-                        )
+                        // (voteSum + 2 * count)
+                        getScore()
                     )
                 ),
                 Document("\$sort", Document("score", -1))
             )
 
             SortType.HOT -> listOf(
-                Document(
-                    "\$addFields",
-                    Document(
-                        "hotScore",
-                        Document(
-                            "\$multiply",
-                            listOf(
-                                Document(
-                                    "\$divide",
-                                    listOf(
-                                        Document(
-                                            "\$toLong",
-                                            Document(
-                                                "\$dateFromString",
-                                                Document("dateString", "\$createdOn")
-                                            )
-                                        ),
-                                        TIME_WEIGHTING
-                                    )
-                                ),
-                                Document(
-                                    "\$sum",
-                                    listOf(
-                                        Document(
-                                            "\$map",
-                                            Document()
-                                                .append("input", Document("\$objectToArray", "\$votes"))
-                                                .append("as", "vote")
-                                                .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-                Document("\$sort", Document("hotScore", -1))
+                getTimeAndVoteWeighting(1.0),
+                Document("\$sort", Document("weightedScore", -1))
             )
+
+            SortType.RISING -> listOf(
+                getTimeAndVoteWeighting(RISING_TIME_MULTIPLIER),
+                Document("\$sort", Document("weightedScore", -1))
+            )
+
         }
     }
 
@@ -185,7 +236,17 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
         )
         if (postSearchId == SiteRoute.HOME.name) {
+            //home page should have all root posts - will eventually resolve to following
             homeFilters.add(eqId(Post::rootId))
+        }
+        if (postSearchId == SiteRoute.BASKETBALL.name || postSearchId == SiteRoute.FOOTBALL.name) {
+            //for sports add their respective gameposts
+            homeFilters.add(
+                and(
+                    eq(Post::type.name, PostType.EVENT.name),
+                    eq(Post::data.name, postSearchId),
+                )
+            )
         }
 
         val orConditions = listOf(
