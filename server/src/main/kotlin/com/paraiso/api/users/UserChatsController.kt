@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.users
+package com.paraiso.api.users
 
 import com.paraiso.domain.users.UserChatsApi
 import io.ktor.http.HttpStatusCode

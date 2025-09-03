@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.admin
+package com.paraiso.api.admin
 
 import com.paraiso.domain.admin.AdminApi
 import io.ktor.http.HttpStatusCode

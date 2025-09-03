@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.routes
+package com.paraiso.api.routes
 
 import com.paraiso.domain.routes.RoutesApi
 import io.ktor.http.HttpStatusCode

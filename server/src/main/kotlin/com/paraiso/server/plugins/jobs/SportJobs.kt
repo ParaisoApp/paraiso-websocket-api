@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.server.plugins.jobs
+package com.paraiso.server.plugins.jobs
 
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.toResponse

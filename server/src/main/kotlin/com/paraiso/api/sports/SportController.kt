@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.sports
+package com.paraiso.api.sports
 
 import com.paraiso.domain.sport.sports.SportApi
 import io.ktor.http.HttpStatusCode

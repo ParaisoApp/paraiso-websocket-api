@@ -1,6 +1,6 @@
-package com.paraiso.com.paraiso.api.sports
+package com.paraiso.api.sports
 
-import com.paraiso.com.paraiso.server.plugins.ServerHandler
+import com.paraiso.server.plugins.ServerHandler
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.SportHandler
 import io.ktor.http.HttpStatusCode

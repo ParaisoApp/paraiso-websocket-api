@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.posts
+package com.paraiso.api.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.PostsApi

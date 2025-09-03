@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.server.plugins
+package com.paraiso.server.plugins
 
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi

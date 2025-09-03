@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.auth
+package com.paraiso.api.auth
 
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.messageTypes.Login
@@ -14,9 +14,9 @@ fun Route.authController(authApi: AuthApi) {
     route("auth") {
         post {
             // fake auth controller
-//            authApi.getAuth(call.receive<Login>())?.let { role ->
-                call.respond(HttpStatusCode.OK)
-//            }
+            authApi.getAuth(call.receive<Login>()).let { role ->
+                call.respond(HttpStatusCode.OK, role)
+            }
         }
     }
 }

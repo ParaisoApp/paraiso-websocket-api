@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.api.metadata
+package com.paraiso.api.metadata
 
 import com.paraiso.domain.metadata.MetadataApi
 import io.ktor.http.HttpStatusCode

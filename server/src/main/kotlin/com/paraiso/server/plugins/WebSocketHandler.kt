@@ -1,10 +1,10 @@
 package com.paraiso.server.plugins
 
 import com.paraiso.AppServices
-import com.paraiso.com.paraiso.server.plugins.jobs.HomeJobs
-import com.paraiso.com.paraiso.server.plugins.jobs.ProfileJobs
-import com.paraiso.com.paraiso.server.plugins.jobs.SportJobs
-import com.paraiso.com.paraiso.server.util.SessionState
+import com.paraiso.server.plugins.jobs.HomeJobs
+import com.paraiso.server.plugins.jobs.ProfileJobs
+import com.paraiso.server.plugins.jobs.SportJobs
+import com.paraiso.server.util.SessionState
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.DirectMessage

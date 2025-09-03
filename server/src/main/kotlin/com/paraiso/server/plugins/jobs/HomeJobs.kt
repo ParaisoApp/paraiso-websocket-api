@@ -1,4 +1,4 @@
-package com.paraiso.com.paraiso.server.plugins.jobs
+package com.paraiso.server.plugins.jobs
 
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.coroutineScope
