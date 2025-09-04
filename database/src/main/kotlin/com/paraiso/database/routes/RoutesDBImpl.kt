@@ -13,6 +13,8 @@ import com.paraiso.domain.routes.RoutesDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import java.util.Date
 
 class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
     private val collection = database.getCollection("routes", RouteDetails::class.java)
@@ -43,7 +45,7 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
             Filters.eq(ID, route),
             combine(
                 addToSet(RouteDetails::userFavorites.name, userFavoriteId),
-                set(RouteDetails::updatedOn.name, Clock.System.now())
+                set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -55,7 +57,7 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
             Filters.eq(ID, route),
             combine(
                 pull(RouteDetails::userFavorites.name, userFavoriteId),
-                set(RouteDetails::updatedOn.name, Clock.System.now())
+                set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 }

@@ -3,6 +3,7 @@ package com.paraiso.domain.messageTypes
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.util.InstantBsonSerializer
 import com.paraiso.domain.util.RecordSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -33,6 +34,7 @@ data class DirectMessage(
     val userReceiveId: String,
     val content: String?,
     val media: String?,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant?
 )
 

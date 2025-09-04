@@ -1,6 +1,7 @@
 package com.paraiso.domain.admin
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -9,7 +10,9 @@ import kotlinx.serialization.Serializable
 data class UserReport(
     @SerialName(ID) val id: String,
     val reportedBy: Set<String>,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant,
+    @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
 )
 
@@ -25,7 +28,9 @@ data class UserReportResponse(
 data class PostReport(
     @SerialName(ID) val id: String,
     val reportedBy: Set<String>,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant,
+    @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
 )
 

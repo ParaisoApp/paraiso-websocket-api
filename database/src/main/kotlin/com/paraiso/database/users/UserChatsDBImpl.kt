@@ -13,6 +13,8 @@ import com.paraiso.domain.users.UserChatsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import java.util.Date
 
 class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB {
     private val collection = database.getCollection("userChats", UserChat::class.java)
@@ -39,7 +41,7 @@ class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB {
             Filters.eq(ID, chatId),
             combine(
                 addToSet(UserChat::dms.name, dm),
-                set(UserChat::updatedOn.name, Clock.System.now())
+                set(UserChat::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 }

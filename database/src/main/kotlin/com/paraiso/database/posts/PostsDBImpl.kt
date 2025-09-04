@@ -7,6 +7,7 @@ import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
+import com.mongodb.client.model.Filters.lte
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
@@ -20,7 +21,6 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.client.model.Updates.unset
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
-import com.paraiso.database.util.fieldsEq
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.Post
@@ -36,8 +36,11 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
+import org.bson.BsonDateTime
 import org.bson.Document
 import org.bson.conversions.Bson
+import java.util.Date
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
@@ -176,11 +179,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                                                 risingMult,
                                                 Document(
                                                     "\$divide", listOf(
-                                                        Document(
-                                                            "\$toLong", Document(
-                                                                "\$dateFromString", Document("dateString", "\$createdOn")
-                                                            )
-                                                        ),
+                                                        // createdOn is already a date, get milliseconds since epoch
+                                                        Document("\$toLong", "\$createdOn"),
                                                         TIME_WEIGHTING
                                                     )
                                                 )
@@ -238,6 +238,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         if (postSearchId == SiteRoute.HOME.name) {
             //home page should have all root posts - will eventually resolve to following
             homeFilters.add(eqId(Post::rootId))
+            homeFilters.add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
         }
         if (postSearchId == SiteRoute.BASKETBALL.name || postSearchId == SiteRoute.FOOTBALL.name) {
             //for sports add their respective gameposts
@@ -255,12 +256,16 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             or(homeFilters)
         )
 
-        val initialFilter = and(
+        val andConditions = mutableListOf(
             or(orConditions),
-            gt(Post::createdOn.name, range),
+            gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
             ne(Post::status.name, PostStatus.DELETED),
-            `in`(Post::type.name, filters.postTypes)
+            `in`(Post::type.name, filters.postTypes),
+            //handle sport posts with future create dates
+            lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
         )
+
+        val initialFilter = and(andConditions)
 
         val pipeline = getInitAggPipeline(initialFilter)
         pipeline.add(getUserRoleCondition(filters, userFollowing))
@@ -283,7 +288,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         }
         val initialFilter = and(
             `in`(ID, subPostIds),
-            gt(Post::createdOn.name, range),
+            gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
             ne(Post::status.name, PostStatus.DELETED),
             `in`(Post::type.name, filters.postTypes)
         )
@@ -313,7 +318,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 set(Post::content.name, message.content),
                 set(Post::media.name, message.media),
                 set(Post::data.name, message.data),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -325,7 +330,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 addToSet(Post::subPosts.name, subPostId),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -338,7 +343,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             combine(
                 pull(Post::subPosts.name, subPostId),
                 inc(Post::count.name, -1),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -351,7 +356,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 set("${Post::votes.name}.$voteUserId", upvote),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -363,7 +368,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 unset("${Post::votes.name}.$voteUserId"),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -374,7 +379,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 set(Post::status.name, PostStatus.DELETED),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -386,7 +391,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 inc(Post::count.name, 1 * increment),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 }

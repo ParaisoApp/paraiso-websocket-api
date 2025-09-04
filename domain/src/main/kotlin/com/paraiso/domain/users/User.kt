@@ -5,6 +5,7 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.SYSTEM
+import com.paraiso.domain.util.InstantBsonSerializer
 import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -34,7 +35,9 @@ data class User(
     val image: UserImage,
     val tag: String?,
     val settings: UserSettings,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant,
+    @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
 ) { companion object }
 

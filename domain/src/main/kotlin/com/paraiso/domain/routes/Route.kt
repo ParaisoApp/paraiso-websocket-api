@@ -1,6 +1,7 @@
 package com.paraiso.domain.routes
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -13,7 +14,9 @@ data class RouteDetails(
     val title: String,
     val userFavorites: Set<String>,
     val about: String?,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant?
 )
 

@@ -31,7 +31,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
 import org.bson.Document
+import java.util.Date
 
 class UsersDBImpl(database: MongoDatabase) : UsersDB {
     companion object {
@@ -96,7 +98,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 set("${User::replies.name}.$replyId", false),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             ),
             FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
         )?.id
@@ -105,7 +107,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(User::name.name, name),
             combine(
                 set("${User::replies.name}.$replyId", false),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             ),
             FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
         )?.id
@@ -114,7 +116,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 set(User::settings.name, settings),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -134,7 +136,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             combine(
                 chatUpdates +
                     replyUpdates +
-                    set(User::updatedOn.name, Clock.System.now())
+                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         )
     }.modifiedCount
@@ -155,7 +157,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             combine(
                 userReportUpdates +
                     postReportUpdates +
-                    set(User::updatedOn.name, Clock.System.now())
+                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         )
     }.modifiedCount
@@ -167,7 +169,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
                 set("${User::userReports.name}.$id", false),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -178,7 +180,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
                 set("${User::postReports.name}.$id", false),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -190,7 +192,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 addToSet(User::followers.name, followerUserId),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -202,7 +204,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 pull(User::followers.name, followerUserId),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -214,7 +216,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 addToSet(User::following.name, followingUserId),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -226,7 +228,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 pull(User::following.name, followingUserId),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -238,7 +240,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 addToSet(User::blockList.name, blockUserId),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -250,7 +252,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 pull(User::blockList.name, blockUserId),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -263,7 +265,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 set("${User::routeFavorites.name}.$route", routeFavorite),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -275,7 +277,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 Document("\$unset", Document("routeFavorites.$route", "")),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -287,7 +289,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 set("${User::posts.name}.$postId.$id", true),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -301,7 +303,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 set("${User::posts.name}.$postId.$voteUserId", upvote),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -314,7 +316,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 Updates.unset("${User::posts.name}.$postId.$voteUserId"),
-                set(Post::updatedOn.name, Clock.System.now())
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -327,7 +329,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, id),
             combine(
                 set("${User::chats.name}.$chatId", chatRef),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -338,7 +340,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, tag.userId),
             combine(
                 set(User::tag.name, tag.tag),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
@@ -349,7 +351,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             eq(ID, ban.userId),
             combine(
                 set(User::banned.name, true),
-                set(User::updatedOn.name, Clock.System.now())
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 }

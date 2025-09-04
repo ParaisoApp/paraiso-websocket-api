@@ -13,6 +13,8 @@ import com.paraiso.domain.admin.UserReportsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import java.util.Date
 
 class UserReportsDBImpl(database: MongoDatabase) : UserReportsDB {
     private val collection = database.getCollection("userReports", UserReport::class.java)
@@ -39,7 +41,7 @@ class UserReportsDBImpl(database: MongoDatabase) : UserReportsDB {
             Filters.eq(ID, userId),
             combine(
                 addToSet(UserReport::reportedBy.name, reportingUserId),
-                set(UserReport::updatedOn.name, Clock.System.now())
+                set(UserReport::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 }

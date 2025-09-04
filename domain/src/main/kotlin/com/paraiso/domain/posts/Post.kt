@@ -2,6 +2,7 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -23,7 +24,9 @@ data class Post(
     val subPosts: Set<String> = emptySet(),
     val count: Int = 0,
     val route: String? = null,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant? = Clock.System.now(),
+    @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant? = Clock.System.now()
 ) { companion object }
 

@@ -169,6 +169,8 @@ class SportHandler(
                         parentId = "/s/${sport.name.lowercase()}/t/$key",
                         rootId = "$TEAM_PREFIX$key-${competition.id}",
                         data = sport.name,
+                        createdOn = Instant.parse(competition.date),
+                        updatedOn = Instant.parse(competition.date)
                     )
                 }
             }
@@ -303,6 +305,8 @@ class SportHandler(
                     parentId = "/${sport.name}",
                     rootId = "$GAME_PREFIX${competition.id}",
                     data = sport.name,
+                    createdOn = Instant.parse(competition.date),
+                    updatedOn = Instant.parse(competition.date)
                 )
             }
         )

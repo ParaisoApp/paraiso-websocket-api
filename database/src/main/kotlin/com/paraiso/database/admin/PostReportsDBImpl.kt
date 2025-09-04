@@ -13,6 +13,8 @@ import com.paraiso.domain.admin.PostReportsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import java.util.Date
 
 class PostReportsDBImpl(database: MongoDatabase) : PostReportsDB {
     private val collection = database.getCollection("postReports", PostReport::class.java)
@@ -39,7 +41,7 @@ class PostReportsDBImpl(database: MongoDatabase) : PostReportsDB {
             Filters.eq(ID, postId),
             combine(
                 addToSet(PostReport::reportedBy.name, reportingUserId),
-                set(PostReport::updatedOn.name, Clock.System.now())
+                set(PostReport::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 }
