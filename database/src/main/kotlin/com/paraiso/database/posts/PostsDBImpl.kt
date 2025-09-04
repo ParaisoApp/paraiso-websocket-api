@@ -41,6 +41,7 @@ import org.bson.BsonDateTime
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
+import kotlin.time.Duration.Companion.days
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
@@ -238,7 +239,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         if (postSearchId == SiteRoute.HOME.name) {
             //home page should have all root posts - will eventually resolve to following
             homeFilters.add(eqId(Post::rootId))
-            homeFilters.add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
         }
         if (postSearchId == SiteRoute.BASKETBALL.name || postSearchId == SiteRoute.FOOTBALL.name) {
             //for sports add their respective gameposts
@@ -261,8 +261,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
             ne(Post::status.name, PostStatus.DELETED),
             `in`(Post::type.name, filters.postTypes),
-            //handle sport posts with future create dates
-            lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
+            //handle events (which may be created early but create date of event date)
+            lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
         )
 
         val initialFilter = and(andConditions)
