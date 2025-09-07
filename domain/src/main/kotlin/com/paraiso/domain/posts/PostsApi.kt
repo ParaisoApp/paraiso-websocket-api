@@ -105,8 +105,8 @@ class PostsApi(
         }
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
-        Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking at new posts or range is set to all
-            .takeIf { rangeModifier == Range.ALL || sortType == SortType.NEW }
+        Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking not finding top posts or range all
+            .takeIf { rangeModifier == Range.ALL || sortType != SortType.TOP}
             ?: Clock.System.now().let { clock ->
                 when (rangeModifier) {
                     Range.DAY -> clock.minus(1.days)
