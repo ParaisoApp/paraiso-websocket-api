@@ -23,7 +23,7 @@ class SportJobs {
                 SportState.getBoxscoreFlow(sport).collect { boxscores ->
                     session.sendTypedMessage(
                         MessageType.BOX_SCORES,
-                        boxscores.flatMap { it.teams }.map { it.toResponse() }
+                        boxscores.map { it.toResponse() }
                     )
                 }
             }
@@ -50,7 +50,7 @@ class SportJobs {
                         .filter { boxScore ->
                             boxScore.teams.map { it.teamId }.contains(content)
                         }.map { it.toResponse() }
-                    session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse.flatMap { it.teams })
+                    session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse)
                 }
             }
         )

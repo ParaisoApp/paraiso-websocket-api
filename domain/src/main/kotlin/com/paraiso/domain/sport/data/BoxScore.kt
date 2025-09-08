@@ -34,6 +34,7 @@ data class StatTypes(
 
 @Serializable
 data class BoxScoreResponse(
+    val id: String,
     val teams: List<FullTeamResponse>
 )
 
@@ -61,6 +62,7 @@ data class StatTypesResponse(
 
 fun BoxScore.toResponse() =
     BoxScoreResponse(
+        id = id,
         teams = teams.map { it.toResponse() }
     )
 

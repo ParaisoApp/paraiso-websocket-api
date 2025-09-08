@@ -1,7 +1,6 @@
 package com.paraiso
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.paraiso.AppServices
 import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
