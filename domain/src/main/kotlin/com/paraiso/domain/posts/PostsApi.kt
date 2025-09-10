@@ -8,8 +8,6 @@ import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UsersDB
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
-import com.paraiso.domain.util.Constants.UNKNOWN
-import com.paraiso.domain.util.ServerState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock

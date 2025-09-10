@@ -30,6 +30,9 @@ import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.util.Constants.BASKETBALL_PREFIX
+import com.paraiso.domain.util.Constants.FOOTBALL_PREFIX
+import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import kotlinx.coroutines.flow.firstOrNull
@@ -236,16 +239,15 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         val homeFilters = mutableListOf(
             eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
         )
-        if (postSearchId == SiteRoute.HOME.name) {
+        if (postSearchId == HOME_PREFIX) {
             //home page should have all root posts - will eventually resolve to following
             homeFilters.add(eqId(Post::rootId))
         }
-        if (postSearchId == SiteRoute.BASKETBALL.name || postSearchId == SiteRoute.FOOTBALL.name) {
+        if (postSearchId == BASKETBALL_PREFIX || postSearchId == FOOTBALL_PREFIX) {
             //for sports add their respective gameposts
             homeFilters.add(
                 and(
                     eq(Post::type.name, PostType.EVENT.name),
-                    eq(Post::data.name, postSearchId),
                 )
             )
         }
