@@ -24,6 +24,7 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
         collection.find(
             and(
                 eq(StatLeaders::sport.name, sport),
+                eq(StatLeaders::teamId.name, null),
                 eq(StatLeaders::season.name, season),
                 eq(StatLeaders::type.name, type),
             )
