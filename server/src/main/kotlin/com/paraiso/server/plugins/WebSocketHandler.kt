@@ -210,7 +210,8 @@ class WebSocketHandler(
                                 val userIdMentions = services.usersApi.addMentions(
                                     getMentions(message.content),
                                     message.userReceiveIds.firstOrNull(),
-                                    messageId
+                                    messageId,
+                                    message.userId
                                 )
                                 message.copy(
                                     id = messageId,

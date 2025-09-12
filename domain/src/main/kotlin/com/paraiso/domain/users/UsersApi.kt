@@ -19,16 +19,20 @@ class UsersApi(
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
 
-    suspend fun addMentions(userNames: Set<String>, userId: String?, messageId: String): Set<String> = coroutineScope {
+    suspend fun addMentions(
+        userNames: Set<String>,
+        messageUserReceiveId: String?,
+        messageId: String,
+        messageUserId: String?
+    ): Set<String> = coroutineScope {
         // update user post replies
         val userIds = userNames.map { userName ->
             async {
                 usersDB.addMentionsByName(userName, messageId)
             }
         }.awaitAll().filterNotNull().toMutableSet()
-        // if (message.userId != message.userReceiveId) {
-        if (userId != null) {
-            usersDB.addMentions(userId, messageId)?.let {
+        if (messageUserReceiveId != null && messageUserReceiveId != messageUserId) {
+            usersDB.addMentions(messageUserReceiveId, messageId)?.let {
                 userIds.add(it)
             }
         }
