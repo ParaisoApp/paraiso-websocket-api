@@ -28,8 +28,8 @@ class PostsApi(
             )
         }
 
-    suspend fun getByIdBasic(postSearchId: String) =
-        postsDB.findById(postSearchId)?.toResponse()
+    suspend fun getByIdsBasic(postSearchIds: Set<String>) =
+        postsDB.findByIdsIn(postSearchIds).associate { it.id to it.toResponse() }
 
     suspend fun getByIds(
         postSearchIds: Set<String>

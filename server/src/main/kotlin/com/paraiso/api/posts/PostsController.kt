@@ -39,12 +39,12 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
-        get("getByIdBasic") {
-            postsApi.getByIdBasic(
-                call.request.queryParameters["id"] ?: ""
-            )?.let {
+        post("getByIdsBasic") {
+            postsApi.getByIdsBasic(
+                call.receive<Set<String>>(),
+            ).let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
+            }
         }
         post("getByIds") {
             postsApi.getByIds(
