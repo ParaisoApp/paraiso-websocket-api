@@ -13,11 +13,11 @@ data class Metadata(
 
 enum class Platform(val regex: Regex, val oembedEndpoint: String) {
     YOUTUBE(
-        Regex("https?://(www\\.|m\\.)?youtube\\.com/watch.*"),
+        Regex("https?://((www|m)\\.)?youtube\\.com/watch.*|https?://youtu\\.be/.*"),
         "https://www.youtube.com/oembed"
     ),
     TWITTER(
-        Regex("https?://(www\\.|mobile\\.)?twitter\\.com/.+/status/\\d+"),
+        Regex("https?://((www|mobile)\\.)?(twitter|x)\\.com/.+/status/\\d+"),
         "https://publish.twitter.com/oembed"
     ),
     TWITCH(
@@ -29,7 +29,8 @@ enum class Platform(val regex: Regex, val oembedEndpoint: String) {
         "https://api.streamable.com/oembed.json"
     ),
     REDDIT(
-        Regex("https?://(www\\.|m\\.)?reddit\\.com/r/.+/comments/.*"),
+        Regex("https?://((www|m)\\.)?reddit\\.com/r/.+/comments/.*"),
         "https://www.reddit.com/oembed"
     )
 }
+
