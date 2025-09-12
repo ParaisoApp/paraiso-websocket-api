@@ -12,6 +12,7 @@ import com.paraiso.api.sports.sportController
 import com.paraiso.api.users.userChatsController
 import com.paraiso.api.users.userSessionsController
 import com.paraiso.api.users.usersController
+import com.paraiso.client.metadata.MetadataClientImpl
 import com.paraiso.server.plugins.ServerHandler
 import com.paraiso.server.plugins.MessageHandler
 import com.paraiso.database.admin.PostReportsDBImpl
@@ -153,7 +154,7 @@ fun Application.module(jobScope: CoroutineScope){
     val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
-    val metadataApi = MetadataApi()
+    val metadataApi = MetadataApi(MetadataClientImpl())
     val services = AppServices(
         authApi,
         adminApi,
@@ -166,9 +167,8 @@ fun Application.module(jobScope: CoroutineScope){
         metadataApi
     )
     //build handlers early - for data generation
-    val sportOperationImpl = SportClientImpl()
     val sportHandler = SportHandler(
-        sportOperationImpl,
+        SportClientImpl(),
         routesApi,
         sportsDBs,
         eventServiceImpl,

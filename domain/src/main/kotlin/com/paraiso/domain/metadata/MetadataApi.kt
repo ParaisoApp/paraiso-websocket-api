@@ -1,15 +1,22 @@
 package com.paraiso.domain.metadata
 
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
-class MetadataApi {
-    suspend fun getMetadata(url: String): Metadata? = coroutineScope {
+class MetadataApi(private val metadataClient: MetadataClient) {
+
+    private fun detectPlatform(url: String): Platform? =
+        Platform.entries.find { it.regex.matches(url) }
+    suspend fun getMetadata(url: String): Metadata = coroutineScope {
+        val endpointUrl = when (val platform = detectPlatform(url)) {
+            Platform.TWITCH -> "${platform.oembedEndpoint}${url}" // Twitch endpoint already appends ?url=
+            else -> "${platform?.oembedEndpoint}?url=${url}&format=json"
+        }
+
+        metadataClient.getMetadata(endpointUrl, url)?.let { metadataClientRes ->
+            return@coroutineScope metadataClientRes
+        }
         // First, do a GET request to check headers
         val response = Jsoup.connect(url)
             .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
