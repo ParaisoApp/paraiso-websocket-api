@@ -1,6 +1,5 @@
 package com.paraiso.server.util
 
-import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.MessageType
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
