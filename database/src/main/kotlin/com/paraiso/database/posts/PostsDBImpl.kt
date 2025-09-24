@@ -9,6 +9,7 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.lte
 import com.mongodb.client.model.Filters.ne
+import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
@@ -241,13 +242,19 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         )
         if (postSearchId == HOME_PREFIX) {
             //home page should have all root posts - will eventually resolve to following
-            homeFilters.add(eqId(Post::rootId))
+            homeFilters.add(
+                and(
+                    eqId(Post::rootId),
+                    not(regex(ID, "^TEAM", "i")) //remove team event posts unless in team route
+                )
+            )
         }
         if (postSearchId == BASKETBALL_PREFIX || postSearchId == FOOTBALL_PREFIX) {
             //for sports add their respective gameposts
             homeFilters.add(
                 and(
                     eq(Post::type.name, PostType.EVENT.name),
+                    not(regex(ID, "^TEAM", "i")) //remove team event posts unless in team route
                 )
             )
         }
