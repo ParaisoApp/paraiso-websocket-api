@@ -144,6 +144,35 @@ fun User.toResponse(status: UserStatus?) =
         updatedOn = updatedOn
     )
 
+//user list doesn't need all data
+fun User.toBasicResponse(status: UserStatus?) =
+    UserResponse(
+        id = id,
+        name = name,
+        fullName = fullName,
+        email = email,
+        about = about,
+        location = location,
+        birthday = birthday,
+        posts = posts,
+        chats = chats,
+        replies = replies,
+        followers = followers.associateWith { true },
+        following = following.associateWith { true },
+        routeFavorites = routeFavorites,
+        userReports = emptyMap(), // Default
+        postReports = emptyMap(), // Default
+        roles = roles,
+        banned = false, // Default
+        blockList = emptyMap(), // Default
+        image = image,
+        settings = settings,
+        tag = tag,
+        status = status,
+        createdOn = createdOn,
+        updatedOn = updatedOn
+    )
+
 fun UserResponse.toUser() =
     User(
         id = id,

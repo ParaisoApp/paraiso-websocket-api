@@ -13,13 +13,13 @@ class UserSessionsApi(
         } else UserStatus.CONNECTED
     suspend fun getUserById(userId: String) =
         eventService.getUserSession(userId).let {session ->
-            usersDB.findById(userId)?.toResponse(getStatus(session))
+            usersDB.findById(userId)?.toBasicResponse(getStatus(session))
         }
 
     suspend fun getUserByName(userName: String): UserResponse? =
         usersDB.findByName(userName)?.let{user ->
             eventService.getUserSession(user.id).let { session ->
-                user.toResponse(getStatus(session))
+                user.toBasicResponse(getStatus(session))
             }
         }
 
@@ -30,7 +30,7 @@ class UserSessionsApi(
         usersDB.findByPartial(search)
             .map {user ->
                 eventService.getUserSession(user.id).let { session ->
-                    user.toResponse(getStatus(session))
+                    user.toBasicResponse(getStatus(session))
                 }
             }
 
@@ -38,7 +38,7 @@ class UserSessionsApi(
         usersDB.getFollowingById(userId)
             .map { user ->
                 eventService.getUserSession(user.id).let { session ->
-                    user.toResponse(getStatus(session))
+                    user.toBasicResponse(getStatus(session))
                 }
             }
 
@@ -46,7 +46,7 @@ class UserSessionsApi(
         usersDB.getFollowersById(userId)
             .map { user ->
                 eventService.getUserSession(user.id).let { session ->
-                    user.toResponse(getStatus(session))
+                    user.toBasicResponse(getStatus(session))
                 }
             }
 
@@ -54,7 +54,7 @@ class UserSessionsApi(
         eventService.getAllActiveUsers().map { it.userId }.let{ activeUserIds ->
             usersDB.getFollowingById(userId).let { followingList ->
                 usersDB.getUserList(activeUserIds, filters, followingList.map { it.id })
-            }.associate { user -> user.id to user.toResponse(UserStatus.CONNECTED) }
+            }.associate { user -> user.id to user.toBasicResponse(UserStatus.CONNECTED) }
         }
 
 }

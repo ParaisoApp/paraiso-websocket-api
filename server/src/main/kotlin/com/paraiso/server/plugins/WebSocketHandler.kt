@@ -151,7 +151,15 @@ class WebSocketHandler(
                         MessageType.FOLLOW -> sendTypedMessage(type, message as Follow)
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_UPDATE -> sendTypedMessage(type, message as UserResponse)
+                        MessageType.USER_UPDATE -> sendTypedMessage(
+                            type, //remove private data from user update socket messages
+                            (message as UserResponse).copy(
+                                userReports = emptyMap(),
+                                postReports = emptyMap(),
+                                banned = false,
+                                blockList = emptyMap(),
+                            )
+                        )
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
                         MessageType.TAG -> sendTypedMessage(type, message as Tag)
