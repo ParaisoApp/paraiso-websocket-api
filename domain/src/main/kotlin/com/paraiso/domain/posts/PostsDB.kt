@@ -34,17 +34,12 @@ interface PostsDB{
         id: String,
         subPostId: String
     ): Long
-    suspend fun addVotes(
-        id: String,
-        voteUserId: String,
-        upvote: Boolean
-    ): Long
-    suspend fun removeVotes(
-        id: String,
-        voteUserId: String
-    ): Long
     suspend fun setPostDeleted(
         id: String
+    ): Long
+    suspend fun setScore(
+        id: String,
+        score: Int
     ): Long
     suspend fun setCount(
         id: String,

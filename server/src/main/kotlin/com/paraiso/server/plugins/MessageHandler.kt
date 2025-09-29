@@ -9,6 +9,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
+import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Scoreboard
@@ -86,7 +87,7 @@ class MessageHandler(
                         }
 
                         MessageType.VOTE.name -> {
-                            decodeMessage<Vote>(message)?.let { vote ->
+                            decodeMessage<VoteResponse>(message)?.let { vote ->
                                 ServerState.voteFlowMut.emit(vote)
                             }
                         }

@@ -47,7 +47,7 @@ fun Message.toNewPost() =
             content = content,
             type = type,
             media = media,
-            votes = if (userId != null) mapOf(userId to true) else mapOf(),
+            score = 1,
             parentId = replyId,
             rootId = rootId,
             status = PostStatus.ACTIVE,

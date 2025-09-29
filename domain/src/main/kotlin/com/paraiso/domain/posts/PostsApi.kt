@@ -4,6 +4,7 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.Vote
+import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UsersDB
@@ -139,14 +140,8 @@ class PostsApi(
         }
     }
 
-    suspend fun votePost(vote: Vote) =
-        postsDB.findById(vote.postId)?.votes?.let { votes ->
-            if (votes.containsKey(vote.voterId) && votes[vote.voterId] == vote.upvote) {
-                postsDB.removeVotes(vote.postId, vote.voterId)
-            } else {
-                postsDB.addVotes(vote.postId, vote.voterId, vote.upvote)
-            }
-        }
+    suspend fun votePost(postId: String, score: Int) =
+        postsDB.setScore(postId, score)
 
     suspend fun deletePost(delete: Delete, userId: String) =
         postsDB.findById(delete.postId)?.let {post ->

@@ -9,6 +9,7 @@ import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.votes.VotesApi
 
 data class AppServices(
     val authApi: AuthApi,
@@ -16,6 +17,7 @@ data class AppServices(
     val postsApi: PostsApi,
     val routesApi: RoutesApi,
     val usersApi: UsersApi,
+    val votesApi: VotesApi,
     val userSessionsApi: UserSessionsApi,
     val userChatsApi: UserChatsApi,
     val sportApi: SportApi,

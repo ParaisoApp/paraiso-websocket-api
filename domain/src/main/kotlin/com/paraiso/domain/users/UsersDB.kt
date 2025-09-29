@@ -73,16 +73,9 @@ interface UsersDB{
         id: String,
         postId: String
     ): Long
-    suspend fun addVotes(
+    suspend fun setScore(
         id: String,
-        postId: String,
-        voteUserId: String,
-        upvote: Boolean
-    ): Long
-    suspend fun removeVotes(
-        id: String,
-        postId: String,
-        voteUserId: String
+        score: Int
     ): Long
     suspend fun setUserChat(
         id: String,

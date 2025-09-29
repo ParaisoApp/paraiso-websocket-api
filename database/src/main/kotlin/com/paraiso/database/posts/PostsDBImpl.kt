@@ -356,31 +356,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             )
         ).modifiedCount
 
-    override suspend fun addVotes(
-        id: String,
-        voteUserId: String,
-        upvote: Boolean
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                set("${Post::votes.name}.$voteUserId", upvote),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun removeVotes(
-        id: String,
-        voteUserId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                unset("${Post::votes.name}.$voteUserId"),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
     override suspend fun setPostDeleted(
         id: String
     ) =
@@ -388,6 +363,18 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(ID, id),
             combine(
                 set(Post::status.name, PostStatus.DELETED),
+                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+            )
+        ).modifiedCount
+
+    override suspend fun setScore(
+        id: String,
+        score: Int
+    ) =
+        collection.updateOne(
+            eq(ID, id),
+            combine(
+                inc(Post::score.name, score),
                 set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount

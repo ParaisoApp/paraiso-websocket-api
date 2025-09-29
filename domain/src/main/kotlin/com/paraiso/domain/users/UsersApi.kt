@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Follow
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
+import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.Favorite
 import kotlinx.coroutines.async
@@ -104,18 +105,8 @@ class UsersApi(
     suspend fun putPost(userId: String, messageId: String) =
         usersDB.addPost(userId, messageId)
 
-    suspend fun votePost(vote: Vote) =
-        vote.voteeId?.let { voteeId ->
-            usersDB.findById(voteeId)?.posts?.let { posts ->
-                if(
-                    posts[vote.postId]?.get(vote.voterId) == vote.upvote
-                ){
-                    usersDB.removeVotes(voteeId, vote.postId, vote.voterId)
-                }else{
-                    usersDB.addVotes(voteeId, vote.postId, vote.voterId, vote.upvote)
-                }
-            }
-        }
+    suspend fun votePost(userId: String, score: Int) =
+        usersDB.setScore(userId, score)
 
     suspend fun updateChatForUser(
         dm: DirectMessage,

@@ -292,31 +292,15 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
-
-    override suspend fun addVotes(
+    override suspend fun setScore(
         id: String,
-        postId: String,
-        voteUserId: String,
-        upvote: Boolean
+        score: Int
     ) =
         collection.updateOne(
             eq(ID, id),
             combine(
-                set("${User::posts.name}.$postId.$voteUserId", upvote),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun removeVotes(
-        id: String,
-        postId: String,
-        voteUserId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                Updates.unset("${User::posts.name}.$postId.$voteUserId"),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                Updates.inc(User::score.name, score),
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 

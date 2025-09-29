@@ -12,6 +12,7 @@ import com.paraiso.api.sports.sportController
 import com.paraiso.api.users.userChatsController
 import com.paraiso.api.users.userSessionsController
 import com.paraiso.api.users.usersController
+import com.paraiso.api.votes.votesController
 import com.paraiso.client.metadata.MetadataClientImpl
 import com.paraiso.server.plugins.ServerHandler
 import com.paraiso.server.plugins.MessageHandler
@@ -32,6 +33,7 @@ import com.paraiso.database.sports.StandingsDBImpl
 import com.paraiso.database.sports.TeamsDBImpl
 import com.paraiso.database.users.UserChatsDBImpl
 import com.paraiso.database.users.UsersDBImpl
+import com.paraiso.database.votes.VotesDBImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.metadata.MetadataApi
@@ -48,6 +50,8 @@ import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.Constants.MAIN_SERVER
 import com.paraiso.domain.util.ServerConfig.autoBuild
+import com.paraiso.domain.votes.VotesApi
+import com.paraiso.domain.votes.VotesDB
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.WebSocketHandler
 import com.typesafe.config.ConfigFactory
@@ -155,12 +159,14 @@ fun Application.module(jobScope: CoroutineScope){
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi(MetadataClientImpl())
+    val votesApi = VotesApi(VotesDBImpl(database))
     val services = AppServices(
         authApi,
         adminApi,
         postsApi,
         routesApi,
         usersApi,
+        votesApi,
         userSessionsApi,
         userChatsApi,
         sportApi,
@@ -228,6 +234,7 @@ fun Application.configureSockets(
             metadataController(services.metadataApi)
             adminController(services.adminApi)
             routesController(services.routesApi)
+            votesController(services.votesApi)
             dataGenerationController(serverHandler, sportHandler)
         }
     }

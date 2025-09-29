@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
+import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.users.UserResponse
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object ServerState {
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
-    val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)
+    val voteFlowMut = MutableSharedFlow<VoteResponse>(replay = 0)
     val followFlowMut = MutableSharedFlow<Follow>(replay = 0)
     val favoriteFlowMut = MutableSharedFlow<Favorite>(replay = 0)
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)

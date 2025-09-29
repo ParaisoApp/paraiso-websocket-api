@@ -16,6 +16,7 @@ import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.Vote
+import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
@@ -312,14 +313,19 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.VOTE -> {
-                        converter?.cleanAndType<TypeMapping<Vote>>(frame)
+                        converter?.cleanAndType<TypeMapping<VoteResponse>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.VOTE, vote)
                                 } else {
-                                    launch { services.postsApi.votePost(vote) }
-                                    launch { services.usersApi.votePost(vote) }
-                                    ServerState.voteFlowMut.emit(vote)
+                                    val score = services.votesApi.vote(vote)
+                                    launch { services.postsApi.votePost(vote.postId, score) }
+                                    launch {
+                                        vote.voteeId?.let{voteeId ->
+                                            services.usersApi.votePost(voteeId, score)
+                                        }
+                                    }
+                                    ServerState.voteFlowMut.emit(vote.copy(score = score))
                                     eventServiceImpl.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
                                 }
                             }
