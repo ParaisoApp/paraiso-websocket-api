@@ -69,10 +69,6 @@ interface UsersDB{
         id: String,
         route: String
     ): Long
-    suspend fun addPost(
-        id: String,
-        postId: String
-    ): Long
     suspend fun setScore(
         id: String,
         score: Int

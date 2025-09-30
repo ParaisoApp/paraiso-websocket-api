@@ -104,9 +104,6 @@ class UsersApi(
         }
     }
 
-    suspend fun putPost(userId: String, messageId: String) =
-        usersDB.addPost(userId, messageId)
-
     suspend fun votePost(userId: String, score: Int) =
         usersDB.setScore(userId, score)
 

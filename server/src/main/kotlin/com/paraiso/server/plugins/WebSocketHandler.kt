@@ -232,7 +232,6 @@ class WebSocketHandler(
                                         sendTypedMessage(MessageType.MSG, messageWithData)
                                     } else {
                                         launch { services.postsApi.putPost(messageWithData) }
-                                        launch { services.usersApi.putPost(sessionUser.id, messageId) }
                                         ServerState.messageFlowMut.emit(messageWithData)
                                         eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
                                     }

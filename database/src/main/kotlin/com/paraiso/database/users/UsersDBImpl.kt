@@ -280,18 +280,6 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
-
-    override suspend fun addPost(
-        id: String,
-        postId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                set("${User::posts.name}.$postId.$id", true),
-                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
     override suspend fun setScore(
         id: String,
         score: Int
