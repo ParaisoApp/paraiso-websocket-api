@@ -74,6 +74,8 @@ class UsersApi(
             }
         }
     }
+    suspend fun getFollowingById(userId: String)  =
+        usersDB.getFollowingById(userId).map { it.id }.toSet()
 
     suspend fun toggleBlockUser(userId: String, userBlockId: String) {
         usersDB.findById(userId)?.let { user ->

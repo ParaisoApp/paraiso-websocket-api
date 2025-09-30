@@ -143,7 +143,7 @@ class WebSocketHandler(
                             }
                         }
                         MessageType.VOTE -> {
-                            (message as? Vote)?.let { newVote ->
+                            (message as? VoteResponse)?.let { newVote ->
                                 if (sessionState.filterTypes.postTypes.contains(newVote.type)) {
                                     sendTypedMessage(type, newVote)
                                 }

@@ -63,6 +63,14 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB {
             )
         ).firstOrNull()
 
+    override suspend fun findByUserIdAndPostIdIn(userId: String, postIds: Set<String>) =
+        collection.find(
+            and(
+                eq(Vote::voterId.name, userId),
+                `in`(Vote::postId.name, postIds),
+            )
+        ).toList()
+
     override suspend fun save(votes: List<Vote>): Int {
         val bulkOps = votes.map { vote ->
             ReplaceOneModel(

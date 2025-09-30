@@ -46,6 +46,7 @@ data class PostResponse(
     var subPosts: Map<String, Boolean>,
     val count: Int,
     val route: String?,
+    val userVote: Boolean?,
     val createdOn: Instant?,
     val updatedOn: Instant?
 ) { companion object }
@@ -128,7 +129,7 @@ enum class Range {
     ALL
 }
 
-fun Post.toResponse() = PostResponse(
+fun Post.toResponse(userVote: Boolean?) = PostResponse(
     id = id,
     userId = userId,
     title = title,
@@ -143,6 +144,7 @@ fun Post.toResponse() = PostResponse(
     subPosts = subPosts.associateWith { true },
     count = count,
     route = route,
+    userVote = userVote,
     createdOn = createdOn,
     updatedOn = updatedOn
 )

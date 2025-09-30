@@ -150,16 +150,17 @@ fun Application.module(jobScope: CoroutineScope){
     val routesApi = RoutesApi(RoutesDBImpl(database))
     val authApi = AuthApi()
     val sportApi = SportApi(sportsDBs)
+    val usersApi = UsersApi(usersDb)
+    val votesApi = VotesApi(VotesDBImpl(database))
     val postsApi = PostsApi(
         postsDb,
-        usersDb
+        usersApi,
+        votesApi
     )
-    val usersApi = UsersApi(usersDb)
     val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi(MetadataClientImpl())
-    val votesApi = VotesApi(VotesDBImpl(database))
     val services = AppServices(
         authApi,
         adminApi,

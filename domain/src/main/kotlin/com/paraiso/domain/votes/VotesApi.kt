@@ -29,4 +29,6 @@ class VotesApi(
 
     suspend fun get(voterId: String, postId: String) =
         votesDB.findByVoterIdAndPostId(voterId, postId)
+    suspend fun getByUserIdAndPostIdIn(userId: String, postIds: Set<String>) =
+        votesDB.findByUserIdAndPostIdIn(userId, postIds).associateBy { it.postId }
 }

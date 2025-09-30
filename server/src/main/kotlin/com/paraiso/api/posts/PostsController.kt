@@ -41,6 +41,7 @@ fun Route.postsController(postsApi: PostsApi) {
         }
         post("getByIdsBasic") {
             postsApi.getByIdsBasic(
+                call.request.queryParameters["userId"] ?: "",
                 call.receive<Set<String>>(),
             ).let {
                 call.respond(HttpStatusCode.OK, it)
@@ -48,13 +49,17 @@ fun Route.postsController(postsApi: PostsApi) {
         }
         post("getByIds") {
             postsApi.getByIds(
+                call.request.queryParameters["userId"] ?: "",
                 call.receive<Set<String>>(),
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
         get("getByPartial") {
-            postsApi.getByPartial(call.request.queryParameters["search"] ?: "").let {
+            postsApi.getByPartial(
+                call.request.queryParameters["userId"] ?: "",
+                call.request.queryParameters["search"] ?: ""
+            ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
