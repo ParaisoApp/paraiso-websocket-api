@@ -4,6 +4,7 @@ import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
+import com.paraiso.api.follows.followsController
 import com.paraiso.api.metadata.metadataController
 import com.paraiso.api.posts.postsController
 import com.paraiso.api.routes.routesController
@@ -18,6 +19,7 @@ import com.paraiso.server.plugins.ServerHandler
 import com.paraiso.server.plugins.MessageHandler
 import com.paraiso.database.admin.PostReportsDBImpl
 import com.paraiso.database.admin.UserReportsDBImpl
+import com.paraiso.database.follows.FollowsDBImpl
 import com.paraiso.database.posts.PostsDBImpl
 import com.paraiso.database.routes.RoutesDBImpl
 import com.paraiso.database.sports.AthletesDBImpl
@@ -36,6 +38,7 @@ import com.paraiso.database.users.UsersDBImpl
 import com.paraiso.database.votes.VotesDBImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
+import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
@@ -152,12 +155,14 @@ fun Application.module(jobScope: CoroutineScope){
     val sportApi = SportApi(sportsDBs)
     val usersApi = UsersApi(usersDb)
     val votesApi = VotesApi(VotesDBImpl(database))
+    val followsApi = FollowsApi(FollowsDBImpl(database))
     val postsApi = PostsApi(
         postsDb,
         usersApi,
-        votesApi
+        votesApi,
+        followsApi
     )
-    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl)
+    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl, followsApi)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi(MetadataClientImpl())
@@ -168,10 +173,11 @@ fun Application.module(jobScope: CoroutineScope){
         routesApi,
         usersApi,
         votesApi,
+        followsApi,
         userSessionsApi,
         userChatsApi,
         sportApi,
-        metadataApi
+        metadataApi,
     )
     //build handlers early - for data generation
     val sportHandler = SportHandler(
@@ -236,6 +242,7 @@ fun Application.configureSockets(
             adminController(services.adminApi)
             routesController(services.routesApi)
             votesController(services.votesApi)
+            followsController(services.followsApi)
             dataGenerationController(serverHandler, sportHandler)
         }
     }

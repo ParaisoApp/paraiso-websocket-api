@@ -10,6 +10,7 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
@@ -149,7 +150,7 @@ class WebSocketHandler(
                                 }
                             }
                         }
-                        MessageType.FOLLOW -> sendTypedMessage(type, message as Follow)
+                        MessageType.FOLLOW -> sendTypedMessage(type, message as FollowResponse)
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_UPDATE -> sendTypedMessage(
@@ -287,12 +288,18 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.FOLLOW -> {
-                        converter?.cleanAndType<TypeMapping<Follow>>(frame)
+                        converter?.cleanAndType<TypeMapping<FollowResponse>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    launch { services.usersApi.follow(follow) }
+                                    if(follow.following){
+                                        launch { services.followsApi.follow(follow) }
+                                        launch { services.usersApi.follow(follow) }
+                                    }else{
+                                        launch { services.followsApi.unfollow(follow) }
+                                        launch { services.usersApi.follow(follow) }
+                                    }
                                     ServerState.followFlowMut.emit(follow)
                                     eventServiceImpl.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
                                 }

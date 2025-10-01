@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Tag
 
 interface UsersDB{
     suspend fun findById(id: String): User?
+    suspend fun findByIdIn(ids: List<String>): List<User>
     suspend fun findByName(name: String): User?
     suspend fun existsByName(name: String): Boolean
     suspend fun findByPartial(partial: String): List<User>
@@ -14,8 +15,6 @@ interface UsersDB{
         filters: FilterTypes,
         followingList: List<String>
     ): List<User>
-    suspend fun getFollowingById(id: String): List<User>
-    suspend fun getFollowersById(id: String): List<User>
     suspend fun save(users: List<User>): Int
     suspend fun addMentions(id: String, replyId: String): String?
     suspend fun addMentionsByName(name: String, replyId: String): String?
@@ -36,21 +35,13 @@ interface UsersDB{
     suspend fun addPostReport(
         id: String
     ): Long
-    suspend fun addFollowers(
+    suspend fun setFollowers(
         id: String,
-        followerUserId: String
+        count: Int
     ): Long
-    suspend fun removeFollowers(
+    suspend fun setFollowing(
         id: String,
-        followerUserId: String
-    ): Long
-    suspend fun addFollowing(
-        id: String,
-        followingUserId: String
-    ): Long
-    suspend fun removeFollowing(
-        id: String,
-        followingUserId: String
+        count: Int
     ): Long
     suspend fun addToBlocklist(
         id: String,

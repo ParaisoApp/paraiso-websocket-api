@@ -4,6 +4,7 @@ import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
@@ -75,7 +76,7 @@ class MessageHandler(
                         }
 
                         MessageType.FOLLOW.name -> {
-                            decodeMessage<Follow>(message)?.let { follow ->
+                            decodeMessage<FollowResponse>(message)?.let { follow ->
                                 ServerState.followFlowMut.emit(follow)
                             }
                         }

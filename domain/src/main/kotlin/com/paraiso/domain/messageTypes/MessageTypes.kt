@@ -36,9 +36,39 @@ data class FilterTypes(
 ){ companion object }
 
 @Serializable
-data class Follow(
+data class FollowResponse(
+    val id: String? = null,
     val followerId: String,
-    val followeeId: String
+    val followeeId: String,
+    val following: Boolean,
+    val createdOn: Instant? = Clock.System.now(),
+    val updatedOn: Instant? = Clock.System.now()
+)
+@Serializable
+data class Follow(
+    @SerialName(ID) val id: String,
+    val followerId: String,
+    val followeeId: String,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
+)
+fun FollowResponse.toDomain() = Follow(
+    id = id ?: "$followerId-$followeeId",
+    followerId = followerId,
+    followeeId = followeeId,
+    createdOn = createdOn ?: Clock.System.now(),
+    updatedOn = updatedOn ?: Clock.System.now(),
+)
+
+fun Follow.toResponse() = FollowResponse(
+    id = id,
+    followerId = followerId,
+    followeeId = followeeId,
+    following = true,
+    createdOn = createdOn ?: Clock.System.now(),
+    updatedOn = updatedOn ?: Clock.System.now(),
 )
 
 @Serializable

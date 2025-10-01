@@ -44,6 +44,8 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun findById(id: String) =
         collection.find(eq(ID, id)).firstOrNull()
+    override suspend fun findByIdIn(ids: List<String>) =
+        collection.find(`in`(ID, ids)).toList()
 
     override suspend fun findByName(name: String) =
         collection.find(eq(User::name.name, name)).firstOrNull()
@@ -75,12 +77,6 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 )
             )
         ).toList()
-
-    override suspend fun getFollowingById(id: String) =
-        collection.find(eq(User::following.name, id)).toList()
-
-    override suspend fun getFollowersById(id: String) =
-        collection.find(eq(User::followers.name, id)).toList()
 
     override suspend fun save(users: List<User>): Int {
         val bulkOps = users.map { user ->
@@ -184,50 +180,26 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             )
         ).modifiedCount
 
-    override suspend fun addFollowers(
+    override suspend fun setFollowers(
         id: String,
-        followerUserId: String
+        count: Int
     ) =
         collection.updateOne(
             eq(ID, id),
             combine(
-                addToSet(User::followers.name, followerUserId),
+                Updates.inc(User::followers.name, count),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
-    override suspend fun removeFollowers(
+    override suspend fun setFollowing(
         id: String,
-        followerUserId: String
+        count: Int
     ) =
         collection.updateOne(
             eq(ID, id),
             combine(
-                pull(User::followers.name, followerUserId),
-                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun addFollowing(
-        id: String,
-        followingUserId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                addToSet(User::following.name, followingUserId),
-                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun removeFollowing(
-        id: String,
-        followingUserId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                pull(User::following.name, followingUserId),
+                Updates.inc(User::following.name, count),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount

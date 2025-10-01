@@ -1,5 +1,6 @@
 package com.paraiso.domain.posts
 
+import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
@@ -20,15 +21,16 @@ import kotlin.time.Duration.Companion.days
 class PostsApi(
     private val postsDB: PostsDB,
     private val usersApi: UsersApi,
-    private val votesApi: VotesApi
+    private val votesApi: VotesApi,
+    private val followsApi: FollowsApi
 ) {
 
     // return fully updated root post (for update or load of root post to post tree)
     suspend fun getById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         postsDB.findById(postSearchId)?.let { post ->
-            val userFollowing = usersApi.getFollowingById(userId)
+            val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
             generatePostTree(
-                post, getRange(rangeModifier, sortType), sortType, filters, userId, userFollowing, filter = true
+                post, getRange(rangeModifier, sortType), sortType, filters, userId, followees, filter = true
             )
         }
 
@@ -65,15 +67,15 @@ class PostsApi(
         userId: String
     ): LinkedHashMap<String, PostResponse>  {
         // grab 50 most recent posts at given super level
-        val userFollowing = usersApi.getFollowingById(userId)
+        val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
         val range = getRange(rangeModifier, sortType)
         return postsDB.findByBaseCriteria(
-            postSearchId, range, filters, sortType, userFollowing
+            postSearchId, range, filters, sortType, followees
         ).mapNotNull { it.id }.toSet() // generate base post and post tree off of given inputs
             .let { subPosts ->
                 generatePostTree(
                     generateBasePost(postSearchId, basePostName, subPosts),
-                    range, sortType, filters, userId, userFollowing, filter = true
+                    range, sortType, filters, userId, followees, filter = true
                 )
             }
     }

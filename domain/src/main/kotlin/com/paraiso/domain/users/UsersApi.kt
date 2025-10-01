@@ -3,6 +3,7 @@ package com.paraiso.domain.users
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.Follow
+import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.Vote
@@ -55,27 +56,25 @@ class UsersApi(
     suspend fun addPostReport(report: Report)  =
         usersDB.addPostReport(report.id)
 
-    suspend fun follow(follow: Follow) = coroutineScope {
+    suspend fun follow(follow: FollowResponse) = coroutineScope {
         // add follower to followers list of followee user
         launch {
             usersDB.findById(follow.followeeId)?.let { followee ->
-                if (followee.followers.contains(follow.followerId)) {
-                    usersDB.removeFollowers(followee.id, follow.followerId)
+                if (follow.following) {
+                    usersDB.setFollowers(followee.id, -1)
                 } else {
-                    usersDB.addFollowers(followee.id, follow.followerId)
+                    usersDB.setFollowers(followee.id, 1)
                 }
             }
         }
         usersDB.findById(follow.followerId)?.let { follower ->
-            if (follower.following.contains(follow.followerId)) {
-                usersDB.removeFollowing(follower.id, follow.followeeId)
+            if (follow.following) {
+                usersDB.setFollowing(follower.id, -1)
             } else {
-                usersDB.addFollowing(follower.id, follow.followeeId)
+                usersDB.setFollowing(follower.id, 1)
             }
         }
     }
-    suspend fun getFollowingById(userId: String)  =
-        usersDB.getFollowingById(userId).map { it.id }.toSet()
 
     suspend fun toggleBlockUser(userId: String, userBlockId: String) {
         usersDB.findById(userId)?.let { user ->
