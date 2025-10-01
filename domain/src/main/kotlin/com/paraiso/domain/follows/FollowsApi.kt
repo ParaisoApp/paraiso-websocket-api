@@ -9,11 +9,13 @@ class FollowsApi(
 ) {
 
     suspend fun follow(follow: FollowResponse) =
-        followsDB.save(listOf(follow.toDomain()))
-    suspend fun unfollow(follow: FollowResponse) =
-        followsDB.delete(follow.followerId, follow.followeeId)
+        if(follow.following){
+            followsDB.delete(follow.followerId, follow.followeeId)
+        }else{
+            followsDB.save(listOf(follow.toDomain()))
+        }
     suspend fun get(followerId: String, followeeId: String) =
-        followsDB.find(followerId, followeeId)
+        followsDB.find(followerId, followeeId)?.toResponse()
     suspend fun getByFollowerId(followerId: String) =
         followsDB.findByFollowerId(followerId).map { it.toResponse() }
     suspend fun getByFolloweeId(followeeId: String) =

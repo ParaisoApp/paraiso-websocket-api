@@ -293,13 +293,8 @@ class WebSocketHandler(
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
                                 } else {
-                                    if(follow.following){
-                                        launch { services.followsApi.follow(follow) }
-                                        launch { services.usersApi.follow(follow) }
-                                    }else{
-                                        launch { services.followsApi.unfollow(follow) }
-                                        launch { services.usersApi.follow(follow) }
-                                    }
+                                    launch { services.followsApi.follow(follow) }
+                                    launch { services.usersApi.follow(follow) }
                                     ServerState.followFlowMut.emit(follow)
                                     eventServiceImpl.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
                                 }
