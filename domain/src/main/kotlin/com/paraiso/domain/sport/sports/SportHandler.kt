@@ -90,7 +90,7 @@ class SportHandler(
                 route = sport,
                 modifier = it.abbreviation,
                 title = it.displayName,
-                userFavorites = emptySet(),
+                userFavorites = 0,
                 about = null,
                 createdOn = now,
                 updatedOn = now

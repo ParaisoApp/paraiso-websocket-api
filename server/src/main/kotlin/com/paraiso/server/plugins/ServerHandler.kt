@@ -37,7 +37,7 @@ class ServerHandler(
                         route = SiteRoute.HOME,
                         modifier = null,
                         title = "${SiteRoute.HOME}",
-                        userFavorites = emptySet(),
+                        userFavorites = 0,
                         about = null,
                         createdOn = now,
                         updatedOn = now
@@ -47,7 +47,7 @@ class ServerHandler(
                         route = SiteRoute.FOOTBALL,
                         modifier = null,
                         title = "${SiteRoute.FOOTBALL}",
-                        userFavorites = emptySet(),
+                        userFavorites = 0,
                         about = null,
                         createdOn = now,
                         updatedOn = now
@@ -57,7 +57,7 @@ class ServerHandler(
                         route = SiteRoute.BASKETBALL,
                         modifier = null,
                         title = "${SiteRoute.BASKETBALL}",
-                        userFavorites = emptySet(),
+                        userFavorites = 0,
                         about = null,
                         createdOn = now,
                         updatedOn = now

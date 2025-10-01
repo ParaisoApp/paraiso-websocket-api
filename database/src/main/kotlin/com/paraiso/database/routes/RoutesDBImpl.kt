@@ -3,11 +3,13 @@ package com.paraiso.database.routes
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.domain.posts.Post
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesDB
 import com.paraiso.domain.util.Constants.ID
@@ -36,27 +38,14 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
         }
         return collection.bulkWrite(bulkOps).modifiedCount
     }
-
-    override suspend fun addUserFavorites(
+    override suspend fun setFavorites(
         route: String,
-        userFavoriteId: String
+        favorite: Int
     ) =
         collection.updateOne(
             Filters.eq(ID, route),
             combine(
-                addToSet(RouteDetails::userFavorites.name, userFavoriteId),
-                set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun removeUserFavorites(
-        route: String,
-        userFavoriteId: String
-    ) =
-        collection.updateOne(
-            Filters.eq(ID, route),
-            combine(
-                pull(RouteDetails::userFavorites.name, userFavoriteId),
+                Updates.inc(RouteDetails::userFavorites.name, favorite),
                 set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount

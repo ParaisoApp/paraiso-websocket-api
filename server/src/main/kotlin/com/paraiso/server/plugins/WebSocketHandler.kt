@@ -77,7 +77,7 @@ class WebSocketHandler(
                             route = SiteRoute.PROFILE,
                             modifier = null,
                             title = currentUser.name ?: "UNKNOWN",
-                            userFavorites = emptySet(),
+                            userFavorites = 0,
                             about = null,
                             createdOn = now,
                             updatedOn = now

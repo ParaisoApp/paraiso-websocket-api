@@ -10,9 +10,9 @@ class RoutesApi(private val routesDB: RoutesDB) {
         if (favorite.userId != null) {
             // toggle favorite from Route
             if (!favorite.favorite) {
-                routesDB.removeUserFavorites(favorite.route, favorite.userId)
+                routesDB.setFavorites(favorite.route, -1)
             } else {
-                routesDB.addUserFavorites(favorite.route, favorite.userId)
+                routesDB.setFavorites(favorite.route, 1)
             }
         }
     }

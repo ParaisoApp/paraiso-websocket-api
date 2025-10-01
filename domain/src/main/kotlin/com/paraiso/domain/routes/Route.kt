@@ -12,7 +12,7 @@ data class RouteDetails(
     val route: SiteRoute,
     val modifier: String?,
     val title: String,
-    val userFavorites: Set<String>,
+    val userFavorites: Int,
     val about: String?,
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant?,
@@ -26,7 +26,7 @@ data class RouteResponse(
     val route: SiteRoute,
     val modifier: String?,
     val title: String,
-    val userFavorites: Map<String, Boolean>,
+    val userFavorites: Int,
     val about: String?,
     val createdOn: Instant?,
     val updatedOn: Instant?
@@ -88,7 +88,7 @@ fun RouteDetails.toResponse() =
         route = route,
         modifier = modifier,
         title = title,
-        userFavorites = userFavorites.associateWith { true },
+        userFavorites = userFavorites,
         about = about,
         createdOn = createdOn,
         updatedOn = updatedOn

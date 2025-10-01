@@ -5,13 +5,8 @@ interface RoutesDB {
     suspend fun findByUserName(userName: String): RouteDetails?
     suspend fun save(routes: List<RouteDetails>): Int
 
-    suspend fun addUserFavorites(
+    suspend fun setFavorites(
         route: String,
-        userFavoriteId: String
-    ): Long
-
-    suspend fun removeUserFavorites(
-        route: String,
-        userFavoriteId: String
+        favorite: Int
     ): Long
 }
