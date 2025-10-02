@@ -2,6 +2,8 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.messageTypes.FilterTypes
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 class UserSessionsApi(
     private val usersDB: UsersDB,
@@ -13,56 +15,104 @@ class UserSessionsApi(
         if(session == null){
             UserStatus.DISCONNECTED
         } else UserStatus.CONNECTED
-    suspend fun getUserById(userId: String) =
-        eventService.getUserSession(userId).let {session ->
-            usersDB.findById(userId)?.toBasicResponse(getStatus(session))
+    suspend fun getUserById(userId: String, curUserId: String?) = coroutineScope {
+        eventService.getUserSession(userId).let { session ->
+            val follows = async {
+                if(curUserId != null){
+                    followsApi.get(curUserId, userId)
+                }else null
+            }
+            usersDB.findById(userId)?.toBasicResponse(
+                getStatus(session),
+                ViewerContext(
+                    follows.await()?.following
+                )
+            )
         }
+    }
 
-    suspend fun getUserByName(userName: String): UserResponse? =
-        usersDB.findByName(userName)?.let{user ->
+    suspend fun getUserByName(userName: String, curUserId: String): UserResponse? = coroutineScope {
+        usersDB.findByName(userName)?.let { user ->
+            val follows = async { followsApi.get(curUserId, user.id) }
             eventService.getUserSession(user.id).let { session ->
-                user.toBasicResponse(getStatus(session))
+                user.toBasicResponse(
+                    getStatus(session),
+                    ViewerContext(
+                        follows.await()?.following
+                    )
+                )
             }
         }
+    }
 
     suspend fun exists(search: String) =
         usersDB.existsByName(search)
 
-    suspend fun getUserByPartial(search: String) =
-        usersDB.findByPartial(search)
-            .map {user ->
+    suspend fun getUserByPartial(search: String, curUserId: String) = coroutineScope {
+        usersDB.findByPartial(search).let { users ->
+            val follows = async { followsApi.getIn(curUserId, users.map { it.id }).associateBy { it.followeeId } }
+            users.map { user ->
                 eventService.getUserSession(user.id).let { session ->
-                    user.toBasicResponse(getStatus(session))
+                    user.toBasicResponse(
+                        getStatus(session),
+                        ViewerContext(
+                            follows.await()[user.id]?.following
+                        )
+                    )
                 }
             }
+        }
+    }
+
 
     suspend fun getFollowingById(userId: String) =
         followsApi.getByFollowerId(userId).map { it.followeeId }
             .let { followeeIds ->
                 val followees = usersDB.findByIdIn(followeeIds)
-                followees.map {
-                    eventService.getUserSession(it.id).let { session ->
-                        it.toBasicResponse(getStatus(session))
+                followees.associate {user ->
+                    eventService.getUserSession(user.id).let { session ->
+                        user.id to user.toBasicResponse(
+                            getStatus(session),
+                            ViewerContext(true)
+                        )
                     }
                 }
             }
 
-    suspend fun getFollowersById(userId: String) =
+    suspend fun getFollowersById(userId: String) = coroutineScope {
         followsApi.getByFolloweeId(userId).map { it.followerId }
             .let { followerIds ->
                 val followers = usersDB.findByIdIn(followerIds)
-                followers.map {
-                    eventService.getUserSession(it.id).let { session ->
-                        it.toBasicResponse(getStatus(session))
+                val follows = async { followsApi.getIn(userId, followerIds).associateBy { it.followeeId } }
+                followers.associate {user ->
+                    eventService.getUserSession(user.id).let { session ->
+                        user.id to user.toBasicResponse(
+                            getStatus(session),
+                            ViewerContext(
+                                follows.await()[user.id]?.following
+                            )
+                        )
                     }
                 }
             }
+    }
 
-    suspend fun getUserList(filters: FilterTypes, userId: String) =
+    suspend fun getUserList(filters: FilterTypes, userId: String) = coroutineScope {
         eventService.getAllActiveUsers().map { it.userId }.let{ activeUserIds ->
             val followees = followsApi.getByFollowerId(userId).map { it.followeeId }
             usersDB.getUserList(activeUserIds, filters, followees)
-                .associate { user -> user.id to user.toBasicResponse(UserStatus.CONNECTED) }
+                .let{ userList ->
+                    val follows = followsApi.getIn(userId, userList.map { it.id }).associateBy { it.followeeId }
+                    userList.associate {
+                        user -> user.id to user.toBasicResponse(
+                            UserStatus.CONNECTED,
+                            ViewerContext(
+                                follows[user.id]?.following
+                            )
+                        )
+                    }
+                }
         }
+    }
 
 }

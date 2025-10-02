@@ -28,9 +28,16 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
         collection.find(
             and(
                 eq(Follow::followerId.name, followerId),
-                eq(Follow::followerId.name, followerId)
+                eq(Follow::followeeId.name, followeeId)
             )
         ).firstOrNull()
+    override suspend fun findIn(followerId: String, followeeIds: List<String>) =
+        collection.find(
+            and(
+                eq(Follow::followerId.name, followerId),
+                `in`(Follow::followerId.name, followeeIds)
+            )
+        ).toList()
     override suspend fun findByFollowerId(followerId: String) =
         collection.find(
             eq(Follow::followerId.name, followerId)

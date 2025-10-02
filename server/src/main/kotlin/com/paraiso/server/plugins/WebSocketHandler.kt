@@ -27,6 +27,7 @@ import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
 import com.paraiso.domain.users.UserStatus
+import com.paraiso.domain.users.ViewerContext
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.ServerState
@@ -65,7 +66,9 @@ class WebSocketHandler(
         // session state
         val sessionState = SessionState()
         // check cookies to see if existing user
-        val checkExistingUser = services.userSessionsApi.getUserById(session.call.request.cookies["guest_id"] ?: "")
+        val checkExistingUser = services.userSessionsApi.getUserById(
+            session.call.request.cookies["guest_id"] ?: "", null
+        )
         val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
         launch{
             // new user so create new route entry
@@ -153,15 +156,22 @@ class WebSocketHandler(
                         MessageType.FOLLOW -> sendTypedMessage(type, message as FollowResponse)
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_UPDATE -> sendTypedMessage(
-                            type, //remove private data from user update socket messages
-                            (message as UserResponse).copy(
-                                userReports = emptyMap(),
-                                postReports = emptyMap(),
-                                banned = false,
-                                blockList = emptyMap(),
+                        MessageType.USER_UPDATE -> {
+                            val user = (message as UserResponse)
+                            val follow = services.followsApi.get(sessionUser.id, user.id)
+                            sendTypedMessage(
+                                type, //remove private data from user update socket messages
+                                user.copy(
+                                    userReports = emptyMap(),
+                                    postReports = emptyMap(),
+                                    banned = false,
+                                    blockList = emptyMap(),
+                                    viewerContext = ViewerContext(
+                                        following = follow?.following
+                                    )
+                                )
                             )
-                        )
+                        }
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
                         MessageType.TAG -> sendTypedMessage(type, message as Tag)
@@ -197,7 +207,7 @@ class WebSocketHandler(
                         sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
                         userId != null &&
                         sessionState.filterTypes.userRoles.contains(
-                            services.userSessionsApi.getUserById(userId)?.roles ?: UserRole.GUEST
+                            services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
                         )
                 )
 
@@ -247,7 +257,7 @@ class WebSocketHandler(
                                     userId = sessionUser.id
                                 ).let { dmWithData ->
                                     launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                    val userReceiveBlocklist = services.userSessionsApi.getUserById(dmWithData.userReceiveId)?.blockList
+                                    val userReceiveBlocklist = services.userSessionsApi.getUserById(dmWithData.userReceiveId, null)?.blockList
                                     if (
                                         !sessionUser.banned &&
                                         userReceiveBlocklist?.contains(sessionUser.id) == false
@@ -424,7 +434,7 @@ class WebSocketHandler(
                     )
                 }
             }
-            services.userSessionsApi.getUserById(sessionUser.id)?.copy(status = UserStatus.DISCONNECTED)?.let { userDisconnected ->
+            services.userSessionsApi.getUserById(sessionUser.id, null)?.copy(status = UserStatus.DISCONNECTED)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
                 //remove current user session from sessions map

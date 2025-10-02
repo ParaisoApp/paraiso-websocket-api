@@ -94,6 +94,7 @@ data class UserResponse(
     val tag: String?,
     val settings: UserSettings,
     val status: UserStatus?,
+    val viewerContext: ViewerContext,
     val createdOn: Instant,
     val updatedOn: Instant
 ) { companion object }
@@ -115,8 +116,12 @@ data class UserFavorite(
     val favorite: Boolean,
     val icon: String?
 )
+@Serializable
+data class ViewerContext(
+    val following: Boolean?,
+)
 
-fun User.toResponse(status: UserStatus?) =
+fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
     UserResponse(
         id = id,
         name = name,
@@ -140,12 +145,13 @@ fun User.toResponse(status: UserStatus?) =
         settings = settings,
         tag = tag,
         status = status,
+        viewerContext = viewerContext,
         createdOn = createdOn,
         updatedOn = updatedOn
     )
 
 //user list doesn't need all data
-fun User.toBasicResponse(status: UserStatus?) =
+fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
     UserResponse(
         id = id,
         name = name,
@@ -169,6 +175,7 @@ fun User.toBasicResponse(status: UserStatus?) =
         settings = settings,
         tag = tag,
         status = status,
+        viewerContext = viewerContext,
         createdOn = createdOn,
         updatedOn = updatedOn
     )
@@ -229,6 +236,9 @@ fun UserResponse.Companion.newUser(
             settings = UserSettings.initSettings(),
             tag = null,
             status = UserStatus.CONNECTED,
+            viewerContext = ViewerContext(
+                following = false
+            ),
             createdOn = now,
             updatedOn = now
         )
@@ -258,6 +268,9 @@ fun UserResponse.Companion.systemUser() =
             settings = UserSettings.initSettings(),
             tag = null,
             status = UserStatus.DISCONNECTED,
+            viewerContext = ViewerContext(
+                following = false
+            ),
             createdOn = now,
             updatedOn = now
         )

@@ -15,17 +15,26 @@ import io.ktor.server.routing.route
 fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
     route("userSessions") {
         get("/getByName") {
-            userSessionsApi.getUserByName(call.request.queryParameters["name"] ?: "")?.let {
+            userSessionsApi.getUserByName(
+                call.request.queryParameters["name"] ?: "",
+                call.request.queryParameters["curUserId"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/getById") {
-            userSessionsApi.getUserById(call.request.queryParameters["id"] ?: "")?.let {
+            userSessionsApi.getUserById(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["curUserId"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/getByPartial") {
-            userSessionsApi.getUserByPartial(call.request.queryParameters["search"] ?: "").let {
+            userSessionsApi.getUserByPartial(
+                call.request.queryParameters["search"] ?: "",
+                call.request.queryParameters["curUserId"] ?: ""
+            ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }

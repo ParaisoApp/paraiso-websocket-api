@@ -16,6 +16,8 @@ class FollowsApi(
         }
     suspend fun get(followerId: String, followeeId: String) =
         followsDB.find(followerId, followeeId)?.toResponse()
+    suspend fun getIn(followerId: String, followeeIds: List<String>) =
+        followsDB.findIn(followerId, followeeIds).map { it.toResponse() }
     suspend fun getByFollowerId(followerId: String) =
         followsDB.findByFollowerId(followerId).map { it.toResponse() }
     suspend fun getByFolloweeId(followeeId: String) =
