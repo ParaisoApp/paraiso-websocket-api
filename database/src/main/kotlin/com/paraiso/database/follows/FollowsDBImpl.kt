@@ -5,20 +5,13 @@ import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.follows.FollowsDB
-import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.messageTypes.Vote
-import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.votes.VotesDB
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
-import java.util.Date
 
 class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
 
@@ -63,7 +56,7 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
         collection.deleteOne(
             and(
                 eq(Follow::followerId.name, followerId),
-                eq(Follow::followeeId.name, followerId),
+                eq(Follow::followeeId.name, followerId)
             )
         ).deletedCount
 }

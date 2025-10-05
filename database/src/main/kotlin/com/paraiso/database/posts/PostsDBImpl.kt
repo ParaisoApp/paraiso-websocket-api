@@ -19,7 +19,6 @@ import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
-import com.mongodb.client.model.Updates.unset
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
@@ -29,7 +28,6 @@ import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.BASKETBALL_PREFIX
 import com.paraiso.domain.util.Constants.FOOTBALL_PREFIX
@@ -41,7 +39,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import org.bson.BsonDateTime
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
@@ -147,56 +144,69 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
      */
     private fun getTimeAndVoteWeighting(risingMult: Double): Document {
         return Document(
-                "\$addFields",
+            "\$addFields",
+            Document(
+                "weightedScore",
                 Document(
-                    "weightedScore",
-                    Document(
-                        "\$let",
-                        Document("vars", Document("s", getScore()))
-                            .append("in",
-                                Document(
-                                    "\$add", listOf(
-                                        // sign(s) * log10(max(|s|,1))
-                                        Document(
-                                            "\$multiply", listOf(
-                                                Document(
-                                                    "\$cond", listOf(
-                                                        Document("\$gt", listOf("\$\$s", 0)), 1,
-                                                        Document(
-                                                            "\$cond", listOf(
-                                                                Document("\$lt", listOf("\$\$s", 0)), -1, 0
-                                                            )
-                                                        )
-                                                    )
-                                                ),
-                                                Document(
-                                                    "\$log10", Document(
-                                                        "\$max", listOf(
-                                                            Document("\$abs", "\$\$s"), 1
+                    "\$let",
+                    Document("vars", Document("s", getScore()))
+                        .append(
+                            "in",
+                            Document(
+                                "\$add",
+                                listOf(
+                                    // sign(s) * log10(max(|s|,1))
+                                    Document(
+                                        "\$multiply",
+                                        listOf(
+                                            Document(
+                                                "\$cond",
+                                                listOf(
+                                                    Document("\$gt", listOf("\$\$s", 0)),
+                                                    1,
+                                                    Document(
+                                                        "\$cond",
+                                                        listOf(
+                                                            Document("\$lt", listOf("\$\$s", 0)),
+                                                            -1,
+                                                            0
                                                         )
                                                     )
                                                 )
-                                            )
-                                        ),
-                                        // time factor: createdOnTimestamp / TIME_WEIGHTING
-                                        Document(
-                                            "\$multiply", listOf(
-                                                risingMult,
+                                            ),
+                                            Document(
+                                                "\$log10",
                                                 Document(
-                                                    "\$divide", listOf(
-                                                        // createdOn is already a date, get milliseconds since epoch
-                                                        Document("\$toLong", "\$createdOn"),
-                                                        TIME_WEIGHTING
+                                                    "\$max",
+                                                    listOf(
+                                                        Document("\$abs", "\$\$s"),
+                                                        1
                                                     )
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    // time factor: createdOnTimestamp / TIME_WEIGHTING
+                                    Document(
+                                        "\$multiply",
+                                        listOf(
+                                            risingMult,
+                                            Document(
+                                                "\$divide",
+                                                listOf(
+                                                    // createdOn is already a date, get milliseconds since epoch
+                                                    Document("\$toLong", "\$createdOn"),
+                                                    TIME_WEIGHTING
                                                 )
                                             )
                                         )
                                     )
                                 )
                             )
-                    )
+                        )
                 )
             )
+        )
     }
 
     private fun getSort(sortType: SortType): List<Bson> {
@@ -226,7 +236,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 getTimeAndVoteWeighting(RISING_TIME_MULTIPLIER),
                 Document("\$sort", Document("weightedScore", -1))
             )
-
         }
     }
 
@@ -241,20 +250,20 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
         )
         if (postSearchId == HOME_PREFIX) {
-            //home page should have all root posts - will eventually resolve to following
+            // home page should have all root posts - will eventually resolve to following
             homeFilters.add(
                 and(
                     eqId(Post::rootId),
-                    not(regex(ID, "^TEAM", "i")) //remove team event posts unless in team route
+                    not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
                 )
             )
         }
         if (postSearchId == BASKETBALL_PREFIX || postSearchId == FOOTBALL_PREFIX) {
-            //for sports add their respective gameposts
+            // for sports add their respective gameposts
             homeFilters.add(
                 and(
                     eq(Post::type.name, PostType.EVENT.name),
-                    not(regex(ID, "^TEAM", "i")) //remove team event posts unless in team route
+                    not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
                 )
             )
         }
@@ -270,7 +279,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
             ne(Post::status.name, PostStatus.DELETED),
             `in`(Post::type.name, filters.postTypes),
-            //handle events (which may be created early but create date of event date)
+            // handle events (which may be created early but create date of event date)
             lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
         )
 
@@ -292,7 +301,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         userFollowing: Set<String>,
         filter: Boolean
     ): List<Post> {
-        if(!filter){
+        if (!filter) {
             return collection.find(`in`(ID, subPostIds)).toList()
         }
         val initialFilter = and(

@@ -12,15 +12,19 @@ class UserSessionsApi(
 ) {
 
     private fun getStatus(session: UserSession?) =
-        if(session == null){
+        if (session == null) {
             UserStatus.DISCONNECTED
-        } else UserStatus.CONNECTED
+        } else {
+            UserStatus.CONNECTED
+        }
     suspend fun getUserById(userId: String, curUserId: String?) = coroutineScope {
         eventService.getUserSession(userId).let { session ->
             val follows = async {
-                if(curUserId != null){
+                if (curUserId != null) {
                     followsApi.get(curUserId, userId)
-                }else null
+                } else {
+                    null
+                }
             }
             usersDB.findById(userId)?.toBasicResponse(
                 getStatus(session),
@@ -64,12 +68,11 @@ class UserSessionsApi(
         }
     }
 
-
     suspend fun getFollowingById(userId: String) =
         followsApi.getByFollowerId(userId).map { it.followeeId }
             .let { followeeIds ->
                 val followees = usersDB.findByIdIn(followeeIds)
-                followees.associate {user ->
+                followees.associate { user ->
                     eventService.getUserSession(user.id).let { session ->
                         user.id to user.toBasicResponse(
                             getStatus(session),
@@ -84,7 +87,7 @@ class UserSessionsApi(
             .let { followerIds ->
                 val followers = usersDB.findByIdIn(followerIds)
                 val follows = async { followsApi.getIn(userId, followerIds).associateBy { it.followeeId } }
-                followers.associate {user ->
+                followers.associate { user ->
                     eventService.getUserSession(user.id).let { session ->
                         user.id to user.toBasicResponse(
                             getStatus(session),
@@ -98,13 +101,14 @@ class UserSessionsApi(
     }
 
     suspend fun getUserList(filters: FilterTypes, userId: String) = coroutineScope {
-        eventService.getAllActiveUsers().map { it.userId }.let{ activeUserIds ->
+        eventService.getAllActiveUsers().map { it.userId }.let { activeUserIds ->
             val followees = followsApi.getByFollowerId(userId).map { it.followeeId }
             usersDB.getUserList(activeUserIds, filters, followees)
-                .let{ userList ->
+                .let { userList ->
                     val follows = followsApi.getIn(userId, userList.map { it.id }).associateBy { it.followeeId }
                     userList.associate {
-                        user -> user.id to user.toBasicResponse(
+                            user ->
+                        user.id to user.toBasicResponse(
                             UserStatus.CONNECTED,
                             ViewerContext(
                                 follows[user.id]?.following
@@ -114,5 +118,4 @@ class UserSessionsApi(
                 }
         }
     }
-
 }

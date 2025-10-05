@@ -18,7 +18,6 @@ import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
-import com.paraiso.domain.util.ServerState
 import io.klogging.Klogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -104,7 +103,9 @@ class SportHandler(
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
                 sportClient.getLeaders(
-                    sport, league.activeSeasonYear, league.activeSeasonType
+                    sport,
+                    league.activeSeasonYear,
+                    league.activeSeasonType
                 )?.let { leadersRes ->
                     sportDBs.leadersDB.save(listOf(leadersRes))
                 }
@@ -119,11 +120,14 @@ class SportHandler(
                 sportDBs.teamsDB.findBySport(sport.name).map { team ->
                     async {
                         sportClient.getTeamLeaders(
-                            sport, league.activeSeasonYear, league.activeSeasonType, team.teamId
+                            sport,
+                            league.activeSeasonYear,
+                            league.activeSeasonType,
+                            team.teamId
                         )
                     }
                 }.awaitAll().filterNotNull().let { leadersRes ->
-                    if(leadersRes.isNotEmpty()){
+                    if (leadersRes.isNotEmpty()) {
                         sportDBs.leadersDB.save(leadersRes)
                     }
                 }
@@ -197,8 +201,8 @@ class SportHandler(
             var delayBoxScore = 0
             while (isActive) {
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
-                    //if completely new scoreboard save it and generate game posts
-                    if(scoreboard.competitions.map { it.id }.toSet() != lastSentScoreboard[sport]?.competitions?.map { it.id }?.toSet()){
+                    // if completely new scoreboard save it and generate game posts
+                    if (scoreboard.competitions.map { it.id }.toSet() != lastSentScoreboard[sport]?.competitions?.map { it.id }?.toSet()) {
                         saveScoreboardAndGetBoxscores(
                             sport,
                             scoreboard,
@@ -207,11 +211,11 @@ class SportHandler(
                             emptyList()
                         )
                         addGamePosts(sport, scoreboard.competitions)
-                    }else{
-                        //grab earliest game's start time and state of all games
+                    } else {
+                        // grab earliest game's start time and state of all games
                         val earliestTime = scoreboard.competitions.minOf { Instant.parse(it.date) }
                         val allStates = scoreboard.competitions.map { it.status.state }.toSet()
-                        //if some games are past the earliest start time update scoreboard and box scores
+                        // if some games are past the earliest start time update scoreboard and box scores
                         if (Clock.System.now() > earliestTime) {
                             saveScoreboardAndGetBoxscores(
                                 sport,
@@ -235,11 +239,14 @@ class SportHandler(
                         }
                     }
                 }
-                //retrieve scoreboard every ten seconds
+                // retrieve scoreboard every ten seconds
                 delay(10 * 1000)
-                //delay boxscore fetch for 30 ticks of delay (every 5 minutes)
-                if(delayBoxScore == 30) delayBoxScore = 0
-                else delayBoxScore++
+                // delay boxscore fetch for 30 ticks of delay (every 5 minutes)
+                if (delayBoxScore == 30) {
+                    delayBoxScore = 0
+                } else {
+                    delayBoxScore++
+                }
             }
         }
     }
@@ -249,17 +256,17 @@ class SportHandler(
         scoreboard: Scoreboard,
         activeCompetitions: List<Competition>,
         enableBoxScore: Boolean,
-        inactiveCompetitionIds: List<String>,
+        inactiveCompetitionIds: List<String>
     ) = coroutineScope {
-        //if some competitions are active and there's a change in the scoreboard update
-        if(activeCompetitions.isNotEmpty() && scoreboard != lastSentScoreboard[sport]){
+        // if some competitions are active and there's a change in the scoreboard update
+        if (activeCompetitions.isNotEmpty() && scoreboard != lastSentScoreboard[sport]) {
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
             sportDBs.competitionsDB.save(activeCompetitions)
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboard)}"
             )
-            if(enableBoxScore) buildBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
+            if (enableBoxScore) buildBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
             lastSentScoreboard[sport] = scoreboard
         }
     }
@@ -274,10 +281,10 @@ class SportHandler(
                 sportClient.getGameStats(sport, gameId)
             }
         }.awaitAll().filterNotNull().let { newBoxScores ->
-            //add inactive boxscores
+            // add inactive boxscores
             val allBoxScores = newBoxScores + lastSentBoxScores.filter { inactiveCompetitionIds.contains(it.id) }
             // map result to teams
-            if(allBoxScores != lastSentBoxScores) {
+            if (allBoxScores != lastSentBoxScores) {
                 // map result to teams
                 sportDBs.boxscoresDB.save(newBoxScores)
                 eventService.publish(

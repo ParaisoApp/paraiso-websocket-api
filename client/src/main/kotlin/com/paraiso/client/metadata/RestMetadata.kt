@@ -21,7 +21,7 @@ fun RestMetadata.toDomain(url: String) = Metadata(
     description = "",
     image = thumbnailUrl,
     video = extractEmbedUrl(html),
-    url = url,
+    url = url
 )
 
 private fun extractEmbedUrl(html: String?): String? {

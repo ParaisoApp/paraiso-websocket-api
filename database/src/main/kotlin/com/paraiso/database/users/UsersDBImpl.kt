@@ -1,6 +1,5 @@
 package com.paraiso.database.users
 
-import com.mongodb.client.model.Aggregates.unset
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
@@ -19,7 +18,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.posts.Post
 import com.paraiso.domain.users.ChatRef
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserFavorite

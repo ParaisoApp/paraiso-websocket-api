@@ -10,8 +10,8 @@ class MetadataApi(private val metadataClient: MetadataClient) {
         Platform.entries.find { it.regex.matches(url) }
     suspend fun getMetadata(url: String): Metadata = coroutineScope {
         val endpointUrl = when (val platform = detectPlatform(url)) {
-            Platform.TWITCH -> "${platform.oembedEndpoint}${url}" // Twitch endpoint already appends ?url=
-            else -> "${platform?.oembedEndpoint}?url=${url}&format=json"
+            Platform.TWITCH -> "${platform.oembedEndpoint}$url" // Twitch endpoint already appends ?url=
+            else -> "${platform?.oembedEndpoint}?url=$url&format=json"
         }
 
         metadataClient.getMetadata(endpointUrl, url)?.let { metadataClientRes ->
@@ -19,9 +19,11 @@ class MetadataApi(private val metadataClient: MetadataClient) {
         }
         // First, do a GET request to check headers
         val response = Jsoup.connect(url)
-            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            .userAgent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                    "Chrome/120.0.0.0 Safari/537.36")
+                    "Chrome/120.0.0.0 Safari/537.36"
+            )
             .referrer("https://www.google.com")
             .ignoreContentType(true)
             .timeout(15_000)

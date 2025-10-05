@@ -1,23 +1,16 @@
 package com.paraiso.server.plugins
 
 import com.paraiso.AppServices
-import com.paraiso.server.plugins.jobs.HomeJobs
-import com.paraiso.server.plugins.jobs.ProfileJobs
-import com.paraiso.server.plugins.jobs.SportJobs
-import com.paraiso.server.util.SessionState
+import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
-import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
-import com.paraiso.domain.messageTypes.Vote
-import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
@@ -31,7 +24,12 @@ import com.paraiso.domain.users.ViewerContext
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.ServerState
+import com.paraiso.domain.votes.VoteResponse
 import com.paraiso.events.EventServiceImpl
+import com.paraiso.server.plugins.jobs.HomeJobs
+import com.paraiso.server.plugins.jobs.ProfileJobs
+import com.paraiso.server.plugins.jobs.SportJobs
+import com.paraiso.server.util.SessionState
 import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.getMentions
@@ -67,12 +65,13 @@ class WebSocketHandler(
         val sessionState = SessionState()
         // check cookies to see if existing user
         val checkExistingUser = services.userSessionsApi.getUserById(
-            session.call.request.cookies["guest_id"] ?: "", null
+            session.call.request.cookies["guest_id"] ?: "",
+            null
         )
         val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
-        launch{
+        launch {
             // new user so create new route entry
-            if(checkExistingUser == null){
+            if (checkExistingUser == null) {
                 val now = Clock.System.now()
                 services.routesApi.saveRoutes(
                     listOf(
@@ -90,8 +89,8 @@ class WebSocketHandler(
                 )
             }
         }
-        launch{
-            //create or update session connected status
+        launch {
+            // create or update session connected status
             eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->
                 eventServiceImpl.saveUserSession(
                     existingSession.copy(
@@ -160,7 +159,7 @@ class WebSocketHandler(
                             val user = (message as UserResponse)
                             val follow = services.followsApi.get(sessionUser.id, user.id)
                             sendTypedMessage(
-                                type, //remove private data from user update socket messages
+                                type, // remove private data from user update socket messages
                                 user.copy(
                                     userReports = emptyMap(),
                                     postReports = emptyMap(),
@@ -198,17 +197,18 @@ class WebSocketHandler(
     private suspend fun validateMessage(
         sessionUserId: String,
         blockList: Map<String, Boolean>,
-        postType: PostType, userId: String?,
+        postType: PostType,
+        userId: String?,
         sessionState: SessionState
     ) =
         sessionUserId == userId || // message is from the cur user or
             (
                 !blockList.contains(userId) && // user isnt in cur user's blocklist
-                        sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
-                        userId != null &&
-                        sessionState.filterTypes.userRoles.contains(
-                            services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
-                        )
+                    sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
+                    userId != null &&
+                    sessionState.filterTypes.userRoles.contains(
+                        services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
+                    )
                 )
 
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
@@ -280,17 +280,17 @@ class WebSocketHandler(
                                             // update chat for receiving user
                                             launch { services.userChatsApi.putDM(dmWithData) }
                                         }
-                                        //if user is on this server then grab session and send dm to user
-                                        userSessions[dmWithData.userReceiveId]?.let {receiveUserSessions ->
+                                        // if user is on this server then grab session and send dm to user
+                                        userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
                                             receiveUserSessions.forEach { session ->
                                                 session.sendTypedMessage(MessageType.DM, dmWithData)
                                             }
                                         }
-                                        //find any other user server sessions, publish, and map to respective server subscriber
-                                        eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let {receiveUserSessions ->
+                                        // find any other user server sessions, publish, and map to respective server subscriber
+                                        eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
                                             val dmString = Json.encodeToString(dmWithData)
                                             receiveUserSessions.sessionIds.forEach { userServerId ->
-                                                eventServiceImpl.publish("server:$userServerId", "$serverId:${dmWithData.userReceiveId}:${dmString}")
+                                                eventServiceImpl.publish("server:$userServerId", "$serverId:${dmWithData.userReceiveId}:$dmString")
                                             }
                                         }
                                     }
@@ -332,7 +332,7 @@ class WebSocketHandler(
                                     val score = services.votesApi.vote(vote)
                                     launch { services.postsApi.votePost(vote.postId, score) }
                                     launch {
-                                        vote.voteeId?.let{voteeId ->
+                                        vote.voteeId?.let { voteeId ->
                                             services.usersApi.votePost(voteeId, score)
                                         }
                                     }
@@ -421,10 +421,10 @@ class WebSocketHandler(
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
             activeJobs?.cancelAndJoin()
-            //create or update session connected status
+            // create or update session connected status
             eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->
                 val remainingSessions = existingSession.sessionIds - sessionId
-                if(remainingSessions.isEmpty()){
+                if (remainingSessions.isEmpty()) {
                     eventServiceImpl.deleteUserSession(sessionUser.id)
                 } else {
                     eventServiceImpl.saveUserSession(
@@ -437,10 +437,10 @@ class WebSocketHandler(
             services.userSessionsApi.getUserById(sessionUser.id, null)?.copy(status = UserStatus.DISCONNECTED)?.let { userDisconnected ->
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
-                //remove current user session from sessions map
+                // remove current user session from sessions map
                 val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
-                //if user has no more sessions, remove user from server user sessions
-                if(curUserSessions.isEmpty()) userSessions.remove(userDisconnected.id)
+                // if user has no more sessions, remove user from server user sessions
+                if (curUserSessions.isEmpty()) userSessions.remove(userDisconnected.id)
                 this.close()
             }
         }

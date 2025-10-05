@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
 
 class EventServiceImpl(
     private val client: RedisClient
-): EventService, Klogging {
+) : EventService, Klogging {
     private val pubSubConnection: StatefulRedisPubSubConnection<String, String> = client.connectPubSub()
     private val pubConnection = client.connect()
     private val pub = pubConnection.async()
@@ -29,7 +29,7 @@ class EventServiceImpl(
     }
 
     override suspend fun addChannels(keys: List<String>) =
-        keys.forEach {key ->
+        keys.forEach { key ->
             reactive.subscribe(key).awaitFirstOrNull()
         }
 
@@ -37,11 +37,11 @@ class EventServiceImpl(
         onMessage: suspend (Pair<String, String>) -> Unit
     ) = coroutineScope {
         reactive.observeChannels().asFlow().collect { msg ->
-                launch {
-                    onMessage(Pair(msg.channel, msg.message))
-                }
+            launch {
+                onMessage(Pair(msg.channel, msg.message))
             }
         }
+    }
 
     override fun saveUserSession(userSession: UserSession) {
         pubConnection.sync().set(

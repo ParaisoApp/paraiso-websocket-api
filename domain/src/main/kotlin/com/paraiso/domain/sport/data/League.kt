@@ -14,8 +14,9 @@ data class League(
     val activeSeasonYear: String,
     val activeSeasonDisplayName: String,
     val activeSeasonType: String,
-    val activeSeasonTypeName: String,
+    val activeSeasonTypeName: String
 )
+
 @Serializable
 data class LeagueResponse(
     val id: String,
@@ -26,7 +27,7 @@ data class LeagueResponse(
     val activeSeasonYear: String,
     val activeSeasonDisplayName: String,
     val activeSeasonType: String,
-    val activeSeasonTypeName: String,
+    val activeSeasonTypeName: String
 )
 
 fun League.toResponse() = LeagueResponse(
@@ -40,4 +41,3 @@ fun League.toResponse() = LeagueResponse(
     activeSeasonType = activeSeasonType,
     activeSeasonTypeName = activeSeasonTypeName
 )
-

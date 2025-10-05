@@ -33,4 +33,3 @@ enum class Platform(val regex: Regex, val oembedEndpoint: String) {
         "https://www.reddit.com/oembed"
     )
 }
-

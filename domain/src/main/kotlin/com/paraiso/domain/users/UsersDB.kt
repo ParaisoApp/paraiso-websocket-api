@@ -4,7 +4,7 @@ import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
 
-interface UsersDB{
+interface UsersDB {
     suspend fun findById(id: String): User?
     suspend fun findByIdIn(ids: List<String>): List<User>
     suspend fun findByName(name: String): User?

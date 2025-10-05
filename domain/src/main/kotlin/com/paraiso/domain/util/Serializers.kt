@@ -62,7 +62,7 @@ object InstantBsonSerializer : KSerializer<Instant> {
         return if (decoder is BsonDecoder) {
             when (val bsonValue = decoder.decodeBsonValue()) {
                 is BsonDateTime -> Instant.fromEpochMilliseconds(bsonValue.value)
-                is BsonString -> Instant.parse(bsonValue.value)   // fallback for old string data
+                is BsonString -> Instant.parse(bsonValue.value) // fallback for old string data
                 else -> throw IllegalArgumentException("Unsupported BsonValue type: $bsonValue")
             }
         } else {

@@ -70,6 +70,7 @@ data class TeamYearStatsResponse(
     val displayValue: String,
     val rankDisplayValue: String?
 )
+
 @Serializable
 data class ScoreboardEntity(
     @SerialName(ID) val id: String,

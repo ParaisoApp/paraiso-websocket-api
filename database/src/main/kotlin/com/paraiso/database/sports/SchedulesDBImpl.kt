@@ -4,8 +4,8 @@ import com.mongodb.client.model.Filters
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.sport.interfaces.SchedulesDB
 import com.paraiso.domain.sport.data.ScheduleEntity
+import com.paraiso.domain.sport.interfaces.SchedulesDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -19,7 +19,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB {
         sport: String,
         teamId: String,
         seasonYear: Int,
-        seasonType: Int,
+        seasonType: Int
     ): ScheduleEntity? =
         collection.find(
             Filters.and(

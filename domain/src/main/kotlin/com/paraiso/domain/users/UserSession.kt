@@ -1,10 +1,9 @@
 package com.paraiso.domain.users
 
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserSession (
+data class UserSession(
     val id: String,
     val userId: String,
     val serverId: String,
@@ -12,7 +11,7 @@ data class UserSession (
 )
 
 @Serializable
-data class UserSessionResponse (
+data class UserSessionResponse(
     val id: String,
     val userId: String,
     val serverId: String,

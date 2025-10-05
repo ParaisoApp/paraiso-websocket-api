@@ -12,7 +12,7 @@ class ServerHandler(
     private val routesApi: RoutesApi
 ) {
     suspend fun bootJobs() = coroutineScope {
-        //TODO launch { cleanUserList() }
+        // TODO launch { cleanUserList() }
         launch { buildRoutes(manual = false) }
     }
 //    private suspend fun cleanUserList() = coroutineScope {

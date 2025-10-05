@@ -1,22 +1,20 @@
 package com.paraiso.server.plugins
 
+import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.messageTypes.Vote
-import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
+import com.paraiso.domain.votes.VoteResponse
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.util.decodeMessage
 import com.paraiso.server.util.sendTypedMessage
@@ -29,8 +27,8 @@ import java.util.concurrent.ConcurrentHashMap
 class MessageHandler(
     private val serverId: String,
     private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
-    private val eventServiceImpl: EventServiceImpl,
-): Klogging {
+    private val eventServiceImpl: EventServiceImpl
+) : Klogging {
     suspend fun messageJobs() = coroutineScope {
         eventServiceImpl.addChannels(
             listOf(
@@ -46,15 +44,15 @@ class MessageHandler(
                 MessageType.REPORT_USER.name,
                 MessageType.REPORT_POST.name,
                 MessageType.SCOREBOARD.name,
-                MessageType.BOX_SCORES.name,
+                MessageType.BOX_SCORES.name
             )
         )
-        //pick up dms directed at this server - find active user and send typed message
-        launch{
+        // pick up dms directed at this server - find active user and send typed message
+        launch {
             eventServiceImpl.subscribe { (channel, messageWithServer) ->
                 val (incomingModifier, message) = messageWithServer.split(":", limit = 2)
-                //only emit messages coming from other servers
-                if(incomingModifier != serverId) {
+                // only emit messages coming from other servers
+                if (incomingModifier != serverId) {
                     when (channel) {
                         "server:$serverId" -> {
                             val (userId, payload) = message.split(":", limit = 2)

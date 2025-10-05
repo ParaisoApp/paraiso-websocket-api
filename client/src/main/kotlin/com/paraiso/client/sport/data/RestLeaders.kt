@@ -48,7 +48,7 @@ fun RestLeaders.toDomain(
     teamId: String? = null
 ): StatLeadersDomain {
     var id = "$sport-$season-$type"
-    if(teamId != null) id += "-$teamId"
+    if (teamId != null) id += "-$teamId"
     return StatLeadersDomain(
         id = id,
         sport = sport.name,

@@ -1,7 +1,6 @@
 package com.paraiso.api.users
 
 import com.paraiso.domain.messageTypes.FilterTypes
-import com.paraiso.domain.users.UserChatsApi
 import com.paraiso.domain.users.UserSessionsApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call

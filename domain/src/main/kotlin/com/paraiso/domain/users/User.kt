@@ -1,12 +1,9 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.posts.PostType
-import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.InstantBsonSerializer
-import com.paraiso.domain.util.ServerState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -116,9 +113,10 @@ data class UserFavorite(
     val favorite: Boolean,
     val icon: String?
 )
+
 @Serializable
 data class ViewerContext(
-    val following: Boolean?,
+    val following: Boolean?
 )
 
 fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
@@ -150,7 +148,7 @@ fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
         updatedOn = updatedOn
     )
 
-//user list doesn't need all data
+// user list doesn't need all data
 fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
     UserResponse(
         id = id,

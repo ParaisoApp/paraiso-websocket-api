@@ -5,8 +5,8 @@ import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.sport.interfaces.LeadersDB
 import com.paraiso.domain.sport.data.StatLeaders
+import com.paraiso.domain.sport.interfaces.LeadersDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -26,7 +26,7 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
                 eq(StatLeaders::sport.name, sport),
                 eq(StatLeaders::teamId.name, null),
                 eq(StatLeaders::season.name, season),
-                eq(StatLeaders::type.name, type),
+                eq(StatLeaders::type.name, type)
             )
         ).firstOrNull()
 
@@ -35,15 +35,15 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
         teamId: String,
         season: Int,
         type: Int
-    ): StatLeaders?=
-    collection.find(
-        and(
-            eq(StatLeaders::sport.name, sport),
-            eq(StatLeaders::teamId.name, teamId),
-            eq(StatLeaders::season.name, season),
-            eq(StatLeaders::type.name, type),
-        )
-    ).firstOrNull()
+    ): StatLeaders? =
+        collection.find(
+            and(
+                eq(StatLeaders::sport.name, sport),
+                eq(StatLeaders::teamId.name, teamId),
+                eq(StatLeaders::season.name, season),
+                eq(StatLeaders::type.name, type)
+            )
+        ).firstOrNull()
 
     override suspend fun save(statLeaders: List<StatLeaders>): Int {
         val bulkOps = statLeaders.map { statLeader ->

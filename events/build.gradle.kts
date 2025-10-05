@@ -7,7 +7,7 @@ dependencies {
     implementation(project(":domain"))
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    //redis
+    // redis
     implementation("io.lettuce:lettuce-core:6.8.0.RELEASE")
 }
 

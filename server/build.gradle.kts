@@ -1,4 +1,4 @@
-val ktorVersion  = "2.3.10"
+val ktorVersion = "2.3.10"
 
 plugins {
     id("paraiso")
@@ -26,7 +26,7 @@ dependencies {
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine")
     implementation("org.mongodb:bson-kotlinx")
 
-    //redis
+    // redis
     implementation("io.lettuce:lettuce-core:6.2.0.RELEASE")
 }
 

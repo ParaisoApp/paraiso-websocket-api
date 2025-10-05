@@ -58,10 +58,10 @@ data class Type(
     val completed: Boolean
 )
 
-fun RestScoreboard.toDomain(sport: SiteRoute) : Scoreboard{
+fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
     var id = "$sport-${season.type}-${season.year}"
-    if(week != null) id += "-${week.number}"
-    if(day != null) id += "-${day.date}"
+    if (week != null) id += "-${week.number}"
+    if (day != null) id += "-${day.date}"
     return Scoreboard(
         id = id,
         season = season.toDomain(),

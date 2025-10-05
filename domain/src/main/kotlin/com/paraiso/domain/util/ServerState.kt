@@ -1,21 +1,17 @@
 package com.paraiso.domain.util
 
+import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
-import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.messageTypes.Vote
-import com.paraiso.domain.messageTypes.VoteResponse
-import com.paraiso.domain.posts.Post
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.votes.VoteResponse
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import java.util.concurrent.ConcurrentHashMap
 
 object ServerState {
     val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
@@ -41,5 +37,4 @@ object ServerState {
         Pair(MessageType.REPORT_USER, reportUserFlowMut.asSharedFlow()),
         Pair(MessageType.REPORT_POST, reportPostFlowMut.asSharedFlow())
     )
-
 }

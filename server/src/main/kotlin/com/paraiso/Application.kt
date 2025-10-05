@@ -1,7 +1,6 @@
 package com.paraiso
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
 import com.paraiso.api.follows.followsController
@@ -15,8 +14,7 @@ import com.paraiso.api.users.userSessionsController
 import com.paraiso.api.users.usersController
 import com.paraiso.api.votes.votesController
 import com.paraiso.client.metadata.MetadataClientImpl
-import com.paraiso.server.plugins.ServerHandler
-import com.paraiso.server.plugins.MessageHandler
+import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.database.admin.PostReportsDBImpl
 import com.paraiso.database.admin.UserReportsDBImpl
 import com.paraiso.database.follows.FollowsDBImpl
@@ -54,8 +52,9 @@ import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.Constants.MAIN_SERVER
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.votes.VotesApi
-import com.paraiso.domain.votes.VotesDB
 import com.paraiso.events.EventServiceImpl
+import com.paraiso.server.plugins.MessageHandler
+import com.paraiso.server.plugins.ServerHandler
 import com.paraiso.server.plugins.WebSocketHandler
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
@@ -77,17 +76,16 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
+import io.lettuce.core.RedisClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.time.Duration
-import io.lettuce.core.RedisClient
-import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.ConcurrentHashMap
-
 
 fun main() {
     val job = SupervisorJob()
@@ -95,7 +93,7 @@ fun main() {
     val server = embeddedServer(Netty, port = 8080) {
         module(jobScope)
     }.start(wait = true)
-    //cancel all coroutines on shutdown
+    // cancel all coroutines on shutdown
     Runtime.getRuntime().addShutdownHook(
         Thread {
             try {
@@ -113,7 +111,7 @@ fun main() {
     )
 }
 
-fun Application.module(jobScope: CoroutineScope){
+fun Application.module(jobScope: CoroutineScope) {
     // load config
     val config = HoconApplicationConfig(ConfigFactory.load().withFallback(ConfigFactory.systemEnvironment()).resolve())
     val serverId = config.property("server.id").getString()
@@ -177,9 +175,9 @@ fun Application.module(jobScope: CoroutineScope){
         userSessionsApi,
         userChatsApi,
         sportApi,
-        metadataApi,
+        metadataApi
     )
-    //build handlers early - for data generation
+    // build handlers early - for data generation
     val sportHandler = SportHandler(
         SportClientImpl(),
         routesApi,
@@ -189,7 +187,7 @@ fun Application.module(jobScope: CoroutineScope){
     )
     val serverHandler = ServerHandler(routesApi)
     // only launch data fetching jobs on a single server - will split off to microservice
-    if(serverId == MAIN_SERVER){
+    if (serverId == MAIN_SERVER) {
         jobScope.launch {
             sportHandler.bootJobs(SiteRoute.FOOTBALL)
         }
@@ -200,20 +198,20 @@ fun Application.module(jobScope: CoroutineScope){
             serverHandler.bootJobs()
         }
     }
-    //build handler and configure sockets
+    // build handler and configure sockets
     val handler = WebSocketHandler(
         serverId = serverId,
         eventServiceImpl,
         userSessions,
         services
     )
-    if(autoBuild){
+    if (autoBuild) {
         runBlocking {
             usersApi.saveUser(UserResponse.systemUser())
         }
     }
     configureSockets(config, handler, services, serverHandler, sportHandler)
-    //close subscription to redis
+    // close subscription to redis
     environment.monitor.subscribe(ApplicationStopped) {
         eventServiceImpl.close()
     }

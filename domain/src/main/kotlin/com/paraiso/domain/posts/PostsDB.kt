@@ -4,7 +4,7 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import kotlinx.datetime.Instant
 
-interface PostsDB{
+interface PostsDB {
     suspend fun findById(id: String): Post?
     suspend fun findByIdsIn(ids: Set<String>): List<Post>
     suspend fun findByPartial(partial: String): List<Post>
@@ -29,7 +29,7 @@ interface PostsDB{
     suspend fun addSubpostToParent(
         id: String,
         subPostId: String
-    ):Long
+    ): Long
     suspend fun removeSubpostFromParent(
         id: String,
         subPostId: String

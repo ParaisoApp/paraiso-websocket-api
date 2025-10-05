@@ -18,9 +18,12 @@ fun Route.sportController(sportApi: SportApi) {
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/teams") {
-            call.respond(HttpStatusCode.OK, sportApi.getTeams(
-                call.request.queryParameters["sport"] ?: ""
-            ))
+            call.respond(
+                HttpStatusCode.OK,
+                sportApi.getTeams(
+                    call.request.queryParameters["sport"] ?: ""
+                )
+            )
         }
         get("/teamById") {
             sportApi.getTeamById(
@@ -47,7 +50,7 @@ fun Route.sportController(sportApi: SportApi) {
         get("/standings") {
             sportApi.getStandings(
                 call.request.queryParameters["sport"] ?: ""
-                )?.let {
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }

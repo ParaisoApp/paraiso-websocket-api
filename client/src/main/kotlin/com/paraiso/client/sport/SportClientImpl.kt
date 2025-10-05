@@ -41,10 +41,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getLeague(sport: SiteRoute): League? = withContext(dispatcher) {
         try {
             var url = clientConfig.coreApiBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             val response: RestLeague = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
@@ -64,10 +64,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getScoreboard(sport: SiteRoute): ScoreboardDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard"
             val response: RestScoreboard = getHttpClient().use { httpClient ->
@@ -87,10 +87,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getGameStats(sport: SiteRoute, competitionId: String): BoxScoreDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/summary?event=$competitionId"
             val response: RestGameStats = getHttpClient().use { httpClient ->
@@ -110,10 +110,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getStandings(sport: SiteRoute): AllStandingsDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.cdnApiBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCdnUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCdnUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/standings?xhr=1"
             val standingsResponse: RestStandingsContainer = getHttpClient().use { httpClient ->
@@ -133,10 +133,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getTeams(sport: SiteRoute): List<TeamDomain> = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams"
             val response: RestTeams = getHttpClient().use { httpClient ->
@@ -156,10 +156,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getRoster(sport: SiteRoute, teamId: String): RosterDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/roster"
             val response: String = getHttpClient().use { httpClient ->
@@ -176,10 +176,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 ignoreUnknownKeys = true
                 encodeDefaults = true
             }
-            val parsedResponse = when(sport){
+            val parsedResponse = when (sport) {
                 SiteRoute.BASKETBALL -> json.decodeFromString<RestRoster>(response).toDomain(sport)
                 SiteRoute.FOOTBALL -> json.decodeFromString<RestRosterNested>(response).toDomain(sport)
-                else -> {null}
+                else -> { null }
             }
             parsedResponse
         } catch (ex: Exception) {
@@ -194,10 +194,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     ): StatLeadersDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.coreApiBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/leaders"
             val response: RestLeaders = getHttpClient().use { httpClient ->
@@ -222,10 +222,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     ): StatLeadersDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.coreApiBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/teams/$teamId/leaders"
             val response: RestLeaders = getHttpClient().use { httpClient ->
@@ -245,10 +245,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     override suspend fun getSchedule(sport: SiteRoute, teamId: String): ScheduleDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl
-            when(sport){
+            when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
-                else -> {logger.info { "Unrecognized sport $sport" }}
+                else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/schedule"
             val response: RestSchedule = getHttpClient().use { httpClient ->

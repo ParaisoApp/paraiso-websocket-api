@@ -1,14 +1,10 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.messageTypes.Follow
-import com.paraiso.domain.messageTypes.FollowResponse
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.messageTypes.Vote
-import com.paraiso.domain.messageTypes.VoteResponse
-import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.Favorite
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -53,7 +49,7 @@ class UsersApi(
     suspend fun addUserReport(report: Report) =
         usersDB.addUserReport(report.id)
 
-    suspend fun addPostReport(report: Report)  =
+    suspend fun addPostReport(report: Report) =
         usersDB.addPostReport(report.id)
 
     suspend fun follow(follow: FollowResponse) = coroutineScope {
@@ -88,7 +84,7 @@ class UsersApi(
 
     suspend fun toggleFavoriteRoute(favorite: Favorite) {
         // toggle favorite from User
-        if(favorite.userId != null) {
+        if (favorite.userId != null) {
             usersDB.findById(favorite.userId)?.let { user ->
                 if (favorite.icon == null && !favorite.favorite) {
                     usersDB.removeFavoriteRoute(favorite.userId, favorite.route)
@@ -110,7 +106,7 @@ class UsersApi(
         dm: DirectMessage,
         userId: String?,
         otherUserId: String?,
-        isUser: Boolean,
+        isUser: Boolean
     ) {
         if (userId != null && otherUserId != null) {
             usersDB.setUserChat(

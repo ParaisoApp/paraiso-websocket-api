@@ -1,10 +1,10 @@
 package com.paraiso.database.util
 
 import com.mongodb.client.model.Filters.expr
+import com.paraiso.domain.util.Constants.ID
 import org.bson.Document
 import org.bson.conversions.Bson
 import kotlin.reflect.KProperty1
-import com.paraiso.domain.util.Constants.ID
 
 fun <T : Any> eqId(
     field1: KProperty1<T, *>

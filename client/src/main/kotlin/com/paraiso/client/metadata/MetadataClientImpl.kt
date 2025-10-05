@@ -10,11 +10,11 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class MetadataClientImpl: MetadataClient, BaseAdapter, Klogging {
+class MetadataClientImpl : MetadataClient, BaseAdapter, Klogging {
     companion object {
         private val dispatcher = Dispatchers.IO
     }
-    override suspend fun getMetadata(url: String, baseUrl: String): Metadata? = withContext(dispatcher){
+    override suspend fun getMetadata(url: String, baseUrl: String): Metadata? = withContext(dispatcher) {
         try {
             val response: RestMetadata = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {

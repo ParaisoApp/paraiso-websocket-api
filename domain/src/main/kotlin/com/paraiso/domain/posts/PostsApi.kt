@@ -4,12 +4,9 @@ import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
-import com.paraiso.domain.messageTypes.Vote
-import com.paraiso.domain.messageTypes.VoteResponse
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UsersApi
-import com.paraiso.domain.users.UsersDB
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
 import com.paraiso.domain.votes.VotesApi
 import kotlinx.coroutines.coroutineScope
@@ -30,7 +27,13 @@ class PostsApi(
         postsDB.findById(postSearchId)?.let { post ->
             val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
             generatePostTree(
-                post, getRange(rangeModifier, sortType), sortType, filters, userId, followees, filter = true
+                post,
+                getRange(rangeModifier, sortType),
+                sortType,
+                filters,
+                userId,
+                followees,
+                filter = true
             )
         }
 
@@ -46,7 +49,12 @@ class PostsApi(
     ): Map<String, PostResponse> =
         generatePostTree(
             generateBasePost(PLACEHOLDER_ID, PLACEHOLDER_ID, postSearchIds),
-            getRange(Range.DAY, SortType.NEW), SortType.NEW, FilterTypes.init(), userId, emptySet(), filter = false
+            getRange(Range.DAY, SortType.NEW),
+            SortType.NEW,
+            FilterTypes.init(),
+            userId,
+            emptySet(),
+            filter = false
         ) - PLACEHOLDER_ID // remove unnecessary base post
 
     // search by partial for autocomplete
@@ -65,17 +73,26 @@ class PostsApi(
         sortType: SortType,
         filters: FilterTypes,
         userId: String
-    ): LinkedHashMap<String, PostResponse>  {
+    ): LinkedHashMap<String, PostResponse> {
         // grab 50 most recent posts at given super level
         val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
         val range = getRange(rangeModifier, sortType)
         return postsDB.findByBaseCriteria(
-            postSearchId, range, filters, sortType, followees
+            postSearchId,
+            range,
+            filters,
+            sortType,
+            followees
         ).mapNotNull { it.id }.toSet() // generate base post and post tree off of given inputs
             .let { subPosts ->
                 generatePostTree(
                     generateBasePost(postSearchId, basePostName, subPosts),
-                    range, sortType, filters, userId, followees, filter = true
+                    range,
+                    sortType,
+                    filters,
+                    userId,
+                    followees,
+                    filter = true
                 )
             }
     }
@@ -98,7 +115,12 @@ class PostsApi(
 
                     val votes = votesApi.getByUserIdAndPostIdIn(userId, nextRefNode.subPosts)
                     postsDB.findBySubpostIds(
-                        nextRefNode.subPosts, range, filters, sortType, userFollowing, filter
+                        nextRefNode.subPosts,
+                        range,
+                        filters,
+                        sortType,
+                        userFollowing,
+                        filter
                     ).map { post ->
                         if (post.id != null) {
                             returnPosts[post.id] = post.toResponse(votes[post.id]?.upvote)
@@ -118,7 +140,7 @@ class PostsApi(
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
         Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking not finding top posts or range all
-            .takeIf { rangeModifier == Range.ALL || sortType != SortType.TOP}
+            .takeIf { rangeModifier == Range.ALL || sortType != SortType.TOP }
             ?: Clock.System.now().let { clock ->
                 when (rangeModifier) {
                     Range.DAY -> clock.minus(1.days)
@@ -132,18 +154,18 @@ class PostsApi(
     suspend fun putPost(message: Message): Unit = coroutineScope {
         message.id?.let { messageId ->
             // if post already exists then edit
-            if(message.editId != null){
+            if (message.editId != null) {
                 postsDB.editPost(message)
                 // otherwise create a new post
             } else {
                 postsDB.save(listOf(message.toNewPost()))
                 // update parent sub posts
-                if(message.replyId != null) {
+                if (message.replyId != null) {
                     postsDB.addSubpostToParent(message.replyId, messageId)
                     launch {
                         // update relatives sub post counts
                         if (message.rootId != message.id) {
-                            postsDB.findById(message.replyId)?.let {parent ->
+                            postsDB.findById(message.replyId)?.let { parent ->
                                 updateCounts(parent, increment = 1)
                             }
                         }
@@ -157,10 +179,10 @@ class PostsApi(
         postsDB.setScore(postId, score)
 
     suspend fun deletePost(delete: Delete, userId: String) =
-        postsDB.findById(delete.postId)?.let {post ->
+        postsDB.findById(delete.postId)?.let { post ->
             if (post.userId == userId) {
                 postsDB.setPostDeleted(delete.postId)
-                postsDB.findById(delete.parentId)?.let{parent ->
+                postsDB.findById(delete.parentId)?.let { parent ->
                     updateCounts(parent, increment = -1)
                 }
             }

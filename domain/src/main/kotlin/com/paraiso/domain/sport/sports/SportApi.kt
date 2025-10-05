@@ -17,11 +17,11 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun getCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
     suspend fun getBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
     suspend fun getStandings(sport: String) =
-        if(sport == SiteRoute.BASKETBALL.name) {
+        if (sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
                 standingsGroup.confAbbr to standingsGroup.standings.map { it.toResponse() }
             }
-        }else{
+        } else {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.flatMap { confGroup ->
                 confGroup.subGroups
             }?.associate { standingsSubGroup ->
@@ -49,7 +49,10 @@ class SportApi(private val sportDBs: SportDBs) {
         }
     suspend fun getTeamLeaders(sport: String, teamId: String, season: Int, type: Int) =
         sportDBs.leadersDB.findBySportAndSeasonAndTypeAndTeam(
-            sport, teamId, season, type,
+            sport,
+            teamId,
+            season,
+            type
         )?.categories?.let { categories ->
             // grab athletes from DB and associate with their id
             val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
