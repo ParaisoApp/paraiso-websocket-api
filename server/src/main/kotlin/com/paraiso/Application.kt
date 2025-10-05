@@ -5,6 +5,7 @@ import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
 import com.paraiso.api.follows.followsController
 import com.paraiso.api.metadata.metadataController
+import com.paraiso.api.notifications.notificationsController
 import com.paraiso.api.posts.postsController
 import com.paraiso.api.routes.routesController
 import com.paraiso.api.sports.dataGenerationController
@@ -18,6 +19,7 @@ import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.database.admin.PostReportsDBImpl
 import com.paraiso.database.admin.UserReportsDBImpl
 import com.paraiso.database.follows.FollowsDBImpl
+import com.paraiso.database.notifications.NotificationsDBImpl
 import com.paraiso.database.posts.PostsDBImpl
 import com.paraiso.database.routes.RoutesDBImpl
 import com.paraiso.database.sports.AthletesDBImpl
@@ -38,6 +40,7 @@ import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.metadata.MetadataApi
+import com.paraiso.domain.notifications.NotificationsApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
@@ -154,6 +157,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val usersApi = UsersApi(usersDb)
     val votesApi = VotesApi(VotesDBImpl(database))
     val followsApi = FollowsApi(FollowsDBImpl(database))
+    val notificationsApi = NotificationsApi(NotificationsDBImpl(database))
     val postsApi = PostsApi(
         postsDb,
         usersApi,
@@ -172,6 +176,7 @@ fun Application.module(jobScope: CoroutineScope) {
         usersApi,
         votesApi,
         followsApi,
+        notificationsApi,
         userSessionsApi,
         userChatsApi,
         sportApi,
@@ -241,6 +246,7 @@ fun Application.configureSockets(
             routesController(services.routesApi)
             votesController(services.votesApi)
             followsController(services.followsApi)
+            notificationsController(services.notificationsApi)
             dataGenerationController(serverHandler, sportHandler)
         }
     }

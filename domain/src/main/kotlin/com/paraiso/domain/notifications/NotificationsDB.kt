@@ -5,7 +5,7 @@ interface NotificationsDB {
     suspend fun save(notifications: List<Notification>): Int
     suspend fun setNotificationsRead(
         userId: String,
-        type: NotificationType,
+        type: String,
         refId: String?
     ): Long
 }

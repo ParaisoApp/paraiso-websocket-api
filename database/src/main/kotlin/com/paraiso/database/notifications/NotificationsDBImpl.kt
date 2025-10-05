@@ -45,7 +45,7 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB {
 
     override suspend fun setNotificationsRead(
         userId: String,
-        type: NotificationType,
+        type: String,
         refId: String?
     ): Long {
         val condList = mutableListOf(

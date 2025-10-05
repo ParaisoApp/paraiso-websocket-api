@@ -11,7 +11,7 @@ class NotificationsApi(
         notificationsDB.save(notifications.map { it.toDomain() })
     suspend fun setNotificationsRead(
         userId: String,
-        type: NotificationType,
+        type: String,
         refId: String?
     ) =
         notificationsDB.setNotificationsRead(userId, type, refId)
