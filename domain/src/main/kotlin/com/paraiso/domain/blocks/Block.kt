@@ -1,4 +1,4 @@
-package com.paraiso.domain.follows
+package com.paraiso.domain.blocks
 
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -8,33 +8,33 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Follow(
+data class Block(
     @SerialName(Constants.ID) val id: String,
-    val followerId: String,
-    val followeeId: String,
+    val blockerId: String,
+    val blockeeId: String,
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant?
 )
 
 @Serializable
-data class FollowResponse(
+data class BlockResponse(
     val id: String? = null,
-    val followerId: String,
-    val followeeId: String,
-    val following: Boolean,
+    val blockerId: String,
+    val blockeeId: String,
+    val blocking: Boolean,
     val createdOn: Instant? = Clock.System.now()
 )
-fun FollowResponse.toDomain() = Follow(
-    id = id ?: "$followerId-$followeeId",
-    followerId = followerId,
-    followeeId = followeeId,
+fun BlockResponse.toDomain() = Block(
+    id = id ?: "$blockerId-$blockeeId",
+    blockerId = blockerId,
+    blockeeId = blockeeId,
     createdOn = createdOn ?: Clock.System.now()
 )
 
-fun Follow.toResponse() = FollowResponse(
+fun Block.toResponse() = BlockResponse(
     id = id,
-    followerId = followerId,
-    followeeId = followeeId,
-    following = true,
+    blockerId = blockerId,
+    blockeeId = blockeeId,
+    blocking = true,
     createdOn = createdOn ?: Clock.System.now()
 )

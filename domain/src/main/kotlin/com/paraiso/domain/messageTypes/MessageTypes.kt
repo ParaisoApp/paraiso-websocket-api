@@ -16,11 +16,6 @@ data class Ban(
 )
 
 @Serializable
-data class Block(
-    val userId: String
-)
-
-@Serializable
 data class Delete(
     val postId: String,
     val parentId: String

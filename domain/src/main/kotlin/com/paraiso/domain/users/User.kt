@@ -27,7 +27,6 @@ data class User(
     val chats: Map<String, ChatRef>,
     val roles: UserRole,
     val banned: Boolean,
-    val blockList: Set<String>,
     val image: UserImage,
     val tag: String?,
     val settings: UserSettings,
@@ -84,7 +83,6 @@ data class UserResponse(
     val reports: Int,
     val roles: UserRole,
     val banned: Boolean,
-    val blockList: Map<String, Boolean>,
     val image: UserImage,
     val tag: String?,
     val settings: UserSettings,
@@ -114,7 +112,8 @@ data class UserFavorite(
 
 @Serializable
 data class ViewerContext(
-    val following: Boolean?
+    val following: Boolean?,
+    val blocking: Boolean?
 )
 
 fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
@@ -135,7 +134,6 @@ fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
         reports = reports,
         roles = roles,
         banned = banned,
-        blockList = blockList.associateWith { true },
         image = image,
         settings = settings,
         tag = tag,
@@ -164,7 +162,6 @@ fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
         reports = 0, // Default
         roles = roles,
         banned = false, // Default
-        blockList = emptyMap(), // Default
         image = image,
         settings = settings,
         tag = tag,
@@ -192,7 +189,6 @@ fun UserResponse.toUser() =
         chats = chats,
         roles = roles,
         banned = banned,
-        blockList = blockList.keys,
         image = image,
         settings = settings,
         tag = tag,
@@ -223,13 +219,13 @@ fun UserResponse.Companion.newUser(
             reports = 0,
             roles = UserRole.GUEST,
             banned = false,
-            blockList = emptyMap(),
             image = UserImage.initImage(),
             settings = UserSettings.initSettings(),
             tag = null,
             status = UserStatus.CONNECTED,
             viewerContext = ViewerContext(
-                following = false
+                following = false,
+                blocking = false
             ),
             createdOn = now,
             updatedOn = now
@@ -254,13 +250,13 @@ fun UserResponse.Companion.systemUser() =
             reports = 0,
             roles = UserRole.ADMIN,
             banned = false,
-            blockList = emptyMap(),
             image = UserImage.initImage(),
             settings = UserSettings.initSettings(),
             tag = null,
             status = UserStatus.DISCONNECTED,
             viewerContext = ViewerContext(
-                following = false
+                following = false,
+                blocking = false
             ),
             createdOn = now,
             updatedOn = now

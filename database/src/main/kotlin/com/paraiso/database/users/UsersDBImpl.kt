@@ -180,30 +180,6 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             )
         ).modifiedCount
 
-    override suspend fun addToBlocklist(
-        id: String,
-        blockUserId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                addToSet(User::blockList.name, blockUserId),
-                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun removeFromBlocklist(
-        id: String,
-        blockUserId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                pull(User::blockList.name, blockUserId),
-                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
     override suspend fun addFavoriteRoute(
         id: String,
         route: String,

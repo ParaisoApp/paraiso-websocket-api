@@ -36,14 +36,6 @@ interface UsersDB {
         id: String,
         count: Int
     ): Long
-    suspend fun addToBlocklist(
-        id: String,
-        blockUserId: String
-    ): Long
-    suspend fun removeFromBlocklist(
-        id: String,
-        blockUserId: String
-    ): Long
     suspend fun addFavoriteRoute(
         id: String,
         route: String,

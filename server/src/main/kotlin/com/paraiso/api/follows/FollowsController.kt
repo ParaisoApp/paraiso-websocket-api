@@ -11,12 +11,12 @@ import io.ktor.server.routing.route
 fun Route.followsController(followsApi: FollowsApi) {
     route("follows") {
         get {
-            followsApi.get(
+            followsApi.findIn(
                 call.request.queryParameters["followerId"] ?: "",
-                call.request.queryParameters["followeeId"] ?: ""
-            )?.let {
+                listOf(call.request.queryParameters["followeeId"] ?: "")
+            ).let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
+            }
         }
     }
 }

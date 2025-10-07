@@ -132,10 +132,14 @@ class WebSocketHandler(
                     when (type) {
                         MessageType.MSG -> {
                             (message as? Message)?.let { newMessage ->
+                                val block = services.blocksApi.findIn(
+                                    sessionUser.id,
+                                    listOf(newMessage.userId ?: "")
+                                ).firstOrNull()
                                 if (
                                     validateMessage(
                                         sessionUser.id,
-                                        sessionUser.blockList,
+                                        block?.blocking == true,
                                         newMessage.type,
                                         newMessage.userId,
                                         sessionState
@@ -157,15 +161,16 @@ class WebSocketHandler(
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_UPDATE -> {
                             val user = (message as UserResponse)
-                            val follow = services.followsApi.get(sessionUser.id, user.id)
+                            val follow = services.followsApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
+                            val block = services.blocksApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
                             sendTypedMessage(
                                 type, // remove private data from user update socket messages
                                 user.copy(
                                     reports = 0,
                                     banned = false,
-                                    blockList = emptyMap(),
                                     viewerContext = ViewerContext(
-                                        following = follow?.following
+                                        following = follow?.following,
+                                        blocking = block?.blocking,
                                     )
                                 )
                             )
@@ -195,14 +200,14 @@ class WebSocketHandler(
 
     private suspend fun validateMessage(
         sessionUserId: String,
-        blockList: Map<String, Boolean>,
+        blocking: Boolean,
         postType: PostType,
         userId: String?,
         sessionState: SessionState
     ) =
         sessionUserId == userId || // message is from the cur user or
             (
-                !blockList.contains(userId) && // user isnt in cur user's blocklist
+                !blocking && // user isnt in cur user's blocklist
                     sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
                     userId != null &&
                     sessionState.filterTypes.userRoles.contains(
@@ -256,10 +261,13 @@ class WebSocketHandler(
                                     userId = sessionUser.id
                                 ).let { dmWithData ->
                                     launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                    val userReceiveBlocklist = services.userSessionsApi.getUserById(dmWithData.userReceiveId, null)?.blockList
+                                    val userReceiveBlocking = services.blocksApi.findIn(
+                                        dmWithData.userReceiveId,
+                                        listOf(sessionUser.id)
+                                    ).firstOrNull()?.blocking == true
                                     if (
                                         !sessionUser.banned &&
-                                        userReceiveBlocklist?.contains(sessionUser.id) == false
+                                        userReceiveBlocking
                                     ) {
                                         launch {
                                             services.usersApi.updateChatForUser(

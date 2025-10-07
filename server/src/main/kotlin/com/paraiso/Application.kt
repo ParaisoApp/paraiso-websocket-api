@@ -3,6 +3,7 @@ package com.paraiso
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
+import com.paraiso.api.blocks.blocksController
 import com.paraiso.api.follows.followsController
 import com.paraiso.api.metadata.metadataController
 import com.paraiso.api.notifications.notificationsController
@@ -18,6 +19,7 @@ import com.paraiso.client.metadata.MetadataClientImpl
 import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.database.admin.PostReportsDBImpl
 import com.paraiso.database.admin.UserReportsDBImpl
+import com.paraiso.database.blocks.BlocksDBImpl
 import com.paraiso.database.follows.FollowsDBImpl
 import com.paraiso.database.notifications.NotificationsDBImpl
 import com.paraiso.database.posts.PostsDBImpl
@@ -38,6 +40,7 @@ import com.paraiso.database.users.UsersDBImpl
 import com.paraiso.database.votes.VotesDBImpl
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
+import com.paraiso.domain.blocks.BlocksApi
 import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.notifications.NotificationsApi
@@ -157,6 +160,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val usersApi = UsersApi(usersDb)
     val votesApi = VotesApi(VotesDBImpl(database))
     val followsApi = FollowsApi(FollowsDBImpl(database))
+    val blocksApi = BlocksApi(BlocksDBImpl(database))
     val notificationsApi = NotificationsApi(NotificationsDBImpl(database))
     val postsApi = PostsApi(
         postsDb,
@@ -164,7 +168,7 @@ fun Application.module(jobScope: CoroutineScope) {
         votesApi,
         followsApi
     )
-    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl, followsApi)
+    val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl, followsApi, blocksApi)
     val userChatsApi = UserChatsApi(userChatsDb)
     val adminApi = AdminApi(postReportsDb, userReportsDb)
     val metadataApi = MetadataApi(MetadataClientImpl())
@@ -176,6 +180,7 @@ fun Application.module(jobScope: CoroutineScope) {
         usersApi,
         votesApi,
         followsApi,
+        blocksApi,
         notificationsApi,
         userSessionsApi,
         userChatsApi,
@@ -246,6 +251,7 @@ fun Application.configureSockets(
             routesController(services.routesApi)
             votesController(services.votesApi)
             followsController(services.followsApi)
+            blocksController(services.blocksApi)
             notificationsController(services.notificationsApi)
             dataGenerationController(serverHandler, sportHandler)
         }

@@ -2,6 +2,7 @@ package com.paraiso
 
 import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
+import com.paraiso.domain.blocks.BlocksApi
 import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.notifications.NotificationsApi
@@ -21,6 +22,7 @@ data class AppServices(
     val usersApi: UsersApi,
     val votesApi: VotesApi,
     val followsApi: FollowsApi,
+    val blocksApi: BlocksApi,
     val notificationsApi: NotificationsApi,
     val userSessionsApi: UserSessionsApi,
     val userChatsApi: UserChatsApi,

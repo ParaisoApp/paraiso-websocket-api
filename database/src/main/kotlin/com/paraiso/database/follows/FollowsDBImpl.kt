@@ -7,6 +7,7 @@ import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.domain.blocks.Block
 import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.follows.FollowsDB
 import com.paraiso.domain.util.Constants.ID
@@ -17,20 +18,22 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
 
     private val collection = database.getCollection("follows", Follow::class.java)
 
-    override suspend fun find(followerId: String, followeeId: String) =
-        collection.find(
-            and(
-                eq(Follow::followerId.name, followerId),
-                eq(Follow::followeeId.name, followeeId)
-            )
-        ).firstOrNull()
     override suspend fun findIn(followerId: String, followeeIds: List<String>) =
-        collection.find(
-            and(
-                eq(Follow::followerId.name, followerId),
-                `in`(Follow::followerId.name, followeeIds)
-            )
-        ).toList()
+        if(followeeIds.size == 1){
+            collection.find(
+                and(
+                    eq(Follow::followerId.name, followerId),
+                    eq(Follow::followeeId.name, followeeIds.firstOrNull())
+                )
+            ).toList()
+        }else{
+            collection.find(
+                and(
+                    eq(Follow::followerId.name, followerId),
+                    `in`(Follow::followerId.name, followeeIds)
+                )
+            ).toList()
+        }
     override suspend fun findByFollowerId(followerId: String) =
         collection.find(
             eq(Follow::followerId.name, followerId)
@@ -56,7 +59,7 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
         collection.deleteOne(
             and(
                 eq(Follow::followerId.name, followerId),
-                eq(Follow::followeeId.name, followerId)
+                eq(Follow::followeeId.name, followeeId)
             )
         ).deletedCount
 }

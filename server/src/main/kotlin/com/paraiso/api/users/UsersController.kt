@@ -48,12 +48,5 @@ fun Route.usersController(usersApi: UsersApi) {
             )
             call.respond(HttpStatusCode.OK)
         }
-        post("/toggleBlockUser") {
-            usersApi.toggleBlockUser(
-                call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["blockUserId"] ?: ""
-            )
-            call.respond(HttpStatusCode.OK)
-        }
     }
 }

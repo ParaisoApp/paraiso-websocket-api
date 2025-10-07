@@ -69,16 +69,6 @@ class UsersApi(
         }
     }
 
-    suspend fun toggleBlockUser(userId: String, userBlockId: String) {
-        usersDB.findById(userId)?.let { user ->
-            if (user.blockList.contains(userBlockId)) {
-                usersDB.removeFromBlocklist(user.id, userBlockId)
-            } else {
-                usersDB.addToBlocklist(user.id, userBlockId)
-            }
-        }
-    }
-
     suspend fun toggleFavoriteRoute(favorite: Favorite) {
         // toggle favorite from User
         if (favorite.userId != null) {
