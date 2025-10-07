@@ -2,8 +2,6 @@ package com.paraiso.domain.notifications
 
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
-import com.paraiso.domain.votes.Vote
-import com.paraiso.domain.votes.VoteResponse
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName

@@ -24,17 +24,10 @@ interface UsersDB {
         chats: Set<String>,
         replies: Set<String>
     ): Long
-    suspend fun markReportNotifsRead(
+    suspend fun markReportsRead(
         id: String,
-        userReports: Set<String>,
-        postReports: Set<String>
     ): Long
-    suspend fun addUserReport(
-        id: String
-    ): Long
-    suspend fun addPostReport(
-        id: String
-    ): Long
+    suspend fun addReport(): Long
     suspend fun setFollowers(
         id: String,
         count: Int

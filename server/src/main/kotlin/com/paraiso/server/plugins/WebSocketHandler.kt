@@ -161,8 +161,7 @@ class WebSocketHandler(
                             sendTypedMessage(
                                 type, // remove private data from user update socket messages
                                 user.copy(
-                                    userReports = emptyMap(),
-                                    postReports = emptyMap(),
+                                    reports = 0,
                                     banned = false,
                                     blockList = emptyMap(),
                                     viewerContext = ViewerContext(
@@ -389,7 +388,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMapping<Report>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
                                 launch { services.adminApi.reportUser(sessionUser.id, reportUser) }
-                                launch { services.usersApi.addUserReport(reportUser) }
+                                launch { services.usersApi.addReport() }
                                 ServerState.reportUserFlowMut.emit(reportUser)
                                 eventServiceImpl.publish(MessageType.REPORT_USER.name, "$serverId:${Json.encodeToString(reportUser)}")
                             }
@@ -398,7 +397,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<TypeMapping<Report>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
                                 launch { services.adminApi.reportPost(sessionUser.id, reportPost) }
-                                launch { services.usersApi.addPostReport(reportPost) }
+                                launch { services.usersApi.addReport() }
                                 ServerState.reportPostFlowMut.emit(reportPost)
                                 eventServiceImpl.publish(MessageType.REPORT_POST.name, "$serverId:${Json.encodeToString(reportPost)}")
                             }

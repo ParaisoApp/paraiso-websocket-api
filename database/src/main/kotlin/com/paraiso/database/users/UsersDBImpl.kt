@@ -135,45 +135,23 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         )
     }.modifiedCount
 
-    override suspend fun markReportNotifsRead(
-        id: String,
-        userReports: Set<String>,
-        postReports: Set<String>
+    override suspend fun markReportsRead(
+        id: String
     ) = coroutineScope {
-        val userReportUpdates = userReports.map { id ->
-            set("${User::userReports.name}.$id", true)
-        }
-        val postReportUpdates = postReports.map { id ->
-            set("${User::postReports.name}.$id", true)
-        }
         collection.updateOne(
             eq(ID, id),
             combine(
-                userReportUpdates +
-                    postReportUpdates +
-                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                set(User::reports.name, 0),
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         )
     }.modifiedCount
 
-    override suspend fun addUserReport(
-        id: String
-    ) =
+    override suspend fun addReport() =
         collection.updateMany(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
-                set("${User::userReports.name}.$id", false),
-                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun addPostReport(
-        id: String
-    ) =
-        collection.updateOne(
-            `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
-            combine(
-                set("${User::postReports.name}.$id", false),
+                Updates.inc(User::reports.name, 1),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount

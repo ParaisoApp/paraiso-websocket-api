@@ -43,14 +43,11 @@ class UsersApi(
     suspend fun markNotifsRead(userId: String, userNotifs: UserNotifs) =
         usersDB.markNotifsRead(userId, userNotifs.userChatIds, userNotifs.replyIds)
 
-    suspend fun markReportNotifsRead(userId: String, userReportNotifs: UserReportNotifs) =
-        usersDB.markReportNotifsRead(userId, userReportNotifs.userIds, userReportNotifs.postIds)
+    suspend fun markReportsRead(userId: String) =
+        usersDB.markReportsRead(userId)
 
-    suspend fun addUserReport(report: Report) =
-        usersDB.addUserReport(report.id)
-
-    suspend fun addPostReport(report: Report) =
-        usersDB.addPostReport(report.id)
+    suspend fun addReport() =
+        usersDB.addReport()
 
     suspend fun follow(follow: FollowResponse) = coroutineScope {
         // add follower to followers list of followee user

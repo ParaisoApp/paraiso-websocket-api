@@ -42,17 +42,9 @@ fun Route.usersController(usersApi: UsersApi) {
             )
             call.respond(HttpStatusCode.OK)
         }
-        post("/markReportNotifsRead") {
-            usersApi.markReportNotifsRead(
+        post("/markReportsRead") {
+            usersApi.markReportsRead(
                 call.request.queryParameters["id"] ?: "",
-                call.receive<UserReportNotifs>()
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/markReportNotifsRead") {
-            usersApi.markReportNotifsRead(
-                call.request.queryParameters["id"] ?: "",
-                call.receive<UserReportNotifs>()
             )
             call.respond(HttpStatusCode.OK)
         }
