@@ -2,8 +2,6 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
-import com.paraiso.domain.messageTypes.DirectMessage
-import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
 import kotlinx.coroutines.async
@@ -41,7 +39,7 @@ class UsersApi(
         usersDB.setSettings(userId, settings)
 
     suspend fun markNotifsRead(userId: String, userNotifs: UserNotifs) =
-        usersDB.markNotifsRead(userId, userNotifs.userChatIds, userNotifs.replyIds)
+        usersDB.markNotifsRead(userId, userNotifs.replyIds)
 
     suspend fun markReportsRead(userId: String) =
         usersDB.markReportsRead(userId)
@@ -89,24 +87,12 @@ class UsersApi(
     suspend fun votePost(userId: String, score: Int) =
         usersDB.setScore(userId, score)
 
-    suspend fun updateChatForUser(
-        dm: DirectMessage,
+    suspend fun addChat(
         userId: String?,
-        otherUserId: String?,
-        isUser: Boolean
-    ) {
-        if (userId != null && otherUserId != null) {
-            usersDB.setUserChat(
-                userId,
-                otherUserId,
-                ChatRef(
-                    mostRecentDm = dm,
-                    chatId = dm.chatId,
-                    viewed = !isUser
-                )
-            )
+    ) =
+        userId?.let{
+            usersDB.addChat(it,)
         }
-    }
     suspend fun tagUser(tag: Tag) =
         usersDB.setUserTag(tag)
     suspend fun banUser(ban: Ban) =

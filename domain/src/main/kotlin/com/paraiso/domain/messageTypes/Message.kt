@@ -26,18 +26,6 @@ data class Message(
     val route: String
 )
 
-@Serializable
-data class DirectMessage(
-    val id: String? = null,
-    val chatId: String,
-    val userId: String?,
-    val userReceiveId: String,
-    val content: String?,
-    val media: String?,
-    @Serializable(with = InstantBsonSerializer::class)
-    val createdOn: Instant?
-)
-
 fun Message.toNewPost() =
     Clock.System.now().let { now ->
         Post(

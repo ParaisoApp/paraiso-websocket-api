@@ -4,7 +4,6 @@ import com.paraiso.AppServices
 import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
-import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
@@ -16,6 +15,7 @@ import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.userchats.DirectMessageResponse
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
@@ -254,7 +254,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.DM -> {
-                        converter?.cleanAndType<TypeMapping<DirectMessage>>(frame)
+                        converter?.cleanAndType<TypeMapping<DirectMessageResponse>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
                                 dm.copy(
                                     id = UUID.randomUUID().toString(),
@@ -270,23 +270,22 @@ class WebSocketHandler(
                                         userReceiveBlocking
                                     ) {
                                         launch {
-                                            services.usersApi.updateChatForUser(
-                                                dmWithData,
+                                            services.usersApi.addChat(
                                                 dmWithData.userId,
-                                                dmWithData.userReceiveId,
-                                                true
                                             )
                                         } // update chat for receiving user
                                         launch {
-                                            services.usersApi.updateChatForUser(
-                                                dmWithData,
+                                            services.usersApi.addChat(
                                                 dmWithData.userReceiveId,
-                                                dmWithData.userId,
-                                                false
                                             )
-                                            // update chat for receiving user
-                                            launch { services.userChatsApi.putDM(dmWithData) }
                                         }
+                                        // update chat for receiving user
+                                        launch {
+                                            dmWithData.id?.let {
+                                                services.userChatsApi.setMostRecentDm(it, dmWithData.chatId)
+                                            }
+                                        }
+                                        launch { services.directMessagesApi.save(dmWithData) }
                                         // if user is on this server then grab session and send dm to user
                                         userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
                                             receiveUserSessions.forEach { session ->

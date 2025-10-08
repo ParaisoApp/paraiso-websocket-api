@@ -11,7 +11,8 @@ import com.paraiso.api.posts.postsController
 import com.paraiso.api.routes.routesController
 import com.paraiso.api.sports.dataGenerationController
 import com.paraiso.api.sports.sportController
-import com.paraiso.api.users.userChatsController
+import com.paraiso.api.userchats.directMessagesController
+import com.paraiso.api.userchats.userChatsController
 import com.paraiso.api.users.userSessionsController
 import com.paraiso.api.users.usersController
 import com.paraiso.api.votes.votesController
@@ -35,7 +36,8 @@ import com.paraiso.database.sports.SchedulesDBImpl
 import com.paraiso.database.sports.ScoreboardsDBImpl
 import com.paraiso.database.sports.StandingsDBImpl
 import com.paraiso.database.sports.TeamsDBImpl
-import com.paraiso.database.users.UserChatsDBImpl
+import com.paraiso.database.userchats.DirectMessagesDBImpl
+import com.paraiso.database.userchats.UserChatsDBImpl
 import com.paraiso.database.users.UsersDBImpl
 import com.paraiso.database.votes.VotesDBImpl
 import com.paraiso.domain.admin.AdminApi
@@ -50,7 +52,8 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
-import com.paraiso.domain.users.UserChatsApi
+import com.paraiso.domain.userchats.DirectMessagesApi
+import com.paraiso.domain.userchats.UserChatsApi
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
@@ -141,9 +144,6 @@ fun Application.module(jobScope: CoroutineScope) {
     )
     val postsDb = PostsDBImpl(database)
     val usersDb = UsersDBImpl(database)
-    val userChatsDb = UserChatsDBImpl(database)
-    val userReportsDb = UserReportsDBImpl(database)
-    val postReportsDb = PostReportsDBImpl(database)
     // setup redis
     val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
     val redisClient = RedisClient.create(redisUrl)
@@ -169,8 +169,9 @@ fun Application.module(jobScope: CoroutineScope) {
         followsApi
     )
     val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl, followsApi, blocksApi)
-    val userChatsApi = UserChatsApi(userChatsDb)
-    val adminApi = AdminApi(postReportsDb, userReportsDb)
+    val directMessagesApi = DirectMessagesApi(DirectMessagesDBImpl(database))
+    val userChatsApi = UserChatsApi(UserChatsDBImpl(database), directMessagesApi)
+    val adminApi = AdminApi(PostReportsDBImpl(database), UserReportsDBImpl(database))
     val metadataApi = MetadataApi(MetadataClientImpl())
     val services = AppServices(
         authApi,
@@ -184,6 +185,7 @@ fun Application.module(jobScope: CoroutineScope) {
         notificationsApi,
         userSessionsApi,
         userChatsApi,
+        directMessagesApi,
         sportApi,
         metadataApi
     )
@@ -245,6 +247,7 @@ fun Application.configureSockets(
             usersController(services.usersApi)
             userSessionsController(services.userSessionsApi)
             userChatsController(services.userChatsApi)
+            directMessagesController(services.directMessagesApi)
             sportController(services.sportApi)
             metadataController(services.metadataApi)
             adminController(services.adminApi)

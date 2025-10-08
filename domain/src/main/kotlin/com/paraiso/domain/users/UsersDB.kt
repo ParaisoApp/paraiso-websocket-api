@@ -21,7 +21,6 @@ interface UsersDB {
     suspend fun setSettings(id: String, settings: UserSettings): Long
     suspend fun markNotifsRead(
         id: String,
-        chats: Set<String>,
         replies: Set<String>
     ): Long
     suspend fun markReportsRead(
@@ -49,10 +48,8 @@ interface UsersDB {
         id: String,
         score: Int
     ): Long
-    suspend fun setUserChat(
+    suspend fun addChat(
         id: String,
-        chatId: String,
-        chatRef: ChatRef
     ): Long
     suspend fun setUserTag(
         tag: Tag

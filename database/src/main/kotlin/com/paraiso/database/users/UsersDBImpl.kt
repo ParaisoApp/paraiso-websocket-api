@@ -12,13 +12,13 @@ import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
+import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.users.ChatRef
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
@@ -116,21 +116,17 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun markNotifsRead(
         id: String,
-        chats: Set<String>,
         replies: Set<String>
     ) = coroutineScope {
-        val chatUpdates = chats.map { id ->
-            set("${User::chats.name}.$id.viewed", true)
-        }
         val replyUpdates = replies.map { id ->
             set("${User::replies.name}.$id", true)
         }
         collection.updateOne(
             eq(ID, id),
             combine(
-                chatUpdates +
-                    replyUpdates +
-                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                replyUpdates +
+                set(User::chats.name, 0) +
+                set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         )
     }.modifiedCount
@@ -151,7 +147,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         collection.updateMany(
             `in`(User::roles.name, listOf(UserRole.ADMIN, UserRole.MOD)),
             combine(
-                Updates.inc(User::reports.name, 1),
+                inc(User::reports.name, 1),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
@@ -163,7 +159,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         collection.updateOne(
             eq(ID, id),
             combine(
-                Updates.inc(User::followers.name, count),
+                inc(User::followers.name, count),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
@@ -211,20 +207,18 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         collection.updateOne(
             eq(ID, id),
             combine(
-                Updates.inc(User::score.name, score),
+                inc(User::score.name, score),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount
 
-    override suspend fun setUserChat(
+    override suspend fun addChat(
         id: String,
-        chatId: String,
-        chatRef: ChatRef
     ) =
         collection.updateOne(
             eq(ID, id),
             combine(
-                set("${User::chats.name}.$chatId", chatRef),
+                inc(User::chats.name, 1),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount

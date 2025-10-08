@@ -3,7 +3,6 @@ package com.paraiso.server.plugins
 import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
-import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
@@ -12,6 +11,7 @@ import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.sports.SportState
+import com.paraiso.domain.userchats.DirectMessageResponse
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.VoteResponse
@@ -56,7 +56,7 @@ class MessageHandler(
                     when (channel) {
                         "server:$serverId" -> {
                             val (userId, payload) = message.split(":", limit = 2)
-                            decodeMessage<DirectMessage>(payload)?.let { dm ->
+                            decodeMessage<DirectMessageResponse>(payload)?.let { dm ->
                                 userSessions[userId]?.forEach { session ->
                                     session.sendTypedMessage(MessageType.DM, dm)
                                 }

@@ -1,6 +1,5 @@
 package com.paraiso.domain.users
 
-import com.paraiso.domain.messageTypes.DirectMessage
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -24,7 +23,7 @@ data class User(
     val following: Int,
     val routeFavorites: Map<String, UserFavorite>,
     val reports: Int,
-    val chats: Map<String, ChatRef>,
+    val chats: Int,
     val roles: UserRole,
     val banned: Boolean,
     val image: UserImage,
@@ -34,13 +33,6 @@ data class User(
     val createdOn: Instant,
     @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
-) { companion object }
-
-@Serializable
-data class ChatRef(
-    val mostRecentDm: DirectMessage,
-    val chatId: String,
-    val viewed: Boolean
 ) { companion object }
 
 @Serializable
@@ -74,7 +66,7 @@ data class UserResponse(
     val about: String?,
     val location: Location?,
     val birthday: Instant?,
-    val chats: Map<String, ChatRef>,
+    val chats: Int,
     val replies: Map<String, Boolean>,
     val score: Int,
     val followers: Int,
@@ -212,7 +204,7 @@ fun UserResponse.Companion.newUser(
             birthday = null,
             replies = emptyMap(),
             score = 0,
-            chats = emptyMap(),
+            chats = 0,
             followers = 0,
             following = 0,
             routeFavorites = emptyMap(),
@@ -243,7 +235,7 @@ fun UserResponse.Companion.systemUser() =
             birthday = null,
             replies = emptyMap(),
             score = 0,
-            chats = emptyMap(),
+            chats = 0,
             followers = 0,
             following = 0,
             routeFavorites = emptyMap(),

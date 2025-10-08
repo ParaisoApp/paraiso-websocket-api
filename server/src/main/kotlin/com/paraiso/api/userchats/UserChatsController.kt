@@ -1,6 +1,6 @@
-package com.paraiso.api.users
+package com.paraiso.api.userchats
 
-import com.paraiso.domain.users.UserChatsApi
+import com.paraiso.domain.userchats.UserChatsApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
@@ -12,9 +12,15 @@ fun Route.userChatsController(userChatsApi: UserChatsApi) {
     route("userChats") {
         get {
             userChatsApi.getOrPutUserChat(
-                call.request.queryParameters["id"] ?: "",
                 call.request.queryParameters["userId"] ?: "",
                 call.request.queryParameters["otherUserId"] ?: ""
+            ).let {
+                call.respond(HttpStatusCode.OK, it)
+            }
+        }
+        get("/byUserId") {
+            userChatsApi.findByUserId(
+                call.request.queryParameters["id"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
