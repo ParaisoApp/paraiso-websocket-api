@@ -86,8 +86,7 @@ data class UserResponse(
 
 @Serializable
 data class UserNotifs(
-    val replyIds: Set<String>,
-    val userChatIds: Set<String>
+    val replyIds: Set<String>
 ) { companion object }
 
 @Serializable
