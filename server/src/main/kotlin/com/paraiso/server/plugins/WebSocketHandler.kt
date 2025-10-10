@@ -10,6 +10,8 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
+import com.paraiso.domain.notifications.NotificationResponse
+import com.paraiso.domain.notifications.NotificationType
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
@@ -232,20 +234,44 @@ class WebSocketHandler(
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
                                 val messageId: String = message.editId ?: UUID.randomUUID().toString()
                                 val userIdMentions = services.usersApi.addMentions(
+                                    // retreive mentions from content (parse with @)
                                     getMentions(message.content),
                                     message.userReceiveIds.firstOrNull(),
-                                    messageId,
                                     message.userId
                                 )
+                                //create notifications for all mentions or replied users
+                                userIdMentions.map { userReceiveId ->
+                                    val type = if(message.userReceiveIds.firstOrNull() == userReceiveId) {
+                                        NotificationType.POST
+                                    } else {
+                                        NotificationType.MENTION
+                                    }
+                                    NotificationResponse(
+                                        id = "$userReceiveId-${message.userId}-$messageId-${message.replyId}",
+                                        userId = userReceiveId,
+                                        createUserId = message.userId,
+                                        refId = messageId,
+                                        replyId = message.replyId,
+                                        content = null,
+                                        type = type,
+                                        userRead = false,
+                                        createdOn = Clock.System.now(),
+                                        updatedOn = Clock.System.now()
+                                    )
+                                }.let { notifications ->
+                                    services.notificationsApi.save(notifications)
+                                }
                                 message.copy(
                                     id = messageId,
                                     userId = sessionUser.id,
+                                    //if root id == message id then it's a post at the root of the route
                                     rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
                                     userReceiveIds = message.userReceiveIds.plus(userIdMentions)
                                 ).let { messageWithData ->
                                     if (sessionUser.banned) {
                                         sendTypedMessage(MessageType.MSG, messageWithData)
                                     } else {
+                                        // emit to this server, publish downstream to other servers
                                         launch { services.postsApi.putPost(messageWithData) }
                                         ServerState.messageFlowMut.emit(messageWithData)
                                         eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")

@@ -4,6 +4,7 @@ import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -17,7 +18,6 @@ data class Notification(
     val content: String?,
     val type: NotificationType,
     val userRead: Boolean,
-    val createUserRead: Boolean,
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant?,
     @Serializable(with = InstantBsonSerializer::class)
@@ -25,16 +25,15 @@ data class Notification(
 )
 
 @Serializable
-data class NotificationResponse(
+data class NotificationResponse<T>(
     val id: String?,
     val userId: String,
     val createUserId: String?,
     val refId: String?,
     val replyId: String?,
-    val content: String?,
+    val content: @Contextual T?,
     val type: NotificationType,
     val userRead: Boolean,
-    val createUserRead: Boolean,
     val createdOn: Instant?,
     val updatedOn: Instant?
 
@@ -49,6 +48,9 @@ enum class NotificationType {
     @SerialName("DM")
     DM,
 
+    @SerialName("MENTION")
+    MENTION,
+
     @SerialName("USER_REPORT")
     USER_REPORT,
 
@@ -62,30 +64,28 @@ enum class NotificationType {
     VOTE,
 }
 
-fun NotificationResponse.toDomain() = Notification(
+fun <T> NotificationResponse<T>.toDomain(stringContent: String?) = Notification(
     id = id ?: "$userId-$createUserId-$refId-$replyId",
     userId = userId,
     createUserId = createUserId,
     refId = refId,
     replyId = replyId,
-    content = content,
+    content = stringContent,
     type = type,
     userRead = userRead,
-    createUserRead = createUserRead,
-    createdOn = createdOn ?: Clock.System.now(),
-    updatedOn = updatedOn ?: Clock.System.now()
+    createdOn = createdOn,
+    updatedOn = updatedOn
 )
 
-fun Notification.toResponse() = NotificationResponse(
+fun <T> Notification.toResponse(refContent: T?) = NotificationResponse(
     id = id,
     userId = userId,
     createUserId = createUserId,
     refId = refId,
     replyId = replyId,
-    content = content,
+    content = refContent ?: content,
     type = type,
     userRead = userRead,
-    createUserRead = createUserRead,
     createdOn = createdOn,
     updatedOn = updatedOn
 )

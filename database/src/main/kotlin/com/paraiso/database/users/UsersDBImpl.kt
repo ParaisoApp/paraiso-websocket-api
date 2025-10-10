@@ -87,20 +87,20 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         return collection.bulkWrite(bulkOps).modifiedCount
     }
 
-    override suspend fun addMentions(id: String, replyId: String) =
+    override suspend fun addMentions(id: String) =
         collection.findOneAndUpdate(
             eq(ID, id),
             combine(
-                set("${User::replies.name}.$replyId", false),
+                inc(User::replies.name, 1),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             ),
             FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
         )?.id
-    override suspend fun addMentionsByName(name: String, replyId: String) =
+    override suspend fun addMentionsByName(name: String) =
         collection.findOneAndUpdate(
             eq(User::name.name, name),
             combine(
-                set("${User::replies.name}.$replyId", false),
+                inc(User::replies.name, 1),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             ),
             FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
@@ -115,17 +115,13 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         ).modifiedCount
 
     override suspend fun markNotifsRead(
-        id: String,
-        replies: Set<String>
+        id: String
     ) = coroutineScope {
-        val replyUpdates = replies.map { id ->
-            set("${User::replies.name}.$id", true)
-        }
         collection.updateOne(
             eq(ID, id),
             combine(
-                replyUpdates +
-                set(User::chats.name, 0) +
+                set(User::replies.name, 0),
+                set(User::chats.name, 0),
                 set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         )

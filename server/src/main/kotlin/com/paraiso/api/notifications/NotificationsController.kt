@@ -11,7 +11,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 
 fun Route.notificationsController(notificationsApi: NotificationsApi) {
-    route("votes") {
+    route("notifications") {
         get {
             notificationsApi.findByUserId(
                 call.request.queryParameters["userId"] ?: ""

@@ -16,12 +16,11 @@ interface UsersDB {
         followingList: List<String>
     ): List<User>
     suspend fun save(users: List<User>): Int
-    suspend fun addMentions(id: String, replyId: String): String?
-    suspend fun addMentionsByName(name: String, replyId: String): String?
+    suspend fun addMentions(id: String): String?
+    suspend fun addMentionsByName(name: String): String?
     suspend fun setSettings(id: String, settings: UserSettings): Long
     suspend fun markNotifsRead(
-        id: String,
-        replies: Set<String>
+        id: String
     ): Long
     suspend fun markReportsRead(
         id: String,

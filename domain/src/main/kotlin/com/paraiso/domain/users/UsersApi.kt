@@ -18,17 +18,16 @@ class UsersApi(
     suspend fun addMentions(
         userNames: Set<String>,
         messageUserReceiveId: String?,
-        messageId: String,
         messageUserId: String?
     ): Set<String> = coroutineScope {
         // update user post replies
         val userIds = userNames.map { userName ->
             async {
-                usersDB.addMentionsByName(userName, messageId)
+                usersDB.addMentionsByName(userName)
             }
         }.awaitAll().filterNotNull().toMutableSet()
         if (messageUserReceiveId != null && messageUserReceiveId != messageUserId) {
-            usersDB.addMentions(messageUserReceiveId, messageId)?.let {
+            usersDB.addMentions(messageUserReceiveId)?.let {
                 userIds.add(it)
             }
         }
@@ -38,8 +37,8 @@ class UsersApi(
     suspend fun setSettings(userId: String, settings: UserSettings) =
         usersDB.setSettings(userId, settings)
 
-    suspend fun markNotifsRead(userId: String, userNotifs: UserNotifs) =
-        usersDB.markNotifsRead(userId, userNotifs.replyIds)
+    suspend fun markNotifsRead(userId: String) =
+        usersDB.markNotifsRead(userId)
 
     suspend fun markReportsRead(userId: String) =
         usersDB.markReportsRead(userId)

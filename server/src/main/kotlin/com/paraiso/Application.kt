@@ -161,13 +161,13 @@ fun Application.module(jobScope: CoroutineScope) {
     val votesApi = VotesApi(VotesDBImpl(database))
     val followsApi = FollowsApi(FollowsDBImpl(database))
     val blocksApi = BlocksApi(BlocksDBImpl(database))
-    val notificationsApi = NotificationsApi(NotificationsDBImpl(database))
     val postsApi = PostsApi(
         postsDb,
         usersApi,
         votesApi,
         followsApi
     )
+    val notificationsApi = NotificationsApi(NotificationsDBImpl(database), postsApi)
     val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl, followsApi, blocksApi)
     val directMessagesApi = DirectMessagesApi(DirectMessagesDBImpl(database))
     val userChatsApi = UserChatsApi(UserChatsDBImpl(database), directMessagesApi)
