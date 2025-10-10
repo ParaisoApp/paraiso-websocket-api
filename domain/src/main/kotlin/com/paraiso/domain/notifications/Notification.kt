@@ -1,5 +1,6 @@
 package com.paraiso.domain.notifications
 
+import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
@@ -25,20 +26,25 @@ data class Notification(
 )
 
 @Serializable
-data class NotificationResponse<T>(
+data class NotificationResponse(
     val id: String?,
     val userId: String,
     val createUserId: String?,
     val refId: String?,
     val replyId: String?,
-    val content: @Contextual T?,
+    val content: NotificationContent?,
     val type: NotificationType,
     val userRead: Boolean,
     val createdOn: Instant?,
     val updatedOn: Instant?
-
 )
 
+@Serializable
+sealed interface NotificationContent
+@Serializable
+data class PostNotificationContent(
+    val post: PostResponse?
+) : NotificationContent
 
 @Serializable
 enum class NotificationType {
@@ -64,7 +70,7 @@ enum class NotificationType {
     VOTE,
 }
 
-fun <T> NotificationResponse<T>.toDomain(stringContent: String?) = Notification(
+fun NotificationResponse.toDomain(stringContent: String?) = Notification(
     id = id ?: "$userId-$createUserId-$refId-$replyId",
     userId = userId,
     createUserId = createUserId,
@@ -77,13 +83,13 @@ fun <T> NotificationResponse<T>.toDomain(stringContent: String?) = Notification(
     updatedOn = updatedOn
 )
 
-fun <T> Notification.toResponse(refContent: T?) = NotificationResponse(
+fun Notification.toPostResponse(refContent: PostResponse?) = NotificationResponse(
     id = id,
     userId = userId,
     createUserId = createUserId,
     refId = refId,
     replyId = replyId,
-    content = refContent ?: content,
+    content = PostNotificationContent(refContent),
     type = type,
     userRead = userRead,
     createdOn = createdOn,

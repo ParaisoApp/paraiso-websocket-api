@@ -1,5 +1,6 @@
 package com.paraiso.domain.notifications
 
+import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.posts.PostsApi
 
 class NotificationsApi(
@@ -11,11 +12,11 @@ class NotificationsApi(
         notificationsDB.findByUserId(userId).let { notifications ->
             //map notification to basic reference post
             val posts = postsApi.getByIdsBasic(userId, notifications.mapNotNull { it.refId }.toSet())
-            notifications.map { it.toResponse(posts[it.refId]) }
+            notifications.map { it.toPostResponse(posts[it.refId]) }
         }
 
 
-    suspend fun <T> save(notifications: List<NotificationResponse<T>>): Int {
+    suspend fun save(notifications: List<NotificationResponse>): Int {
         val typedNotifs = notifications.map {notification ->
             when(notification.type){
                 NotificationType.POST -> {
