@@ -112,6 +112,12 @@ class PostsApi(
     ) =
         LinkedHashMap<String, Post>().let { returnPosts ->
             if (root.id != null) returnPosts[root.id] = root
+            //add all init sub posts to return
+            postsQueue.forEach {post ->
+                post.id?.let{
+                    returnPosts[post.id] = post
+                }
+            }
             while (postsQueue.isNotEmpty()) {
                 val nextRefNode = postsQueue.removeFirst()
                 //no need to search for sub posts if none exist beneath
