@@ -163,7 +163,6 @@ fun Application.module(jobScope: CoroutineScope) {
     val blocksApi = BlocksApi(BlocksDBImpl(database))
     val postsApi = PostsApi(
         postsDb,
-        usersApi,
         votesApi,
         followsApi
     )

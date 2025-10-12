@@ -21,7 +21,6 @@ data class Post(
     val status: PostStatus = PostStatus.ACTIVE,
     val media: String? = null,
     val data: String?,
-    val subPosts: Set<String> = emptySet(),
     val count: Int = 0,
     val route: String? = null,
     @Serializable(with = InstantBsonSerializer::class)
@@ -43,7 +42,6 @@ data class PostResponse(
     val status: PostStatus,
     val media: String?,
     val data: String?,
-    var subPosts: Map<String, Boolean>,
     val count: Int,
     val route: String?,
     val userVote: Boolean?,
@@ -141,7 +139,6 @@ fun Post.toResponse(userVote: Boolean?) = PostResponse(
     rootId = rootId,
     status = status,
     data = data,
-    subPosts = subPosts.associateWith { true },
     count = count,
     route = route,
     userVote = userVote,
@@ -149,7 +146,7 @@ fun Post.toResponse(userVote: Boolean?) = PostResponse(
     updatedOn = updatedOn
 )
 
-fun generateBasePost(id: String?, name: String?, subPosts: Set<String>) = Post(
+fun generateBasePost(id: String?, name: String?) = Post(
     id = id,
     userId = null,
     title = name,
@@ -161,7 +158,6 @@ fun generateBasePost(id: String?, name: String?, subPosts: Set<String>) = Post(
     rootId = id,
     status = PostStatus.ACTIVE,
     data = null,
-    subPosts = subPosts,
     count = 0,
     route = null,
     createdOn = Clock.System.now(),

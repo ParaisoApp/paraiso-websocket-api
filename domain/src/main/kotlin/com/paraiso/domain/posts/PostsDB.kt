@@ -16,24 +16,15 @@ interface PostsDB {
         sortType: SortType,
         userFollowing: Set<String>
     ): List<Post>
-    suspend fun findBySubpostIds(
-        subPostIds: Set<String>,
+    suspend fun findByParentId(
+        parentId: String,
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
-        userFollowing: Set<String>,
-        filter: Boolean
+        userFollowing: Set<String>
     ): List<Post>
     suspend fun save(posts: List<Post>): Int
     suspend fun editPost(message: Message): Long
-    suspend fun addSubpostToParent(
-        id: String,
-        subPostId: String
-    ): Long
-    suspend fun removeSubpostFromParent(
-        id: String,
-        subPostId: String
-    ): Long
     suspend fun setPostDeleted(
         id: String
     ): Long

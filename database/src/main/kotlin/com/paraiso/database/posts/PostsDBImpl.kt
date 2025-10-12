@@ -293,19 +293,15 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         return collection.aggregate<Post>(pipeline).toList()
     }
 
-    override suspend fun findBySubpostIds(
-        subPostIds: Set<String>,
+    override suspend fun findByParentId(
+        parentId: String,
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
-        userFollowing: Set<String>,
-        filter: Boolean
+        userFollowing: Set<String>
     ): List<Post> {
-        if (!filter) {
-            return collection.find(`in`(ID, subPostIds)).toList()
-        }
         val initialFilter = and(
-            `in`(ID, subPostIds),
+            eq(Post::parentId.name, parentId),
             gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
             ne(Post::status.name, PostStatus.DELETED),
             `in`(Post::type.name, filters.postTypes)
@@ -336,31 +332,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 set(Post::content.name, message.content),
                 set(Post::media.name, message.media),
                 set(Post::data.name, message.data),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun addSubpostToParent(
-        id: String,
-        subPostId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                addToSet(Post::subPosts.name, subPostId),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
-
-    override suspend fun removeSubpostFromParent(
-        id: String,
-        subPostId: String
-    ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                pull(Post::subPosts.name, subPostId),
-                inc(Post::count.name, -1),
                 set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
         ).modifiedCount

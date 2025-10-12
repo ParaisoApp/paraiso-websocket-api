@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
+import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.votes.VotesApi
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -17,7 +18,6 @@ import kotlin.time.Duration.Companion.days
 
 class PostsApi(
     private val postsDB: PostsDB,
-    private val usersApi: UsersApi,
     private val votesApi: VotesApi,
     private val followsApi: FollowsApi
 ) {
@@ -25,15 +25,17 @@ class PostsApi(
     // return fully updated root post (for update or load of root post to post tree)
     suspend fun getById(postSearchId: String, rangeModifier: Range, sortType: SortType, filters: FilterTypes, userId: String) =
         postsDB.findById(postSearchId)?.let { post ->
+            val range = getRange(rangeModifier, sortType)
             val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
+            val subPosts = postsDB.findByParentId(postSearchId, range, filters, sortType, followees)
             generatePostTree(
                 post,
-                getRange(rangeModifier, sortType),
+                ArrayDeque(subPosts),
+                range,
                 sortType,
                 filters,
                 userId,
-                followees,
-                filter = true
+                followees
             )
         }
 
@@ -47,15 +49,17 @@ class PostsApi(
         userId: String,
         postSearchIds: Set<String>
     ): Map<String, PostResponse> =
-        generatePostTree(
-            generateBasePost(PLACEHOLDER_ID, PLACEHOLDER_ID, postSearchIds),
-            getRange(Range.DAY, SortType.NEW),
-            SortType.NEW,
-            FilterTypes.init(),
-            userId,
-            emptySet(),
-            filter = false
-        ) - PLACEHOLDER_ID // remove unnecessary base post
+        postsDB.findByIdsIn(postSearchIds).let { subPosts ->
+            generatePostTree(
+                generateBasePost(PLACEHOLDER_ID, PLACEHOLDER_ID),
+                ArrayDeque(subPosts),
+                getRange(Range.DAY, SortType.NEW),
+                SortType.NEW,
+                FilterTypes.init(),
+                userId,
+                emptySet()
+            ) - PLACEHOLDER_ID // remove unnecessary base post
+        }
 
     // search by partial for autocomplete
     suspend fun getByPartial(userId: String, search: String) =
@@ -83,59 +87,60 @@ class PostsApi(
             filters,
             sortType,
             followees
-        ).mapNotNull { it.id }.toSet() // generate base post and post tree off of given inputs
+        ) // generate base post and post tree off of given inputs
             .let { subPosts ->
                 generatePostTree(
-                    generateBasePost(postSearchId, basePostName, subPosts),
+                    generateBasePost(postSearchId, basePostName),
+                    ArrayDeque(subPosts),
                     range,
                     sortType,
                     filters,
                     userId,
-                    followees,
-                    filter = true
+                    followees
                 )
             }
     }
 
     private suspend fun generatePostTree(
-        basePost: Post,
+        root: Post,
+        postsQueue: ArrayDeque<Post>,
         range: Instant,
         sortType: SortType,
         filters: FilterTypes,
         userId: String,
-        userFollowing: Set<String>,
-        filter: Boolean
+        userFollowing: Set<String>
     ) =
-        LinkedHashMap<String, PostResponse>().let { returnPosts ->
-            basePost.toResponse(null).let { root -> // build tree with bfs
-                if (root.id != null) returnPosts[root.id] = root
-                val refQueue = ArrayDeque(listOf(basePost))
-                while (refQueue.isNotEmpty()) {
-                    val nextRefNode = refQueue.removeFirst()
-
-                    val votes = votesApi.getByUserIdAndPostIdIn(userId, nextRefNode.subPosts)
-                    postsDB.findBySubpostIds(
-                        nextRefNode.subPosts,
+        LinkedHashMap<String, Post>().let { returnPosts ->
+            if (root.id != null) returnPosts[root.id] = root
+            while (postsQueue.isNotEmpty()) {
+                val nextRefNode = postsQueue.removeFirst()
+                //no need to search for sub posts if none exist beneath
+                val subPosts = if(nextRefNode.count > 0 ) {
+                    postsDB.findByParentId(
+                        nextRefNode.id ?: UNKNOWN,
                         range,
                         filters,
                         sortType,
-                        userFollowing,
-                        filter
-                    ).map { post ->
-                        if (post.id != null) {
-                            returnPosts[post.id] = post.toResponse(votes[post.id]?.upvote)
-                            refQueue.addLast(post)
-                        }
+                        userFollowing
+                    )
+                } else {
+                    emptyList()
+                }
+                subPosts.map { post ->
+                    if (post.id != null) {
+                        returnPosts[post.id] = post
+                        postsQueue.addLast(post)
                     }
                 }
             }
-            // Reverse the finalized LinkedHashMap so UI can insert new posts at the end
-            val reversedMap = LinkedHashMap<String, PostResponse>()
-            returnPosts.entries.reversed().forEach { (key, value) ->
-                reversedMap[key] = value
+            //grab all user votes for each post
+            val votes = votesApi.getByUserIdAndPostIdIn(userId, returnPosts.keys)
+            val responseMap = LinkedHashMap<String, PostResponse>()
+            //map to response object and add user vote response
+            returnPosts.reversed().forEach  { (id, post) ->
+                responseMap[id] = post.toResponse(votes[id]?.upvote)
             }
-
-            reversedMap
+            responseMap
         }
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
@@ -161,7 +166,6 @@ class PostsApi(
                 postsDB.save(listOf(message.toNewPost()))
                 // update parent sub posts
                 if (message.replyId != null) {
-                    postsDB.addSubpostToParent(message.replyId, messageId)
                     launch {
                         // update relatives sub post counts
                         if (message.rootId != message.id) {
