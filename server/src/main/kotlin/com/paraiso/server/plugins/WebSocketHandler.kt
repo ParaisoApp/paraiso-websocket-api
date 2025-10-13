@@ -237,7 +237,7 @@ class WebSocketHandler(
                                     // retreive mentions from content (parse with @)
                                     getMentions(message.content),
                                     message.userReceiveIds.firstOrNull(),
-                                    message.userId
+                                    sessionUser.id
                                 )
                                 //create notifications for all mentions or replied users
                                 userIdMentions.map { userReceiveId ->
@@ -247,9 +247,9 @@ class WebSocketHandler(
                                         NotificationType.MENTION
                                     }
                                     NotificationResponse(
-                                        id = "$userReceiveId-${message.userId}-$messageId-${message.replyId}",
+                                        id = "$userReceiveId-${sessionUser.id}-$messageId-${message.replyId}",
                                         userId = userReceiveId,
-                                        createUserId = message.userId,
+                                        createUserId = sessionUser.id,
                                         refId = messageId,
                                         replyId = message.replyId,
                                         content = null,
@@ -259,7 +259,28 @@ class WebSocketHandler(
                                         updatedOn = Clock.System.now()
                                     )
                                 }.let { notifications ->
-                                    services.notificationsApi.save(notifications)
+                                    if(notifications.isNotEmpty()){
+                                        services.notificationsApi.save(notifications)
+                                    }
+                                }
+                                //create vote for create user
+                                launch {
+                                    services.votesApi.vote(
+                                        VoteResponse(
+                                            voterId = sessionUser.id,
+                                            voteeId = sessionUser.id,
+                                            type = message.type,
+                                            postId = messageId,
+                                            upvote = true
+                                        )
+                                    )
+                                }
+                                //add init vote to user score
+                                launch {
+                                    services.usersApi.votePost(
+                                        sessionUser.id,
+                                        1
+                                    )
                                 }
                                 message.copy(
                                     id = messageId,
@@ -268,6 +289,7 @@ class WebSocketHandler(
                                     rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
                                     userReceiveIds = message.userReceiveIds.plus(userIdMentions)
                                 ).let { messageWithData ->
+                                    //shadow send message if user banned
                                     if (sessionUser.banned) {
                                         sendTypedMessage(MessageType.MSG, messageWithData)
                                     } else {
@@ -293,7 +315,7 @@ class WebSocketHandler(
                                     ).firstOrNull()?.blocking == true
                                     if (
                                         !sessionUser.banned &&
-                                        userReceiveBlocking
+                                        !userReceiveBlocking
                                     ) {
                                         launch {
                                             services.usersApi.addChat(

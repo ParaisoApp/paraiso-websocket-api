@@ -90,7 +90,7 @@ class UsersApi(
         userId: String?,
     ) =
         userId?.let{
-            usersDB.addChat(it,)
+            usersDB.addChat(it)
         }
     suspend fun tagUser(tag: Tag) =
         usersDB.setUserTag(tag)
