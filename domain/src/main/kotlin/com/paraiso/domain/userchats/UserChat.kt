@@ -21,7 +21,7 @@ data class UserChat(
 data class UserChatResponse(
     val id: String,
     val userIds: Map<String, Boolean>,
-    val recentDm: DirectMessageResponse?,
+    val dms: List<DirectMessageResponse>,
     val createdOn: Instant,
     val updatedOn: Instant
 )
@@ -30,16 +30,7 @@ fun UserChat.toResponse(dm: DirectMessageResponse?) =
     UserChatResponse(
         id = id,
         userIds = userIds.associateWith { true },
-        recentDm = dm,
-        createdOn = createdOn,
-        updatedOn = updatedOn
-    )
-
-fun UserChatResponse.toUserChat() =
-    UserChat(
-        id = id,
-        userIds = userIds.keys,
-        recentDm = recentDm?.id,
+        dms = if(dm != null) listOf(dm) else emptyList(),
         createdOn = createdOn,
         updatedOn = updatedOn
     )
