@@ -26,11 +26,11 @@ data class UserChatResponse(
     val updatedOn: Instant
 )
 
-fun UserChat.toResponse(dm: DirectMessageResponse?) =
+fun UserChat.toResponse(dms: List<DirectMessageResponse>) =
     UserChatResponse(
         id = id,
         userIds = userIds.associateWith { true },
-        dms = if(dm != null) listOf(dm) else emptyList(),
+        dms = dms,
         createdOn = createdOn,
         updatedOn = updatedOn
     )

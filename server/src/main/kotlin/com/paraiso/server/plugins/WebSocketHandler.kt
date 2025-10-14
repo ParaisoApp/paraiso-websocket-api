@@ -317,17 +317,14 @@ class WebSocketHandler(
                                         !sessionUser.banned &&
                                         !userReceiveBlocking
                                     ) {
-                                        launch {
-                                            services.usersApi.addChat(
-                                                dmWithData.userId,
-                                            )
-                                        } // update chat for receiving user
-                                        launch {
-                                            services.usersApi.addChat(
-                                                dmWithData.userReceiveId,
-                                            )
-                                        }
                                         // update chat for receiving user
+                                        launch {
+                                            if(dmWithData.userId != dmWithData.userReceiveId){
+                                                services.usersApi.addChat(
+                                                    dmWithData.userReceiveId,
+                                                )
+                                            }
+                                        }
                                         launch {
                                             dmWithData.id?.let {
                                                 services.userChatsApi.setMostRecentDm(it, dmWithData.chatId)
@@ -335,16 +332,21 @@ class WebSocketHandler(
                                         }
                                         launch { services.directMessagesApi.save(dmWithData) }
                                         // if user is on this server then grab session and send dm to user
-                                        userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
-                                            receiveUserSessions.forEach { session ->
-                                                session.sendTypedMessage(MessageType.DM, dmWithData)
+                                        if(dmWithData.userReceiveId != dmWithData.userId){
+                                            userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
+                                                receiveUserSessions.forEach { session ->
+                                                    session.sendTypedMessage(MessageType.DM, dmWithData)
+                                                }
                                             }
-                                        }
-                                        // find any other user server sessions, publish, and map to respective server subscriber
-                                        eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
-                                            val dmString = Json.encodeToString(dmWithData)
-                                            receiveUserSessions.sessionIds.forEach { userServerId ->
-                                                eventServiceImpl.publish("server:$userServerId", "$serverId:${dmWithData.userReceiveId}:$dmString")
+                                            // find any other user server sessions, publish, and map to respective server subscriber
+                                            eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
+                                                val dmString = Json.encodeToString(dmWithData)
+                                                if(receiveUserSessions.serverId != serverId){
+                                                    eventServiceImpl.publish(
+                                                        "server:$receiveUserSessions.serverId",
+                                                        "$serverId:${dmWithData.userReceiveId}:$dmString"
+                                                    )
+                                                }
                                             }
                                         }
                                     }

@@ -23,10 +23,8 @@ class UserChatsApi(
                 newUserChat
             }
         }
-        val recentDm = chat.recentDm?.let{
-            directMessagesApi.findByIdIn(listOf(chat.recentDm))
-        }
-        return chat.toResponse(recentDm?.firstOrNull())
+        val dms = directMessagesApi.findByChatId(chat.id)
+        return chat.toResponse(dms)
     }
 
     suspend fun findByUserId(userId: String) =
@@ -34,7 +32,12 @@ class UserChatsApi(
             val recentDms = directMessagesApi.findByIdIn(userChats.mapNotNull{ it.recentDm }).associateBy {
                 it.id
             }
-            userChats.map { it.toResponse(recentDms[it.recentDm]) }
+            userChats.map {
+                val dms = recentDms[it.recentDm]?.let{recentDm ->
+                    listOf(recentDm)
+                } ?: emptyList()
+                it.toResponse(dms)
+            }
         }
 
     suspend fun setMostRecentDm(dmId: String, chatId: String) =
