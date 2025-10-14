@@ -6,32 +6,28 @@ import kotlinx.serialization.Serializable
 data class UserSession(
     val id: String,
     val userId: String,
-    val serverId: String,
-    val sessionIds: Set<String>
+    val serverSessions: Map<String, Set<String>>,
 )
 
 @Serializable
 data class UserSessionResponse(
     val id: String,
     val userId: String,
-    val serverId: String,
+    val serverSessions: Map<String, Set<String>>,
     val status: UserStatus,
-    val sessionIds: Set<String>
 )
 
 fun UserSessionResponse.toDomain() =
     UserSession(
         id = id,
         userId = userId,
-        serverId = serverId,
-        sessionIds = sessionIds
+        serverSessions = serverSessions
     )
 
 fun UserSession.toResponse(status: UserStatus) =
     UserSessionResponse(
         id = id,
         userId = userId,
-        serverId = serverId,
-        status = status,
-        sessionIds = sessionIds
+        serverSessions = serverSessions,
+        status = status
     )
