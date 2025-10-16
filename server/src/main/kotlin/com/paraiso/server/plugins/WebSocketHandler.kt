@@ -376,7 +376,10 @@ class WebSocketHandler(
                                     sendTypedMessage(MessageType.FAVORITE, favorite)
                                 } else {
                                     launch { services.usersApi.toggleFavoriteRoute(favorite) }
-                                    launch { services.routesApi.toggleFavoriteRoute(favorite) }
+                                    //indicates toggle on or off rather than adding route flair
+                                    if(favorite.toggle){
+                                        launch { services.routesApi.toggleFavoriteRoute(favorite) }
+                                    }
                                     ServerState.favoriteFlowMut.emit(favorite)
                                     eventServiceImpl.publish(MessageType.FAVORITE.name, "$serverId:${Json.encodeToString(favorite)}")
                                 }

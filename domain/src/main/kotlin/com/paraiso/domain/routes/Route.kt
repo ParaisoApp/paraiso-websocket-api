@@ -37,7 +37,8 @@ data class Favorite(
     val userId: String?,
     val route: String,
     val icon: String?,
-    val favorite: Boolean
+    val favorite: Boolean,
+    val toggle: Boolean
 )
 
 @Serializable
