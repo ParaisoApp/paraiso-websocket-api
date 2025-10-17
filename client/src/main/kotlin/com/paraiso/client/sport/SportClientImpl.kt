@@ -84,6 +84,33 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             null
         }
     }
+
+    override suspend fun getScoreboardWithDate(
+        sport: SiteRoute,
+        date: String
+    ): ScoreboardDomain? = withContext(dispatcher) {
+        try {
+            var url = clientConfig.statsBaseUrl
+            when (sport) {
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                else -> { logger.info { "Unrecognized sport $sport" } }
+            }
+            url += "/scoreboard?$date"
+            val response: RestScoreboard = getHttpClient().use { httpClient ->
+                httpClient.get(url).let {
+                    if (it.status != HttpStatusCode.OK) {
+                        logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                    }
+                    it.body()
+                }
+            }
+            response.toDomain(sport)
+        } catch (ex: Exception) {
+            logger.error("ex: $ex")
+            null
+        }
+    }
     override suspend fun getGameStats(sport: SiteRoute, competitionId: String): BoxScoreDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl

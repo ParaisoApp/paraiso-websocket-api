@@ -222,7 +222,7 @@ class SportHandler(
                                 scoreboard,
                                 scoreboard.competitions.filter { it.status.state == "in" },
                                 delayBoxScore == 0,
-                                scoreboard.competitions.filter { it.status.state != "in" }.map { it.toString() }
+                                scoreboard.competitions.filter { it.status.state != "in" }
                             )
                             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                             if (
@@ -256,17 +256,34 @@ class SportHandler(
         scoreboard: Scoreboard,
         activeCompetitions: List<Competition>,
         enableBoxScore: Boolean,
-        inactiveCompetitionIds: List<String>
+        inactiveCompetitions: List<Competition>
     ) = coroutineScope {
-        // if some competitions are active and there's a change in the scoreboard update
-        if (activeCompetitions.isNotEmpty() && scoreboard != lastSentScoreboard[sport]) {
+        if (scoreboard != lastSentScoreboard[sport]) {
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
-            sportDBs.competitionsDB.save(activeCompetitions)
+            //save inactive comps one last time to ensure all stats are picked up
+            if(activeCompetitions.isEmpty()){
+                sportDBs.competitionsDB.save(inactiveCompetitions)
+                if (enableBoxScore){
+                    buildBoxscores(
+                        sport,
+                        inactiveCompetitions.map { it.id },
+                        emptyList()
+                    )
+                }
+            }else{
+                sportDBs.competitionsDB.save(activeCompetitions)
+                if (enableBoxScore){
+                    buildBoxscores(
+                        sport,
+                        activeCompetitions.map { it.id },
+                        inactiveCompetitions.map { it.id }
+                    )
+                }
+            }
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboard)}"
             )
-            if (enableBoxScore) buildBoxscores(sport, activeCompetitions.map { it.id }, inactiveCompetitionIds)
             lastSentScoreboard[sport] = scoreboard
         }
     }
@@ -317,5 +334,20 @@ class SportHandler(
                 )
             }
         )
+    }
+
+    suspend fun fillCompetitionData(
+        sport: SiteRoute,
+        dates: String
+    ) {
+        // add posts for base sport route
+        sportClient.getScoreboardWithDate(sport, dates)?.competitions?.let { competitions ->
+            sportDBs.competitionsDB.save(competitions)
+            competitions.mapNotNull { competition ->
+                sportClient.getGameStats(sport, competition.id)
+            }.let { boxScores ->
+                sportDBs.boxscoresDB.save(boxScores)
+            }
+        }
     }
 }

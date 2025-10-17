@@ -13,6 +13,7 @@ import com.paraiso.domain.sport.data.Team
 interface SportClient {
     suspend fun getLeague(sport: SiteRoute): League?
     suspend fun getScoreboard(sport: SiteRoute): Scoreboard?
+    suspend fun getScoreboardWithDate(sport: SiteRoute, date: String): Scoreboard?
     suspend fun getGameStats(sport: SiteRoute, competitionId: String): BoxScore?
     suspend fun getStandings(sport: SiteRoute): AllStandings?
     suspend fun getTeams(sport: SiteRoute): List<Team>
