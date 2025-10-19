@@ -28,6 +28,7 @@ import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.BASKETBALL_PREFIX
 import com.paraiso.domain.util.Constants.FOOTBALL_PREFIX
@@ -241,6 +242,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
     override suspend fun findByBaseCriteria(
         postSearchId: String,
+        basePostName: String,
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
@@ -258,11 +260,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 )
             )
         }
-        if (postSearchId == BASKETBALL_PREFIX || postSearchId == FOOTBALL_PREFIX) {
+        if (basePostName == SiteRoute.BASKETBALL.name || basePostName == SiteRoute.FOOTBALL.name) {
             // for sports add their respective gameposts
             homeFilters.add(
                 and(
                     eq(Post::type.name, PostType.EVENT.name),
+                    eq(Post::data.name, basePostName), // route is housed in data field
                     not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
                 )
             )

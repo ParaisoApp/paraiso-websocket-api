@@ -83,6 +83,7 @@ class PostsApi(
         val range = getRange(rangeModifier, sortType)
         return postsDB.findByBaseCriteria(
             postSearchId,
+            basePostName, // post route
             range,
             filters,
             sortType,

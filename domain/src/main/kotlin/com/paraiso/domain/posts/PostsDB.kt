@@ -11,6 +11,7 @@ interface PostsDB {
     suspend fun findByUserId(userId: String): List<Post>
     suspend fun findByBaseCriteria(
         postSearchId: String,
+        basePostName: String,
         range: Instant,
         filters: FilterTypes,
         sortType: SortType,
