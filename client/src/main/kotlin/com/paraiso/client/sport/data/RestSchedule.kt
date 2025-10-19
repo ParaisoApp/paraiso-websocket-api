@@ -2,6 +2,8 @@ package com.paraiso.client.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.TeamGameStats
+import com.paraiso.domain.util.convertStringZToInstant
+import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -109,7 +111,7 @@ fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomai
     id = id,
     name = name,
     shortName = shortName,
-    date = date,
+    date = convertStringZToInstant(date),
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
     status = status.toDomain()

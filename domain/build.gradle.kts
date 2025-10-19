@@ -7,7 +7,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("org.mongodb:bson-kotlinx:5.5.1") // BSON support for kotlinx.serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0") // Kotlinx Serialization core
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 }
 
 application {

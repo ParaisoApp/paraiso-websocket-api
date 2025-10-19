@@ -2,6 +2,8 @@ package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -19,7 +21,8 @@ data class Competition(
     @SerialName(ID) val id: String,
     val name: String,
     val shortName: String,
-    val date: String,
+    @Serializable(with = InstantBsonSerializer::class)
+    val date: Instant?,
     val teams: List<TeamGameStats>,
     val venue: Venue,
     val status: Status
@@ -62,7 +65,7 @@ data class CompetitionResponse(
     val id: String,
     val name: String,
     val shortName: String,
-    val date: String,
+    val date: Instant?,
     val teams: List<TeamGameStatsResponse>,
     val venue: VenueResponse,
     val status: StatusResponse

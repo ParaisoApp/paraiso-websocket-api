@@ -102,7 +102,7 @@ class SportApi(private val sportDBs: SportDBs) {
             seasonType
         )?.let { schedule ->
             val competitions = sportDBs.competitionsDB.findByIdIn(schedule.events)
-                .sortedBy { Instant.parse(it.date) }
+                .sortedBy { it.date }
             schedule.toDomain(competitions)
         }?.toResponse()
 }

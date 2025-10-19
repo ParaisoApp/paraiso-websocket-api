@@ -173,8 +173,8 @@ class SportHandler(
                         parentId = "/s/${sport.name.lowercase()}/t/$key",
                         rootId = "$TEAM_PREFIX$key-${competition.id}",
                         data = sport.name,
-                        createdOn = Instant.parse(competition.date),
-                        updatedOn = Instant.parse(competition.date)
+                        createdOn = competition.date,
+                        updatedOn = competition.date
                     )
                 }
             }
@@ -213,7 +213,7 @@ class SportHandler(
                         addGamePosts(sport, scoreboard.competitions)
                     } else {
                         // grab earliest game's start time and state of all games
-                        val earliestTime = scoreboard.competitions.minOf { Instant.parse(it.date) }
+                        val earliestTime = scoreboard.competitions.minOf { it.date ?: Instant.DISTANT_PAST }
                         val allStates = scoreboard.competitions.map { it.status.state }.toSet()
                         // if some games are past the earliest start time update scoreboard and box scores
                         if (Clock.System.now() > earliestTime) {
@@ -329,8 +329,8 @@ class SportHandler(
                     parentId = "/${sport.name}",
                     rootId = "$GAME_PREFIX${competition.id}",
                     data = sport.name,
-                    createdOn = Instant.parse(competition.date),
-                    updatedOn = Instant.parse(competition.date)
+                    createdOn = competition.date,
+                    updatedOn = competition.date
                 )
             }
         )

@@ -2,6 +2,7 @@ package com.paraiso.client.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.util.convertStringToInstant
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Record as RecordDomain
 import com.paraiso.domain.sport.data.Status as StatusDomain
@@ -66,7 +67,7 @@ fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
         id = id,
         season = season.toDomain(),
         week = week?.number,
-        day = day?.date,
+        day = convertStringToInstant(day?.date),
         competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName) }
     )
 }

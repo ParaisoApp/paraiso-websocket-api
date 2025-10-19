@@ -1,6 +1,8 @@
 package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -9,7 +11,7 @@ data class Scoreboard(
     val id: String,
     val season: Season,
     val week: Int?,
-    val day: String?,
+    val day: Instant?,
     val competitions: List<Competition>
 ) { companion object }
 
@@ -42,7 +44,7 @@ data class Record(
 data class ScoreboardResponse(
     val season: Season,
     val week: Int?,
-    val day: String?,
+    val day: Instant?,
     val competitions: List<CompetitionResponse>
 )
 
@@ -76,7 +78,8 @@ data class ScoreboardEntity(
     @SerialName(ID) val id: String,
     val season: Season,
     val week: Int?,
-    val day: String?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val day: Instant?,
     val competitions: List<String>
 )
 
