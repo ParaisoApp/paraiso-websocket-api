@@ -105,4 +105,18 @@ class SportApi(private val sportDBs: SportDBs) {
                 .sortedBy { it.date }
             schedule.toDomain(competitions)
         }?.toResponse()
+
+    suspend fun getScoreboard(
+        sport: String,
+        year: String,
+        type: String,
+        modifier: String,
+        past: Boolean
+    ) =
+        sportDBs.scoreboardsDB.findScoreboard(
+            sport, year, type, modifier, past
+        )?.let { sb ->
+            val comps = sportDBs.competitionsDB.findByIdIn(sb.competitions)
+            sb.toDomain(comps).toResponse()
+        }
 }

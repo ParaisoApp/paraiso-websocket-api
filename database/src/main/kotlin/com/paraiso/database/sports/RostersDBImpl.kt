@@ -13,7 +13,7 @@ class RostersDBImpl(database: MongoDatabase) : RostersDB {
     private val collection = database.getCollection("rosters", RosterEntity::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(Filters.eq(ID, id)).firstOrNull()
+        collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findBySportAndTeamId(sport: String, teamId: String) =
         collection.find(
@@ -21,7 +21,7 @@ class RostersDBImpl(database: MongoDatabase) : RostersDB {
                 Filters.eq(RosterEntity::sport.name, sport),
                 Filters.eq(RosterEntity::teamId.name, teamId)
             )
-        ).firstOrNull()
+        ).limit(1).firstOrNull()
 
     override suspend fun save(rosters: List<RosterEntity>): Int {
         val bulkOps = rosters.map { roster ->

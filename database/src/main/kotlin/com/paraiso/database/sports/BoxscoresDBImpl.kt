@@ -15,7 +15,7 @@ class BoxscoresDBImpl(database: MongoDatabase) : BoxscoresDB {
     private val collection = database.getCollection("boxscores", BoxScore::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(eq(ID, id)).firstOrNull()
+        collection.find(eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findByIdsIn(ids: List<String>) =
         collection.find(`in`(ID, ids)).toList()

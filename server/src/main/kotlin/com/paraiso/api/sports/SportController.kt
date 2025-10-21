@@ -99,5 +99,16 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
+        get("/getScoreboard") {
+            sportApi.getScoreboard(
+                call.request.queryParameters["sport"] ?: "",
+                call.request.queryParameters["year"] ?: "",
+                call.request.queryParameters["type"] ?: "",
+                call.request.queryParameters["modifier"] ?: "",
+                call.request.queryParameters["past"].toBoolean()
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
     }
 }

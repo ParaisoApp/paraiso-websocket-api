@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Scoreboard(
     val id: String,
+    val sport: String?,
     val season: Season,
     val week: Int?,
     val day: Instant?,
@@ -76,6 +77,7 @@ data class TeamYearStatsResponse(
 @Serializable
 data class ScoreboardEntity(
     @SerialName(ID) val id: String,
+    val sport: String?,
     val season: Season,
     val week: Int?,
     @Serializable(with = InstantBsonSerializer::class)
@@ -119,15 +121,29 @@ fun TeamYearStats.toResponse() =
 fun Scoreboard.toEntity() =
     ScoreboardEntity(
         id = id,
+        sport = sport,
         season = season,
         week = week,
         day = day,
         competitions = competitions.map { it.id }
     )
 
+fun ScoreboardEntity.toDomain(
+    competitions: List<Competition>
+) =
+    Scoreboard(
+        id = id,
+        sport = sport,
+        season = season,
+        week = week,
+        day = day,
+        competitions = competitions
+    )
+
 fun Scoreboard.Companion.init() =
     Scoreboard(
         id = "UNKNOWN",
+        sport = null,
         season = Season(
             year = 1900,
             type = 1,

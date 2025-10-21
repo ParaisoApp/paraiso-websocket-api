@@ -57,7 +57,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     private val collection = database.getCollection("posts", Post::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(eq(ID, id)).firstOrNull()
+        collection.find(eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findByIdsIn(ids: Set<String>) =
         collection.find(`in`(ID, ids)).toList()

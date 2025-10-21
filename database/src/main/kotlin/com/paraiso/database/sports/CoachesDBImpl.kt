@@ -13,7 +13,7 @@ class CoachesDBImpl(database: MongoDatabase) : CoachesDB {
     private val collection = database.getCollection("coaches", Coach::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(Filters.eq(ID, id)).firstOrNull()
+        collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun save(coaches: List<Coach>): Int {
         val bulkOps = coaches.map { coach ->

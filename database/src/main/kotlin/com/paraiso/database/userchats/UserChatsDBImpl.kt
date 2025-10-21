@@ -21,7 +21,7 @@ class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB {
     private val collection = database.getCollection("userChats", UserChat::class.java)
 
     override suspend fun findByUserIds(userId: String, otherUserId: String) =
-        collection.find(all(UserChat::userIds.name, listOf(userId, otherUserId))).firstOrNull()
+        collection.find(all(UserChat::userIds.name, listOf(userId, otherUserId))).limit(1).firstOrNull()
     override suspend fun findByUserId(userId: String) =
         collection.find(eq(UserChat::userIds.name, userId)).toList()
 

@@ -65,6 +65,7 @@ fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
     if (day != null) id += "-${day.date}"
     return Scoreboard(
         id = id,
+        sport = sport.name,
         season = season.toDomain(),
         week = week?.number,
         day = convertStringToInstant(day?.date),

@@ -13,10 +13,10 @@ class LeaguesDBImpl(database: MongoDatabase) : LeaguesDB {
     private val collection = database.getCollection("leagues", League::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(Filters.eq(ID, id)).firstOrNull()
+        collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findBySport(sport: String) =
-        collection.find(Filters.eq(League::sport.name, sport)).firstOrNull()
+        collection.find(Filters.eq(League::sport.name, sport)).limit(1).firstOrNull()
 
     override suspend fun save(leagues: List<League>): Int {
         val bulkOps = leagues.map { league ->

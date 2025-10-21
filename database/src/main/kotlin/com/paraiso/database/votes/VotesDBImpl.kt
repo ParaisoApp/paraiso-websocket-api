@@ -30,7 +30,7 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB {
                 eq(Vote::voterId.name, voterId),
                 eq(Vote::postId.name, postId)
             )
-        ).firstOrNull()
+        ).limit(1).firstOrNull()
 
     override suspend fun findByUserIdAndPostIdIn(userId: String, postIds: Set<String>) =
         collection.find(

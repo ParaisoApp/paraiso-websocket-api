@@ -15,7 +15,7 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
     private val collection = database.getCollection("teams", Team::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(eq(ID, id)).firstOrNull()
+        collection.find(eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findBySportAndTeamId(sport: String, teamId: String) =
         collection.find(
@@ -23,7 +23,7 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
                 eq(Team::sport.name, sport),
                 eq(Team::teamId.name, teamId)
             )
-        ).firstOrNull()
+        ).limit(1).firstOrNull()
 
     override suspend fun findBySportAndAbbr(sport: String, abbr: String) =
         collection.find(
@@ -31,7 +31,7 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
                 eq(Team::sport.name, sport),
                 eq(Team::abbreviation.name, abbr)
             )
-        ).firstOrNull()
+        ).limit(1).firstOrNull()
 
     override suspend fun findBySport(sport: String) =
         collection.find(eq(Team::sport.name, sport)).toList()

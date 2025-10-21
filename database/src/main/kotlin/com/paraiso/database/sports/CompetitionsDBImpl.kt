@@ -14,7 +14,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
     private val collection = database.getCollection("competitions", Competition::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(Filters.eq(ID, id)).firstOrNull()
+        collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findByIdIn(ids: List<String>): List<Competition> =
         collection.find(Filters.`in`(ID, ids)).toList()

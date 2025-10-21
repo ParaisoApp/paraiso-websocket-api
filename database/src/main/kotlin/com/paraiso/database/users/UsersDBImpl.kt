@@ -41,12 +41,12 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
     private val collection = database.getCollection("users", User::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(eq(ID, id)).firstOrNull()
+        collection.find(eq(ID, id)).limit(1).firstOrNull()
     override suspend fun findByIdIn(ids: List<String>) =
         collection.find(`in`(ID, ids)).toList()
 
     override suspend fun findByName(name: String) =
-        collection.find(eq(User::name.name, name)).firstOrNull()
+        collection.find(eq(User::name.name, name)).limit(1).firstOrNull()
 
     override suspend fun existsByName(name: String) =
         collection.find(eq(User::name.name, name))

@@ -13,7 +13,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB {
     private val collection = database.getCollection("schedules", ScheduleEntity::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(Filters.eq(ID, id)).firstOrNull()
+        collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
 
     override suspend fun findBySportAndTeamIdAndYearAndType(
         sport: String,
@@ -28,7 +28,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB {
                 Filters.eq("${ScheduleEntity::season.name}.year", seasonYear),
                 Filters.eq("${ScheduleEntity::season.name}.type", seasonType)
             )
-        ).firstOrNull()
+        ).limit(1).firstOrNull()
 
     override suspend fun save(schedules: List<ScheduleEntity>): Int {
         val bulkOps = schedules.map { schedule ->
