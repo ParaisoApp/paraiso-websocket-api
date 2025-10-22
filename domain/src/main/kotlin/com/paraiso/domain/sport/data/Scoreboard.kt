@@ -43,6 +43,7 @@ data class Record(
 
 @Serializable
 data class ScoreboardResponse(
+    val id: String,
     val season: Season,
     val week: Int?,
     val day: Instant?,
@@ -87,6 +88,7 @@ data class ScoreboardEntity(
 
 fun Scoreboard.toResponse() =
     ScoreboardResponse(
+        id = id,
         season = season,
         week = week,
         day = day,

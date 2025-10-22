@@ -11,7 +11,7 @@ import io.ktor.server.routing.route
 fun Route.sportController(sportApi: SportApi) {
     route("s") {
         get("/leagues") {
-            sportApi.getLeague(
+            sportApi.findLeague(
                 call.request.queryParameters["sport"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
@@ -20,13 +20,13 @@ fun Route.sportController(sportApi: SportApi) {
         get("/teams") {
             call.respond(
                 HttpStatusCode.OK,
-                sportApi.getTeams(
+                sportApi.findTeams(
                     call.request.queryParameters["sport"] ?: ""
                 )
             )
         }
         get("/teamById") {
-            sportApi.getTeamById(
+            sportApi.findTeamById(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["id"] ?: ""
             )?.let {
@@ -34,28 +34,28 @@ fun Route.sportController(sportApi: SportApi) {
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/competitionById") {
-            sportApi.getCompetitionById(
+            sportApi.findCompetitionById(
                 call.request.queryParameters["id"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/boxScoresById") {
-            sportApi.getBoxScoresById(
+            sportApi.findBoxScoresById(
                 call.request.queryParameters["id"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/standings") {
-            sportApi.getStandings(
+            sportApi.findStandings(
                 call.request.queryParameters["sport"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/leaders") {
-            sportApi.getLeaders(
+            sportApi.findLeaders(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
                 call.request.queryParameters["seasonType"]?.toIntOrNull() ?: 0
@@ -63,8 +63,8 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
-        get("/findTeamByAbbr") {
-            sportApi.getTeamByAbbr(
+        get("/teamByAbbr") {
+            sportApi.findTeamByAbbr(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamAbbr"] ?: ""
             )?.let {
@@ -72,7 +72,7 @@ fun Route.sportController(sportApi: SportApi) {
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/teamRoster") {
-            sportApi.getTeamRoster(
+            sportApi.findTeamRoster(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamId"] ?: ""
             )?.let {
@@ -80,7 +80,7 @@ fun Route.sportController(sportApi: SportApi) {
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/teamSchedule") {
-            sportApi.getTeamSchedule(
+            sportApi.findTeamSchedule(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamId"] ?: "",
                 call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
@@ -90,7 +90,7 @@ fun Route.sportController(sportApi: SportApi) {
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
         get("/teamLeaders") {
-            sportApi.getTeamLeaders(
+            sportApi.findTeamLeaders(
                 call.request.queryParameters["sport"] ?: "",
                 call.request.queryParameters["teamId"] ?: "",
                 call.request.queryParameters["seasonYear"]?.toIntOrNull() ?: 0,
@@ -99,11 +99,11 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
-        get("/getScoreboard") {
-            sportApi.getScoreboard(
+        get("/scoreboard") {
+            sportApi.findScoreboard(
                 call.request.queryParameters["sport"] ?: "",
-                call.request.queryParameters["year"] ?: "",
-                call.request.queryParameters["type"] ?: "",
+                call.request.queryParameters["year"]?.toIntOrNull() ?: 0,
+                call.request.queryParameters["type"]?.toIntOrNull() ?: 0,
                 call.request.queryParameters["modifier"] ?: "",
                 call.request.queryParameters["past"].toBoolean()
             )?.let {

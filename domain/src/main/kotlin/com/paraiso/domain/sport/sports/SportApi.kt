@@ -10,13 +10,13 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Instant
 
 class SportApi(private val sportDBs: SportDBs) {
-    suspend fun getLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
-    suspend fun getTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)?.toResponse()
-    suspend fun getTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
-    suspend fun getTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
-    suspend fun getCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
-    suspend fun getBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
-    suspend fun getStandings(sport: String) =
+    suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
+    suspend fun findTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)?.toResponse()
+    suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
+    suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
+    suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
+    suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
+    suspend fun findStandings(sport: String) =
         if (sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
                 standingsGroup.confAbbr to standingsGroup.standings.map { it.toResponse() }
@@ -28,7 +28,7 @@ class SportApi(private val sportDBs: SportDBs) {
                 standingsSubGroup.divName to standingsSubGroup.standings.map { it.toResponse() }
             }
         }
-    suspend fun getLeaders(sport: String, season: Int, type: Int) =
+    suspend fun findLeaders(sport: String, season: Int, type: Int) =
         sportDBs.leadersDB.findBySportAndSeasonAndType(sport, season, type)?.categories?.let { categories ->
             // grab athletes from DB and associate with their id
             val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
@@ -47,7 +47,7 @@ class SportApi(private val sportDBs: SportDBs) {
                 }
             }
         }
-    suspend fun getTeamLeaders(sport: String, teamId: String, season: Int, type: Int) =
+    suspend fun findTeamLeaders(sport: String, teamId: String, season: Int, type: Int) =
         sportDBs.leadersDB.findBySportAndSeasonAndTypeAndTeam(
             sport,
             teamId,
@@ -72,7 +72,7 @@ class SportApi(private val sportDBs: SportDBs) {
             }
         }
 
-    suspend fun getTeamRoster(sport: String, teamId: String) = coroutineScope {
+    suspend fun findTeamRoster(sport: String, teamId: String) = coroutineScope {
         sportDBs.rostersDB.findBySportAndTeamId(sport, teamId)?.let { rosterEntity ->
             val athletes = async {
                 sportDBs.athletesDB.findByIdsIn(rosterEntity.athletes)
@@ -89,7 +89,7 @@ class SportApi(private val sportDBs: SportDBs) {
         }
     }
 
-    suspend fun getTeamSchedule(
+    suspend fun findTeamSchedule(
         sport: String,
         teamId: String,
         seasonYear: Int,
@@ -106,10 +106,10 @@ class SportApi(private val sportDBs: SportDBs) {
             schedule.toDomain(competitions)
         }?.toResponse()
 
-    suspend fun getScoreboard(
+    suspend fun findScoreboard(
         sport: String,
-        year: String,
-        type: String,
+        year: Int,
+        type: Int,
         modifier: String,
         past: Boolean
     ) =
