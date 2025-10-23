@@ -241,8 +241,8 @@ class SportHandler(
                 }
                 // retrieve scoreboard every ten seconds
                 delay(10 * 1000)
-                // delay boxscore fetch for 30 ticks of delay (every 5 minutes)
-                if (delayBoxScore == 30) {
+                // delay boxscore fetch for 6 ticks of delay (every 1 minute)
+                if (delayBoxScore == 6) {
                     delayBoxScore = 0
                 } else {
                     delayBoxScore++
