@@ -68,9 +68,9 @@ enum class MessageType {
     @SerialName("REPORT_POST")
     REPORT_POST,
 
-    @SerialName("ping")
+    @SerialName("PING")
     PING,
 
-    @SerialName("pong")
+    @SerialName("PONG")
     PONG
 }

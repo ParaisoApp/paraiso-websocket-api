@@ -40,17 +40,22 @@ import com.paraiso.server.util.validateUser
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
+import io.ktor.websocket.CloseReason
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.seconds
 
 class WebSocketHandler(
     private val serverId: String,
@@ -226,6 +231,28 @@ class WebSocketHandler(
     ) {
         // holds the active jobs for given route
         var activeJobs: Job? = null
+        var lastPongTime = Clock.System.now()
+
+        // Check for stale sessions
+        val staleCheckJob = launch {
+            while (isActive) {
+                delay(10.seconds)
+                val age = Clock.System.now() - lastPongTime
+
+                if (age > 30.seconds) {
+                    println("Closing stale WebSocket: no PONG in $age user ID ${sessionUser.id}")
+                    close(CloseReason(CloseReason.Codes.NORMAL, "Stale connection"))
+                    break
+                }
+            }
+        }
+
+        val pingJob = launch {
+            while (isActive) {
+                delay(15.seconds)
+                sendTypedMessage(MessageType.PING, Clock.System.now().toEpochMilliseconds())
+            }
+        }
         try {
             incoming.consumeEach { frame ->
                 val messageType = determineMessageType(frame)
@@ -475,6 +502,17 @@ class WebSocketHandler(
                                 }
                             }
                     }
+                    MessageType.PING -> {
+                        converter?.cleanAndType<TypeMapping<Long>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { clientTime ->
+                                //pong back to client to inform session still ongoing
+                                sendTypedMessage(MessageType.PONG, clientTime)
+                            }
+                    }
+                    MessageType.PONG -> {
+                        //pong received 
+                        lastPongTime = Clock.System.now()
+                    }
                     else -> logger.error { "Invalid message type received $frame" }
                 }
             }
@@ -482,6 +520,8 @@ class WebSocketHandler(
             logger.error(ex) { "Error parsing incoming data" }
         } finally {
             messageCollectionJobs.forEach { it.cancelAndJoin() }
+            staleCheckJob.cancelAndJoin()
+            pingJob.cancelAndJoin()
             activeJobs?.cancelAndJoin()
             // create or update session connected status
             eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->

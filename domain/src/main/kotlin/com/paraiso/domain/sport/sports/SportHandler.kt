@@ -31,6 +31,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class SportHandler(
     private val sportClient: SportClient,
@@ -66,7 +68,7 @@ class SportHandler(
             sportClient.getStandings(sport)?.let { standingsRes ->
                 sportDBs.standingsDB.save(listOf(standingsRes))
             }
-            delay(12 * 60 * 60 * 1000)
+            delay(12.hours)
         }
     }
 
@@ -110,7 +112,7 @@ class SportHandler(
                     sportDBs.leadersDB.save(listOf(leadersRes))
                 }
             }
-            delay(6 * 60 * 60 * 1000)
+            delay(6.hours)
         }
     }
 
@@ -132,7 +134,7 @@ class SportHandler(
                     }
                 }
             }
-            delay(6 * 60 * 60 * 1000)
+            delay(6.hours)
         }
     }
 
@@ -230,7 +232,7 @@ class SportHandler(
                                 !allStates.contains("in") &&
                                 Clock.System.now() > earliestTime.plus(1.hours)
                             ) {
-                                delay(60 * 60 * 1000)
+                                delay(60.minutes)
                             }
                             // else if current time is before the earliest time, delay until the earliest time
                         } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
@@ -240,7 +242,7 @@ class SportHandler(
                     }
                 }
                 // retrieve scoreboard every ten seconds
-                delay(10 * 1000)
+                delay(10.seconds)
                 // delay boxscore fetch for 6 ticks of delay (every 1 minute)
                 if (delayBoxScore == 6) {
                     delayBoxScore = 0
