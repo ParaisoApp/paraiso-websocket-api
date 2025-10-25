@@ -209,22 +209,28 @@ class SportHandler(
                             sport,
                             scoreboard,
                             scoreboard.competitions,
-                            true,
-                            emptyList()
+                            emptyList(),
+                            true
                         )
                         addGamePosts(sport, scoreboard.competitions)
                     } else {
                         // grab earliest game's start time and state of all games
                         val earliestTime = scoreboard.competitions.minOf { it.date ?: Instant.DISTANT_PAST }
                         val allStates = scoreboard.competitions.map { it.status.state }.toSet()
+                        val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed} ?: emptyMap()
                         // if some games are past the earliest start time update scoreboard and box scores
                         if (Clock.System.now() > earliestTime) {
+                            //ending comps - filter to last completed false and cur completed true, copy in the end time
+                            val endingCompetitions = scoreboard.competitions.filter {
+                                lastCompState[it.id] == false && it.status.completed
+                            }.map { it.copy(status = it.status.copy(completedTime = Clock.System.now())) }
                             saveScoreboardAndGetBoxscores(
                                 sport,
                                 scoreboard,
-                                scoreboard.competitions.filter { it.status.state == "in" },
+                                //ensure ending posts are saved (take as active comps)
+                                scoreboard.competitions.filter { !it.status.completed } + endingCompetitions,
+                                scoreboard.competitions.filter {  lastCompState[it.id] == true && it.status.completed },
                                 delayBoxScore == 0,
-                                scoreboard.competitions.filter { it.status.state != "in" }
                             )
                             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                             if (
@@ -257,30 +263,19 @@ class SportHandler(
         sport: SiteRoute,
         scoreboard: Scoreboard,
         activeCompetitions: List<Competition>,
-        enableBoxScore: Boolean,
-        inactiveCompetitions: List<Competition>
+        inactiveCompetitions: List<Competition>,
+        enableBoxScore: Boolean
     ) = coroutineScope {
+        //deep comparison for changes
         if (scoreboard != lastSentScoreboard[sport]) {
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
-            //save inactive comps one last time to ensure all stats are picked up
-            if(activeCompetitions.isEmpty()){
-                sportDBs.competitionsDB.save(inactiveCompetitions)
-                if (enableBoxScore){
-                    buildBoxscores(
-                        sport,
-                        inactiveCompetitions.map { it.id },
-                        emptyList()
-                    )
-                }
-            }else{
-                sportDBs.competitionsDB.save(activeCompetitions)
-                if (enableBoxScore){
-                    buildBoxscores(
-                        sport,
-                        activeCompetitions.map { it.id },
-                        inactiveCompetitions.map { it.id }
-                    )
-                }
+            sportDBs.competitionsDB.save(activeCompetitions)
+            if (enableBoxScore){
+                buildBoxscores(
+                    sport,
+                    activeCompetitions.map { it.id },
+                    inactiveCompetitions.map { it.id }
+                )
             }
             eventService.publish(
                 MessageType.SCOREBOARD.name,

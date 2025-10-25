@@ -15,6 +15,8 @@ import com.paraiso.domain.sport.interfaces.ScoreboardsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
+import java.util.Date
 
 class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB {
     private val collection = database.getCollection("scoreboards", ScoreboardEntity::class.java)
@@ -42,7 +44,7 @@ class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB {
             ).limit(1).firstOrNull()
         }
         SiteRoute.BASKETBALL.name -> {
-            val targetDay = Instant.parse(modifier)
+            val targetDay = Date.from(Instant.parse(modifier).toJavaInstant())
             collection.find(
                 and(
                     eq(ScoreboardEntity::sport.name, sport),

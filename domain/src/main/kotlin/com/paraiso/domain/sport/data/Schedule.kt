@@ -42,7 +42,9 @@ data class Status(
     val period: Int,
     val name: String,
     val state: String,
-    val completed: Boolean
+    val completed: Boolean,
+    @Serializable(with = InstantBsonSerializer::class)
+    val completedTime: Instant?,
 )
 
 @Serializable

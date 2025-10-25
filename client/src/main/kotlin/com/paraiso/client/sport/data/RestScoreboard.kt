@@ -91,6 +91,7 @@ fun Status.toDomain(): StatusDomain {
         period = period,
         name = type.name,
         state = type.state,
-        completed = type.completed
+        completed = type.completed,
+        completedTime = null
     )
 }
