@@ -269,7 +269,9 @@ class SportHandler(
         //deep comparison for changes
         if (scoreboard != lastSentScoreboard[sport]) {
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
-            sportDBs.competitionsDB.save(activeCompetitions)
+            if(activeCompetitions.isNotEmpty()){
+                sportDBs.competitionsDB.save(activeCompetitions)
+            }
             if (enableBoxScore){
                 buildBoxscores(
                     sport,
