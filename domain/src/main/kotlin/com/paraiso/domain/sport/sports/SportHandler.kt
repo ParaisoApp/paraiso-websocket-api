@@ -271,13 +271,13 @@ class SportHandler(
             sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
             if(activeCompetitions.isNotEmpty()){
                 sportDBs.competitionsDB.save(activeCompetitions)
-            }
-            if (enableBoxScore){
-                buildBoxscores(
-                    sport,
-                    activeCompetitions.map { it.id },
-                    inactiveCompetitions.map { it.id }
-                )
+                if (enableBoxScore){
+                    buildBoxscores(
+                        sport,
+                        activeCompetitions.map { it.id },
+                        inactiveCompetitions.map { it.id }
+                    )
+                }
             }
             eventService.publish(
                 MessageType.SCOREBOARD.name,
