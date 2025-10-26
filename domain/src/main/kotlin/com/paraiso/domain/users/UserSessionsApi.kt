@@ -13,8 +13,8 @@ class UserSessionsApi(
     private val blocksApi: BlocksApi
 ) {
 
-    private fun getStatus(session: UserSession?) =
-        if (session == null) {
+    private fun getStatus(session: UserSession?, hidden: Boolean) =
+        if (session == null || hidden) {
             UserStatus.DISCONNECTED
         } else {
             UserStatus.CONNECTED
@@ -35,13 +35,15 @@ class UserSessionsApi(
                     null
                 }
             }
-            usersDB.findById(userId)?.toBasicResponse(
-                getStatus(session),
-                ViewerContext(
-                    follows.await()?.following,
-                    blocks.await()?.blocking,
+            usersDB.findById(userId)?.let {
+                it.toBasicResponse(
+                    getStatus(session, it.settings.hidden),
+                    ViewerContext(
+                        follows.await()?.following,
+                        blocks.await()?.blocking,
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -51,7 +53,7 @@ class UserSessionsApi(
             val blocks = async { blocksApi.findIn(curUserId, listOf(user.id)).firstOrNull() }
             eventService.getUserSession(user.id).let { session ->
                 user.toBasicResponse(
-                    getStatus(session),
+                    getStatus(session, user.settings.hidden),
                     ViewerContext(
                         follows.await()?.following,
                         blocks.await()?.blocking,
@@ -72,7 +74,7 @@ class UserSessionsApi(
             users.map { user ->
                 eventService.getUserSession(user.id).let { session ->
                     user.toBasicResponse(
-                        getStatus(session),
+                        getStatus(session, user.settings.hidden),
                         ViewerContext(
                             follows.await()[user.id]?.following,
                             blocks.await()[user.id]?.blocking
@@ -91,7 +93,7 @@ class UserSessionsApi(
                 followees.associate { user ->
                     eventService.getUserSession(user.id).let { session ->
                         user.id to user.toBasicResponse(
-                            getStatus(session),
+                            getStatus(session, user.settings.hidden),
                             ViewerContext(
                                 true,
                                     blocks.await()[user.id]?.blocking
@@ -111,7 +113,7 @@ class UserSessionsApi(
                 followers.associate { user ->
                     eventService.getUserSession(user.id).let { session ->
                         user.id to user.toBasicResponse(
-                            getStatus(session),
+                            getStatus(session, user.settings.hidden),
                             ViewerContext(
                                 follows.await()[user.id]?.following,
                                 blocks.await()[user.id]?.blocking

@@ -46,7 +46,8 @@ data class UserSettings(
     val showEmail: Boolean,
     val showName: Boolean,
     val showLocation: Boolean,
-    val showBirthday: Boolean
+    val showBirthday: Boolean,
+    val hidden: Boolean
 ) { companion object }
 
 @Serializable
@@ -265,7 +266,8 @@ fun UserSettings.Companion.initSettings() =
         showEmail = false,
         showName = true,
         showLocation = true,
-        showBirthday = true
+        showBirthday = true,
+        hidden = false
     )
 
 fun UserImage.Companion.initImage() =
