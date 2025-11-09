@@ -1,9 +1,19 @@
 package com.paraiso.domain.routes
 
-class RoutesApi(private val routesDB: RoutesDB) {
-    suspend fun getById(id: String) = routesDB.findById(id)?.toResponse()
-    suspend fun getByUserName(userName: String) = routesDB.findByUserName(userName)?.toResponse()
+import com.paraiso.domain.posts.PostPinsApi
+import com.paraiso.domain.posts.PostsApi
 
+class RoutesApi(
+    private val routesDB: RoutesDB,
+    private val postsApi: PostsApi,
+    private val postPinsApi: PostPinsApi
+) {
+    suspend fun getById(id: String, userId: String): RouteResponse? {
+        postPinsApi.findByRouteId(id).let {pinnedPosts ->
+            val posts = postsApi.getByIds(userId, pinnedPosts.map { it.postId }.toSet())
+            return routesDB.findById(id)?.toResponse(posts)
+        }
+    }
     suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDB.save(routeDetails)
 
     suspend fun toggleFavoriteRoute(favorite: Favorite) {

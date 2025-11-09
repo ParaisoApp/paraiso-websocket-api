@@ -11,12 +11,10 @@ import io.ktor.server.routing.route
 fun Route.routesController(routesApi: RoutesApi) {
     route("routes") {
         get("byId") {
-            routesApi.getById(call.request.queryParameters["id"] ?: "")?.let {
-                call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
-        }
-        get("byUserName") {
-            routesApi.getById(call.request.queryParameters["name"] ?: "")?.let {
+            routesApi.getById(
+                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["userId"] ?: ""
+            )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }

@@ -1,5 +1,6 @@
 package com.paraiso.domain.routes
 
+import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
@@ -28,6 +29,7 @@ data class RouteResponse(
     val title: String,
     val userFavorites: Int,
     val about: String?,
+    val pinnedPosts: Map<String, PostResponse>,
     val createdOn: Instant?,
     val updatedOn: Instant?
 )
@@ -83,7 +85,7 @@ enum class SiteRoute {
     @SerialName("GOLF")
     GOLF
 }
-fun RouteDetails.toResponse() =
+fun RouteDetails.toResponse(pinnedPost: Map<String, PostResponse>) =
     RouteResponse(
         id = id,
         route = route,
@@ -91,6 +93,7 @@ fun RouteDetails.toResponse() =
         title = title,
         userFavorites = userFavorites,
         about = about,
+        pinnedPosts = pinnedPost,
         createdOn = createdOn,
         updatedOn = updatedOn
     )

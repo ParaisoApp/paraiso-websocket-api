@@ -7,6 +7,7 @@ import com.paraiso.api.blocks.blocksController
 import com.paraiso.api.follows.followsController
 import com.paraiso.api.metadata.metadataController
 import com.paraiso.api.notifications.notificationsController
+import com.paraiso.api.posts.postPinsController
 import com.paraiso.api.posts.postsController
 import com.paraiso.api.routes.routesController
 import com.paraiso.api.sports.dataGenerationController
@@ -23,6 +24,7 @@ import com.paraiso.database.admin.UserReportsDBImpl
 import com.paraiso.database.blocks.BlocksDBImpl
 import com.paraiso.database.follows.FollowsDBImpl
 import com.paraiso.database.notifications.NotificationsDBImpl
+import com.paraiso.database.posts.PostPinsDBImpl
 import com.paraiso.database.posts.PostsDBImpl
 import com.paraiso.database.routes.RoutesDBImpl
 import com.paraiso.database.sports.AthletesDBImpl
@@ -46,6 +48,7 @@ import com.paraiso.domain.blocks.BlocksApi
 import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.notifications.NotificationsApi
+import com.paraiso.domain.posts.PostPinsApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
@@ -154,7 +157,6 @@ fun Application.module(jobScope: CoroutineScope) {
         messageHandler.messageJobs()
     }
     // setup apis and scopes
-    val routesApi = RoutesApi(RoutesDBImpl(database))
     val authApi = AuthApi()
     val sportApi = SportApi(sportsDBs)
     val usersApi = UsersApi(usersDb)
@@ -166,6 +168,8 @@ fun Application.module(jobScope: CoroutineScope) {
         votesApi,
         followsApi
     )
+    val postPinsApi = PostPinsApi(PostPinsDBImpl(database))
+    val routesApi = RoutesApi(RoutesDBImpl(database), postsApi, postPinsApi)
     val notificationsApi = NotificationsApi(NotificationsDBImpl(database), postsApi)
     val userSessionsApi = UserSessionsApi(usersDb, eventServiceImpl, followsApi, blocksApi)
     val directMessagesApi = DirectMessagesApi(DirectMessagesDBImpl(database))
@@ -176,6 +180,7 @@ fun Application.module(jobScope: CoroutineScope) {
         authApi,
         adminApi,
         postsApi,
+        postPinsApi,
         routesApi,
         usersApi,
         votesApi,
@@ -243,6 +248,7 @@ fun Application.configureSockets(
         route("paraiso_api/v1") {
             authController(services.authApi)
             postsController(services.postsApi)
+            postPinsController(services.postPinsApi)
             usersController(services.usersApi)
             userSessionsController(services.userSessionsApi)
             userChatsController(services.userChatsApi)
