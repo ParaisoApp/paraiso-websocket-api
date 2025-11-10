@@ -2,7 +2,7 @@
 FROM gradle:8.6.0-jdk21 AS builder
 WORKDIR /app
 COPY . /app
-RUN gradle :server:fatJar -x test
+RUN gradle :server:fatJar -x test --no-daemon --max-workers=1 -Dorg.gradle.jvmargs="-Xmx512m"
 RUN ls -al /app/server/build/libs   # debug
 
 # Stage 2: Runtime
