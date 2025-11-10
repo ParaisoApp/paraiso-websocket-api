@@ -1,0 +1,36 @@
+# Ignore Git and local configs
+.git
+.gitignore
+README.md
+LICENSE
+*.md
+
+# Gradle caches and build outputs
+.gradle
+build/
+**/build/
+out/
+**/out/
+
+# IntelliJ IDEA and other IDE settings
+.idea/
+.vscode/
+*.iml
+
+# Logs and temp files
+*.log
+tmp/
+*.tmp
+*.swp
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Docker artifacts
+Dockerfile
+docker-compose.yml
+
+# Local environment/config files
+.env
+*.local
