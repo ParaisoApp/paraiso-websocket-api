@@ -7,6 +7,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Serializable
 data class PostPin(
     @SerialName(Constants.ID) val id: String,
     val routeId: String,
@@ -16,6 +17,8 @@ data class PostPin(
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant? = Clock.System.now(),
 )
+
+@Serializable
 data class PostPinResponse(
     val id: String,
     val routeId: String,
