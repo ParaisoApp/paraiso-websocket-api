@@ -68,7 +68,7 @@ class SportHandler(
             sportClient.getStandings(sport)?.let { standingsRes ->
                 sportDBs.standingsDB.save(listOf(standingsRes))
             }
-            delay(12.hours)
+            delay(1.hours)
         }
     }
 
@@ -112,7 +112,7 @@ class SportHandler(
                     sportDBs.leadersDB.save(listOf(leadersRes))
                 }
             }
-            delay(6.hours)
+            delay(1.hours)
         }
     }
 
@@ -134,7 +134,7 @@ class SportHandler(
                     }
                 }
             }
-            delay(6.hours)
+            delay(1.hours)
         }
     }
 
@@ -238,7 +238,7 @@ class SportHandler(
                                 !allStates.contains("in") &&
                                 Clock.System.now() > earliestTime.plus(1.hours)
                             ) {
-                                delay(60.minutes)
+                                delay(1.hours)
                             }
                             // else if current time is before the earliest time, delay until the earliest time
                         } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {

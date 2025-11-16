@@ -9,6 +9,7 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.lte
 import com.mongodb.client.model.Filters.ne
+import com.mongodb.client.model.Filters.nin
 import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
@@ -283,6 +284,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
             ne(Post::status.name, PostStatus.DELETED),
             `in`(Post::type.name, filters.postTypes),
+            nin(ID, filters.postIds),
             // handle events (which may be created early but create date of event date)
             lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
         )

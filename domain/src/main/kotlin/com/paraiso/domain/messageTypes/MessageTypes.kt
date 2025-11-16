@@ -24,7 +24,8 @@ data class Delete(
 @Serializable
 data class FilterTypes(
     val postTypes: Set<PostType>,
-    val userRoles: Set<UserRole>
+    val userRoles: Set<UserRole>,
+    val postIds: Set<String>
 ) { companion object }
 
 @Serializable
@@ -55,5 +56,6 @@ fun FilterTypes.Companion.init() = FilterTypes(
         UserRole.FOLLOWING,
         UserRole.USER,
         UserRole.GUEST
-    )
+    ),
+    setOf()
 )
