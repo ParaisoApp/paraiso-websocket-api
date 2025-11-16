@@ -29,6 +29,7 @@ data class RouteResponse(
     val title: String,
     val userFavorites: Int,
     val about: String?,
+    val pinnedPostIds: List<String>,
     val pinnedPosts: Map<String, PostResponse>,
     val createdOn: Instant?,
     val updatedOn: Instant?
@@ -85,7 +86,7 @@ enum class SiteRoute {
     @SerialName("GOLF")
     GOLF
 }
-fun RouteDetails.toResponse(pinnedPost: Map<String, PostResponse>) =
+fun RouteDetails.toResponse(pinnedPostIds: List<String>, pinnedPosts: Map<String, PostResponse>) =
     RouteResponse(
         id = id,
         route = route,
@@ -93,7 +94,8 @@ fun RouteDetails.toResponse(pinnedPost: Map<String, PostResponse>) =
         title = title,
         userFavorites = userFavorites,
         about = about,
-        pinnedPosts = pinnedPost,
+        pinnedPostIds = pinnedPostIds,
+        pinnedPosts = pinnedPosts,
         createdOn = createdOn,
         updatedOn = updatedOn
     )

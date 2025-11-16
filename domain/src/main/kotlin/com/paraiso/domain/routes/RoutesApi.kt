@@ -10,8 +10,9 @@ class RoutesApi(
 ) {
     suspend fun getById(id: String, userId: String): RouteResponse? {
         postPinsApi.findByRouteId(id).let {pinnedPosts ->
-            val posts = postsApi.getByIds(userId, pinnedPosts.map { it.postId }.toSet())
-            return routesDB.findById(id)?.toResponse(posts)
+            val postIds = pinnedPosts.map { it.postId }
+            val posts = postsApi.getByIds(userId, postIds.toSet())
+            return routesDB.findById(id)?.toResponse(postIds, posts)
         }
     }
     suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDB.save(routeDetails)
