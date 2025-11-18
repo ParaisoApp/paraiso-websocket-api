@@ -5,6 +5,7 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.util.convertStringToInstant
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Record as RecordDomain
+import com.paraiso.domain.sport.data.Situation as SituationDomain
 import com.paraiso.domain.sport.data.Status as StatusDomain
 import com.paraiso.domain.sport.data.TeamYearStats as TeamYearStatsDomain
 
@@ -46,6 +47,17 @@ data class Record(
 )
 
 @Serializable
+data class RestSituation(
+    val down: Int? = null,
+    val distance: Int? = null,
+    val downDistanceText: String? = null,
+    val isRedZone: Boolean? = null,
+    val homeTimeouts: Int? = null,
+    val awayTimeouts: Int? = null,
+    val possession: String? = null
+)
+
+@Serializable
 data class Status(
     val displayClock: String,
     val period: Int,
@@ -84,14 +96,20 @@ fun Record.toDomain() = RecordDomain(
     name = name,
     summary = summary
 )
-
-fun Status.toDomain(): StatusDomain {
-    return StatusDomain(
-        clock = displayClock,
-        period = period,
-        name = type.name,
-        state = type.state,
-        completed = type.completed,
-        completedTime = null
-    )
-}
+fun RestSituation.toDomain() = SituationDomain(
+    down = down,
+    distance = distance,
+    downDistanceText = downDistanceText,
+    isRedZone = isRedZone,
+    homeTimeouts = homeTimeouts,
+    awayTimeouts = awayTimeouts,
+    possession = possession
+)
+fun Status.toDomain() = StatusDomain(
+    clock = displayClock,
+    period = period,
+    name = type.name,
+    state = type.state,
+    completed = type.completed,
+    completedTime = null
+)

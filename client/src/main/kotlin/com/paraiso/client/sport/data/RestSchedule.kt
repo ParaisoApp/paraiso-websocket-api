@@ -44,6 +44,7 @@ data class RestCompetition(
     val venue: Venue,
     val date: String,
     val competitors: List<RestCompetitor>,
+    val situation: RestSituation? = null,
     val status: Status
 )
 
@@ -124,6 +125,7 @@ fun RestCompetition.toDomain(
     season = season.toDomain(),
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
+    situation = situation?.toDomain(),
     status = status.toDomain()
 )
 

@@ -28,6 +28,7 @@ data class Competition(
     val season: Season?,
     val teams: List<TeamGameStats>,
     val venue: Venue,
+    val situation: Situation?,
     val status: Status
 )
 
@@ -37,6 +38,17 @@ data class Season(
     val type: Int,
     val name: String?,
     val displayName: String?
+)
+
+@Serializable
+data class Situation(
+    val down: Int? = null,
+    val distance: Int? = null,
+    val downDistanceText: String? = null,
+    val isRedZone: Boolean? = null,
+    val homeTimeouts: Int? = null,
+    val awayTimeouts: Int? = null,
+    val possession: String? = null
 )
 
 @Serializable
@@ -73,6 +85,7 @@ data class CompetitionResponse(
     val date: Instant?,
     val teams: List<TeamGameStatsResponse>,
     val venue: VenueResponse,
+    val situation: SituationResponse?,
     val status: StatusResponse
 )
 
@@ -82,6 +95,17 @@ data class SeasonResponse(
     val type: Int,
     val name: String?,
     val displayName: String?
+)
+
+@Serializable
+data class SituationResponse(
+    val down: Int? = null,
+    val distance: Int? = null,
+    val downDistanceText: String? = null,
+    val isRedZone: Boolean? = null,
+    val homeTimeouts: Int? = null,
+    val awayTimeouts: Int? = null,
+    val possession: String? = null
 )
 
 @Serializable
@@ -133,6 +157,7 @@ fun Competition.toResponse() =
         date = date,
         teams = teams.map { it.toResponse() },
         venue = venue.toResponse(),
+        situation = situation?.toResponse(),
         status = status.toResponse()
     )
 
@@ -143,6 +168,16 @@ fun Season.toResponse() =
         name = name,
         displayName = displayName
     )
+
+fun Situation.toResponse() = SituationResponse(
+    down = down,
+    distance = distance,
+    downDistanceText = downDistanceText,
+    isRedZone = isRedZone,
+    homeTimeouts = homeTimeouts,
+    awayTimeouts = awayTimeouts,
+    possession = possession
+)
 
 fun Status.toResponse() =
     StatusResponse(
