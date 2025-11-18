@@ -3,11 +3,16 @@ package com.paraiso.domain.sport.sports
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
+import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 class SportApi(private val sportDBs: SportDBs) {
     suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
@@ -113,10 +118,31 @@ class SportApi(private val sportDBs: SportDBs) {
         modifier: String,
         past: Boolean
     ) =
-        sportDBs.scoreboardsDB.findScoreboard(
+        sportDBs.competitionsDB.findScoreboard(
             sport, year, type, modifier, past
-        )?.let { sb ->
-            val comps = sportDBs.competitionsDB.findByIdIn(sb.competitions)
-            sb.toDomain(comps).toResponse()
+        ).let { comps ->
+            val compRef = comps.firstOrNull()
+            val estZone = TimeZone.of("America/New_York")
+            ScoreboardResponse(
+                id = "",
+                season = compRef?.season,
+                week = compRef?.week,
+                day = compRef?.date?.toLocalDateTime(estZone)?.date?.atStartOfDayIn(estZone),
+                competitions = comps.map { it.toResponse() }
+            )
         }
+
+//    suspend fun findScoreboard(
+//        sport: String,
+//        year: Int,
+//        type: Int,
+//        modifier: String,
+//        past: Boolean
+//    ) =
+//        sportDBs.scoreboardsDB.findScoreboard(
+//            sport, year, type, modifier, past
+//        )?.let { sb ->
+//            val comps = sportDBs.competitionsDB.findByIdIn(sb.competitions)
+//            sb.toDomain(comps).toResponse()
+//        }
 }

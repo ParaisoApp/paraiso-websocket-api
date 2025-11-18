@@ -19,10 +19,13 @@ data class Schedule(
 @Serializable
 data class Competition(
     @SerialName(ID) val id: String,
+    val sport: SiteRoute,
     val name: String,
     val shortName: String,
     @Serializable(with = InstantBsonSerializer::class)
     val date: Instant?,
+    val week: Int?,
+    val season: Season?,
     val teams: List<TeamGameStats>,
     val venue: Venue,
     val status: Status

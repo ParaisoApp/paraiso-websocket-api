@@ -44,7 +44,7 @@ data class Record(
 @Serializable
 data class ScoreboardResponse(
     val id: String,
-    val season: Season,
+    val season: Season?,
     val week: Int?,
     val day: Instant?,
     val competitions: List<CompetitionResponse>

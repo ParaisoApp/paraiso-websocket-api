@@ -4,6 +4,7 @@ import io.klogging.Klogging
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
@@ -23,6 +24,9 @@ interface BaseAdapter : Klogging {
                         encodeDefaults = true
                     }
                 )
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 30_000   // 30 seconds
             }
             HttpResponseValidator {
                 handleResponseExceptionWithRequest { exception, request ->

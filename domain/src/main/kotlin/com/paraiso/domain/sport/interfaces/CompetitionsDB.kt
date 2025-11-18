@@ -6,4 +6,11 @@ interface CompetitionsDB {
     suspend fun findById(id: String): Competition?
     suspend fun findByIdIn(ids: List<String>): List<Competition>
     suspend fun save(competitions: List<Competition>): Int
+    suspend fun findScoreboard(
+        sport: String,
+        year: Int,
+        type: Int,
+        modifier: String,
+        past: Boolean
+    ): List<Competition>
 }

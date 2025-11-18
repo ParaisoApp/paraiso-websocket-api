@@ -34,6 +34,7 @@ data class RestEvent(
     val id: String,
     val name: String,
     val shortName: String,
+    val week: RestWeek? = null,
     val competitions: List<RestCompetition>
 )
 
@@ -97,7 +98,7 @@ fun RestSchedule.toDomain(sport: SiteRoute) = ScheduleDomain(
     sport = sport,
     teamId = team.id,
     season = season.toDomain(),
-    events = events.map { it.competitions.first().toDomain(it.name, it.shortName) }
+    events = events.map { it.competitions.first().toDomain(it.name, it.shortName, it.week?.number, season, sport) }
 )
 
 fun RestSeason.toDomain() = SeasonDomain(
@@ -107,11 +108,20 @@ fun RestSeason.toDomain() = SeasonDomain(
     displayName = displayName
 )
 
-fun RestCompetition.toDomain(name: String, shortName: String) = CompetitionDomain(
+fun RestCompetition.toDomain(
+    name: String,
+    shortName: String,
+    week: Int?,
+    season: RestSeason,
+    sport: SiteRoute
+) = CompetitionDomain(
     id = id,
+    sport = sport,
     name = name,
     shortName = shortName,
     date = convertStringZToInstant(date),
+    week = week,
+    season = season.toDomain(),
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
     status = status.toDomain()

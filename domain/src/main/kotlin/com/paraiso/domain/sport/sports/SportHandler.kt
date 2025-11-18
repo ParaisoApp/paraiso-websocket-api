@@ -161,11 +161,11 @@ class SportHandler(
         schedules: List<Schedule>
     ) {
         // add posts for team sport route - separate for focused discussion
-        postsDB.save(
-            schedules.associate {
-                teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
-            }.flatMap { (key, values) ->
-                values.map { competition ->
+        schedules.associate {
+            teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
+        }.flatMap { (key, values) ->
+            values.flatMap { competition ->
+                listOf(
                     Post(
                         id = "$TEAM_PREFIX$key-${competition.id}",
                         userId = SYSTEM,
@@ -177,10 +177,24 @@ class SportHandler(
                         data = sport.name,
                         createdOn = competition.date,
                         updatedOn = competition.date
+                    ),
+                    Post(
+                        id = "$GAME_PREFIX${competition.id}",
+                        userId = SYSTEM,
+                        title = competition.shortName,
+                        content = "${competition.date}||${competition.shortName}",
+                        type = PostType.EVENT,
+                        parentId = "/${sport.name}",
+                        rootId = "$GAME_PREFIX${competition.id}",
+                        data = sport.name,
+                        createdOn = competition.date,
+                        updatedOn = competition.date
                     )
-                }
+                )
             }
-        )
+        }.let { combinedGamePosts ->
+            postsDB.save(combinedGamePosts)
+        }
     }
 
     suspend fun buildRosters(sport: SiteRoute, manual: Boolean) = coroutineScope {
@@ -212,7 +226,6 @@ class SportHandler(
                             emptyList(),
                             true
                         )
-                        addGamePosts(sport, scoreboard.competitions)
                     } else {
                         // grab earliest game's start time and state of all games
                         val earliestTime = scoreboard.competitions.minOf { it.date ?: Instant.DISTANT_PAST }
@@ -310,29 +323,6 @@ class SportHandler(
                 lastSentBoxScores = allBoxScores
             }
         }
-    }
-
-    private suspend fun addGamePosts(
-        sport: SiteRoute,
-        competitions: List<Competition>
-    ) {
-        // add posts for base sport route
-        postsDB.save(
-            competitions.map { competition ->
-                Post(
-                    id = "$GAME_PREFIX${competition.id}",
-                    userId = SYSTEM,
-                    title = competition.shortName,
-                    content = "${competition.date}||${competition.shortName}",
-                    type = PostType.EVENT,
-                    parentId = "/${sport.name}",
-                    rootId = "$GAME_PREFIX${competition.id}",
-                    data = sport.name,
-                    createdOn = competition.date,
-                    updatedOn = competition.date
-                )
-            }
-        )
     }
 
     suspend fun fillCompetitionData(
