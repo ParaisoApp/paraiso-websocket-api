@@ -68,7 +68,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                     eq("${Competition::season.name}.type", type),
                     eq(Competition::week.name, week),
                 )
-            ).toList()
+            ).sort(ascending(Competition::date.name)).toList()
         }
         SiteRoute.BASKETBALL.name -> {
             val estZone = TimeZone.of("America/New_York")  // for kotlinx.datetime
@@ -120,7 +120,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                         gte(Competition::date.name, Date.from(startOfDay)),
                         lt(Competition::date.name, Date.from(endOfDay)),
                     )
-                ).toList()
+                ).sort(ascending(Competition::date.name)).toList()
             } ?: emptyList()
         }
         else -> emptyList()
