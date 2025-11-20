@@ -29,6 +29,8 @@ data class User(
     val image: UserImage,
     val tag: String?,
     val settings: UserSettings,
+    val tipLinks: Map<String, String>,
+    val socialLinks: Map<String, String>,
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant,
     @Serializable(with = InstantBsonSerializer::class)
@@ -79,21 +81,12 @@ data class UserResponse(
     val image: UserImage,
     val tag: String?,
     val settings: UserSettings,
+    val tipLinks: Map<String, String>,
+    val socialLinks: Map<String, String>,
     val status: UserStatus?,
     val viewerContext: ViewerContext,
     val createdOn: Instant,
     val updatedOn: Instant
-) { companion object }
-
-@Serializable
-data class UserNotifs(
-    val replyIds: Set<String>
-) { companion object }
-
-@Serializable
-data class UserReportNotifs(
-    val userIds: Set<String>,
-    val postIds: Set<String>
 ) { companion object }
 
 @Serializable
@@ -128,6 +121,8 @@ fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
         banned = banned,
         image = image,
         settings = settings,
+        tipLinks = tipLinks,
+        socialLinks = socialLinks,
         tag = tag,
         status = status,
         viewerContext = viewerContext,
@@ -156,6 +151,8 @@ fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
         banned = false, // Default
         image = image,
         settings = settings,
+        tipLinks = tipLinks,
+        socialLinks = socialLinks,
         tag = tag,
         status = status,
         viewerContext = viewerContext,
@@ -183,6 +180,8 @@ fun UserResponse.toUser() =
         banned = banned,
         image = image,
         settings = settings,
+        tipLinks = tipLinks,
+        socialLinks = socialLinks,
         tag = tag,
         createdOn = createdOn,
         updatedOn = updatedOn
@@ -215,6 +214,8 @@ fun UserResponse.Companion.newUser(
             settings = UserSettings.initSettings(),
             tag = null,
             status = UserStatus.CONNECTED,
+            tipLinks = emptyMap(),
+            socialLinks = emptyMap(),
             viewerContext = ViewerContext(
                 following = false,
                 blocking = false
@@ -246,6 +247,8 @@ fun UserResponse.Companion.systemUser() =
             settings = UserSettings.initSettings(),
             tag = null,
             status = UserStatus.DISCONNECTED,
+            tipLinks = emptyMap(),
+            socialLinks = emptyMap(),
             viewerContext = ViewerContext(
                 following = false,
                 blocking = false
