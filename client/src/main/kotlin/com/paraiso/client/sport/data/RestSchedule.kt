@@ -1,7 +1,9 @@
 package com.paraiso.client.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.Status
 import com.paraiso.domain.sport.data.TeamGameStats
+import com.paraiso.domain.sport.data.TeamYearStats
 import com.paraiso.domain.util.convertStringZToInstant
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
@@ -41,21 +43,35 @@ data class RestEvent(
 @Serializable
 data class RestCompetition(
     val id: String,
-    val venue: Venue,
+    val venue: RestVenue,
     val date: String,
     val competitors: List<RestCompetitor>,
     val situation: RestSituation? = null,
-    val status: Status
+    val status: RestStatus
 )
 
 @Serializable
-data class Venue(
+data class RestStatus(
+    val displayClock: String,
+    val period: Int,
+    val type: RestType
+)
+
+@Serializable
+data class RestType(
+    val name: String,
+    val state: String,
+    val completed: Boolean
+)
+
+@Serializable
+data class RestVenue(
     val fullName: String,
-    val address: Address
+    val address: RestAddress
 )
 
 @Serializable
-data class Address(
+data class RestAddress(
     val city: String,
     val state: String? = null
 )
@@ -67,11 +83,30 @@ data class RestCompetitor(
     val winner: Boolean? = null,
     @Serializable(with = ScoreSerializer::class)
     val score: RestScore? = null,
-    val statistics: List<TeamYearStats>? = null,
-    val linescores: List<LineScore>? = null,
-    val records: List<Record>? = null,
+    val statistics: List<RestTeamYearStats>? = null,
+    val linescores: List<RestLineScore>? = null,
+    val records: List<RestRecord>? = null,
     @Serializable(with = RecordSerializer::class)
     val record: List<RestRecordYTD>? = null
+)
+
+@Serializable
+data class RestTeamYearStats(
+    val name: String,
+    val abbreviation: String,
+    val displayValue: String,
+    val rankDisplayValue: String? = null
+)
+
+@Serializable
+data class RestRecord(
+    val name: String,
+    val summary: String
+)
+
+@Serializable
+data class RestLineScore(
+    val value: Double
 )
 
 @Serializable
@@ -139,15 +174,36 @@ fun RestCompetitor.toTeamDomain() = TeamGameStats(
     score = score?.displayValue
 )
 
+fun RestTeamYearStats.toDomain() = TeamYearStats(
+    name = name,
+    abbreviation = abbreviation,
+    displayValue = displayValue,
+    rankDisplayValue = rankDisplayValue
+)
+
+fun RestRecord.toDomain() = RecordDomain(
+    name = name,
+    summary = summary
+)
+
 fun RestRecordYTD.toDomain() = RecordDomain(
     name = description,
     summary = displayValue
 )
 
-fun Venue.toDomain() = VenueDomain(
+fun RestVenue.toDomain() = VenueDomain(
     fullName = fullName,
     city = address.city,
     state = address.state
+)
+
+fun RestStatus.toDomain() = Status(
+    clock = displayClock,
+    period = period,
+    name = type.name,
+    state = type.state,
+    completed = type.completed,
+    completedTime = null
 )
 
 object ScoreSerializer : KSerializer<RestScore> {

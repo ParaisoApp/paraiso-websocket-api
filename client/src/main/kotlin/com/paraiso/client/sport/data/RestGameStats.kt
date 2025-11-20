@@ -9,44 +9,44 @@ import com.paraiso.domain.sport.data.TeamStat as TeamStatDomain
 
 @Serializable
 data class RestGameStats(
-    val boxscore: BoxScore
+    val boxscore: RestBoxScore
 )
 
 @Serializable
-data class BoxScore(
-    val teams: List<TeamWithStats>,
-    val players: List<Player>? = null
+data class RestBoxScore(
+    val teams: List<RestTeamWithStats>,
+    val players: List<RestPlayer>? = null
 )
 
 @Serializable
-data class TeamWithStats(
+data class RestTeamWithStats(
     val team: RestTeam,
-    val statistics: List<TeamStat>
+    val statistics: List<RestTeamStat>
 )
 
 @Serializable
-data class TeamStat(
+data class RestTeamStat(
     val displayValue: String,
     val abbreviation: String? = null,
     val label: String
 )
 
 @Serializable
-data class Player(
+data class RestPlayer(
     val team: RestTeam,
-    val statistics: List<Statistic>
+    val statistics: List<RestStatistic>
 )
 
 @Serializable
-data class Statistic(
+data class RestStatistic(
     val name: String? = null,
     val names: List<String>? = null,
     val descriptions: List<String>,
-    val athletes: List<AthleteBase>
+    val athletes: List<RestAthleteBase>
 )
 
 @Serializable
-data class AthleteBase(
+data class RestAthleteBase(
     val athlete: RestAthlete,
     val starter: Boolean? = null,
     val didNotPlay: Boolean? = null,
@@ -55,18 +55,12 @@ data class AthleteBase(
     val stats: List<String>
 )
 
-@Serializable
-data class Position(
-    val name: String,
-    val abbreviation: String
-)
-
 fun RestGameStats.toDomain(competitionId: String) = BoxScoreDomain(
     id = competitionId,
     teams = boxscore.teams.map { it.toDomain(boxscore.players) }
 )
 
-fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
+fun RestTeamWithStats.toDomain(players: List<RestPlayer>?): FullTeamDomain {
     val stats = players?.first { it.team.id == team.id }?.statistics
     return FullTeamDomain(
         teamId = team.id,
@@ -75,20 +69,20 @@ fun TeamWithStats.toDomain(players: List<Player>?): FullTeamDomain {
     )
 }
 
-fun TeamStat.toDomain() = TeamStatDomain(
+fun RestTeamStat.toDomain() = TeamStatDomain(
     displayValue = displayValue,
     abbreviation = abbreviation,
     label = label
 )
 
-fun Statistic.toDomain() = StatTypesDomain(
+fun RestStatistic.toDomain() = StatTypesDomain(
     name = name,
     names = names ?: emptyList(),
     descriptions = descriptions,
     athletes = athletes.map { it.toDomain() }
 )
 
-fun AthleteBase.toDomain() = AthleteDomain(
+fun RestAthleteBase.toDomain() = AthleteDomain(
     id = athlete.id,
     teamAbbr = null,
     displayName = athlete.displayName,

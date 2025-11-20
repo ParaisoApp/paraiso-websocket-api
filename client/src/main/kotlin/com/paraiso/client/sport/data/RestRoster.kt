@@ -34,7 +34,7 @@ data class RestAthlete(
     val displayWeight: String? = null,
     val displayHeight: String? = null,
     val jersey: String? = null,
-    val position: Position? = null
+    val position: RestPosition? = null
 )
 
 @Serializable
@@ -43,6 +43,12 @@ data class RestCoach(
     val firstName: String,
     val lastName: String,
     val experience: Int
+)
+
+@Serializable
+data class RestPosition(
+    val name: String,
+    val abbreviation: String
 )
 
 fun RestRosterNested.toDomain(sport: SiteRoute) = RosterDomain(

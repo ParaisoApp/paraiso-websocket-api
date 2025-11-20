@@ -131,18 +131,4 @@ class SportApi(private val sportDBs: SportDBs) {
                 competitions = comps.map { it.toResponse() }
             )
         }
-
-//    suspend fun findScoreboard(
-//        sport: String,
-//        year: Int,
-//        type: Int,
-//        modifier: String,
-//        past: Boolean
-//    ) =
-//        sportDBs.scoreboardsDB.findScoreboard(
-//            sport, year, type, modifier, past
-//        )?.let { sb ->
-//            val comps = sportDBs.competitionsDB.findByIdIn(sb.competitions)
-//            sb.toDomain(comps).toResponse()
-//        }
 }

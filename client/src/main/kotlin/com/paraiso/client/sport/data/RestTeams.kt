@@ -6,21 +6,21 @@ import com.paraiso.domain.sport.data.Team as TeamDomain
 
 @Serializable
 data class RestTeams(
-    val sports: List<Sport>
+    val sports: List<RestSport>
 )
 
 @Serializable
-data class Sport(
+data class RestSport(
     val leagues: List<RestLeagueTeams>
 )
 
 @Serializable
 data class RestLeagueTeams(
-    val teams: List<TeamContainer>
+    val teams: List<RestTeamContainer>
 )
 
 @Serializable
-data class TeamContainer(
+data class RestTeamContainer(
     val team: RestTeam
 )
 

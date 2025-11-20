@@ -17,11 +17,11 @@ data class RestLeague(
 data class RestLeagueSeason(
     val year: String,
     val displayName: String,
-    val type: RestType
+    val type: RestSeasonType
 )
 
 @Serializable
-data class RestType(
+data class RestSeasonType(
     val id: String,
     val type: String,
     val name: String

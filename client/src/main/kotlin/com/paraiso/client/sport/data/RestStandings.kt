@@ -20,37 +20,37 @@ data class RestStandingsContent(
 
 @Serializable
 data class RestStandings(
-    val groups: List<Group>
+    val groups: List<RestGroup>
 )
 
 @Serializable
-data class Group(
+data class RestGroup(
     val name: String,
     val abbreviation: String,
-    val standings: Standings? = null,
-    val groups: List<SubGroup>? = null
+    val standings: RestStandingsEntries? = null,
+    val groups: List<RestSubGroup>? = null
 )
 
 @Serializable
-data class SubGroup(
+data class RestSubGroup(
     val name: String,
     val abbreviation: String,
-    val standings: Standings
+    val standings: RestStandingsEntries
 )
 
 @Serializable
-data class Standings(
-    val entries: List<Entry>
+data class RestStandingsEntries(
+    val entries: List<RestEntry>
 )
 
 @Serializable
-data class Entry(
+data class RestEntry(
     val team: RestTeam,
-    val stats: List<BBallStandingsStat>
+    val stats: List<RestBBallStandingsStat>
 )
 
 @Serializable
-data class BBallStandingsStat(
+data class RestBBallStandingsStat(
     val shortDisplayName: String,
     val displayValue: String,
     val displayName: String,
@@ -62,26 +62,26 @@ fun RestStandingsContainer.toDomain(sport: SiteRoute) = AllStandingsDomain(
     standingsGroups = content.standings.groups.map { it.toDomain() }
 )
 
-fun Group.toDomain() = StandingsGroupDomain(
+fun RestGroup.toDomain() = StandingsGroupDomain(
     confName = name,
     confAbbr = abbreviation,
     standings = standings?.entries?.map { it.toDomain() } ?: emptyList(),
     subGroups = groups?.map { it.toDomain() } ?: emptyList()
 )
 
-fun SubGroup.toDomain() = StandingsSubGroupDomain(
+fun RestSubGroup.toDomain() = StandingsSubGroupDomain(
     divName = name,
     divAbbr = abbreviation,
     standings = standings.entries.map { it.toDomain() }
 )
 
-fun Entry.toDomain() = StandingsDomain(
+fun RestEntry.toDomain() = StandingsDomain(
     teamId = team.id,
     seed = team.seed?.toIntOrNull(),
     stats = stats.map { it.toDomain() }
 )
 
-fun BBallStandingsStat.toDomain() = StandingsStatDomain(
+fun RestBBallStandingsStat.toDomain() = StandingsStatDomain(
     shortDisplayName = shortDisplayName,
     displayValue = displayValue,
     displayName = displayName,

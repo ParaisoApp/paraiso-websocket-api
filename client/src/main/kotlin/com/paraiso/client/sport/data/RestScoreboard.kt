@@ -28,25 +28,6 @@ data class RestDay(
 )
 
 @Serializable
-data class TeamYearStats(
-    val name: String,
-    val abbreviation: String,
-    val displayValue: String,
-    val rankDisplayValue: String? = null
-)
-
-@Serializable
-data class LineScore(
-    val value: Double
-)
-
-@Serializable
-data class Record(
-    val name: String,
-    val summary: String
-)
-
-@Serializable
 data class RestSituation(
     val down: Int? = null,
     val distance: Int? = null,
@@ -55,20 +36,6 @@ data class RestSituation(
     val homeTimeouts: Int? = null,
     val awayTimeouts: Int? = null,
     val possession: String? = null
-)
-
-@Serializable
-data class Status(
-    val displayClock: String,
-    val period: Int,
-    val type: Type
-)
-
-@Serializable
-data class Type(
-    val name: String,
-    val state: String,
-    val completed: Boolean
 )
 
 fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
@@ -84,18 +51,6 @@ fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
         competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, week?.number, season, sport) }
     )
 }
-
-fun TeamYearStats.toDomain() = TeamYearStatsDomain(
-    name = name,
-    abbreviation = abbreviation,
-    displayValue = displayValue,
-    rankDisplayValue = rankDisplayValue
-)
-
-fun Record.toDomain() = RecordDomain(
-    name = name,
-    summary = summary
-)
 fun RestSituation.toDomain() = SituationDomain(
     down = down,
     distance = distance,
@@ -104,12 +59,4 @@ fun RestSituation.toDomain() = SituationDomain(
     homeTimeouts = homeTimeouts,
     awayTimeouts = awayTimeouts,
     possession = possession
-)
-fun Status.toDomain() = StatusDomain(
-    clock = displayClock,
-    period = period,
-    name = type.name,
-    state = type.state,
-    completed = type.completed,
-    completedTime = null
 )
