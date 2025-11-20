@@ -42,7 +42,10 @@ import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.websocket.CloseReason
 import io.ktor.websocket.close
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
@@ -55,30 +58,43 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 class WebSocketHandler(
     private val serverId: String,
     private val eventServiceImpl: EventServiceImpl,
-    private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
+    private val userSessions: ConcurrentHashMap<String, ConcurrentHashMap<WebSocketServerSession, Job>>,
     private val services: AppServices
 ) : Klogging {
 
-    suspend fun handleUser(
+    suspend fun connect(
         session: WebSocketServerSession
-    ) = coroutineScope {
+    ) {
+        val existingUser = services.userSessionsApi.getUserById(
+            session.call.request.cookies["guest_id"] ?: "",
+            null
+        )?.copy(status = UserStatus.CONNECTED)
+        // check cookies to see if existing user
+        val currentUser = existingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
+        //if user already exists on server then restart collection jobs (user was asleep, not unmounted)
+        val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { ConcurrentHashMap() }
+        sessionsForUser[session]?.cancelAndJoin()
+        sessionsForUser[session] = coroutineContext[Job]
+            ?: error("No Job found in coroutineContext")
+        session.handleUser(currentUser, existingUser == null)
+    }
+
+    private suspend fun WebSocketServerSession.handleUser(
+        currentUser: UserResponse,
+        newUser: Boolean
+    ) {
         val sessionId = UUID.randomUUID().toString()
         // session state
         val sessionState = SessionState()
-        // check cookies to see if existing user
-        val checkExistingUser = services.userSessionsApi.getUserById(
-            session.call.request.cookies["guest_id"] ?: "",
-            null
-        )
-        val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
         launch {
             // new user so create new route entry
-            if (checkExistingUser == null) {
+            if (newUser) {
                 val now = Clock.System.now()
                 services.routesApi.saveRoutes(
                     listOf(
@@ -120,10 +136,8 @@ class WebSocketHandler(
         launch {
             services.usersApi.saveUser(currentUser)
         }
-        val curUserSessions = userSessions[currentUser.id] ?: emptySet()
-        userSessions[currentUser.id] = curUserSessions + session
 
-        session.joinChat(currentUser, sessionId, sessionState)
+        joinChat(currentUser, sessionId, sessionState)
     }
 
     private suspend fun WebSocketServerSession.joinChat(
@@ -134,7 +148,7 @@ class WebSocketHandler(
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
-        val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
+        ServerState.flowList.map { (type, sharedFlow) ->
             launch {
                 sharedFlow.collect { message ->
                     when (type) {
@@ -203,7 +217,7 @@ class WebSocketHandler(
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
         eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
-        this.parseAndRouteMessages(sessionUser, sessionId, sessionState, messageCollectionJobs)
+        this.parseAndRouteMessages(sessionUser, sessionId, sessionState)
     }
 
     private suspend fun validateMessage(
@@ -226,15 +240,14 @@ class WebSocketHandler(
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
         sessionUser: UserResponse,
         sessionId: String,
-        sessionState: SessionState,
-        messageCollectionJobs: List<Job>
+        sessionState: SessionState
     ) {
         // holds the active jobs for given route
         var activeJobs: Job? = null
         var lastPongTime = Clock.System.now()
 
         // Check for stale sessions
-        val staleCheckJob = launch {
+        launch {
             while (isActive) {
                 delay(10.seconds)
                 val age = Clock.System.now() - lastPongTime
@@ -247,7 +260,7 @@ class WebSocketHandler(
             }
         }
 
-        val pingJob = launch {
+        launch {
             while (isActive) {
                 delay(15.seconds)
                 sendTypedMessage(MessageType.PING, Clock.System.now().toEpochMilliseconds())
@@ -361,7 +374,7 @@ class WebSocketHandler(
                                         launch { services.directMessagesApi.save(dmWithData) }
                                         // if user is on this server then grab session and send dm to user
                                         if(dmWithData.userReceiveId != dmWithData.userId){
-                                            userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
+                                            userSessions[dmWithData.userReceiveId]?.keys?.let { receiveUserSessions ->
                                                 receiveUserSessions.forEach { session ->
                                                     session.sendTypedMessage(MessageType.DM, dmWithData)
                                                 }
@@ -519,10 +532,6 @@ class WebSocketHandler(
         } catch (ex: Exception) {
             logger.error(ex) { "Error parsing incoming data" }
         } finally {
-            messageCollectionJobs.forEach { it.cancelAndJoin() }
-            staleCheckJob.cancelAndJoin()
-            pingJob.cancelAndJoin()
-            activeJobs?.cancelAndJoin()
             // create or update session connected status
             eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->
                 val serverSessions = existingSession.serverSessions.toMutableMap()
@@ -552,12 +561,9 @@ class WebSocketHandler(
                 ServerState.userUpdateFlowMut.emit(userDisconnected)
                 eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
                 // remove current user session from sessions map
-                val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
-                // if user has no more sessions, remove user from server user sessions
-                if (curUserSessions.isEmpty()) {
-                    userSessions.remove(userDisconnected.id)
-                } else {
-                    userSessions[userDisconnected.id] = curUserSessions
+                userSessions.computeIfPresent(userDisconnected.id) { _, sessions ->
+                    sessions.remove(this)?.cancel()
+                    if (sessions.isEmpty()) null else sessions
                 }
                 this.close()
             }

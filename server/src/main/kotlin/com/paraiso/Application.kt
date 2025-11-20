@@ -91,6 +91,7 @@ import io.ktor.server.websocket.webSocket
 import io.lettuce.core.RedisClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -148,7 +149,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val postsDb = PostsDBImpl(database)
     val usersDb = UsersDBImpl(database)
     // setup redis
-    val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
+    val userSessions = ConcurrentHashMap<String, ConcurrentHashMap<WebSocketServerSession, Job>>()
     val redisClient = RedisClient.create(redisUrl)
     val eventServiceImpl = EventServiceImpl(redisClient)
     // subscriber to all incoming messages from other servers
@@ -243,7 +244,7 @@ fun Application.configureSockets(
     configureFeatures(config)
     routing {
         webSocket("chat") {
-            handler.handleUser(this)
+            handler.connect(this)
         }
         route("paraiso_api/v1") {
             authController(services.authApi)
