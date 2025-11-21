@@ -20,14 +20,13 @@ import com.paraiso.server.util.decodeMessage
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
 class MessageHandler(
     private val serverId: String,
-    private val userSessions: ConcurrentHashMap<String, ConcurrentHashMap<WebSocketServerSession, Job>>,
+    private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
     private val eventServiceImpl: EventServiceImpl
 ) : Klogging {
     suspend fun messageJobs() = coroutineScope {
@@ -58,7 +57,7 @@ class MessageHandler(
                         "server:$serverId" -> {
                             val (userId, payload) = message.split(":", limit = 2)
                             decodeMessage<DirectMessageResponse>(payload)?.let { dm ->
-                                userSessions[userId]?.keys?.forEach { session ->
+                                userSessions[userId]?.forEach { session ->
                                     session.sendTypedMessage(MessageType.DM, dm)
                                 }
                             }
