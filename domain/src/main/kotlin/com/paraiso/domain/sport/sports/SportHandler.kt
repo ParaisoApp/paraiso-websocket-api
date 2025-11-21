@@ -18,6 +18,7 @@ import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
+import com.paraiso.domain.util.ServerConfig.autoBuildPosts
 import io.klogging.Klogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -149,7 +150,9 @@ class SportHandler(
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
-                    addTeamPosts(sport, teams, schedulesRes)
+                    if(autoBuildPosts) {
+                        addTeamPosts(sport, teams, schedulesRes)
+                    }
                 }
             }
         }
