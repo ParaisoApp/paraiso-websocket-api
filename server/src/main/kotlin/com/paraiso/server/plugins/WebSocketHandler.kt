@@ -43,18 +43,21 @@ import io.ktor.server.websocket.converter
 import io.ktor.websocket.CloseReason
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 class WebSocketHandler(
@@ -64,21 +67,31 @@ class WebSocketHandler(
     private val services: AppServices
 ) : Klogging {
 
-    suspend fun handleUser(
-        session: WebSocketServerSession
-    ) = coroutineScope {
-        val sessionId = UUID.randomUUID().toString()
-        // session state
-        val sessionState = SessionState()
-        // check cookies to see if existing user
-        val checkExistingUser = services.userSessionsApi.getUserById(
+    suspend fun connect(
+    session: WebSocketServerSession
+    ) {
+        val existingUser = services.userSessionsApi.getUserById(
             session.call.request.cookies["guest_id"] ?: "",
             null
         )?.copy(status = UserStatus.CONNECTED)
-        val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
+        // check cookies to see if existing user
+        val currentUser = existingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
+        // Track this session in the local set
+        val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { emptySet() }
+        userSessions[currentUser.id] = sessionsForUser + session
+        session.handleUser(currentUser, existingUser == null)
+    }
+
+    private suspend fun WebSocketServerSession.handleUser(
+        currentUser: UserResponse,
+        newUser: Boolean
+    ) {
+        val sessionId = UUID.randomUUID().toString()
+        // session state
+        val sessionState = SessionState()
         launch {
             // new user so create new route entry
-            if (checkExistingUser == null) {
+            if (newUser) {
                 val now = Clock.System.now()
                 services.routesApi.saveRoutes(
                     listOf(
@@ -117,10 +130,8 @@ class WebSocketHandler(
         launch {
             services.usersApi.saveUser(currentUser)
         }
-        val curUserSessions = userSessions[currentUser.id] ?: emptySet()
-        userSessions[currentUser.id] = curUserSessions + session
 
-        session.joinChat(currentUser, sessionId, sessionState)
+        joinChat(currentUser, sessionId, sessionState)
     }
 
     private suspend fun WebSocketServerSession.joinChat(
@@ -131,7 +142,7 @@ class WebSocketHandler(
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
-        val messageCollectionJobs = ServerState.flowList.map { (type, sharedFlow) ->
+        ServerState.flowList.map { (type, sharedFlow) ->
             launch {
                 sharedFlow.collect { message ->
                     when (type) {
@@ -200,7 +211,7 @@ class WebSocketHandler(
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
         eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
-        parseAndRouteMessages(sessionUser, sessionId, sessionState, messageCollectionJobs)
+        parseAndRouteMessages(sessionUser, sessionId, sessionState)
     }
 
     private suspend fun validateMessage(
@@ -223,15 +234,14 @@ class WebSocketHandler(
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
         sessionUser: UserResponse,
         sessionId: String,
-        sessionState: SessionState,
-        messageCollectionJobs: List<Job>
+        sessionState: SessionState
     ) {
         // holds the active jobs for given route
         var activeJobs: Job? = null
         var lastPongTime = Clock.System.now()
 
         // Check for stale sessions
-        val staleCheckJob = launch {
+        launch {
             while (isActive) {
                 delay(10.seconds)
                 val age = Clock.System.now() - lastPongTime
@@ -244,7 +254,7 @@ class WebSocketHandler(
             }
         }
 
-        val pingJob = launch {
+        launch {
             while (isActive) {
                 delay(15.seconds)
                 sendTypedMessage(MessageType.PING, Clock.System.now().toEpochMilliseconds())
@@ -516,45 +526,40 @@ class WebSocketHandler(
         } catch (ex: Exception) {
             logger.error(ex) { "Error parsing incoming data" }
         } finally {
-            messageCollectionJobs.forEach { it.cancelAndJoin() }
-            staleCheckJob.cancelAndJoin()
-            pingJob.cancelAndJoin()
-            activeJobs?.cancelAndJoin()
-            // create or update session connected status
-            eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->
-                val serverSessions = existingSession.serverSessions.toMutableMap()
-
-                // Remove this sessionId from the current server’s set
-                val remainingSessions = (serverSessions[serverId] ?: emptySet()) - sessionId
-
-                if (remainingSessions.isEmpty()) {
-                    // No sessions left for this server → remove server entry
-                    serverSessions.remove(serverId)
-                } else {
-                    // Still sessions left → update the set
-                    serverSessions[serverId] = remainingSessions
-                }
-
-                if (serverSessions.isEmpty()) {
-                    // No sessions on any server → user fully disconnected
-                    eventServiceImpl.deleteUserSession(sessionUser.id)
-                } else {
-                    // Update stored session info
-                    eventServiceImpl.saveUserSession(existingSession.copy(serverSessions = serverSessions))
-                }
-            }
-            services.userSessionsApi.getUserById(sessionUser.id, null)
-                ?.copy(status = UserStatus.DISCONNECTED)
-                ?.let { userDisconnected ->
-                // remove current user session from sessions map
-                val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
-                // if user has no more sessions, remove user from server user sessions
-                if (curUserSessions.isEmpty()) {
-                    userSessions.remove(userDisconnected.id)
-                    ServerState.userUpdateFlowMut.emit(userDisconnected)
-                    eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
-                } else {
-                    userSessions[userDisconnected.id] = curUserSessions
+            val session = this
+            withContext(NonCancellable) {
+                // create or update session connected status
+                eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->
+                    val serverSessions = existingSession.serverSessions.toMutableMap()
+                    // Remove this sessionId from the current server’s set
+                    val remainingSessions = (serverSessions[serverId] ?: emptySet()) - sessionId
+                    if (remainingSessions.isEmpty()) {
+                        serverSessions.remove(serverId)
+                    } else {
+                        serverSessions[serverId] = remainingSessions
+                    }
+                    val userDisconnected = services.userSessionsApi.getUserById(sessionUser.id, null)
+                        ?.copy(status = UserStatus.DISCONNECTED)
+                    if (serverSessions.isEmpty()) {
+                        // Fully disconnected, remove from redis and publish out user disconnect
+                        eventServiceImpl.deleteUserSession(sessionUser.id)
+                        if (userDisconnected != null) {
+                            ServerState.userUpdateFlowMut.emit(userDisconnected)
+                            eventServiceImpl.publish(
+                                MessageType.USER_UPDATE.name,
+                                "$serverId:${Json.encodeToString(userDisconnected)}"
+                            )
+                        }
+                    } else {
+                        // Not fully disconnected so just update redis session list
+                        eventServiceImpl.saveUserSession(existingSession.copy(serverSessions = serverSessions))
+                    }
+                    // remove user from local map if no sessions remain on server
+                    userDisconnected?.id?.let{userId ->
+                        userSessions.computeIfPresent(userId) { _, sessionsSet ->
+                            (sessionsSet - session).ifEmpty { null }
+                        }
+                    }
                 }
             }
         }
