@@ -98,24 +98,21 @@ class WebSocketHandler(
         }
         launch {
             // create or update session connected status
-            eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->
+            val sessionToSave = eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->
                 val serverSessions = existingSession.serverSessions.toMutableMap()
                 serverSessions[serverId] = (serverSessions[serverId] ?: emptySet()) + sessionId
-                eventServiceImpl.saveUserSession(
-                    existingSession.copy(
-                        serverSessions = serverSessions
-                    )
+                existingSession.copy(
+                    serverSessions = serverSessions
                 )
             } ?: run {
-                eventServiceImpl.saveUserSession(
-                    UserSessionResponse(
-                        id = UUID.randomUUID().toString(),
-                        userId = currentUser.id,
-                        serverSessions = mapOf(serverId to setOf(sessionId)),
-                        status = UserStatus.CONNECTED,
-                    ).toDomain()
-                )
+                UserSessionResponse(
+                    id = UUID.randomUUID().toString(),
+                    userId = currentUser.id,
+                    serverSessions = mapOf(serverId to setOf(sessionId)),
+                    status = UserStatus.CONNECTED,
+                ).toDomain()
             }
+            eventServiceImpl.saveUserSession(sessionToSave)
         }
         launch {
             services.usersApi.saveUser(currentUser)
@@ -203,7 +200,7 @@ class WebSocketHandler(
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
         eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
-        this.parseAndRouteMessages(sessionUser, sessionId, sessionState, messageCollectionJobs)
+        parseAndRouteMessages(sessionUser, sessionId, sessionState, messageCollectionJobs)
     }
 
     private suspend fun validateMessage(
@@ -549,17 +546,16 @@ class WebSocketHandler(
             services.userSessionsApi.getUserById(sessionUser.id, null)
                 ?.copy(status = UserStatus.DISCONNECTED)
                 ?.let { userDisconnected ->
-                ServerState.userUpdateFlowMut.emit(userDisconnected)
-                eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
                 // remove current user session from sessions map
                 val curUserSessions = userSessions[userDisconnected.id]?.minus(this) ?: emptySet()
                 // if user has no more sessions, remove user from server user sessions
                 if (curUserSessions.isEmpty()) {
                     userSessions.remove(userDisconnected.id)
+                    ServerState.userUpdateFlowMut.emit(userDisconnected)
+                    eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(userDisconnected)}")
                 } else {
                     userSessions[userDisconnected.id] = curUserSessions
                 }
-                this.close()
             }
         }
     }
