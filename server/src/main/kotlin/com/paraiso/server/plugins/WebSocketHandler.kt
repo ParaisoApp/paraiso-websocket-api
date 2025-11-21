@@ -74,7 +74,7 @@ class WebSocketHandler(
         val checkExistingUser = services.userSessionsApi.getUserById(
             session.call.request.cookies["guest_id"] ?: "",
             null
-        )
+        )?.copy(status = UserStatus.CONNECTED)
         val currentUser = checkExistingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
         launch {
             // new user so create new route entry
