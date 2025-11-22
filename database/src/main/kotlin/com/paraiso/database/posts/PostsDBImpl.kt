@@ -32,8 +32,6 @@ import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.util.Constants.BASKETBALL_PREFIX
-import com.paraiso.domain.util.Constants.FOOTBALL_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.USER_PREFIX
@@ -262,7 +260,11 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 )
             )
         }
-        if (basePostName == SiteRoute.BASKETBALL.name || basePostName == SiteRoute.FOOTBALL.name) {
+        if (
+            basePostName == SiteRoute.BASKETBALL.name ||
+            basePostName == SiteRoute.FOOTBALL.name ||
+            basePostName == SiteRoute.HOCKEY.name
+            ) {
             // for sports add their respective gameposts
             homeFilters.add(
                 and(

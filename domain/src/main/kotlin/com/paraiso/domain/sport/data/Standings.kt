@@ -34,9 +34,9 @@ data class Standings(
 
 @Serializable
 data class StandingsStat(
-    val shortDisplayName: String,
-    val displayValue: String,
-    val displayName: String,
+    val shortDisplayName: String?,
+    val displayValue: String?,
+    val displayName: String?,
     val value: Double?
 )
 
@@ -49,9 +49,9 @@ data class StandingsResponse(
 
 @Serializable
 data class StandingsStatResponse(
-    val shortDisplayName: String,
-    val displayValue: String,
-    val displayName: String,
+    val shortDisplayName: String?,
+    val displayValue: String?,
+    val displayName: String?,
     val value: Double?
 )
 

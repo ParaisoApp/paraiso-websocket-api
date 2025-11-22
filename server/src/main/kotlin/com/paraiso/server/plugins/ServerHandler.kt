@@ -61,6 +61,16 @@ class ServerHandler(
                         about = null,
                         createdOn = now,
                         updatedOn = now
+                    ),
+                    RouteDetails(
+                        id = "/s/hockey",
+                        route = SiteRoute.HOCKEY,
+                        modifier = null,
+                        title = "${SiteRoute.HOCKEY}",
+                        userFavorites = 0,
+                        about = null,
+                        createdOn = now,
+                        updatedOn = now
                     )
                 )
             )

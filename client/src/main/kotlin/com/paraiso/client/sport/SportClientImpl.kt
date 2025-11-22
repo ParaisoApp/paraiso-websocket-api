@@ -7,7 +7,7 @@ import com.paraiso.client.sport.data.RestRoster
 import com.paraiso.client.sport.data.RestRosterNested
 import com.paraiso.client.sport.data.RestSchedule
 import com.paraiso.client.sport.data.RestScoreboard
-import com.paraiso.client.sport.data.RestStandingsContainer
+import com.paraiso.client.sport.data.RestStandings
 import com.paraiso.client.sport.data.RestTeams
 import com.paraiso.client.sport.data.toDomain
 import com.paraiso.client.util.BaseAdapter
@@ -44,6 +44,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             val response: RestLeague = getHttpClient().use { httpClient ->
@@ -67,6 +68,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard"
@@ -94,6 +96,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard?$date"
@@ -117,6 +120,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/summary?event=$competitionId"
@@ -136,14 +140,20 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
     }
     override suspend fun getStandings(sport: SiteRoute): AllStandingsDomain? = withContext(dispatcher) {
         try {
-            var url = clientConfig.cdnApiBaseUrl
+            var url = clientConfig.statsBaseUrlAlt
             when (sport) {
-                SiteRoute.BASKETBALL -> url += clientConfig.bballCdnUri
-                SiteRoute.FOOTBALL -> url += clientConfig.fballCdnUri
+                SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
+                SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
-            url += "/standings?xhr=1"
-            val standingsResponse: RestStandingsContainer = getHttpClient().use { httpClient ->
+            url += "/standings"
+            when (sport) {
+                SiteRoute.FOOTBALL -> url += "?type=0&level=3"
+                SiteRoute.HOCKEY -> url += "?type=0&level=3"
+                else -> { logger.info { "No subgroup needed" } }
+            }
+            val standingsResponse: RestStandings = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
@@ -163,6 +173,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams"
@@ -186,6 +197,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/roster"
@@ -206,6 +218,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val parsedResponse = when (sport) {
                 SiteRoute.BASKETBALL -> json.decodeFromString<RestRoster>(response).toDomain(sport)
                 SiteRoute.FOOTBALL -> json.decodeFromString<RestRosterNested>(response).toDomain(sport)
+                SiteRoute.HOCKEY -> json.decodeFromString<RestRosterNested>(response).toDomain(sport)
                 else -> { null }
             }
             parsedResponse
@@ -224,6 +237,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/leaders"
@@ -252,6 +266,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/teams/$teamId/leaders"
@@ -275,6 +290,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
+                SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/schedule"

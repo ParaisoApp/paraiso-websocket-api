@@ -9,18 +9,8 @@ import com.paraiso.domain.sport.data.StandingsStat as StandingsStatDomain
 import com.paraiso.domain.sport.data.StandingsSubGroup as StandingsSubGroupDomain
 
 @Serializable
-data class RestStandingsContainer(
-    val content: RestStandingsContent
-)
-
-@Serializable
-data class RestStandingsContent(
-    val standings: RestStandings
-)
-
-@Serializable
 data class RestStandings(
-    val groups: List<RestGroup>
+    val children: List<RestGroup>
 )
 
 @Serializable
@@ -28,7 +18,7 @@ data class RestGroup(
     val name: String,
     val abbreviation: String,
     val standings: RestStandingsEntries? = null,
-    val groups: List<RestSubGroup>? = null
+    val children: List<RestSubGroup>? = null
 )
 
 @Serializable
@@ -46,27 +36,27 @@ data class RestStandingsEntries(
 @Serializable
 data class RestEntry(
     val team: RestTeam,
-    val stats: List<RestBBallStandingsStat>
+    val stats: List<RestStandingsStat>
 )
 
 @Serializable
-data class RestBBallStandingsStat(
-    val shortDisplayName: String,
-    val displayValue: String,
-    val displayName: String,
-    val value: String
+data class RestStandingsStat(
+    val shortDisplayName: String? = null,
+    val displayValue: String? = null,
+    val displayName: String? = null,
+    val value: String? = null
 )
 
-fun RestStandingsContainer.toDomain(sport: SiteRoute) = AllStandingsDomain(
+fun RestStandings.toDomain(sport: SiteRoute) = AllStandingsDomain(
     id = sport.toString(),
-    standingsGroups = content.standings.groups.map { it.toDomain() }
+    standingsGroups = children.map { it.toDomain() }
 )
 
 fun RestGroup.toDomain() = StandingsGroupDomain(
     confName = name,
     confAbbr = abbreviation,
     standings = standings?.entries?.map { it.toDomain() } ?: emptyList(),
-    subGroups = groups?.map { it.toDomain() } ?: emptyList()
+    subGroups = children?.map { it.toDomain() } ?: emptyList()
 )
 
 fun RestSubGroup.toDomain() = StandingsSubGroupDomain(
@@ -81,9 +71,9 @@ fun RestEntry.toDomain() = StandingsDomain(
     stats = stats.map { it.toDomain() }
 )
 
-fun RestBBallStandingsStat.toDomain() = StandingsStatDomain(
+fun RestStandingsStat.toDomain() = StandingsStatDomain(
     shortDisplayName = shortDisplayName,
     displayValue = displayValue,
     displayName = displayName,
-    value = value.toDoubleOrNull()
+    value = value?.toDoubleOrNull()
 )

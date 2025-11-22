@@ -71,58 +71,83 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
             ).sort(ascending(Competition::date.name)).toList()
         }
         SiteRoute.BASKETBALL.name -> {
-            val estZone = TimeZone.of("America/New_York")  // for kotlinx.datetime
-            val estJavaZone = ZoneId.of("America/New_York") // for java.time conversions
+            getNextDay(
+                sport,
+                year,
+                type,
+                modifier,
+                past
+            )
+        }
+        SiteRoute.HOCKEY.name -> {
+            getNextDay(
+                sport,
+                year,
+                type,
+                modifier,
+                past
+            )
+        }
+        else -> emptyList()
+    }
 
-            // Convert input instant to UTC local date (input is 00:00 so use utc)
-            val estLocalDate = Instant.parse(modifier).toLocalDateTime(TimeZone.UTC).date
+    private suspend fun getNextDay(
+        sport: String,
+        year: Int,
+        type: Int,
+        modifier: String,
+        past: Boolean
+    ) : List<Competition> {
+        val estZone = TimeZone.of("America/New_York")  // for kotlinx.datetime
+        val estJavaZone = ZoneId.of("America/New_York") // for java.time conversions
 
-            // Determine boundary instant depending on past/future suing eastern time zone
-            val boundaryInstant = if (past) {
-                estLocalDate.atStartOfDayIn(estZone)
-            } else {
-                estLocalDate.plus(1, DateTimeUnit.DAY).atStartOfDayIn(estZone)
-            }
+        // Convert input instant to UTC local date (input is 00:00 so use utc)
+        val estLocalDate = Instant.parse(modifier).toLocalDateTime(TimeZone.UTC).date
 
-            val boundaryDate = Date.from(boundaryInstant.toJavaInstant())
+        // Determine boundary instant depending on past/future suing eastern time zone
+        val boundaryInstant = if (past) {
+            estLocalDate.atStartOfDayIn(estZone)
+        } else {
+            estLocalDate.plus(1, DateTimeUnit.DAY).atStartOfDayIn(estZone)
+        }
 
-            // Build direction filter
-            val direction = if (past) lt(Competition::date.name, boundaryDate)
-            else gt(Competition::date.name, boundaryDate)
+        val boundaryDate = Date.from(boundaryInstant.toJavaInstant())
 
-            val directionSort = if (past) descending(Competition::date.name)
-            else ascending(Competition::date.name)
+        // Build direction filter
+        val direction = if (past) lt(Competition::date.name, boundaryDate)
+        else gt(Competition::date.name, boundaryDate)
 
-            // Find nearest event in that direction
-            val nextEvent = collection.find(
+        val directionSort = if (past) descending(Competition::date.name)
+        else ascending(Competition::date.name)
+
+        // Find nearest event in that direction
+        val nextEvent = collection.find(
+            and(
+                eq(Competition::sport.name, sport),
+                eq("${Competition::season.name}.year", year),
+                eq("${Competition::season.name}.type", type),
+                direction
+            )
+        )
+            .sort(directionSort)
+            .limit(1)
+            .firstOrNull()
+
+        // Compute start/end of that event's day in EST
+        return nextEvent?.date?.toJavaInstant()?.atZone(estJavaZone)?.toLocalDate()?.let{nextEventLocalDate ->
+            val startOfDay = nextEventLocalDate.atStartOfDay(estJavaZone).toInstant()
+            val endOfDay = nextEventLocalDate.plusDays(1).atStartOfDay(estJavaZone).toInstant()
+
+            // Fetch all events on that day
+            collection.find(
                 and(
                     eq(Competition::sport.name, sport),
                     eq("${Competition::season.name}.year", year),
                     eq("${Competition::season.name}.type", type),
-                    direction
+                    gte(Competition::date.name, Date.from(startOfDay)),
+                    lt(Competition::date.name, Date.from(endOfDay)),
                 )
-            )
-                .sort(directionSort)
-                .limit(1)
-                .firstOrNull()
-
-            // Compute start/end of that event's day in EST
-            nextEvent?.date?.toJavaInstant()?.atZone(estJavaZone)?.toLocalDate()?.let{nextEventLocalDate ->
-                val startOfDay = nextEventLocalDate.atStartOfDay(estJavaZone).toInstant()
-                val endOfDay = nextEventLocalDate.plusDays(1).atStartOfDay(estJavaZone).toInstant()
-
-                // Fetch all events on that day
-                collection.find(
-                    and(
-                        eq(Competition::sport.name, sport),
-                        eq("${Competition::season.name}.year", year),
-                        eq("${Competition::season.name}.type", type),
-                        gte(Competition::date.name, Date.from(startOfDay)),
-                        lt(Competition::date.name, Date.from(endOfDay)),
-                    )
-                ).sort(ascending(Competition::date.name)).toList()
-            } ?: emptyList()
-        }
-        else -> emptyList()
+            ).sort(ascending(Competition::date.name)).toList()
+        } ?: emptyList()
     }
 }

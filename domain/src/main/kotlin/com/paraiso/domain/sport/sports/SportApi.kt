@@ -27,10 +27,13 @@ class SportApi(private val sportDBs: SportDBs) {
                 standingsGroup.confAbbr to standingsGroup.standings.map { it.toResponse() }
             }
         } else {
-            sportDBs.standingsDB.findById(sport)?.standingsGroups?.flatMap { confGroup ->
-                confGroup.subGroups
-            }?.associate { standingsSubGroup ->
-                standingsSubGroup.divName to standingsSubGroup.standings.map { it.toResponse() }
+            sportDBs.standingsDB.findById(sport)?.standingsGroups?.let {standingsGroups ->
+                standingsGroups.associate { confGroup ->
+                    val allStandings = confGroup.subGroups.flatMap { standingsSubGroup ->
+                        standingsSubGroup.standings.map { it.toResponse() }
+                    }
+                    confGroup.confAbbr to allStandings
+                }
             }
         }
     suspend fun findLeaders(sport: String, season: Int, type: Int) =

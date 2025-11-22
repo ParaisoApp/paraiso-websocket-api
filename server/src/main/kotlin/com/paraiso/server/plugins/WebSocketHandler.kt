@@ -573,6 +573,7 @@ class WebSocketHandler(
                 when (route.modifier) {
                     SiteRoute.BASKETBALL -> SportJobs().sportJobs(session, SiteRoute.BASKETBALL.name)
                     SiteRoute.FOOTBALL -> SportJobs().sportJobs(session, SiteRoute.FOOTBALL.name)
+                    SiteRoute.HOCKEY -> SportJobs().sportJobs(session, SiteRoute.HOCKEY.name)
                     else -> {
                         logger.error("Unrecognized Sport: $route")
                         emptyList()

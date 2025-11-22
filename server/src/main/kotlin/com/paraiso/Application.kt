@@ -212,6 +212,9 @@ fun Application.module(jobScope: CoroutineScope) {
             sportHandler.bootJobs(SiteRoute.BASKETBALL)
         }
         jobScope.launch {
+            sportHandler.bootJobs(SiteRoute.HOCKEY)
+        }
+        jobScope.launch {
             serverHandler.bootJobs()
         }
     }
