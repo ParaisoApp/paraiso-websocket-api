@@ -27,7 +27,7 @@ data class TeamStat(
 @Serializable
 data class StatTypes(
     val name: String?,
-    val names: List<String>,
+    val labels: List<String>,
     val descriptions: List<String>,
     val athletes: List<Athlete>
 )
@@ -55,7 +55,7 @@ data class TeamStatResponse(
 @Serializable
 data class StatTypesResponse(
     val name: String?,
-    val names: List<String>,
+    val labels: List<String>,
     val descriptions: List<String>,
     val athletes: List<AthleteResponse>
 )
@@ -83,7 +83,7 @@ fun TeamStat.toResponse() =
 fun StatTypes.toResponse() =
     StatTypesResponse(
         name = name,
-        names = names,
+        labels = labels,
         descriptions = descriptions,
         athletes = athletes.map { it.toResponse() }
     )

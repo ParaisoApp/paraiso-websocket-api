@@ -40,8 +40,8 @@ data class RestPlayer(
 @Serializable
 data class RestStatistic(
     val name: String? = null,
-    val names: List<String>? = null,
     val descriptions: List<String>,
+    val labels: List<String>,
     val athletes: List<RestAthleteBase>
 )
 
@@ -77,7 +77,7 @@ fun RestTeamStat.toDomain() = TeamStatDomain(
 
 fun RestStatistic.toDomain() = StatTypesDomain(
     name = name,
-    names = names ?: emptyList(),
+    labels = labels,
     descriptions = descriptions,
     athletes = athletes.map { it.toDomain() }
 )
