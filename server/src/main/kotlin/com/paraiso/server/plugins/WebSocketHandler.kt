@@ -44,6 +44,7 @@ import io.ktor.websocket.CloseReason
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
@@ -52,12 +53,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 class WebSocketHandler(
@@ -248,7 +247,7 @@ class WebSocketHandler(
 
                 if (age > 30.seconds) {
                     println("Closing stale WebSocket: no PONG in $age user ID ${sessionUser.id}")
-                    close(CloseReason(CloseReason.Codes.NORMAL, "Stale connection"))
+                    cancel("Stale connection detected")
                     break
                 }
             }
