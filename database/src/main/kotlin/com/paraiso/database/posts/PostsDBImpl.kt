@@ -35,8 +35,10 @@ import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.USER_PREFIX
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -57,21 +59,29 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     private val collection = database.getCollection("posts", Post::class.java)
 
     override suspend fun findById(id: String) =
-        collection.find(eq(ID, id)).limit(1).firstOrNull()
+        withContext(Dispatchers.IO) {
+            collection.find(eq(ID, id)).limit(1).firstOrNull()
+        }
 
     override suspend fun findByIdsIn(ids: Set<String>) =
-        collection.find(`in`(ID, ids)).toList()
+        withContext(Dispatchers.IO) {
+            collection.find(`in`(ID, ids)).toList()
+        }
 
     override suspend fun findByPartial(partial: String): List<Post> =
-        collection.find(
-            or(
-                regex(Post::title.name, partial, "i"),
-                regex(Post::content.name, partial, "i")
-            )
-        ).limit(PARTIAL_RETRIEVE_LIM).toList()
+        withContext(Dispatchers.IO) {
+            collection.find(
+                or(
+                    regex(Post::title.name, partial, "i"),
+                    regex(Post::content.name, partial, "i")
+                )
+            ).limit(PARTIAL_RETRIEVE_LIM).toList()
+        }
 
     override suspend fun findByUserId(userId: String) =
-        collection.find(eq(Post::userId.name, userId)).toList()
+        withContext(Dispatchers.IO) {
+            collection.find(eq(Post::userId.name, userId)).toList()
+        }
 
     private fun getInitAggPipeline(
         initialFilter: Bson
@@ -247,59 +257,60 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
-    ): List<Post> {
-        val homeFilters = mutableListOf(
-            eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
-        )
-        if (postSearchId == HOME_PREFIX) {
-            // home page should have all root posts - will eventually resolve to following
-            homeFilters.add(
-                and(
-                    eqId(Post::rootId),
-                    not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
-                )
+    ) =
+        withContext(Dispatchers.IO) {
+            val homeFilters = mutableListOf(
+                eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
             )
-        }
-        if (
-            basePostName == SiteRoute.BASKETBALL.name ||
-            basePostName == SiteRoute.FOOTBALL.name ||
-            basePostName == SiteRoute.HOCKEY.name
-            ) {
-            // for sports add their respective gameposts
-            homeFilters.add(
-                and(
-                    eq(Post::type.name, PostType.EVENT.name),
-                    eq(Post::data.name, basePostName), // route is housed in data field
-                    not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
+            if (postSearchId == HOME_PREFIX) {
+                // home page should have all root posts - will eventually resolve to following
+                homeFilters.add(
+                    and(
+                        eqId(Post::rootId),
+                        not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
+                    )
                 )
+            }
+            if (
+                basePostName == SiteRoute.BASKETBALL.name ||
+                basePostName == SiteRoute.FOOTBALL.name ||
+                basePostName == SiteRoute.HOCKEY.name
+                ) {
+                // for sports add their respective gameposts
+                homeFilters.add(
+                    and(
+                        eq(Post::type.name, PostType.EVENT.name),
+                        eq(Post::data.name, basePostName), // route is housed in data field
+                        not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
+                    )
+                )
+            }
+
+            val orConditions = listOf(
+                eq(Post::parentId.name, postSearchId),
+                eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX)),
+                or(homeFilters)
             )
+
+            val andConditions = mutableListOf(
+                or(orConditions),
+                gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
+                ne(Post::status.name, PostStatus.DELETED),
+                `in`(Post::type.name, filters.postTypes),
+                nin(ID, filters.postIds),
+                // handle events (which may be created early but create date of event date)
+                lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
+            )
+
+            val initialFilter = and(andConditions)
+
+            val pipeline = getInitAggPipeline(initialFilter)
+            pipeline.add(getUserRoleCondition(filters, userFollowing))
+            pipeline.addAll(getSort(sortType))
+            pipeline.add(limit(RETRIEVE_LIM))
+
+            return@withContext collection.aggregate<Post>(pipeline).toList()
         }
-
-        val orConditions = listOf(
-            eq(Post::parentId.name, postSearchId),
-            eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX)),
-            or(homeFilters)
-        )
-
-        val andConditions = mutableListOf(
-            or(orConditions),
-            gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
-            ne(Post::status.name, PostStatus.DELETED),
-            `in`(Post::type.name, filters.postTypes),
-            nin(ID, filters.postIds),
-            // handle events (which may be created early but create date of event date)
-            lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
-        )
-
-        val initialFilter = and(andConditions)
-
-        val pipeline = getInitAggPipeline(initialFilter)
-        pipeline.add(getUserRoleCondition(filters, userFollowing))
-        pipeline.addAll(getSort(sortType))
-        pipeline.add(limit(RETRIEVE_LIM))
-
-        return collection.aggregate<Post>(pipeline).toList()
-    }
 
     override suspend fun findByParentId(
         parentId: String,
@@ -307,75 +318,85 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
-    ): List<Post> {
-        val initialFilter = and(
-            eq(Post::parentId.name, parentId),
-            gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
-            ne(Post::status.name, PostStatus.DELETED),
-            `in`(Post::type.name, filters.postTypes)
-        )
-
-        val pipeline = getInitAggPipeline(initialFilter)
-        pipeline.add(getUserRoleCondition(filters, userFollowing))
-        pipeline.addAll(getSort(sortType))
-        return collection.aggregate<Post>(pipeline).toList()
-    }
-
-    override suspend fun save(posts: List<Post>): Int {
-        val bulkOps = posts.map { post ->
-            ReplaceOneModel(
-                eq(ID, post.id),
-                post,
-                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+    ) =
+        withContext(Dispatchers.IO) {
+            val initialFilter = and(
+                eq(Post::parentId.name, parentId),
+                gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
+                ne(Post::status.name, PostStatus.DELETED),
+                `in`(Post::type.name, filters.postTypes)
             )
+
+            val pipeline = getInitAggPipeline(initialFilter)
+            pipeline.add(getUserRoleCondition(filters, userFollowing))
+            pipeline.addAll(getSort(sortType))
+            return@withContext collection.aggregate<Post>(pipeline).toList()
         }
-        return collection.bulkWrite(bulkOps).modifiedCount
-    }
+
+    override suspend fun save(posts: List<Post>) =
+        withContext(Dispatchers.IO) {
+            val bulkOps = posts.map { post ->
+                ReplaceOneModel(
+                    eq(ID, post.id),
+                    post,
+                    ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+                )
+            }
+            return@withContext collection.bulkWrite(bulkOps).modifiedCount
+        }
 
     override suspend fun editPost(message: Message) =
-        collection.updateOne(
-            eq(ID, message.id),
-            combine(
-                set(Post::title.name, message.title),
-                set(Post::content.name, message.content),
-                set(Post::media.name, message.media),
-                set(Post::data.name, message.data),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq(ID, message.id),
+                combine(
+                    set(Post::title.name, message.title),
+                    set(Post::content.name, message.content),
+                    set(Post::media.name, message.media),
+                    set(Post::data.name, message.data),
+                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
 
     override suspend fun setPostDeleted(
         id: String
     ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                set(Post::status.name, PostStatus.DELETED),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq(ID, id),
+                combine(
+                    set(Post::status.name, PostStatus.DELETED),
+                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
 
     override suspend fun setScore(
         id: String,
         score: Int
     ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                inc(Post::score.name, score),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq(ID, id),
+                combine(
+                    inc(Post::score.name, score),
+                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
 
     override suspend fun setCount(
         id: String,
         increment: Int // +1 for inc | -1 for dec
     ) =
-        collection.updateOne(
-            eq(ID, id),
-            combine(
-                inc(Post::count.name, 1 * increment),
-                set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-        ).modifiedCount
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq(ID, id),
+                combine(
+                    inc(Post::count.name, 1 * increment),
+                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
 }

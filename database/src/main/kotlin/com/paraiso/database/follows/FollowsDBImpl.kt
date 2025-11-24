@@ -11,55 +11,66 @@ import com.paraiso.domain.blocks.Block
 import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.follows.FollowsDB
 import com.paraiso.domain.util.Constants.ID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 
 class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
 
     private val collection = database.getCollection("follows", Follow::class.java)
 
     override suspend fun findIn(followerId: String, followeeIds: List<String>) =
-        if(followeeIds.size == 1){
-            collection.find(
-                and(
-                    eq(Follow::followerId.name, followerId),
-                    eq(Follow::followeeId.name, followeeIds.firstOrNull())
-                )
-            ).toList()
-        }else{
-            collection.find(
-                and(
-                    eq(Follow::followerId.name, followerId),
-                    `in`(Follow::followerId.name, followeeIds)
-                )
-            ).toList()
+        withContext(Dispatchers.IO) {
+            if (followeeIds.size == 1) {
+                collection.find(
+                    and(
+                        eq(Follow::followerId.name, followerId),
+                        eq(Follow::followeeId.name, followeeIds.firstOrNull())
+                    )
+                ).toList()
+            } else {
+                collection.find(
+                    and(
+                        eq(Follow::followerId.name, followerId),
+                        `in`(Follow::followerId.name, followeeIds)
+                    )
+                ).toList()
+            }
         }
     override suspend fun findByFollowerId(followerId: String) =
-        collection.find(
-            eq(Follow::followerId.name, followerId)
-        ).toList()
+        withContext(Dispatchers.IO) {
+            collection.find(
+                eq(Follow::followerId.name, followerId)
+            ).toList()
+        }
 
     override suspend fun findByFolloweeId(followeeId: String) =
-        collection.find(
-            eq(Follow::followeeId.name, followeeId)
-        ).toList()
-
-    override suspend fun save(follows: List<Follow>): Int {
-        val bulkOps = follows.map { follow ->
-            ReplaceOneModel(
-                eq(ID, follow.id),
-                follow,
-                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
-            )
+        withContext(Dispatchers.IO) {
+            collection.find(
+                eq(Follow::followeeId.name, followeeId)
+            ).toList()
         }
-        return collection.bulkWrite(bulkOps).modifiedCount
-    }
+
+    override suspend fun save(follows: List<Follow>) =
+        withContext(Dispatchers.IO) {
+            val bulkOps = follows.map { follow ->
+                ReplaceOneModel(
+                    eq(ID, follow.id),
+                    follow,
+                    ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+                )
+            }
+            return@withContext collection.bulkWrite(bulkOps).modifiedCount
+        }
 
     override suspend fun delete(followerId: String, followeeId: String) =
-        collection.deleteOne(
-            and(
-                eq(Follow::followerId.name, followerId),
-                eq(Follow::followeeId.name, followeeId)
-            )
-        ).deletedCount
+        withContext(Dispatchers.IO) {
+            collection.deleteOne(
+                and(
+                    eq(Follow::followerId.name, followerId),
+                    eq(Follow::followeeId.name, followeeId)
+                )
+            ).deletedCount
+        }
 }

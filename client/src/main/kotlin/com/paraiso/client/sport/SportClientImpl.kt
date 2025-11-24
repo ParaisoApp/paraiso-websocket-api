@@ -33,7 +33,6 @@ import com.paraiso.domain.sport.data.Team as TeamDomain
 class SportClientImpl : SportClient, BaseAdapter, Klogging {
 
     companion object {
-        private const val LIMIT = 10
         private val dispatcher = Dispatchers.IO
         private val clientConfig = ClientConfig()
     }

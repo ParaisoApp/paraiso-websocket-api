@@ -8,27 +8,33 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.sport.data.StatLeaders
 import com.paraiso.domain.sport.interfaces.LeadersDB
 import com.paraiso.domain.util.Constants.ID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 
 class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
     private val collection = database.getCollection("leaders", StatLeaders::class.java)
 
     override suspend fun findBySport(sport: String) =
-        collection.find(eq(ID, sport)).limit(1).firstOrNull()
+        withContext(Dispatchers.IO) {
+            collection.find(eq(ID, sport)).limit(1).firstOrNull()
+        }
 
     override suspend fun findBySportAndSeasonAndType(
         sport: String,
         season: Int,
         type: Int
     ) =
-        collection.find(
-            and(
-                eq(StatLeaders::sport.name, sport),
-                eq(StatLeaders::teamId.name, null),
-                eq(StatLeaders::season.name, season),
-                eq(StatLeaders::type.name, type)
-            )
-        ).limit(1).firstOrNull()
+        withContext(Dispatchers.IO) {
+            collection.find(
+                and(
+                    eq(StatLeaders::sport.name, sport),
+                    eq(StatLeaders::teamId.name, null),
+                    eq(StatLeaders::season.name, season),
+                    eq(StatLeaders::type.name, type)
+                )
+            ).limit(1).firstOrNull()
+        }
 
     override suspend fun findBySportAndSeasonAndTypeAndTeam(
         sport: String,
@@ -36,23 +42,26 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
         season: Int,
         type: Int
     ): StatLeaders? =
-        collection.find(
-            and(
-                eq(StatLeaders::sport.name, sport),
-                eq(StatLeaders::teamId.name, teamId),
-                eq(StatLeaders::season.name, season),
-                eq(StatLeaders::type.name, type)
-            )
-        ).limit(1).firstOrNull()
-
-    override suspend fun save(statLeaders: List<StatLeaders>): Int {
-        val bulkOps = statLeaders.map { statLeader ->
-            ReplaceOneModel(
-                eq(ID, statLeader.id),
-                statLeader,
-                ReplaceOptions().upsert(true) // insert if not exists, replace if exists
-            )
+        withContext(Dispatchers.IO) {
+            collection.find(
+                and(
+                    eq(StatLeaders::sport.name, sport),
+                    eq(StatLeaders::teamId.name, teamId),
+                    eq(StatLeaders::season.name, season),
+                    eq(StatLeaders::type.name, type)
+                )
+            ).limit(1).firstOrNull()
         }
-        return collection.bulkWrite(bulkOps).modifiedCount
-    }
+
+    override suspend fun save(statLeaders: List<StatLeaders>) =
+        withContext(Dispatchers.IO) {
+            val bulkOps = statLeaders.map { statLeader ->
+                ReplaceOneModel(
+                    eq(ID, statLeader.id),
+                    statLeader,
+                    ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+                )
+            }
+            return@withContext collection.bulkWrite(bulkOps).modifiedCount
+        }
 }
