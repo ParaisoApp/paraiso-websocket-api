@@ -491,9 +491,6 @@ class WebSocketHandler(
                 }
             }
         } catch (ex: Exception) {
-            if (ex is CancellationException) {
-                throw ex
-            }
             logger.error(ex) { "Exception caught for user ID ${sessionUser.id} sessionId: $sessionId" }
         } finally {
             val session = this
@@ -555,6 +552,7 @@ class WebSocketHandler(
                 when (route.modifier) {
                     SiteRoute.BASKETBALL -> SportJobs().teamJobs(route.content, session, SiteRoute.BASKETBALL.name)
                     SiteRoute.FOOTBALL -> SportJobs().teamJobs(route.content, session, SiteRoute.FOOTBALL.name)
+                    SiteRoute.HOCKEY -> SportJobs().teamJobs(route.content, session, SiteRoute.HOCKEY.name)
                     else -> {
                         logger.error("Unrecognized Team: $route")
                         emptyList()

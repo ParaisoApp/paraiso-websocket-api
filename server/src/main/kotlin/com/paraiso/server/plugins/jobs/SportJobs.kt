@@ -34,12 +34,13 @@ class SportJobs {
         session: WebSocketServerSession,
         sport: String
     ) = coroutineScope {
+        val teamId = content?.split("-")?.lastOrNull() ?: ""
         listOf(
             launch {
                 SportState.getScoreboardFlow(sport).collect { sb ->
                     val sbResponse = sb.copy(
                         competitions = sb.competitions
-                            .filter { comp -> comp.teams.map { it.teamId }.contains(content) }
+                            .filter { comp -> comp.teams.map { it.teamId }.contains(teamId) }
                     ).toResponse()
                     session.sendTypedMessage(MessageType.SCOREBOARD, sbResponse)
                 }
@@ -48,7 +49,7 @@ class SportJobs {
                 SportState.getBoxscoreFlow(sport).collect { boxscores ->
                     val boxScoresResponse = boxscores
                         .filter { boxScore ->
-                            boxScore.teams.map { it.teamId }.contains(content)
+                            boxScore.teams.map { it.teamId }.contains(teamId)
                         }.map { it.toResponse() }
                     session.sendTypedMessage(MessageType.BOX_SCORES, boxScoresResponse)
                 }
