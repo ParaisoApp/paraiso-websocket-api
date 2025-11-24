@@ -277,7 +277,7 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
     val scheme = config.property("api.scheme").getString()
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
-        pingPeriod = Duration.ofSeconds(30)
+        pingPeriod = Duration.ofSeconds(20)
         timeout = Duration.ofSeconds(45)
         maxFrameSize = Long.MAX_VALUE
         masking = false

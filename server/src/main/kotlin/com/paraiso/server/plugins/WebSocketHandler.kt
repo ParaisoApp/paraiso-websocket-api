@@ -57,6 +57,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 
 class WebSocketHandler(
@@ -237,30 +238,8 @@ class WebSocketHandler(
     ) {
         // holds the active jobs for given route
         var activeJobs: Job? = null
-        var lastPongTime = Clock.System.now()
-
-        // Check for stale sessions
-        launch {
-            while (isActive) {
-                delay(10.seconds)
-                val age = Clock.System.now() - lastPongTime
-
-                if (age > 30.seconds) {
-                    println("Closing stale WebSocket: no PONG in $age user ID ${sessionUser.id}")
-                    cancel("Stale connection detected")
-                    break
-                }
-            }
-        }
-
-        launch {
-            while (isActive) {
-                delay(15.seconds)
-                sendTypedMessage(MessageType.PING, Clock.System.now().toEpochMilliseconds())
-            }
-        }
         try {
-            incoming.consumeEach { frame ->
+            for (frame in incoming) {
                 val messageType = determineMessageType(frame)
                 when (messageType) {
                     MessageType.MSG -> {
@@ -501,32 +480,25 @@ class WebSocketHandler(
                     MessageType.ROUTE -> {
                         converter?.cleanAndType<TypeMapping<Route>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { route ->
-                                activeJobs?.cancelAndJoin()
+                                activeJobs?.cancel()
                                 val session = this
                                 activeJobs = launch {
                                     handleRoute(route, session)
                                 }
                             }
                     }
-                    MessageType.PING -> {
-                        converter?.cleanAndType<TypeMapping<Long>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { clientTime ->
-                                //pong back to client to inform session still ongoing
-                                sendTypedMessage(MessageType.PONG, clientTime)
-                            }
-                    }
-                    MessageType.PONG -> {
-                        //pong received 
-                        lastPongTime = Clock.System.now()
-                    }
                     else -> logger.error { "Invalid message type received $frame" }
                 }
             }
         } catch (ex: Exception) {
-            logger.error(ex) { "Error parsing incoming data" }
+            if (ex is CancellationException) {
+                throw ex
+            }
+            logger.error(ex) { "Exception caught for user ID ${sessionUser.id} sessionId: $sessionId" }
         } finally {
             val session = this
             withContext(NonCancellable) {
+                session.close()
                 // create or update session connected status
                 eventServiceImpl.getUserSession(sessionUser.id)?.let { existingSession ->
                     val serverSessions = existingSession.serverSessions.toMutableMap()
