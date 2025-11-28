@@ -89,8 +89,8 @@ class WebSocketHandler(
         val sessionId = UUID.randomUUID().toString()
         // session state
         val sessionState = SessionState()
+        // new user so create new route entry
         launch {
-            // new user so create new route entry
             if (newUser) {
                 val now = Clock.System.now()
                 services.routesApi.saveRoutes(
@@ -109,8 +109,8 @@ class WebSocketHandler(
                 )
             }
         }
+        // create or update session connected status
         launch {
-            // create or update session connected status
             val sessionToSave = eventServiceImpl.getUserSession(currentUser.id)?.let { existingSession ->
                 val serverSessions = existingSession.serverSessions.toMutableMap()
                 serverSessions[serverId] = (serverSessions[serverId] ?: emptySet()) + sessionId
@@ -142,6 +142,7 @@ class WebSocketHandler(
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
+        //setup message intake (from others)
         ServerState.flowList.map { (type, sharedFlow) ->
             launch {
                 sharedFlow.collect { message ->
