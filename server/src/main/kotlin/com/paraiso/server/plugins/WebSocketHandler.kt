@@ -98,7 +98,7 @@ class WebSocketHandler(
                         RouteDetails(
                             id = "/p/${currentUser.id}",
                             route = SiteRoute.PROFILE,
-                            modifier = null,
+                            modifier = currentUser.id,
                             title = currentUser.name ?: "UNKNOWN",
                             userFavorites = 0,
                             about = null,
