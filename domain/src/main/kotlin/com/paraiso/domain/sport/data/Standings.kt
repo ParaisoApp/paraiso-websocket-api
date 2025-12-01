@@ -43,8 +43,10 @@ data class StandingsStat(
 @Serializable
 data class StandingsResponse(
     val teamId: String,
-    val seed: Int?,
-    val stats: List<StandingsStatResponse>
+    val team: Team?,
+    val seed: Int,
+    val confAbbr: String,
+    val stats: Map<String, StandingsStatResponse>
 )
 
 @Serializable
@@ -55,12 +57,31 @@ data class StandingsStatResponse(
     val value: Double?
 )
 
-fun Standings.toResponse() =
-    StandingsResponse(
-        teamId = teamId,
-        seed = seed,
-        stats = stats.map { it.toResponse() }
+fun Standings.toResponse(team: Team?, confAbbr: String): StandingsResponse {
+    val mappedResponse = stats.associate {
+        (it.shortDisplayName ?: "") to it.toResponse()
+    }.toMutableMap()
+    //to build table rows (for team icon and team abbreviation)
+    mappedResponse["abbr"] = StandingsStatResponse(
+        shortDisplayName = "abbr",
+        displayValue = team?.abbreviation,
+        displayName = null,
+        value = null
     )
+    mappedResponse["id"] = StandingsStatResponse(
+        shortDisplayName = "id",
+        displayValue = team?.abbreviation,
+        displayName = null,
+        value = null
+    )
+    return StandingsResponse(
+        teamId = teamId,
+        team = team,
+        seed = mappedResponse["POS"]?.displayValue?.toIntOrNull() ?: 0,
+        confAbbr = confAbbr,
+        stats = mappedResponse
+    )
+}
 
 fun StandingsStat.toResponse() =
     StandingsStatResponse(

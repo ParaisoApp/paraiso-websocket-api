@@ -5,6 +5,7 @@ import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.ScoreboardResponse
+import com.paraiso.domain.sport.data.StandingsResponse
 import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
@@ -21,21 +22,29 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
     suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
-    suspend fun findStandings(sport: String) =
+    suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
+        val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
         if (sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
-                standingsGroup.confAbbr to standingsGroup.standings.map { it.toResponse() }
+                standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map {standings ->
+                    val team = teamsRes.await()[standings.teamId]
+                    standings.toResponse(team, standingsGroup.confAbbr)
+                }.sortedBy { it.seed }
             }
         } else {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.let {standingsGroups ->
                 standingsGroups.associate { confGroup ->
                     val allStandings = confGroup.subGroups.flatMap { standingsSubGroup ->
-                        standingsSubGroup.standings.map { it.toResponse() }
+                        standingsSubGroup.standings.map { standings ->
+                            val team = teamsRes.await()[standings.teamId]
+                            standings.toResponse(team, confGroup.confAbbr)
+                        }.sortedBy { it.seed }
                     }
-                    confGroup.confAbbr to allStandings
+                    confGroup.confAbbr.uppercase() to allStandings
                 }
             }
         }
+    }
     suspend fun findLeaders(sport: String, season: Int, type: Int) =
         sportDBs.leadersDB.findBySportAndSeasonAndType(sport, season, type)?.categories?.let { categories ->
             // grab athletes from DB and associate with their id
