@@ -149,7 +149,7 @@ class SportHandler(
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
-                    sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
+                    sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
                     if(autoBuildPosts) {
                         addTeamPosts(sport, teams, schedulesRes)
                     }

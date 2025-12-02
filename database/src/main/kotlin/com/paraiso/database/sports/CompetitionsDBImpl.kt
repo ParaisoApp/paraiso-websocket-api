@@ -1,11 +1,13 @@
 package com.paraiso.database.sports
 
+import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.gte
 import com.mongodb.client.model.Filters.lt
+import com.mongodb.client.model.InsertOneModel
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts
@@ -56,6 +58,21 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                 )
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
+        }
+
+    override suspend fun saveIfNew(competitions: List<Competition>) =
+        withContext(Dispatchers.IO) {
+            val bulkOps = competitions.map { competition ->
+                InsertOneModel(competition)
+            }
+
+            try {
+                val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
+                return@withContext result.insertedCount
+            } catch (e: com.mongodb.MongoBulkWriteException) {
+                val insertedCount = e.writeResult.insertedCount
+                return@withContext insertedCount
+            }
         }
 
     override suspend fun findScoreboard(
