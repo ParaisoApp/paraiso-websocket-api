@@ -5,7 +5,7 @@ interface RoutesDB {
     suspend fun save(routes: List<RouteDetails>): Int
 
     suspend fun setFavorites(
-        route: String,
+        routeId: String,
         favorite: Int
     ): Long
 }

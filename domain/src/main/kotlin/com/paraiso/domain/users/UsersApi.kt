@@ -71,12 +71,19 @@ class UsersApi(
         if (favorite.userId != null) {
             usersDB.findById(favorite.userId)?.let { user ->
                 if (favorite.icon == null && !favorite.favorite) {
-                    usersDB.removeFavoriteRoute(favorite.userId, favorite.route)
+                    usersDB.removeFavoriteRoute(user.id, favorite.routeId)
                 } else {
                     usersDB.addFavoriteRoute(
-                        favorite.userId,
-                        favorite.route,
-                        UserFavorite(favorite.favorite, favorite.icon)
+                        user.id,
+                        favorite.routeId,
+                        UserFavorite(
+                            favorite.routeId,
+                            favorite.route,
+                            favorite.modifier,
+                            favorite.title,
+                            favorite.favorite,
+                            favorite.icon,
+                        )
                     )
                 }
             }

@@ -201,14 +201,14 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun addFavoriteRoute(
         id: String,
-        route: String,
+        routeId: String,
         routeFavorite: UserFavorite
     ) =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, id),
                 combine(
-                    set("${User::routeFavorites.name}.$route", routeFavorite),
+                    set("${User::routeFavorites.name}.$routeId", routeFavorite),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount
@@ -216,13 +216,13 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun removeFavoriteRoute(
         id: String,
-        route: String
+        routeId: String
     ) =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, id),
                 combine(
-                    Document("\$unset", Document("routeFavorites.$route", "")),
+                    Document("\$unset", Document("routeFavorites.$routeId", "")),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

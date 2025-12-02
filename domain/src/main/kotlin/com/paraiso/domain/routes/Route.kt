@@ -38,7 +38,10 @@ data class RouteResponse(
 @Serializable
 data class Favorite(
     val userId: String?,
+    val routeId: String,
     val route: String,
+    val modifier: String?,
+    val title: String,
     val icon: String?,
     val favorite: Boolean,
     val toggle: Boolean

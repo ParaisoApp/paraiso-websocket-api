@@ -21,9 +21,9 @@ class RoutesApi(
         if (favorite.userId != null) {
             // toggle favorite from Route
             if (!favorite.favorite) {
-                routesDB.setFavorites(favorite.route, -1)
+                routesDB.setFavorites(favorite.routeId, -1)
             } else {
-                routesDB.setFavorites(favorite.route, 1)
+                routesDB.setFavorites(favorite.routeId, 1)
             }
         }
     }

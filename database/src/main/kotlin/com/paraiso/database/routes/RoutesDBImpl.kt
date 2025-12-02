@@ -37,12 +37,12 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
     override suspend fun setFavorites(
-        route: String,
+        routeId: String,
         favorite: Int
     ) =
         withContext(Dispatchers.IO) {
             collection.updateOne(
-                Filters.eq(ID, route),
+                Filters.eq(ID, routeId),
                 combine(
                     Updates.inc(RouteDetails::userFavorites.name, favorite),
                     set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))

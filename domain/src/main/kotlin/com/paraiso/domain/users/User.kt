@@ -91,6 +91,10 @@ data class UserResponse(
 
 @Serializable
 data class UserFavorite(
+    val routeId: String,
+    val route: String,
+    val modifier: String?,
+    val title: String,
     val favorite: Boolean,
     val icon: String?
 )

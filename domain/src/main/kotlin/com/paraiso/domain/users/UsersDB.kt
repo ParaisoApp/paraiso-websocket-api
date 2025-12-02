@@ -36,12 +36,12 @@ interface UsersDB {
     ): Long
     suspend fun addFavoriteRoute(
         id: String,
-        route: String,
+        routeId: String,
         routeFavorite: UserFavorite
     ): Long
     suspend fun removeFavoriteRoute(
         id: String,
-        route: String
+        routeId: String
     ): Long
     suspend fun setScore(
         id: String,
