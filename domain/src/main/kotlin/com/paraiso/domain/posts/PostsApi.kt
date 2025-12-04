@@ -6,20 +6,28 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
+import com.paraiso.domain.routes.Route
+import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.RouteResponse
+import com.paraiso.domain.routes.RoutesApi
+import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
 import com.paraiso.domain.util.Constants.UNKNOWN
 import com.paraiso.domain.votes.VotesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 import kotlin.time.Duration.Companion.days
 
 class PostsApi(
     private val postsDB: PostsDB,
     private val votesApi: VotesApi,
-    private val followsApi: FollowsApi
+    private val followsApi: FollowsApi,
 ) {
 
     // return fully updated root post (for update or load of root post to post tree)
@@ -175,7 +183,7 @@ class PostsApi(
                 if (message.replyId != null) {
                     launch {
                         // update relatives sub post counts
-                        if (message.rootId != message.id) {
+                        if (message.rootId != messageId) {
                             postsDB.findById(message.replyId)?.let { parent ->
                                 updateCounts(parent, increment = 1)
                             }
@@ -209,5 +217,11 @@ class PostsApi(
             }
         }
     }
-
 }
+
+@Serializable
+data class InitRouteData(
+    val posts: LinkedHashMap<String, PostResponse>,
+    val users: Map<String, UserResponse>,
+    val route: RouteResponse
+)
