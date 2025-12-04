@@ -28,7 +28,7 @@ class SportApi(private val sportDBs: SportDBs) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
                 standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map {standings ->
                     val team = teamsRes.await()[standings.teamId]
-                    standings.toResponse(team, standingsGroup.confAbbr)
+                    standings.toResponse(team, standingsGroup.confName, standingsGroup.confAbbr, null, null)
                 }.sortedBy { it.seed }
             }
         } else {
@@ -37,7 +37,13 @@ class SportApi(private val sportDBs: SportDBs) {
                     val allStandings = confGroup.subGroups.flatMap { standingsSubGroup ->
                         standingsSubGroup.standings.map { standings ->
                             val team = teamsRes.await()[standings.teamId]
-                            standings.toResponse(team, confGroup.confAbbr)
+                            standings.toResponse(
+                                team,
+                                confGroup.confName,
+                                confGroup.confAbbr,
+                                standingsSubGroup.divName,
+                                standingsSubGroup.divAbbr
+                            )
                         }.sortedBy { it.seed }
                     }
                     confGroup.confAbbr.uppercase() to allStandings

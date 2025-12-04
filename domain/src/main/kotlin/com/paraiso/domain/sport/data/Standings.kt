@@ -45,7 +45,10 @@ data class StandingsResponse(
     val teamId: String,
     val team: Team?,
     val seed: Int,
+    val confName: String,
     val confAbbr: String,
+    val divName: String?,
+    val divAbbr: String?,
     val stats: Map<String, StandingsStatResponse>
 )
 
@@ -57,7 +60,13 @@ data class StandingsStatResponse(
     val value: Double?
 )
 
-fun Standings.toResponse(team: Team?, confAbbr: String): StandingsResponse {
+fun Standings.toResponse(
+    team: Team?,
+    confName: String,
+    confAbbr: String,
+    divName: String?,
+    divAbbr: String?,
+): StandingsResponse {
     val mappedResponse = stats.associate {
         (it.shortDisplayName ?: "") to it.toResponse()
     }.toMutableMap()
@@ -78,7 +87,10 @@ fun Standings.toResponse(team: Team?, confAbbr: String): StandingsResponse {
         teamId = teamId,
         team = team,
         seed = mappedResponse["POS"]?.displayValue?.toIntOrNull() ?: 0,
+        confName = confName,
         confAbbr = confAbbr,
+        divName = divName,
+        divAbbr = divAbbr,
         stats = mappedResponse
     )
 }
