@@ -222,7 +222,7 @@ class SportHandler(
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     // if completely new scoreboard save it and generate game posts
                     if (scoreboard.competitions.map { it.id }.toSet() != lastSentScoreboard[sport]?.competitions?.map { it.id }?.toSet()) {
-                        saveScoreboardAndGetBoxscores(
+                        saveScoreboardAndGetBoxScores(
                             sport,
                             scoreboard,
                             scoreboard.competitions,
@@ -240,7 +240,7 @@ class SportHandler(
                             val endingCompetitions = scoreboard.competitions.filter {
                                 lastCompState[it.id] == false && it.status.completed
                             }.map { it.copy(status = it.status.copy(completedTime = Clock.System.now())) }
-                            saveScoreboardAndGetBoxscores(
+                            saveScoreboardAndGetBoxScores(
                                 sport,
                                 scoreboard,
                                 //ensure ending posts are saved (take as active comps)
@@ -275,7 +275,7 @@ class SportHandler(
         }
     }
 
-    private suspend fun saveScoreboardAndGetBoxscores(
+    private suspend fun saveScoreboardAndGetBoxScores(
         sport: SiteRoute,
         scoreboard: Scoreboard,
         activeCompetitions: List<Competition>,
@@ -284,7 +284,8 @@ class SportHandler(
     ) = coroutineScope {
         //deep comparison for changes
         if (scoreboard != lastSentScoreboard[sport]) {
-            sportDBs.scoreboardsDB.save(listOf(scoreboard.toEntity()))
+            val scoreboardEntity = scoreboard.toEntity()
+            sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))
             if(activeCompetitions.isNotEmpty()){
                 sportDBs.competitionsDB.save(activeCompetitions)
                 if (enableBoxScore){
@@ -296,9 +297,16 @@ class SportHandler(
                 }
             }
             eventService.publish(
-                MessageType.SCOREBOARD.name,
-                "$sport:${Json.encodeToString(scoreboard)}"
+                MessageType.COMPS.name,
+                "$sport:${Json.encodeToString(activeCompetitions)}"
             )
+            //send scoreboard last as it will trigger refresh of comp consumers
+            if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
+                eventService.publish(
+                    MessageType.SCOREBOARD.name,
+                    "$sport:${Json.encodeToString(scoreboardEntity)}"
+                )
+            }
             lastSentScoreboard[sport] = scoreboard
         }
     }
@@ -317,11 +325,11 @@ class SportHandler(
             val allBoxScores = newBoxScores + lastSentBoxScores.filter { inactiveCompetitionIds.contains(it.id) }
             // map result to teams
             if (allBoxScores != lastSentBoxScores) {
-                // map result to teams
+                // only send in progress or just completed box scores
                 sportDBs.boxscoresDB.save(newBoxScores)
                 eventService.publish(
                     MessageType.BOX_SCORES.name,
-                    "$sport:${Json.encodeToString(allBoxScores)}"
+                    "$sport:${Json.encodeToString(newBoxScores)}"
                 )
                 lastSentBoxScores = allBoxScores
             }

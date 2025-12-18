@@ -22,7 +22,8 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
                 call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
                 call.receive<FilterTypes>(),
-                call.request.queryParameters["userId"] ?: ""
+                call.request.queryParameters["userId"] ?: "",
+                call.request.queryParameters["sessionId"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
@@ -33,7 +34,8 @@ fun Route.postsController(postsApi: PostsApi) {
                 call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
                 call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
                 call.receive<FilterTypes>(),
-                call.request.queryParameters["userId"] ?: ""
+                call.request.queryParameters["userId"] ?: "",
+                call.request.queryParameters["sessionId"] ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
@@ -49,7 +51,8 @@ fun Route.postsController(postsApi: PostsApi) {
         post("getByIds") {
             postsApi.getByIds(
                 call.request.queryParameters["userId"] ?: "",
-                call.receive<Set<String>>()
+                call.receive<Set<String>>(),
+                call.request.queryParameters["sessionId"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
@@ -57,7 +60,8 @@ fun Route.postsController(postsApi: PostsApi) {
         get("getByPartial") {
             postsApi.getByPartial(
                 call.request.queryParameters["userId"] ?: "",
-                call.request.queryParameters["search"] ?: ""
+                call.request.queryParameters["search"] ?: "",
+                call.request.queryParameters["sessionId"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }

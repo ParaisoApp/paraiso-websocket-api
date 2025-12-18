@@ -2,6 +2,7 @@ package com.paraiso.database.sports
 
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
@@ -29,6 +30,13 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
                     eq(Team::teamId.name, teamId)
                 )
             ).limit(1).firstOrNull()
+        }
+
+    override suspend fun findByIds(ids: Set<String>): List<Team> =
+        withContext(Dispatchers.IO) {
+            collection.find(
+                `in`(ID, ids),
+            ).toList()
         }
 
     override suspend fun findBySportAndAbbr(sport: String, abbr: String) =

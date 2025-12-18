@@ -106,9 +106,9 @@ fun Route.sportController(sportApi: SportApi) {
                 call.request.queryParameters["type"]?.toIntOrNull() ?: 0,
                 call.request.queryParameters["modifier"] ?: "",
                 call.request.queryParameters["past"].toBoolean()
-            )?.let {
+            ).let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
+            }
         }
     }
 }

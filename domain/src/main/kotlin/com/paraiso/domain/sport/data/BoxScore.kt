@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class BoxScore(
     @SerialName(ID) val id: String,
-    val teams: List<FullTeam>
+    val teams: List<FullTeam>,
+    val completed: Boolean? = null
 )
 
 @Serializable

@@ -10,7 +10,6 @@ import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
@@ -20,7 +19,9 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)?.toResponse()
     suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
     suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
+    suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids).map { it.toResponse() }
     suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
+    suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids).map { it.toResponse() }
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
@@ -124,7 +125,7 @@ class SportApi(private val sportDBs: SportDBs) {
             seasonYear,
             seasonType
         )?.let { schedule ->
-            val competitions = sportDBs.competitionsDB.findByIdIn(schedule.events)
+            val competitions = sportDBs.competitionsDB.findByIdIn(schedule.events.toSet())
                 .sortedBy { it.date }
             schedule.toDomain(competitions)
         }?.toResponse()

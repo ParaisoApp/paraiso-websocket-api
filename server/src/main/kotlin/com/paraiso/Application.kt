@@ -68,6 +68,7 @@ import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.MessageHandler
 import com.paraiso.server.plugins.ServerHandler
 import com.paraiso.server.plugins.WebSocketHandler
+import com.paraiso.server.util.SessionContext
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -83,7 +84,6 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
@@ -91,7 +91,6 @@ import io.ktor.server.websocket.webSocket
 import io.lettuce.core.RedisClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -149,7 +148,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val postsDb = PostsDBImpl(database)
     val usersDb = UsersDBImpl(database)
     // setup redis
-    val userSessions = ConcurrentHashMap<String, Set<WebSocketServerSession>>()
+    val userSessions = ConcurrentHashMap<String, ConcurrentHashMap<String, SessionContext>>()
     val redisClient = RedisClient.create(redisUrl)
     val eventServiceImpl = EventServiceImpl(redisClient)
     // subscriber to all incoming messages from other servers
@@ -168,6 +167,8 @@ fun Application.module(jobScope: CoroutineScope) {
         postsDb,
         votesApi,
         followsApi,
+        eventServiceImpl,
+        sportApi
     )
     val postPinsApi = PostPinsApi(PostPinsDBImpl(database))
     val notificationsApi = NotificationsApi(NotificationsDBImpl(database), postsApi)

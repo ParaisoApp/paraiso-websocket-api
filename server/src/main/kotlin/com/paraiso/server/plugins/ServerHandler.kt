@@ -12,20 +12,8 @@ class ServerHandler(
     private val routesApi: RoutesApi
 ) {
     suspend fun bootJobs() = coroutineScope {
-        // TODO launch { cleanUserList() }
         launch { buildRoutes(manual = false) }
     }
-//    private suspend fun cleanUserList() = coroutineScope {
-//        while (isActive) {
-//            ServerState.userList.entries
-//                .removeIf {
-//                    it.value.lastSeen != 0L && // clear user from user list if disconnected for more than 10 min
-//                        it.value.lastSeen < System.currentTimeMillis() - (10 * 60 * 1000) &&
-//                        it.value.status == UserStatus.DISCONNECTED
-//                }
-//            delay(10 * 60 * 1000) // delay for ten minutes
-//        }
-//    }
 
     suspend fun buildRoutes(manual: Boolean) {
         if (autoBuild || manual) {

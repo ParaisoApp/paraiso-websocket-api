@@ -43,7 +43,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
             collection.find(eq(ID, id)).limit(1).firstOrNull()
         }
 
-    override suspend fun findByIdIn(ids: List<String>): List<Competition> =
+    override suspend fun findByIdIn(ids: Set<String>): List<Competition> =
         withContext(Dispatchers.IO) {
             collection.find(Filters.`in`(ID, ids)).toList()
         }

@@ -6,28 +6,36 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.Subscription
+import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.Tag
+import com.paraiso.domain.messageTypes.TypeMapping
+import com.paraiso.domain.messageTypes.toSubscription
 import com.paraiso.domain.routes.Favorite
+import com.paraiso.domain.routes.SessionRoute
 import com.paraiso.domain.sport.data.BoxScore
+import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Scoreboard
+import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.userchats.DirectMessageResponse
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.VoteResponse
 import com.paraiso.events.EventServiceImpl
+import com.paraiso.server.util.SessionContext
 import com.paraiso.server.util.decodeMessage
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
-import io.ktor.server.websocket.WebSocketServerSession
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 
 class MessageHandler(
     private val serverId: String,
-    private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
+    private val userSessions: ConcurrentHashMap<String, ConcurrentHashMap<String, SessionContext>>,
     private val eventServiceImpl: EventServiceImpl
 ) : Klogging {
     suspend fun messageJobs() = coroutineScope {
@@ -45,6 +53,7 @@ class MessageHandler(
                 MessageType.REPORT_USER.name,
                 MessageType.REPORT_POST.name,
                 MessageType.SCOREBOARD.name,
+                MessageType.COMPS.name,
                 MessageType.BOX_SCORES.name
             )
         )
@@ -52,14 +61,24 @@ class MessageHandler(
         launch {
             eventServiceImpl.subscribe { (channel, messageWithServer) ->
                 val (incomingModifier, message) = messageWithServer.split(":", limit = 2)
-                // only emit messages coming from other servers
+                // modifier indicates server source on generic sends - otherwise channel indicates which server message is aimed to
                 if (incomingModifier != serverId) {
                     when (channel) {
                         "server:$serverId" -> {
-                            val (userId, payload) = message.split(":", limit = 2)
-                            decodeMessage<DirectMessageResponse>(payload)?.let { dm ->
-                                userSessions[userId]?.forEach { session ->
-                                    session.sendTypedMessage(MessageType.DM, dm)
+                            val (type, payload) = message.split(":", limit = 2)
+                            when(type){
+                                MessageType.SUBSCRIBE.name -> {
+                                    decodeMessage<SubscriptionInfo>(payload)?.let { subscriptionInfo ->
+                                        val typeMapping = TypeMapping(typeMapping = mapOf(MessageType.SUBSCRIBE to subscriptionInfo.toSubscription()))
+                                        userSessions[subscriptionInfo.userId]?.get(subscriptionInfo.sessionId)?.inboundChannel?.trySend(Json.encodeToString(typeMapping))
+                                    }
+                                }
+                                MessageType.DM.name -> {
+                                    decodeMessage<DirectMessageResponse>(payload)?.let { dm ->
+                                        userSessions[dm.userReceiveId]?.map { it.value.session }?.forEach { session ->
+                                            session.sendTypedMessage(MessageType.DM, dm)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -123,14 +142,20 @@ class MessageHandler(
                         }
 
                         MessageType.SCOREBOARD.name -> {
-                            decodeMessage<Scoreboard>(message)?.let { scoreboard ->
+                            decodeMessage<ScoreboardEntity>(message)?.let { scoreboard ->
                                 SportState.updateScoreboard(incomingModifier, scoreboard)
+                            }
+                        }
+
+                        MessageType.COMPS.name -> {
+                            decodeMessage<List<Competition>>(message)?.let { comps ->
+                                SportState.updateCompetitions(comps)
                             }
                         }
 
                         MessageType.BOX_SCORES.name -> {
                             decodeMessage<List<BoxScore>>(message)?.let { boxScores ->
-                                SportState.updateBoxscore(incomingModifier, boxScores)
+                                SportState.updateBoxScores(boxScores)
                             }
                         }
                     }

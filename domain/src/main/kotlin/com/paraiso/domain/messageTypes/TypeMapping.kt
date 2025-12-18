@@ -53,6 +53,9 @@ enum class MessageType {
     @SerialName("SCOREBOARD")
     SCOREBOARD,
 
+    @SerialName("COMPS")
+    COMPS,
+
     @SerialName("BOX_SCORES")
     BOX_SCORES,
 
@@ -61,6 +64,9 @@ enum class MessageType {
 
     @SerialName("ROUTE")
     ROUTE,
+
+    @SerialName("SUBSCRIBE")
+    SUBSCRIBE,
 
     @SerialName("REPORT_USER")
     REPORT_USER,

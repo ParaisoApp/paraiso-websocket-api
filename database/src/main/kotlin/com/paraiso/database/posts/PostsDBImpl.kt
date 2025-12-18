@@ -71,9 +71,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     override suspend fun findByPartial(partial: String): List<Post> =
         withContext(Dispatchers.IO) {
             collection.find(
-                or(
-                    regex(Post::title.name, partial, "i"),
-                    regex(Post::content.name, partial, "i")
+                and(
+                    or(
+                        regex(Post::title.name, partial, "i"),
+                        regex(Post::content.name, partial, "i")
+                    ),
+                    not(regex(ID, "^TEAM", "i")) // remove team event posts from search
                 )
             ).limit(PARTIAL_RETRIEVE_LIM).toList()
         }

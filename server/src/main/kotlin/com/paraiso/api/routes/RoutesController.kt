@@ -18,7 +18,8 @@ fun Route.routesController(routesApi: RoutesApi) {
         get {
             routesApi.getById(
                 call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["userId"] ?: ""
+                call.request.queryParameters["userId"] ?: "",
+                call.request.queryParameters["sessionId"] ?: "",
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
@@ -27,6 +28,7 @@ fun Route.routesController(routesApi: RoutesApi) {
             routesApi.initPage(
                 call.request.queryParameters["routeId"] ?: "",
                 call.request.queryParameters["userId"] ?: "",
+                call.request.queryParameters["sessionId"] ?: "",
                 call.receive<FilterTypes>(),
                 call.request.queryParameters["postId"]
             )?.let {

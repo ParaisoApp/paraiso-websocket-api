@@ -141,6 +141,16 @@ fun ScoreboardEntity.toDomain(
         day = day,
         competitions = competitions
     )
+fun ScoreboardEntity.toResponse(
+    competitions: List<CompetitionResponse>
+) =
+    ScoreboardResponse(
+        id = id,
+        season = season,
+        week = week,
+        day = day,
+        competitions = competitions
+    )
 
 fun Scoreboard.Companion.init() =
     Scoreboard(

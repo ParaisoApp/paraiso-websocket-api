@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.notifications.NotificationResponse
@@ -31,7 +32,7 @@ import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.server.plugins.jobs.SportJobs
-import com.paraiso.server.util.SessionState
+import com.paraiso.server.util.SessionContext
 import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.getMentions
@@ -40,16 +41,10 @@ import com.paraiso.server.util.validateUser
 import io.klogging.Klogging
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
-import io.ktor.websocket.CloseReason
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -57,38 +52,40 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.time.Duration.Companion.seconds
 
 class WebSocketHandler(
     private val serverId: String,
     private val eventServiceImpl: EventServiceImpl,
-    private val userSessions: ConcurrentHashMap<String, Set<WebSocketServerSession>>,
+    private val userSessions: ConcurrentHashMap<String, ConcurrentHashMap<String, SessionContext>>,
     private val services: AppServices
 ) : Klogging {
 
     suspend fun connect(
     session: WebSocketServerSession
     ) {
+        val sessionContext = SessionContext(session)
         val existingUser = services.userSessionsApi.getUserById(
             session.call.request.cookies["guest_id"] ?: "",
             null
-        )?.copy(status = UserStatus.CONNECTED)
+        )
         // check cookies to see if existing user
-        val currentUser = existingUser ?: UserResponse.newUser(UUID.randomUUID().toString())
+        val currentUser = (existingUser ?: UserResponse.newUser(UUID.randomUUID().toString()))
+            .copy(
+                status = UserStatus.CONNECTED,
+                sessionId = sessionContext.sessionId
+            )
         // Track this session in the local set
-        val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { emptySet() }
-        userSessions[currentUser.id] = sessionsForUser + session
-        session.handleUser(currentUser, existingUser == null)
+        val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { ConcurrentHashMap() }
+        sessionsForUser[sessionContext.sessionId] = sessionContext
+        session.handleUser(sessionContext.sessionId, currentUser, existingUser == null, sessionContext)
     }
 
     private suspend fun WebSocketServerSession.handleUser(
+        sessionId: String,
         currentUser: UserResponse,
-        newUser: Boolean
+        newUser: Boolean,
+        sessionContext: SessionContext
     ) {
-        val sessionId = UUID.randomUUID().toString()
-        // session state
-        val sessionState = SessionState()
         // new user so create new route entry
         launch {
             if (newUser) {
@@ -131,13 +128,13 @@ class WebSocketHandler(
             services.usersApi.saveUser(currentUser)
         }
 
-        joinChat(currentUser, sessionId, sessionState)
+        joinChat(currentUser, sessionId, sessionContext)
     }
 
     private suspend fun WebSocketServerSession.joinChat(
         incomingUser: UserResponse,
         sessionId: String,
-        sessionState: SessionState
+        sessionContext: SessionContext
     ) {
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
@@ -159,7 +156,7 @@ class WebSocketHandler(
                                         block?.blocking == true,
                                         newMessage.type,
                                         newMessage.userId,
-                                        sessionState
+                                        sessionContext
                                     )
                                 ) {
                                     sendTypedMessage(type, newMessage)
@@ -168,7 +165,7 @@ class WebSocketHandler(
                         }
                         MessageType.VOTE -> {
                             (message as? VoteResponse)?.let { newVote ->
-                                if (sessionState.filterTypes.postTypes.contains(newVote.type)) {
+                                if (sessionContext.filterTypes.postTypes.contains(newVote.type)) {
                                     sendTypedMessage(type, newVote)
                                 }
                             }
@@ -212,7 +209,7 @@ class WebSocketHandler(
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
         eventServiceImpl.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
-        parseAndRouteMessages(sessionUser, sessionId, sessionState)
+        parseAndRouteMessages(sessionUser, sessionId, sessionContext)
     }
 
     private suspend fun validateMessage(
@@ -220,14 +217,14 @@ class WebSocketHandler(
         blocking: Boolean,
         postType: PostType,
         userId: String?,
-        sessionState: SessionState
+        sessionContext: SessionContext
     ) =
         sessionUserId == userId || // message is from the cur user or
             (
                 !blocking && // user isnt in cur user's blocklist
-                    sessionState.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
+                        sessionContext.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
                     userId != null &&
-                    sessionState.filterTypes.userRoles.contains(
+                        sessionContext.filterTypes.userRoles.contains(
                         services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
                     )
                 )
@@ -235,14 +232,39 @@ class WebSocketHandler(
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
         sessionUser: UserResponse,
         sessionId: String,
-        sessionState: SessionState
+        sessionContext: SessionContext
     ) {
         // holds the active jobs for given route
-        var activeJobs: Job? = null
+        var lastRoute: Route? = null
+        val activeJobs = mutableListOf<Job>()
+        val activeComps =  ConcurrentHashMap<Set<String>, Job>()
+        val activeBoxScores = ConcurrentHashMap<String, Job>()
         try {
+            launch {
+                try {
+                    // Continuously collect messages pushed from the Redis listener
+                    for (encodedMessage in sessionContext.inboundChannel) {
+                        val messageType = determineMessageType(encodedMessage)
+                        when (messageType) {
+                            MessageType.SUBSCRIBE -> {
+                                Json.decodeFromString<TypeMapping<Subscription>>(encodedMessage)
+                                    .typeMapping.entries.first().value.let { route ->
+                                        launch {
+                                            subscribe(route, activeBoxScores, activeComps, sessionContext.session)
+                                        }
+                                    }
+                            }
+                            else -> logger.error { "Unexpected message received in session channel: $encodedMessage" }
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Log other errors
+                    println("Redis Collector Job failed: $e")
+                }
+            }
+
             for (frame in incoming) {
-                val messageType = determineMessageType(frame)
-                when (messageType) {
+                when (val messageType = determineMessageType(frame)) {
                     MessageType.MSG -> {
                         converter?.cleanAndType<TypeMapping<Message>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
@@ -348,7 +370,7 @@ class WebSocketHandler(
                                         // if user is on this server then grab session and send dm to user
                                         if(dmWithData.userReceiveId != dmWithData.userId){
                                             userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
-                                                receiveUserSessions.forEach { session ->
+                                                receiveUserSessions.map { it.value.session }.forEach { session ->
                                                     session.sendTypedMessage(MessageType.DM, dmWithData)
                                                 }
                                             }
@@ -360,7 +382,7 @@ class WebSocketHandler(
                                                     .forEach{server ->
                                                     eventServiceImpl.publish(
                                                         "server:$server",
-                                                        "$server:${dmWithData.userReceiveId}:$dmString"
+                                                        "$server:${MessageType.DM}:$dmString"
                                                     )
                                                 }
                                             }
@@ -429,7 +451,7 @@ class WebSocketHandler(
                     MessageType.FILTER_TYPES -> {
                         converter?.cleanAndType<TypeMapping<FilterTypes>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
-                                sessionState.filterTypes = newFilterTypes
+                                sessionContext.filterTypes = newFilterTypes
                             }
                     }
                     MessageType.DELETE -> {
@@ -481,14 +503,36 @@ class WebSocketHandler(
                     MessageType.ROUTE -> {
                         converter?.cleanAndType<TypeMapping<Route>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { route ->
-                                activeJobs?.cancel()
-                                val session = this
-                                activeJobs = launch {
-                                    handleRoute(route, session)
+                                if(lastRoute != route){
+                                    //clear out any active subscriptions on full route change
+                                    activeJobs.removeIf { job ->
+                                        job.cancel()
+                                        true
+                                    }
+                                    activeBoxScores.entries.removeIf{
+                                        sub -> sub.value.cancel()
+                                        true
+                                    }
+                                    activeComps.entries.removeIf{
+                                        sub -> sub.value.cancel()
+                                        true
+                                    }
+                                    activeJobs += launch {
+                                        handleRoute(route, sessionContext.session)
+                                    }
+                                    lastRoute = route
                                 }
                             }
                     }
-                    else -> logger.error { "Invalid message type received $frame" }
+                    MessageType.SUBSCRIBE -> {
+                        converter?.cleanAndType<TypeMapping<Subscription>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { subscription ->
+                                launch {
+                                    subscribe(subscription, activeBoxScores, activeComps, sessionContext.session)
+                                }
+                            }
+                    }
+                    else -> logger.error { "Unexpected message received from client: $frame, messageType: $messageType" }
                 }
             }
         } catch (ex: Exception) {
@@ -525,8 +569,9 @@ class WebSocketHandler(
                     }
                     // remove user from local map if no sessions remain on server
                     userDisconnected?.id?.let{userId ->
-                        userSessions.computeIfPresent(userId) { _, sessionsSet ->
-                            (sessionsSet - session).ifEmpty { null }
+                        userSessions.computeIfPresent(userId) { _, sessionsMap ->
+                            sessionsMap.remove(sessionId)
+                            sessionsMap.ifEmpty { null }
                         }
                     }
                 }
@@ -540,9 +585,9 @@ class WebSocketHandler(
             SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
             SiteRoute.SPORT -> {
                 when (route.modifier) {
-                    SiteRoute.BASKETBALL -> SportJobs().sportJobs(session, SiteRoute.BASKETBALL.name)
-                    SiteRoute.FOOTBALL -> SportJobs().sportJobs(session, SiteRoute.FOOTBALL.name)
-                    SiteRoute.HOCKEY -> SportJobs().sportJobs(session, SiteRoute.HOCKEY.name)
+                    SiteRoute.BASKETBALL -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.BASKETBALL.name)
+                    SiteRoute.FOOTBALL -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.FOOTBALL.name)
+                    SiteRoute.HOCKEY -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.HOCKEY.name)
                     else -> {
                         logger.error("Unrecognized Sport: $route")
                         emptyList()
@@ -551,9 +596,9 @@ class WebSocketHandler(
             }
             SiteRoute.TEAM -> {
                 when (route.modifier) {
-                    SiteRoute.BASKETBALL -> SportJobs().teamJobs(route.content, session, SiteRoute.BASKETBALL.name)
-                    SiteRoute.FOOTBALL -> SportJobs().teamJobs(route.content, session, SiteRoute.FOOTBALL.name)
-                    SiteRoute.HOCKEY -> SportJobs().teamJobs(route.content, session, SiteRoute.HOCKEY.name)
+                    SiteRoute.BASKETBALL -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.BASKETBALL.name)
+                    SiteRoute.FOOTBALL -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.FOOTBALL.name)
+                    SiteRoute.HOCKEY -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.HOCKEY.name)
                     else -> {
                         logger.error("Unrecognized Team: $route")
                         emptyList()
@@ -563,6 +608,48 @@ class WebSocketHandler(
             else -> {
                 logger.error("Unrecognized Route: $route")
                 emptyList()
+            }
+        }
+    }
+
+    private suspend fun subscribe(
+        subscription: Subscription,
+        activeBoxScores: ConcurrentHashMap<String, Job>,
+        activeComps: ConcurrentHashMap<Set<String>, Job>,
+        session: WebSocketServerSession
+    ) = coroutineScope {
+        when (subscription.type) {
+            MessageType.BOX_SCORES -> {
+                if(subscription.subscribe){
+                    SportJobs(services.sportApi).boxScoreJobs(subscription.ids ,activeBoxScores, session)
+                }else{
+                    subscription.ids.forEach { id ->
+                        activeBoxScores[id]?.cancel()
+                        activeBoxScores.remove(id)
+                    }
+                }
+            }
+            MessageType.COMPS -> {
+                val compJob = activeComps.entries.firstOrNull()
+                if(subscription.subscribe){
+                    val existingIds = compJob?.key ?: emptySet()
+                    // if any incoming ids don't exist in current set then restart with intersection of sets
+                    if(!existingIds.containsAll(subscription.ids)){
+                        compJob?.value?.cancel()
+                        compJob?.let { activeComps.remove(it.key) }
+                        val allIds = existingIds + subscription.ids
+                        val newCompJob = launch{
+                            SportJobs(services.sportApi).competitionJobs(allIds, session)
+                        }
+                        activeComps[allIds] = newCompJob
+                    } else null
+                }else{
+                    compJob?.value?.cancel()
+                    activeComps.remove(compJob?.key)
+                }
+            }
+            else -> {
+                logger.error("Unrecognized subscription type: ${subscription.type}")
             }
         }
     }

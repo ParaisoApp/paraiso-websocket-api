@@ -47,6 +47,19 @@ fun determineMessageType(frame: Frame): MessageType? {
         null
     }
 }
+fun determineMessageType(message: String): MessageType? {
+    return try {
+        val jsonElement = Json.parseToJsonElement(message)
+        val typeMapping = jsonElement.jsonObject["typeMapping"]?.jsonObject
+
+        typeMapping?.keys?.firstOrNull()?.let { key ->
+            MessageType.valueOf(key)
+        }
+    } catch (e: Exception) {
+        println("Error determining message type: $e")
+        null
+    }
+}
 
 internal suspend inline fun <reified T> WebsocketContentConverter.cleanAndType(
     frame: Frame,

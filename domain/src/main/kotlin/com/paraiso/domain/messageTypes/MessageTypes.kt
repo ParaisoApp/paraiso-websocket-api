@@ -1,6 +1,7 @@
 package com.paraiso.domain.messageTypes
 
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.users.UserRole
 import kotlinx.serialization.Serializable
 
@@ -39,6 +40,29 @@ data class Tag(
     val userId: String,
     val tag: String
 )
+
+@Serializable
+data class SubscriptionInfo(
+    val userId: String,
+    val sessionId: String,
+    val type: MessageType,
+    val ids: Set<String>,
+    val subscribe: Boolean
+)
+
+@Serializable
+data class Subscription(
+    val type: MessageType,
+    val ids: Set<String>,
+    val subscribe: Boolean
+)
+
+fun SubscriptionInfo.toSubscription() =
+    Subscription(
+        type = type,
+        ids = ids,
+        subscribe = subscribe
+    )
 
 fun FilterTypes.Companion.init() = FilterTypes(
     postTypes = setOf(

@@ -51,7 +51,15 @@ data class Favorite(
 data class Route(
     val route: SiteRoute,
     val modifier: SiteRoute,
-    val content: String?
+    val content: String?,
+    val ids: Set<String>
+)
+
+@Serializable
+data class SessionRoute(
+    val userId: String,
+    val sessionId: String,
+    val route: Route,
 )
 
 @Serializable
@@ -102,3 +110,5 @@ fun RouteDetails.toResponse(pinnedPostIds: List<String>, pinnedPosts: Map<String
         createdOn = createdOn,
         updatedOn = updatedOn
     )
+
+fun isSportRoute(route: String) = route == SiteRoute.FOOTBALL.name || route == SiteRoute.BASKETBALL.name || route == SiteRoute.HOCKEY.name

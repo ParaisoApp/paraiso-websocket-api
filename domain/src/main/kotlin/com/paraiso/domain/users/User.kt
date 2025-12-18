@@ -85,6 +85,7 @@ data class UserResponse(
     val socialLinks: Map<String, String>,
     val status: UserStatus?,
     val viewerContext: ViewerContext,
+    val sessionId: String?,
     val createdOn: Instant,
     val updatedOn: Instant
 ) { companion object }
@@ -104,35 +105,6 @@ data class ViewerContext(
     val following: Boolean?,
     val blocking: Boolean?
 )
-
-fun User.toResponse(status: UserStatus?, viewerContext: ViewerContext) =
-    UserResponse(
-        id = id,
-        name = name,
-        fullName = fullName,
-        email = email,
-        about = about,
-        location = location,
-        birthday = birthday,
-        chats = chats,
-        replies = replies,
-        score = score,
-        followers = followers,
-        following = following,
-        routeFavorites = routeFavorites,
-        reports = reports,
-        roles = roles,
-        banned = banned,
-        image = image,
-        settings = settings,
-        tipLinks = tipLinks,
-        socialLinks = socialLinks,
-        tag = tag,
-        status = status,
-        viewerContext = viewerContext,
-        createdOn = createdOn,
-        updatedOn = updatedOn
-    )
 
 // user list doesn't need all data
 fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
@@ -160,6 +132,7 @@ fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
         tag = tag,
         status = status,
         viewerContext = viewerContext,
+        sessionId = null,
         createdOn = createdOn,
         updatedOn = updatedOn
     )
@@ -224,6 +197,7 @@ fun UserResponse.Companion.newUser(
                 following = false,
                 blocking = false
             ),
+            sessionId = null,
             createdOn = now,
             updatedOn = now
         )
@@ -257,6 +231,7 @@ fun UserResponse.Companion.systemUser() =
                 following = false,
                 blocking = false
             ),
+            sessionId = null,
             createdOn = now,
             updatedOn = now
         )
