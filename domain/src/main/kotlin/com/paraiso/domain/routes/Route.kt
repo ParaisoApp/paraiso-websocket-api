@@ -49,17 +49,10 @@ data class Favorite(
 
 @Serializable
 data class Route(
+    val routeId: String,
     val route: SiteRoute,
     val modifier: SiteRoute,
-    val content: String?,
-    val ids: Set<String>
-)
-
-@Serializable
-data class SessionRoute(
-    val userId: String,
-    val sessionId: String,
-    val route: Route,
+    val content: String?
 )
 
 @Serializable

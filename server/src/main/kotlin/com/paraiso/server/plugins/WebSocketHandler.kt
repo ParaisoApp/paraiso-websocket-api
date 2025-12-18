@@ -11,6 +11,7 @@ import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
+import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.notifications.NotificationResponse
 import com.paraiso.domain.notifications.NotificationType
 import com.paraiso.domain.posts.PostType
@@ -26,13 +27,13 @@ import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.ViewerContext
 import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.toDomain
+import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.VoteResponse
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.server.plugins.jobs.SportJobs
-import com.paraiso.server.util.SessionContext
 import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.getMentions
@@ -44,6 +45,7 @@ import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -154,12 +156,14 @@ class WebSocketHandler(
                                     validateMessage(
                                         sessionUser.id,
                                         block?.blocking == true,
-                                        newMessage.type,
-                                        newMessage.userId,
+                                        newMessage,
                                         sessionContext
                                     )
                                 ) {
-                                    sendTypedMessage(type, newMessage)
+                                    val mappedMessage = if(sessionContext.routeId == HOME_PREFIX && message.replyId == message.route){
+                                        message.copy(replyId = HOME_PREFIX)
+                                    } else message
+                                    sendTypedMessage(type, mappedMessage)
                                 }
                             }
                         }
@@ -215,19 +219,20 @@ class WebSocketHandler(
     private suspend fun validateMessage(
         sessionUserId: String,
         blocking: Boolean,
-        postType: PostType,
-        userId: String?,
+        message: Message,
         sessionContext: SessionContext
-    ) =
-        sessionUserId == userId || // message is from the cur user or
-            (
-                !blocking && // user isnt in cur user's blocklist
-                        sessionContext.filterTypes.postTypes.contains(postType) && // and post/user type exists in filters
-                    userId != null &&
-                        sessionContext.filterTypes.userRoles.contains(
-                        services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
-                    )
-                )
+    ) = message.userId?.let { userId -> //user id not null condition
+        val isUser = sessionUserId == userId
+        val roles = services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
+        // user is on home - take any message, otherwise message must come from route
+        val routeCriteria = sessionContext.routeId == message.route
+        val filterCriteria =
+            sessionContext.filterTypes.userRoles.contains(roles) &&
+            sessionContext.filterTypes.postTypes.contains(message.type) &&
+            routeCriteria
+        val messageCriteria = !blocking && filterCriteria // user isn't in cur user's block list
+        isUser || messageCriteria
+    } ?: false
 
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
         sessionUser: UserResponse,
@@ -235,7 +240,6 @@ class WebSocketHandler(
         sessionContext: SessionContext
     ) {
         // holds the active jobs for given route
-        var lastRoute: Route? = null
         val activeJobs = mutableListOf<Job>()
         val activeComps =  ConcurrentHashMap<Set<String>, Job>()
         val activeBoxScores = ConcurrentHashMap<String, Job>()
@@ -268,127 +272,13 @@ class WebSocketHandler(
                     MessageType.MSG -> {
                         converter?.cleanAndType<TypeMapping<Message>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
-                                val messageId: String = message.editId ?: UUID.randomUUID().toString()
-                                val userIdMentions = services.usersApi.addMentions(
-                                    // retreive mentions from content (parse with @)
-                                    getMentions(message.content),
-                                    message.userReceiveIds.firstOrNull(),
-                                    sessionUser.id
-                                )
-                                //create notifications for all mentions or replied users
-                                userIdMentions.map { userReceiveId ->
-                                    val type = if(message.userReceiveIds.firstOrNull() == userReceiveId) {
-                                        NotificationType.POST
-                                    } else {
-                                        NotificationType.MENTION
-                                    }
-                                    NotificationResponse(
-                                        id = "$userReceiveId-${sessionUser.id}-$messageId-${message.replyId}",
-                                        userId = userReceiveId,
-                                        createUserId = sessionUser.id,
-                                        refId = messageId,
-                                        replyId = message.replyId,
-                                        content = null,
-                                        type = type,
-                                        userRead = false,
-                                        createdOn = Clock.System.now(),
-                                        updatedOn = Clock.System.now()
-                                    )
-                                }.let { notifications ->
-                                    if(notifications.isNotEmpty()){
-                                        services.notificationsApi.save(notifications)
-                                    }
-                                }
-                                //create vote for create user
-                                launch {
-                                    services.votesApi.vote(
-                                        VoteResponse(
-                                            voterId = sessionUser.id,
-                                            voteeId = sessionUser.id,
-                                            type = message.type,
-                                            postId = messageId,
-                                            upvote = true
-                                        )
-                                    )
-                                }
-                                //add init vote to user score
-                                launch {
-                                    services.usersApi.votePost(
-                                        sessionUser.id,
-                                        1
-                                    )
-                                }
-                                message.copy(
-                                    id = messageId,
-                                    userId = sessionUser.id,
-                                    //if root id == message id then it's a post at the root of the route
-                                    rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
-                                    userReceiveIds = message.userReceiveIds.plus(userIdMentions)
-                                ).let { messageWithData ->
-                                    //shadow send message if user banned
-                                    if (sessionUser.banned) {
-                                        sendTypedMessage(MessageType.MSG, messageWithData)
-                                    } else {
-                                        // emit to this server, publish downstream to other servers
-                                        launch { services.postsApi.putPost(messageWithData) }
-                                        ServerState.messageFlowMut.emit(messageWithData)
-                                        eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
-                                    }
-                                }
+                                handleMessage(message, sessionUser)
                             }
                     }
                     MessageType.DM -> {
                         converter?.cleanAndType<TypeMapping<DirectMessageResponse>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
-                                dm.copy(
-                                    id = UUID.randomUUID().toString(),
-                                    userId = sessionUser.id
-                                ).let { dmWithData ->
-                                    launch { sendTypedMessage(MessageType.DM, dmWithData) }
-                                    val userReceiveBlocking = services.blocksApi.findIn(
-                                        dmWithData.userReceiveId,
-                                        listOf(sessionUser.id)
-                                    ).firstOrNull()?.blocking == true
-                                    if (
-                                        !sessionUser.banned &&
-                                        !userReceiveBlocking
-                                    ) {
-                                        // update chat for receiving user
-                                        launch {
-                                            if(dmWithData.userId != dmWithData.userReceiveId){
-                                                services.usersApi.addChat(
-                                                    dmWithData.userReceiveId,
-                                                )
-                                            }
-                                        }
-                                        launch {
-                                            dmWithData.id?.let {
-                                                services.userChatsApi.setMostRecentDm(it, dmWithData.chatId)
-                                            }
-                                        }
-                                        launch { services.directMessagesApi.save(dmWithData) }
-                                        // if user is on this server then grab session and send dm to user
-                                        if(dmWithData.userReceiveId != dmWithData.userId){
-                                            userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
-                                                receiveUserSessions.map { it.value.session }.forEach { session ->
-                                                    session.sendTypedMessage(MessageType.DM, dmWithData)
-                                                }
-                                            }
-                                            // find any other user server sessions, publish, and map to respective server subscriber
-                                            eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
-                                                val dmString = Json.encodeToString(dmWithData)
-                                                receiveUserSessions.serverSessions.keys
-                                                    .filter{ it != serverId }
-                                                    .forEach{server ->
-                                                    eventServiceImpl.publish(
-                                                        "server:$server",
-                                                        "$server:${MessageType.DM}:$dmString"
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                handleDm(dm, sessionUser)
                             }
                     }
                     MessageType.FOLLOW -> {
@@ -503,7 +393,7 @@ class WebSocketHandler(
                     MessageType.ROUTE -> {
                         converter?.cleanAndType<TypeMapping<Route>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { route ->
-                                if(lastRoute != route){
+                                if(sessionContext.routeId != route.routeId){
                                     //clear out any active subscriptions on full route change
                                     activeJobs.removeIf { job ->
                                         job.cancel()
@@ -520,7 +410,7 @@ class WebSocketHandler(
                                     activeJobs += launch {
                                         handleRoute(route, sessionContext.session)
                                     }
-                                    lastRoute = route
+                                    sessionContext.routeId = route.routeId
                                 }
                             }
                     }
@@ -579,7 +469,138 @@ class WebSocketHandler(
         }
     }
 
-    private suspend fun handleRoute(route: Route, session: WebSocketServerSession): List<Job> = coroutineScope {
+
+    private suspend fun WebSocketServerSession.handleMessage(
+        message: Message,
+        sessionUser: UserResponse
+    ) = coroutineScope {
+        val messageId: String = message.editId ?: UUID.randomUUID().toString()
+        val userIdMentions = services.usersApi.addMentions(
+            // retreive mentions from content (parse with @)
+            getMentions(message.content),
+            message.userReceiveIds.firstOrNull(),
+            sessionUser.id
+        )
+        //create notifications for all mentions or replied users
+        userIdMentions.map { userReceiveId ->
+            val type = if(message.userReceiveIds.firstOrNull() == userReceiveId) {
+                NotificationType.POST
+            } else {
+                NotificationType.MENTION
+            }
+            NotificationResponse(
+                id = "$userReceiveId-${sessionUser.id}-$messageId-${message.replyId}",
+                userId = userReceiveId,
+                createUserId = sessionUser.id,
+                refId = messageId,
+                replyId = message.replyId,
+                content = null,
+                type = type,
+                userRead = false,
+                createdOn = Clock.System.now(),
+                updatedOn = Clock.System.now()
+            )
+        }.let { notifications ->
+            if(notifications.isNotEmpty()){
+                services.notificationsApi.save(notifications)
+            }
+        }
+        //create vote for create user
+        launch {
+            services.votesApi.vote(
+                VoteResponse(
+                    voterId = sessionUser.id,
+                    voteeId = sessionUser.id,
+                    type = message.type,
+                    postId = messageId,
+                    upvote = true
+                )
+            )
+        }
+        //add init vote to user score
+        launch {
+            services.usersApi.votePost(
+                sessionUser.id,
+                1
+            )
+        }
+        message.copy(
+            id = messageId,
+            userId = sessionUser.id,
+            //if root id == message id then it's a post at the root of the route
+            rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
+            userReceiveIds = message.userReceiveIds.plus(userIdMentions)
+        ).let { messageWithData ->
+            //shadow send message if user banned
+            if (sessionUser.banned) {
+                sendTypedMessage(MessageType.MSG, messageWithData)
+            } else {
+                // emit to this server, publish downstream to other servers
+                launch { services.postsApi.putPost(messageWithData) }
+                ServerState.messageFlowMut.emit(messageWithData)
+                eventServiceImpl.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
+            }
+        }
+    }
+    private suspend fun WebSocketServerSession.handleDm(
+        dm: DirectMessageResponse,
+        sessionUser: UserResponse
+    ) = coroutineScope {
+        dm.copy(
+            id = UUID.randomUUID().toString(),
+            userId = sessionUser.id
+        ).let { dmWithData ->
+            launch { sendTypedMessage(MessageType.DM, dmWithData) }
+            val userReceiveBlocking = services.blocksApi.findIn(
+                dmWithData.userReceiveId,
+                listOf(sessionUser.id)
+            ).firstOrNull()?.blocking == true
+            if (
+                !sessionUser.banned &&
+                !userReceiveBlocking
+            ) {
+                // update chat for receiving user
+                launch {
+                    if(dmWithData.userId != dmWithData.userReceiveId){
+                        services.usersApi.addChat(
+                            dmWithData.userReceiveId,
+                        )
+                    }
+                }
+                launch {
+                    dmWithData.id?.let {
+                        services.userChatsApi.setMostRecentDm(it, dmWithData.chatId)
+                    }
+                }
+                launch { services.directMessagesApi.save(dmWithData) }
+                // if user is on this server then grab session and send dm to user
+                if(dmWithData.userReceiveId != dmWithData.userId){
+                    userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
+                        receiveUserSessions.map { it.value.session }.forEach { session ->
+                            session.sendTypedMessage(MessageType.DM, dmWithData)
+                        }
+                    }
+                    // find any other user server sessions, publish, and map to respective server subscriber
+                    eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
+                        val dmString = Json.encodeToString(dmWithData)
+                        receiveUserSessions.serverSessions.keys
+                            .filter{ it != serverId }
+                            .forEach{server ->
+                                eventServiceImpl.publish(
+                                    "server:$server",
+                                    "$server:${MessageType.DM}:$dmString"
+                                )
+                            }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun handleRoute(
+        route: Route,
+        session: WebSocketServerSession
+    ): List<Job> = coroutineScope {
         when (route.route) {
             SiteRoute.HOME -> HomeJobs().homeJobs(session)
             SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
@@ -654,3 +675,10 @@ class WebSocketHandler(
         }
     }
 }
+data class SessionContext(
+    val session: WebSocketServerSession,
+    val sessionId: String = UUID.randomUUID().toString(),
+    val inboundChannel: Channel<String> = Channel(Channel.UNLIMITED),
+    var routeId: String? = null,
+    var filterTypes: FilterTypes = FilterTypes.init()
+)

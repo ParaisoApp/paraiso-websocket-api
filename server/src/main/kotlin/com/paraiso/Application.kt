@@ -67,8 +67,8 @@ import com.paraiso.domain.votes.VotesApi
 import com.paraiso.events.EventServiceImpl
 import com.paraiso.server.plugins.MessageHandler
 import com.paraiso.server.plugins.ServerHandler
+import com.paraiso.server.plugins.SessionContext
 import com.paraiso.server.plugins.WebSocketHandler
-import com.paraiso.server.util.SessionContext
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod

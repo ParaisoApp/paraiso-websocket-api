@@ -6,16 +6,13 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
-import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.toSubscription
 import com.paraiso.domain.routes.Favorite
-import com.paraiso.domain.routes.SessionRoute
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
-import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.userchats.DirectMessageResponse
@@ -23,7 +20,6 @@ import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.VoteResponse
 import com.paraiso.events.EventServiceImpl
-import com.paraiso.server.util.SessionContext
 import com.paraiso.server.util.decodeMessage
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
