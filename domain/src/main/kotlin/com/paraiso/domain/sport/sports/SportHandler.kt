@@ -178,6 +178,7 @@ class SportHandler(
                         parentId = "/s/${sport.name.lowercase()}/t/$key",
                         rootId = "$TEAM_PREFIX$key-${competition.id}",
                         data = sport.name,
+                        route = "/s/${sport.name.lowercase()}/t/$key",
                         createdOn = competition.date,
                         updatedOn = competition.date
                     ),
@@ -190,6 +191,7 @@ class SportHandler(
                         parentId = "/${sport.name}",
                         rootId = "$GAME_PREFIX${competition.id}",
                         data = sport.name,
+                        route = "/${sport.name}",
                         createdOn = competition.date,
                         updatedOn = competition.date
                     )
@@ -284,8 +286,6 @@ class SportHandler(
     ) = coroutineScope {
         //deep comparison for changes
         if (scoreboard != lastSentScoreboard[sport]) {
-            val scoreboardEntity = scoreboard.toEntity()
-            sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))
             if(activeCompetitions.isNotEmpty()){
                 sportDBs.competitionsDB.save(activeCompetitions)
                 if (enableBoxScore){
@@ -301,7 +301,9 @@ class SportHandler(
                 "$sport:${Json.encodeToString(activeCompetitions)}"
             )
             //send scoreboard last as it will trigger refresh of comp consumers
+            val scoreboardEntity = scoreboard.toEntity()
             if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
+                sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))
                 eventService.publish(
                     MessageType.SCOREBOARD.name,
                     "$sport:${Json.encodeToString(scoreboardEntity)}"
