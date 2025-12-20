@@ -223,7 +223,7 @@ class SportHandler(
             while (isActive) {
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     // if completely new scoreboard save it and generate game posts
-                    if (scoreboard.competitions.map { it.id }.toSet() != lastSentScoreboard[sport]?.competitions?.map { it.id }?.toSet()) {
+                    if (scoreboard.toEntity() != lastSentScoreboard[sport]?.toEntity()) {
                         saveScoreboardAndGetBoxScores(
                             sport,
                             scoreboard,
