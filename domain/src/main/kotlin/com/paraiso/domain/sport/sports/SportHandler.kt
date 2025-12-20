@@ -28,6 +28,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
@@ -232,8 +235,12 @@ class SportHandler(
                             true
                         )
                     } else {
+                        //football scoreboard may have games before current day, filter those out based on est
+                        val easternTz: TimeZone = TimeZone.of("America/New_York")
                         // grab earliest game's start time and state of all games
-                        val earliestTime = scoreboard.competitions.minOf { it.date ?: Instant.DISTANT_PAST }
+                        val earliestTime = scoreboard.competitions.filter {
+                            Clock.System.todayIn(easternTz) == it.date?.toLocalDateTime(easternTz)?.date
+                        }.minOf { it.date ?: Instant.DISTANT_PAST }
                         val allStates = scoreboard.competitions.map { it.status.state }.toSet()
                         val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed} ?: emptyMap()
                         // if some games are past the earliest start time update scoreboard and box scores
