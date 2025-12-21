@@ -236,12 +236,12 @@ class SportHandler(
                         )
                     } else {
                         //football scoreboard may have games before current day, filter those out based on est
-                        val easternTz: TimeZone = TimeZone.of("America/New_York")
+                        val utcSub10: TimeZone = TimeZone.of("UTC-10")
                         // grab earliest game's start time and state of all games
                         val earliestTime = scoreboard.competitions.filter {
-                            Clock.System.todayIn(easternTz) == it.date?.toLocalDateTime(easternTz)?.date
-                        }.minOf { it.date ?: Instant.DISTANT_PAST }
-                        val allStates = scoreboard.competitions.map { it.status.state }.toSet()
+                            Clock.System.todayIn(utcSub10) == it.date?.toLocalDateTime(utcSub10)?.date
+                        }.minOfOrNull { it.date ?: Instant.DISTANT_PAST } ?: Instant.DISTANT_PAST
+                        val allCompletedStates = scoreboard.competitions.map { it.status.completed }.toSet()
                         val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed} ?: emptyMap()
                         // if some games are past the earliest start time update scoreboard and box scores
                         if (Clock.System.now() > earliestTime) {
@@ -259,8 +259,7 @@ class SportHandler(
                             )
                             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                             if (
-                                !allStates.contains("pre") &&
-                                !allStates.contains("in") &&
+                                !allCompletedStates.contains(false) &&
                                 Clock.System.now() > earliestTime.plus(1.hours)
                             ) {
                                 delay(1.hours)
