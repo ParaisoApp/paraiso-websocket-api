@@ -1,0 +1,35 @@
+{
+  "sinks": {
+    "stdout": {
+      "renderWith": "RENDER_SIMPLE",
+      "sendTo": "STDOUT"
+    },
+    "seq": {
+      "seqServer": "http://localhost:5341"
+    }
+  },
+  "logging": [
+    {
+      "fromLoggerBase": "com.paraiso",
+      "levelRanges": [
+        {
+          "fromMinLevel": "INFO",
+          "toSinks": [
+            "stdout"
+          ]
+        }
+      ]
+    },{
+      "fromLoggerBase": "ktor.application",
+      "levelRanges": [{ "fromMinLevel": "INFO", "toSinks": ["stdout"] }]
+    },
+    {
+      "fromLoggerBase": "org.mongodb.driver",
+      "levelRanges": [{ "fromMinLevel": "WARN", "toSinks": ["stdout"] }]
+    },
+    {
+      "fromLoggerBase": "io.netty",
+      "levelRanges": [{ "fromMinLevel": "WARN", "toSinks": ["stdout"] }]
+    }
+  ]
+}

@@ -2,11 +2,9 @@ package com.paraiso.api.sports
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.SportHandler
-import com.paraiso.domain.users.UserSettings
 import com.paraiso.server.plugins.ServerHandler
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
-import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
@@ -52,7 +50,7 @@ fun Route.dataGenerationController(
         post("/fillCompetitionData") {
             sportHandler.fillCompetitionData(
                 enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                call.request.queryParameters["dates"] ?: "",
+                call.request.queryParameters["dates"] ?: ""
             )
             call.respond(HttpStatusCode.OK)
         }

@@ -27,8 +27,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
-    implementation("io.klogging:klogging-jvm:0.5.11")
-    implementation("ch.qos.logback:logback-classic:1.2.3")
+    implementation("io.klogging:klogging-jvm:0.7.0")
+    implementation("io.klogging:slf4j-klogging:0.7.0")
     // xss filter and scraping
     implementation("org.jsoup:jsoup:1.17.2")
 }

@@ -1,24 +1,14 @@
 package com.paraiso.domain.routes
 
 import com.paraiso.domain.messageTypes.FilterTypes
-import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.InitRouteData
 import com.paraiso.domain.posts.PostPinsApi
-import com.paraiso.domain.posts.PostResponse
-import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.Range
 import com.paraiso.domain.posts.SortType
-import com.paraiso.domain.sport.sports.SportApi
-import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserSessionsApi
-import com.paraiso.domain.util.Constants
-import com.paraiso.domain.util.Constants.GAME_PREFIX
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 class RoutesApi(
     private val routesDB: RoutesDB,
@@ -27,7 +17,7 @@ class RoutesApi(
     private val userSessionsApi: UserSessionsApi
 ) {
     suspend fun getById(id: String, userId: String, sessionId: String): RouteResponse? {
-        postPinsApi.findByRouteId(id).let {pinnedPosts ->
+        postPinsApi.findByRouteId(id).let { pinnedPosts ->
             val postIds = pinnedPosts.map { it.postId }
             val posts = postsApi.getByIds(userId, postIds.toSet(), sessionId)
             return routesDB.findById(id)?.toResponse(postIds, posts.posts)
@@ -59,7 +49,7 @@ class RoutesApi(
                 userId,
                 sessionId
             )
-            if(postId != null){
+            if (postId != null) {
                 postsApi.getById(
                     postId,
                     Range.DAY,
@@ -67,7 +57,7 @@ class RoutesApi(
                     filters,
                     userId,
                     sessionId
-                )?.posts?.values?.firstOrNull()?.let{ postById ->
+                )?.posts?.values?.firstOrNull()?.let { postById ->
                     postsData.posts[postId] = postById
                 }
             }

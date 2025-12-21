@@ -29,11 +29,11 @@ class UserChatsApi(
 
     suspend fun findByUserId(userId: String) =
         userChatsDB.findByUserId(userId).let { userChats ->
-            val recentDms = directMessagesApi.findByIdIn(userChats.mapNotNull{ it.recentDm }).associateBy {
+            val recentDms = directMessagesApi.findByIdIn(userChats.mapNotNull { it.recentDm }).associateBy {
                 it.id
             }
             userChats.map {
-                val dms = recentDms[it.recentDm]?.let{recentDm ->
+                val dms = recentDms[it.recentDm]?.let { recentDm ->
                     listOf(recentDm)
                 } ?: emptyList()
                 it.toResponse(dms)

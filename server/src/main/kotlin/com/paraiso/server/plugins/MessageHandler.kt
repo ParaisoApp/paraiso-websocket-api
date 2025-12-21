@@ -62,7 +62,7 @@ class MessageHandler(
                     when (channel) {
                         "server:$serverId" -> {
                             val (type, payload) = message.split(":", limit = 2)
-                            when(type){
+                            when (type) {
                                 MessageType.SUBSCRIBE.name -> {
                                     decodeMessage<SubscriptionInfo>(payload)?.let { subscriptionInfo ->
                                         val typeMapping = TypeMapping(typeMapping = mapOf(MessageType.SUBSCRIBE to subscriptionInfo.toSubscription()))

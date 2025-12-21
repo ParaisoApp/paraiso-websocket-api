@@ -6,24 +6,16 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.userchats.DirectMessagesDB
-import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.votes.Vote
-import com.paraiso.domain.votes.VotesDB
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
-import java.util.Date
 
 class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB {
 
@@ -34,7 +26,7 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB {
             if (ids.size == 1) {
                 collection.find(
                     and(
-                        eq(ID, ids.firstOrNull()),
+                        eq(ID, ids.firstOrNull())
                     )
                 ).toList()
             } else {
@@ -49,7 +41,7 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB {
         withContext(Dispatchers.IO) {
             collection.find(
                 and(
-                    eq(DirectMessage::chatId.name, chatId),
+                    eq(DirectMessage::chatId.name, chatId)
                 )
             ).toList()
         }

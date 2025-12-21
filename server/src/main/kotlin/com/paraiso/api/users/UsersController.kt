@@ -40,7 +40,7 @@ fun Route.usersController(usersApi: UsersApi) {
         }
         post("/markReportsRead") {
             usersApi.markReportsRead(
-                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["id"] ?: ""
             )
             call.respond(HttpStatusCode.OK)
         }

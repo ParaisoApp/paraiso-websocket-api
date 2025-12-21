@@ -58,7 +58,6 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB {
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
 
-
     override suspend fun setVote(voterId: String, postId: String, vote: Boolean) =
         withContext(Dispatchers.IO) {
             collection.updateOne(

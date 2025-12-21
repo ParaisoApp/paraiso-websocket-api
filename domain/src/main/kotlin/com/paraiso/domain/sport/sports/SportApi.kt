@@ -3,7 +3,6 @@ package com.paraiso.domain.sport.sports
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
-import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.ScoreboardResponse
 import com.paraiso.domain.sport.data.StandingsResponse
 import com.paraiso.domain.sport.data.toDomain
@@ -27,13 +26,13 @@ class SportApi(private val sportDBs: SportDBs) {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
         if (sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
-                standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map {standings ->
+                standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map { standings ->
                     val team = teamsRes.await()[standings.teamId]
                     standings.toResponse(team, standingsGroup.confName, standingsGroup.confAbbr, null, null)
                 }.sortedBy { it.seed }
             }
         } else {
-            sportDBs.standingsDB.findById(sport)?.standingsGroups?.let {standingsGroups ->
+            sportDBs.standingsDB.findById(sport)?.standingsGroups?.let { standingsGroups ->
                 standingsGroups.associate { confGroup ->
                     val allStandings = confGroup.subGroups.flatMap { standingsSubGroup ->
                         standingsSubGroup.standings.map { standings ->
@@ -138,7 +137,11 @@ class SportApi(private val sportDBs: SportDBs) {
         past: Boolean
     ) =
         sportDBs.competitionsDB.findScoreboard(
-            sport, year, type, modifier, past
+            sport,
+            year,
+            type,
+            modifier,
+            past
         ).let { comps ->
             val compRef = comps.firstOrNull()
             val estZone = TimeZone.of("America/New_York")

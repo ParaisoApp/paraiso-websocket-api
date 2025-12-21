@@ -35,7 +35,7 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
     override suspend fun findByIds(ids: Set<String>): List<Team> =
         withContext(Dispatchers.IO) {
             collection.find(
-                `in`(ID, ids),
+                `in`(ID, ids)
             ).toList()
         }
 

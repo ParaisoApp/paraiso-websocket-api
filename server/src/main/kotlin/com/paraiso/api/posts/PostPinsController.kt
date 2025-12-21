@@ -9,7 +9,6 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 
-
 fun Route.postPinsController(postPinsApi: PostPinsApi) {
     route("postPins") {
         post {
@@ -24,7 +23,7 @@ fun Route.postPinsController(postPinsApi: PostPinsApi) {
         }
         delete {
             postPinsApi.delete(
-                call.request.queryParameters["id"] ?: "",
+                call.request.queryParameters["id"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK)
             }

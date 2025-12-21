@@ -1,6 +1,5 @@
 package com.paraiso.database.userchats
 
-import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.all
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.ReplaceOneModel

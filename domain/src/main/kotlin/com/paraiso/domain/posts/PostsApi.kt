@@ -58,8 +58,8 @@ class PostsApi(
                 filters,
                 userId,
                 followees
-            ).let{ posts ->
-                //pull in event related data - with subscription
+            ).let { posts ->
+                // pull in event related data - with subscription
                 val (teams, comps) = pullEventData(posts, userId, sessionId, subscribe = postSearchId == HOME_PREFIX)
 
                 PostsData(posts, teams, comps)
@@ -85,8 +85,8 @@ class PostsApi(
             FilterTypes.init(),
             userId,
             emptySet()
-        ).let{ posts ->
-            //pull in event related data - no subscription
+        ).let { posts ->
+            // pull in event related data - no subscription
             val (teams, comps) =
                 pullEventData(posts, userId, sessionId, subscribe = false)
             posts.remove(PLACEHOLDER_ID)
@@ -100,7 +100,7 @@ class PostsApi(
             val resultPosts = foundPosts.associate { foundPost ->
                 (foundPost.id ?: UNKNOWN) to foundPost.toResponse(votes[foundPost.id]?.upvote)
             }
-            //pull in event related data - no subscription
+            // pull in event related data - no subscription
             val (teams, comps) = pullEventData(resultPosts, userId, sessionId, subscribe = false)
             PostsData(resultPosts.toMutableMap(), teams, comps)
         }
@@ -135,7 +135,7 @@ class PostsApi(
                     userId,
                     followees
                 )
-                //pull in event related data
+                // pull in event related data
                 val (teams, comps) = pullEventData(posts, userId, sessionId, subscribe = postSearchId == HOME_PREFIX)
                 PostsData(posts, teams, comps)
             }
@@ -152,16 +152,16 @@ class PostsApi(
     ) = coroutineScope {
         LinkedHashMap<String, Post>().let { returnPosts ->
             if (root.id != null) returnPosts[root.id] = root
-            //add all init sub posts to return
-            postsQueue.forEach {post ->
-                post.id?.let{
+            // add all init sub posts to return
+            postsQueue.forEach { post ->
+                post.id?.let {
                     returnPosts[post.id] = post
                 }
             }
             while (postsQueue.isNotEmpty()) {
                 val nextRefNode = postsQueue.removeFirst()
-                //no need to search for sub posts if none exist beneath
-                val subPosts = if(nextRefNode.count > 0 ) {
+                // no need to search for sub posts if none exist beneath
+                val subPosts = if (nextRefNode.count > 0) {
                     postsDB.findByParentId(
                         nextRefNode.id ?: UNKNOWN,
                         range,
@@ -179,11 +179,11 @@ class PostsApi(
                     }
                 }
             }
-            //grab all user votes for each post
+            // grab all user votes for each post
             val votes = votesApi.getByUserIdAndPostIdIn(userId, returnPosts.keys)
             val responseMap = LinkedHashMap<String, PostResponse>()
-            //map to response object and add user vote response
-            returnPosts.reversed().forEach  { (id, post) ->
+            // map to response object and add user vote response
+            returnPosts.reversed().forEach { (id, post) ->
                 responseMap[id] = post.toResponse(votes[id]?.upvote)
             }
             responseMap
@@ -198,14 +198,14 @@ class PostsApi(
     ) = coroutineScope {
         val events = responseMap.filter { it.value.type === PostType.EVENT }
         val eventIds = events.map { it.key.removePrefix(Constants.GAME_PREFIX) }.toSet()
-        if(subscribe){
+        if (subscribe) {
             launch {
                 subscribeToEvents(eventIds, userId, sessionId)
             }
         }
-        val teamResponse = async{
+        val teamResponse = async {
             val teamIds = events.mapNotNull { event ->
-                event.value.title?.split("@")?.map {teamAbbr -> "${event.value.data}-${teamAbbr.trim()}" }
+                event.value.title?.split("@")?.map { teamAbbr -> "${event.value.data}-${teamAbbr.trim()}" }
             }
             sportApi.findTeamsByIds(teamIds.flatten().toSet()).associateBy { it.id }
         }
@@ -275,7 +275,7 @@ class PostsApi(
 
     // subscribe user to necessary events based on the server/session
     private suspend fun subscribeToEvents(eventIds: Set<String>, userId: String, sessionId: String) = coroutineScope {
-        if(eventIds.isNotEmpty()){
+        if (eventIds.isNotEmpty()) {
             eventService.getUserSession(userId)?.let { receiveUserSessions ->
                 receiveUserSessions.serverSessions.asSequence().find { it.value.contains(sessionId) }
                     ?.let { serverMap ->
@@ -307,5 +307,5 @@ data class PostsData(
 data class InitRouteData(
     val postsData: PostsData,
     val users: Map<String, UserResponse>,
-    val route: RouteResponse,
+    val route: RouteResponse
 )

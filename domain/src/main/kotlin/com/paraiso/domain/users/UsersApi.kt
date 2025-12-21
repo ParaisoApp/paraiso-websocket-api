@@ -82,7 +82,7 @@ class UsersApi(
                             favorite.modifier,
                             favorite.title,
                             favorite.favorite,
-                            favorite.icon,
+                            favorite.icon
                         )
                     )
                 }
@@ -94,9 +94,9 @@ class UsersApi(
         usersDB.setScore(userId, score)
 
     suspend fun addChat(
-        userId: String?,
+        userId: String?
     ) =
-        userId?.let{
+        userId?.let {
             usersDB.addChat(it)
         }
     suspend fun tagUser(tag: Tag) =

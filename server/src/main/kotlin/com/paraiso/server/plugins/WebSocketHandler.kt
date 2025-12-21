@@ -14,7 +14,6 @@ import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.notifications.NotificationResponse
 import com.paraiso.domain.notifications.NotificationType
-import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
 import com.paraiso.domain.routes.RouteDetails
@@ -63,7 +62,7 @@ class WebSocketHandler(
 ) : Klogging {
 
     suspend fun connect(
-    session: WebSocketServerSession
+        session: WebSocketServerSession
     ) {
         val sessionContext = SessionContext(session)
         val existingUser = services.userSessionsApi.getUserById(
@@ -80,6 +79,7 @@ class WebSocketHandler(
         val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { ConcurrentHashMap() }
         sessionsForUser[sessionContext.sessionId] = sessionContext
         session.handleUser(sessionContext.sessionId, currentUser, existingUser == null, sessionContext)
+        logger.info { "Testing logger" }
     }
 
     private suspend fun WebSocketServerSession.handleUser(
@@ -121,7 +121,7 @@ class WebSocketHandler(
                     id = UUID.randomUUID().toString(),
                     userId = currentUser.id,
                     serverSessions = mapOf(serverId to setOf(sessionId)),
-                    status = UserStatus.CONNECTED,
+                    status = UserStatus.CONNECTED
                 ).toDomain()
             }
             eventServiceImpl.saveUserSession(sessionToSave)
@@ -141,7 +141,7 @@ class WebSocketHandler(
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
-        //setup message intake (from others)
+        // setup message intake (from others)
         ServerState.flowList.map { (type, sharedFlow) ->
             launch {
                 sharedFlow.collect { message ->
@@ -160,9 +160,11 @@ class WebSocketHandler(
                                         sessionContext
                                     )
                                 ) {
-                                    val mappedMessage = if(sessionContext.routeId == HOME_PREFIX && message.replyId == message.route){
+                                    val mappedMessage = if (sessionContext.routeId == HOME_PREFIX && message.replyId == message.route) {
                                         message.copy(replyId = HOME_PREFIX)
-                                    } else message
+                                    } else {
+                                        message
+                                    }
                                     sendTypedMessage(type, mappedMessage)
                                 }
                             }
@@ -188,7 +190,7 @@ class WebSocketHandler(
                                     banned = false,
                                     viewerContext = ViewerContext(
                                         following = follow?.following,
-                                        blocking = block?.blocking,
+                                        blocking = block?.blocking
                                     )
                                 )
                             )
@@ -221,15 +223,15 @@ class WebSocketHandler(
         blocking: Boolean,
         message: Message,
         sessionContext: SessionContext
-    ) = message.userId?.let { userId -> //user id not null condition
+    ) = message.userId?.let { userId -> // user id not null condition
         val isUser = sessionUserId == userId
         val roles = services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
         // user is on home - take any message, otherwise message must come from route
         val routeCriteria = sessionContext.routeId == message.route
         val filterCriteria =
             sessionContext.filterTypes.userRoles.contains(roles) &&
-            sessionContext.filterTypes.postTypes.contains(message.type) &&
-            routeCriteria
+                sessionContext.filterTypes.postTypes.contains(message.type) &&
+                routeCriteria
         val messageCriteria = !blocking && filterCriteria // user isn't in cur user's block list
         isUser || messageCriteria
     } ?: false
@@ -241,7 +243,7 @@ class WebSocketHandler(
     ) {
         // holds the active jobs for given route
         val activeJobs = mutableListOf<Job>()
-        val activeComps =  ConcurrentHashMap<Set<String>, Job>()
+        val activeComps = ConcurrentHashMap<Set<String>, Job>()
         val activeBoxScores = ConcurrentHashMap<String, Job>()
         try {
             launch {
@@ -262,8 +264,7 @@ class WebSocketHandler(
                         }
                     }
                 } catch (e: Exception) {
-                    // Log other errors
-                    println("Redis Collector Job failed: $e")
+                    logger.error { "Redis Collector Job failed: $e" }
                 }
             }
 
@@ -301,8 +302,8 @@ class WebSocketHandler(
                                     sendTypedMessage(MessageType.FAVORITE, favorite)
                                 } else {
                                     launch { services.usersApi.toggleFavoriteRoute(favorite) }
-                                    //indicates toggle on or off rather than adding route flair
-                                    if(favorite.toggle){
+                                    // indicates toggle on or off rather than adding route flair
+                                    if (favorite.toggle) {
                                         launch { services.routesApi.toggleFavoriteRoute(favorite) }
                                     }
                                     ServerState.favoriteFlowMut.emit(favorite)
@@ -393,18 +394,20 @@ class WebSocketHandler(
                     MessageType.ROUTE -> {
                         converter?.cleanAndType<TypeMapping<Route>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { route ->
-                                if(sessionContext.routeId != route.routeId){
-                                    //clear out any active subscriptions on full route change
+                                if (sessionContext.routeId != route.routeId) {
+                                    // clear out any active subscriptions on full route change
                                     activeJobs.removeIf { job ->
                                         job.cancel()
                                         true
                                     }
-                                    activeBoxScores.entries.removeIf{
-                                        sub -> sub.value.cancel()
+                                    activeBoxScores.entries.removeIf {
+                                            sub ->
+                                        sub.value.cancel()
                                         true
                                     }
-                                    activeComps.entries.removeIf{
-                                        sub -> sub.value.cancel()
+                                    activeComps.entries.removeIf {
+                                            sub ->
+                                        sub.value.cancel()
                                         true
                                     }
                                     activeJobs += launch {
@@ -422,6 +425,7 @@ class WebSocketHandler(
                                 }
                             }
                     }
+                    MessageType.PING -> {}
                     else -> logger.error { "Unexpected message received from client: $frame, messageType: $messageType" }
                 }
             }
@@ -458,7 +462,7 @@ class WebSocketHandler(
                         eventServiceImpl.saveUserSession(existingSession.copy(serverSessions = serverSessions))
                     }
                     // remove user from local map if no sessions remain on server
-                    userDisconnected?.id?.let{userId ->
+                    userDisconnected?.id?.let { userId ->
                         userSessions.computeIfPresent(userId) { _, sessionsMap ->
                             sessionsMap.remove(sessionId)
                             sessionsMap.ifEmpty { null }
@@ -468,7 +472,6 @@ class WebSocketHandler(
             }
         }
     }
-
 
     private suspend fun WebSocketServerSession.handleMessage(
         message: Message,
@@ -481,9 +484,9 @@ class WebSocketHandler(
             message.userReceiveIds.firstOrNull(),
             sessionUser.id
         )
-        //create notifications for all mentions or replied users
+        // create notifications for all mentions or replied users
         userIdMentions.map { userReceiveId ->
-            val type = if(message.userReceiveIds.firstOrNull() == userReceiveId) {
+            val type = if (message.userReceiveIds.firstOrNull() == userReceiveId) {
                 NotificationType.POST
             } else {
                 NotificationType.MENTION
@@ -501,11 +504,11 @@ class WebSocketHandler(
                 updatedOn = Clock.System.now()
             )
         }.let { notifications ->
-            if(notifications.isNotEmpty()){
+            if (notifications.isNotEmpty()) {
                 services.notificationsApi.save(notifications)
             }
         }
-        //create vote for create user
+        // create vote for create user
         launch {
             services.votesApi.vote(
                 VoteResponse(
@@ -517,7 +520,7 @@ class WebSocketHandler(
                 )
             )
         }
-        //add init vote to user score
+        // add init vote to user score
         launch {
             services.usersApi.votePost(
                 sessionUser.id,
@@ -527,11 +530,11 @@ class WebSocketHandler(
         message.copy(
             id = messageId,
             userId = sessionUser.id,
-            //if root id == message id then it's a post at the root of the route
+            // if root id == message id then it's a post at the root of the route
             rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
             userReceiveIds = message.userReceiveIds.plus(userIdMentions)
         ).let { messageWithData ->
-            //shadow send message if user banned
+            // shadow send message if user banned
             if (sessionUser.banned) {
                 sendTypedMessage(MessageType.MSG, messageWithData)
             } else {
@@ -561,9 +564,9 @@ class WebSocketHandler(
             ) {
                 // update chat for receiving user
                 launch {
-                    if(dmWithData.userId != dmWithData.userReceiveId){
+                    if (dmWithData.userId != dmWithData.userReceiveId) {
                         services.usersApi.addChat(
-                            dmWithData.userReceiveId,
+                            dmWithData.userReceiveId
                         )
                     }
                 }
@@ -574,7 +577,7 @@ class WebSocketHandler(
                 }
                 launch { services.directMessagesApi.save(dmWithData) }
                 // if user is on this server then grab session and send dm to user
-                if(dmWithData.userReceiveId != dmWithData.userId){
+                if (dmWithData.userReceiveId != dmWithData.userId) {
                     userSessions[dmWithData.userReceiveId]?.let { receiveUserSessions ->
                         receiveUserSessions.map { it.value.session }.forEach { session ->
                             session.sendTypedMessage(MessageType.DM, dmWithData)
@@ -584,8 +587,8 @@ class WebSocketHandler(
                     eventServiceImpl.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
                         val dmString = Json.encodeToString(dmWithData)
                         receiveUserSessions.serverSessions.keys
-                            .filter{ it != serverId }
-                            .forEach{server ->
+                            .filter { it != serverId }
+                            .forEach { server ->
                                 eventServiceImpl.publish(
                                     "server:$server",
                                     "$server:${MessageType.DM}:$dmString"
@@ -641,9 +644,9 @@ class WebSocketHandler(
     ) = coroutineScope {
         when (subscription.type) {
             MessageType.BOX_SCORES -> {
-                if(subscription.subscribe){
-                    SportJobs(services.sportApi).boxScoreJobs(subscription.ids ,activeBoxScores, session)
-                }else{
+                if (subscription.subscribe) {
+                    SportJobs(services.sportApi).boxScoreJobs(subscription.ids, activeBoxScores, session)
+                } else {
                     subscription.ids.forEach { id ->
                         activeBoxScores[id]?.cancel()
                         activeBoxScores.remove(id)
@@ -652,19 +655,21 @@ class WebSocketHandler(
             }
             MessageType.COMPS -> {
                 val compJob = activeComps.entries.firstOrNull()
-                if(subscription.subscribe){
+                if (subscription.subscribe) {
                     val existingIds = compJob?.key ?: emptySet()
                     // if any incoming ids don't exist in current set then restart with intersection of sets
-                    if(!existingIds.containsAll(subscription.ids)){
+                    if (!existingIds.containsAll(subscription.ids)) {
                         compJob?.value?.cancel()
                         compJob?.let { activeComps.remove(it.key) }
                         val allIds = existingIds + subscription.ids
-                        val newCompJob = launch{
+                        val newCompJob = launch {
                             SportJobs(services.sportApi).competitionJobs(allIds, session)
                         }
                         activeComps[allIds] = newCompJob
-                    } else null
-                }else{
+                    } else {
+                        null
+                    }
+                } else {
                     compJob?.value?.cancel()
                     activeComps.remove(compJob?.key)
                 }

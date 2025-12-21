@@ -15,17 +15,14 @@ import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
-import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.Post
-import com.paraiso.domain.posts.PostPin
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
@@ -278,7 +275,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 basePostName == SiteRoute.BASKETBALL.name ||
                 basePostName == SiteRoute.FOOTBALL.name ||
                 basePostName == SiteRoute.HOCKEY.name
-                ) {
+            ) {
                 // for sports add their respective gameposts
                 homeFilters.add(
                     and(

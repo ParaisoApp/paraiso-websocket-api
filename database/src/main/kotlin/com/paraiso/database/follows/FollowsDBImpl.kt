@@ -7,7 +7,6 @@ import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.blocks.Block
 import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.follows.FollowsDB
 import com.paraiso.domain.util.Constants.ID

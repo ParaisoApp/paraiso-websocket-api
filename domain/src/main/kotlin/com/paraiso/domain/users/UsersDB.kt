@@ -23,7 +23,7 @@ interface UsersDB {
         id: String
     ): Long
     suspend fun markReportsRead(
-        id: String,
+        id: String
     ): Long
     suspend fun addReport(): Long
     suspend fun setFollowers(
@@ -48,7 +48,7 @@ interface UsersDB {
         score: Int
     ): Long
     suspend fun addChat(
-        id: String,
+        id: String
     ): Long
     suspend fun setUserTag(
         tag: Tag

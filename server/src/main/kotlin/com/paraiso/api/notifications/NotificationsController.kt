@@ -1,7 +1,6 @@
 package com.paraiso.api.notifications
 
 import com.paraiso.domain.notifications.NotificationsApi
-import com.paraiso.domain.votes.VotesApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
@@ -23,7 +22,7 @@ fun Route.notificationsController(notificationsApi: NotificationsApi) {
             notificationsApi.setNotificationsRead(
                 call.request.queryParameters["userId"] ?: "",
                 call.request.queryParameters["type"] ?: "",
-                call.request.queryParameters["refId"],
+                call.request.queryParameters["refId"]
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }

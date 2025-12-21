@@ -65,12 +65,12 @@ fun Standings.toResponse(
     confName: String,
     confAbbr: String,
     divName: String?,
-    divAbbr: String?,
+    divAbbr: String?
 ): StandingsResponse {
     val mappedResponse = stats.associate {
         (it.shortDisplayName ?: "") to it.toResponse()
     }.toMutableMap()
-    //to build table rows (for team icon and team abbreviation)
+    // to build table rows (for team icon and team abbreviation)
     mappedResponse["abbr"] = StandingsStatResponse(
         shortDisplayName = "abbr",
         displayValue = team?.abbreviation,

@@ -3,9 +3,7 @@ package com.paraiso.domain.notifications
 import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -41,6 +39,7 @@ data class NotificationResponse(
 
 @Serializable
 sealed interface NotificationContent
+
 @Serializable
 data class PostNotificationContent(
     val post: PostResponse?
@@ -67,7 +66,7 @@ enum class NotificationType {
     FOLLOW,
 
     @SerialName("VOTE")
-    VOTE,
+    VOTE
 }
 
 fun NotificationResponse.toDomain(stringContent: String?) = Notification(

@@ -15,7 +15,7 @@ data class PostPin(
     val order: Int,
     val userId: String,
     @Serializable(with = InstantBsonSerializer::class)
-    val createdOn: Instant? = Clock.System.now(),
+    val createdOn: Instant? = Clock.System.now()
 )
 
 @Serializable
@@ -25,7 +25,7 @@ data class PostPinResponse(
     val postId: String,
     val order: Int,
     val userId: String,
-    val createdOn: Instant?,
+    val createdOn: Instant?
 )
 
 fun PostPinResponse.toResponse() = PostPin(
@@ -34,5 +34,5 @@ fun PostPinResponse.toResponse() = PostPin(
     postId = postId,
     order = order,
     userId = userId,
-    createdOn = createdOn,
+    createdOn = createdOn
 )

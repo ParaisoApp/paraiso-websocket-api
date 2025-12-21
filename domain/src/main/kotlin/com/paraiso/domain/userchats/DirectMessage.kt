@@ -2,13 +2,10 @@ package com.paraiso.domain.userchats
 
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
-import com.paraiso.domain.votes.Vote
-import com.paraiso.domain.votes.VoteResponse
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
 
 @Serializable
 data class DirectMessage(
@@ -21,7 +18,6 @@ data class DirectMessage(
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant?
 )
-
 
 @Serializable
 data class DirectMessageResponse(

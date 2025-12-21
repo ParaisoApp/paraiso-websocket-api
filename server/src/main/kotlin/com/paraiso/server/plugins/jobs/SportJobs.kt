@@ -2,7 +2,6 @@ package com.paraiso.server.plugins.jobs
 
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.Competition
-import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportState
@@ -16,7 +15,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,7 +34,7 @@ class SportJobs(
         session: WebSocketServerSession,
         sport: String
     ) = withContext(Dispatchers.IO) {
-        //gather triggers and rebuild combined flow if one of the competitions ends
+        // gather triggers and rebuild combined flow if one of the competitions ends
         val combinedCompsFlow = SportState.getAllTriggers()[sport]?.flatMapLatest { _ ->
             val compFlowList: List<StateFlow<Competition>> =
                 SportState.getCompetitionsBySport(sport)
@@ -47,8 +45,8 @@ class SportJobs(
         }
         listOf(
             launch {
-                //emit scoreboard info (generally once daily)
-                SportState.getScoreboardFlow(sport).collect{ sb ->
+                // emit scoreboard info (generally once daily)
+                SportState.getScoreboardFlow(sport).collect { sb ->
                     session.sendTypedMessage(
                         MessageType.SCOREBOARD,
                         sb.toResponse(sportApi.findCompetitionsByIds(sb.competitions.toSet()))
@@ -56,7 +54,7 @@ class SportJobs(
                 }
             },
             launch {
-                combinedCompsFlow?.sample(FLOW_DELAY)?.collect{comps ->
+                combinedCompsFlow?.sample(FLOW_DELAY)?.collect { comps ->
                     session.sendTypedMessage(MessageType.COMPS, comps.map { it.toResponse() }.associateBy { it.id })
                 }
             }
@@ -74,9 +72,9 @@ class SportJobs(
         }.let { compFlow ->
             listOf(
                 launch {
-                    compFlow?.collect{comp ->
+                    compFlow?.collect { comp ->
                         session.sendTypedMessage(MessageType.COMPS, mapOf(comp.id to comp.toResponse()))
-                        if(comp.status.completed) coroutineContext.cancel() // cancel collecting on game end
+                        if (comp.status.completed) coroutineContext.cancel() // cancel collecting on game end
                     }
                 }
             )
@@ -85,33 +83,34 @@ class SportJobs(
     suspend fun boxScoreJobs(
         ids: Set<String>,
         activeSubs: ConcurrentHashMap<String, Job>,
-        session: WebSocketServerSession,
+        session: WebSocketServerSession
     ) = withContext(Dispatchers.IO) {
         val boxScores = SportState.getAllBoxScores()
         ids.forEach { id ->
             activeSubs[id] = launch {
-                boxScores[id]?.collect{ boxScore ->
+                boxScores[id]?.collect { boxScore ->
                     session.sendTypedMessage(MessageType.BOX_SCORES, boxScore.toResponse())
-                    if(boxScore.completed == true) coroutineContext.cancel()
+                    if (boxScore.completed == true) coroutineContext.cancel()
                 }
             }
         }
     }
+
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     suspend fun competitionJobs(
         ids: Set<String>,
         session: WebSocketServerSession
     ) = withContext(Dispatchers.IO) {
-            val combinedTriggers = combine(SportState.getAllTriggers().values) { it.toList() }
-            val combinedCompsFlow = combinedTriggers.flatMapLatest { _ ->
-                val compFlowList: List<StateFlow<Competition>> =
-                    SportState.getCompetitionsIn(ids)
-                combine(compFlowList) { it.toList() }
+        val combinedTriggers = combine(SportState.getAllTriggers().values) { it.toList() }
+        val combinedCompsFlow = combinedTriggers.flatMapLatest { _ ->
+            val compFlowList: List<StateFlow<Competition>> =
+                SportState.getCompetitionsIn(ids)
+            combine(compFlowList) { it.toList() }
+        }
+        launch {
+            combinedCompsFlow.sample(FLOW_DELAY).collect { comps ->
+                session.sendTypedMessage(MessageType.COMPS, comps.map { it.toResponse() }.associateBy { it.id })
             }
-            launch {
-                combinedCompsFlow.sample(FLOW_DELAY).collect { comps ->
-                    session.sendTypedMessage(MessageType.COMPS, comps.map { it.toResponse() }.associateBy { it.id })
-                }
-            }
+        }
     }
 }

@@ -26,7 +26,7 @@ interface BaseAdapter : Klogging {
                 )
             }
             install(HttpTimeout) {
-                requestTimeoutMillis = 30_000   // 30 seconds
+                requestTimeoutMillis = 30_000 // 30 seconds
             }
             HttpResponseValidator {
                 handleResponseExceptionWithRequest { exception, request ->

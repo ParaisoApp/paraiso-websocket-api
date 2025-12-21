@@ -10,13 +10,11 @@ import com.mongodb.client.model.Filters.lt
 import com.mongodb.client.model.InsertOneModel
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.Sorts
 import com.mongodb.client.model.Sorts.ascending
 import com.mongodb.client.model.Sorts.descending
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition
-import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
@@ -31,9 +29,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.util.Date
-import kotlin.time.Duration.Companion.days
 
 class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
     private val collection = database.getCollection("competitions", Competition::class.java)
@@ -92,7 +88,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                             eq(Competition::sport.name, sport),
                             eq("${Competition::season.name}.year", year),
                             eq("${Competition::season.name}.type", type),
-                            eq(Competition::week.name, week),
+                            eq(Competition::week.name, week)
                         )
                     ).sort(ascending(Competition::date.name)).toList()
                 }
@@ -127,9 +123,9 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
         type: Int,
         modifier: String,
         past: Boolean
-    ) : List<Competition> =
+    ): List<Competition> =
         withContext(Dispatchers.IO) {
-            val estZone = TimeZone.of("America/New_York")  // for kotlinx.datetime
+            val estZone = TimeZone.of("America/New_York") // for kotlinx.datetime
             val estJavaZone = ZoneId.of("America/New_York") // for java.time conversions
 
             // Convert input instant to UTC local date (input is 00:00 so use utc)
@@ -145,11 +141,17 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
             val boundaryDate = Date.from(boundaryInstant.toJavaInstant())
 
             // Build direction filter
-            val direction = if (past) lt(Competition::date.name, boundaryDate)
-            else gt(Competition::date.name, boundaryDate)
+            val direction = if (past) {
+                lt(Competition::date.name, boundaryDate)
+            } else {
+                gt(Competition::date.name, boundaryDate)
+            }
 
-            val directionSort = if (past) descending(Competition::date.name)
-            else ascending(Competition::date.name)
+            val directionSort = if (past) {
+                descending(Competition::date.name)
+            } else {
+                ascending(Competition::date.name)
+            }
 
             // Find nearest event in that direction
             val nextEvent = collection.find(
@@ -176,7 +178,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                         eq("${Competition::season.name}.year", year),
                         eq("${Competition::season.name}.type", type),
                         gte(Competition::date.name, Date.from(startOfDay)),
-                        lt(Competition::date.name, Date.from(endOfDay)),
+                        lt(Competition::date.name, Date.from(endOfDay))
                     )
                 ).sort(ascending(Competition::date.name)).toList()
             } ?: emptyList()

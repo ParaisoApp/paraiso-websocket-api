@@ -5,7 +5,6 @@ import com.paraiso.domain.sport.data.Status
 import com.paraiso.domain.sport.data.TeamGameStats
 import com.paraiso.domain.sport.data.TeamYearStats
 import com.paraiso.domain.util.convertStringZToInstant
-import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException

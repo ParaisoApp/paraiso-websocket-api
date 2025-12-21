@@ -9,11 +9,8 @@ import com.mongodb.client.model.FindOneAndUpdateOptions
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.ReturnDocument
-import com.mongodb.client.model.Updates
-import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
-import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.messageTypes.Ban
@@ -26,7 +23,6 @@ import com.paraiso.domain.users.UserSettings
 import com.paraiso.domain.users.UsersDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
@@ -242,7 +238,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         }
 
     override suspend fun addChat(
-        id: String,
+        id: String
     ) =
         withContext(Dispatchers.IO) {
             collection.updateOne(

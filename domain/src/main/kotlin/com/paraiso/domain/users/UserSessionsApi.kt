@@ -40,7 +40,7 @@ class UserSessionsApi(
                     getStatus(session, it.settings.hidden),
                     ViewerContext(
                         follows.await()?.following,
-                        blocks.await()?.blocking,
+                        blocks.await()?.blocking
                     )
                 )
             }
@@ -56,7 +56,7 @@ class UserSessionsApi(
                     getStatus(session, user.settings.hidden),
                     ViewerContext(
                         follows.await()?.following,
-                        blocks.await()?.blocking,
+                        blocks.await()?.blocking
                     )
                 )
             }
@@ -96,8 +96,8 @@ class UserSessionsApi(
                             getStatus(session, user.settings.hidden),
                             ViewerContext(
                                 true,
-                                    blocks.await()[user.id]?.blocking
-                                )
+                                blocks.await()[user.id]?.blocking
+                            )
                         )
                     }
                 }

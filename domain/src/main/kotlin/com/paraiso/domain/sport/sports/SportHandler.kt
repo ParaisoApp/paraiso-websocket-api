@@ -35,7 +35,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class SportHandler(
@@ -153,7 +152,7 @@ class SportHandler(
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
-                    if(autoBuildPosts) {
+                    if (autoBuildPosts) {
                         addTeamPosts(sport, teams, schedulesRes)
                     }
                 }
@@ -235,27 +234,27 @@ class SportHandler(
                             true
                         )
                     } else {
-                        //football scoreboard may have games before current day, filter those out based on est
+                        // football scoreboard may have games before current day, filter those out based on est
                         val utcSub10: TimeZone = TimeZone.of("UTC-10")
                         // grab earliest game's start time and state of all games
                         val earliestTime = scoreboard.competitions.filter {
                             Clock.System.todayIn(utcSub10) == it.date?.toLocalDateTime(utcSub10)?.date
                         }.minOfOrNull { it.date ?: Instant.DISTANT_PAST } ?: Instant.DISTANT_PAST
                         val allCompletedStates = scoreboard.competitions.map { it.status.completed }.toSet()
-                        val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed} ?: emptyMap()
+                        val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
                         // if some games are past the earliest start time update scoreboard and box scores
                         if (Clock.System.now() > earliestTime) {
-                            //ending comps - filter to last completed false and cur completed true, copy in the end time
+                            // ending comps - filter to last completed false and cur completed true, copy in the end time
                             val endingCompetitions = scoreboard.competitions.filter {
                                 lastCompState[it.id] == false && it.status.completed
                             }.map { it.copy(status = it.status.copy(completedTime = Clock.System.now())) }
                             saveScoreboardAndGetBoxScores(
                                 sport,
                                 scoreboard,
-                                //ensure ending posts are saved (take as active comps)
+                                // ensure ending posts are saved (take as active comps)
                                 scoreboard.competitions.filter { !it.status.completed } + endingCompetitions,
-                                scoreboard.competitions.filter {  lastCompState[it.id] == true && it.status.completed },
-                                delayBoxScore == 0,
+                                scoreboard.competitions.filter { lastCompState[it.id] == true && it.status.completed },
+                                delayBoxScore == 0
                             )
                             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
                             if (
@@ -290,11 +289,11 @@ class SportHandler(
         inactiveCompetitions: List<Competition>,
         enableBoxScore: Boolean
     ) = coroutineScope {
-        //deep comparison for changes
+        // deep comparison for changes
         if (scoreboard != lastSentScoreboard[sport]) {
-            if(activeCompetitions.isNotEmpty()){
+            if (activeCompetitions.isNotEmpty()) {
                 sportDBs.competitionsDB.save(activeCompetitions)
-                if (enableBoxScore){
+                if (enableBoxScore) {
                     buildBoxscores(
                         sport,
                         activeCompetitions.map { it.id },
@@ -306,7 +305,7 @@ class SportHandler(
                 MessageType.COMPS.name,
                 "$sport:${Json.encodeToString(activeCompetitions)}"
             )
-            //send scoreboard last as it will trigger refresh of comp consumers
+            // send scoreboard last as it will trigger refresh of comp consumers
             val scoreboardEntity = scoreboard.toEntity()
             if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
                 sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))

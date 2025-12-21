@@ -1,6 +1,5 @@
 package com.paraiso.database.posts
 
-import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel

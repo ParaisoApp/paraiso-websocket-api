@@ -59,7 +59,7 @@ data class Status(
     val state: String,
     val completed: Boolean,
     @Serializable(with = InstantBsonSerializer::class)
-    val completedTime: Instant?,
+    val completedTime: Instant?
 )
 
 @Serializable

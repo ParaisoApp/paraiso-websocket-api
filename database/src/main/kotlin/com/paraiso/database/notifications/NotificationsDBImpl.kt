@@ -2,7 +2,6 @@ package com.paraiso.database.notifications
 
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
-import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
@@ -10,11 +9,9 @@ import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.notifications.Notification
-import com.paraiso.domain.notifications.NotificationType
 import com.paraiso.domain.notifications.NotificationsDB
 import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.votes.Vote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
@@ -31,7 +28,7 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB {
             collection.find(
                 or(
                     eq(Notification::userId.name, userId),
-                    eq(Notification::createUserId.name, userId),
+                    eq(Notification::createUserId.name, userId)
                 )
             ).toList()
         }
@@ -57,11 +54,11 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB {
             val condList = mutableListOf(
                 or(
                     eq(Notification::userId.name, userId),
-                    eq(Notification::createUserId.name, userId),
+                    eq(Notification::createUserId.name, userId)
                 ),
                 eq(Notification::type.name, type)
             )
-            if(refId != null){
+            if (refId != null) {
                 condList.add(
                     eq(Notification::refId.name, refId)
                 )
