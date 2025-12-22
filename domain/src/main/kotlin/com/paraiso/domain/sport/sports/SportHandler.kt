@@ -232,7 +232,6 @@ class SportHandler(
                             sport,
                             scoreboard,
                             scoreboard.competitions,
-                            emptyList(),
                             true
                         )
                     } else {
@@ -242,6 +241,7 @@ class SportHandler(
             }
         }
     }
+    //returns next delayBoxScore state (incremented on every sb update)
     private suspend fun determineActiveComps(sport: SiteRoute, scoreboard: Scoreboard, delayBoxScore: Int) = coroutineScope {
         // rolling window for active comps
         val now = Clock.System.now()
@@ -249,9 +249,9 @@ class SportHandler(
         val sixHoursFuture = now.plus(6.hours)
         // grab earliest game's start time and state of all games
         val earliestTime = scoreboard.competitions.filter {
-            val gameTime = it.date ?: Clock.System.now()
+            val gameTime = it.date ?: Instant.DISTANT_PAST
             gameTime in sixHoursPast..sixHoursFuture
-        }.minOfOrNull { it.date ?: Clock.System.now() } ?: Instant.DISTANT_PAST
+        }.minOfOrNull { it.date ?: Instant.DISTANT_PAST } ?: Instant.DISTANT_PAST
         val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
         // if some games are past the earliest start time update scoreboard and box scores
         if (Clock.System.now() > earliestTime) {
@@ -263,23 +263,24 @@ class SportHandler(
             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
             if (activeComps.isEmpty()) {
                 delay(1.hours)
+                delayBoxScore
             }else{
                 saveScoreboardAndGetBoxScores(
                     sport,
                     scoreboard,
                     // ensure ending posts are saved (take as active comps)
                     activeComps,
-                    scoreboard.competitions.filter { lastCompState[it.id] == true && it.status.completed },
-                    delayBoxScore == 0
+                    // send boxscores every 60 seconds or when last comps are ending
+                    delayBoxScore == 0 || activeComps.size == endingCompetitions.size
                 )
                 // retrieve scoreboard every ten seconds
                 delay(10.seconds)
-            }
-            // delay boxscore fetch for 6 ticks of delay (every 1 minute)
-            if (delayBoxScore == 6) {
-                0
-            } else {
-                delayBoxScore + 1
+                // delay boxscore fetch for 6 ticks of delay (every 1 minute)
+                if (delayBoxScore == 6) {
+                    0
+                } else {
+                    delayBoxScore + 1
+                }
             }
         } else {
             // else if current time is before the earliest time, delay until the earliest time
@@ -294,7 +295,6 @@ class SportHandler(
         sport: SiteRoute,
         scoreboard: Scoreboard,
         activeCompetitions: List<Competition>,
-        inactiveCompetitions: List<Competition>,
         enableBoxScore: Boolean
     ) = coroutineScope {
         // deep comparison for changes
@@ -304,15 +304,14 @@ class SportHandler(
                 if (enableBoxScore) {
                     buildBoxscores(
                         sport,
-                        activeCompetitions.map { it.id },
-                        inactiveCompetitions.map { it.id }
+                        activeCompetitions.map { it.id }
                     )
                 }
+                eventService.publish(
+                    MessageType.COMPS.name,
+                    "$sport:${Json.encodeToString(activeCompetitions)}"
+                )
             }
-            eventService.publish(
-                MessageType.COMPS.name,
-                "$sport:${Json.encodeToString(activeCompetitions)}"
-            )
             // send scoreboard last as it will trigger refresh of comp consumers
             val scoreboardEntity = scoreboard.toEntity()
             if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
@@ -328,25 +327,22 @@ class SportHandler(
 
     private suspend fun buildBoxscores(
         sport: SiteRoute,
-        competitionIds: List<String>,
-        inactiveCompetitionIds: List<String>
+        competitionIds: List<String>
     ) = coroutineScope {
         competitionIds.map { gameId ->
             async {
                 sportClient.getGameStats(sport, gameId)
             }
         }.awaitAll().filterNotNull().let { newBoxScores ->
-            // add inactive boxscores
-            val allBoxScores = newBoxScores + lastSentBoxScores.filter { inactiveCompetitionIds.contains(it.id) }
             // map result to teams
-            if (allBoxScores != lastSentBoxScores) {
+            if (newBoxScores != lastSentBoxScores) {
                 // only send in progress or just completed box scores
                 sportDBs.boxscoresDB.save(newBoxScores)
                 eventService.publish(
                     MessageType.BOX_SCORES.name,
                     "$sport:${Json.encodeToString(newBoxScores)}"
                 )
-                lastSentBoxScores = allBoxScores
+                lastSentBoxScores = newBoxScores
             }
         }
     }
