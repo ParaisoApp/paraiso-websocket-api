@@ -7,11 +7,12 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.data.init
 import com.paraiso.domain.sport.data.toEntity
+import io.klogging.Klogging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.concurrent.ConcurrentHashMap
 
-object SportState {
+object SportState: Klogging {
     private val scoreboards = ConcurrentHashMap<String, MutableStateFlow<ScoreboardEntity>>()
     private val competitions = ConcurrentHashMap<String, ConcurrentHashMap<String, MutableStateFlow<Competition>>>()
     private val boxScores = ConcurrentHashMap<String, MutableStateFlow<BoxScore>>()
@@ -32,24 +33,26 @@ object SportState {
     fun getScoreboardFlow(id: String): StateFlow<ScoreboardEntity> =
         scoreboards.getOrPut(id) { MutableStateFlow(Scoreboard.init().toEntity()) }
 
-    fun updateScoreboard(id: String, newSb: ScoreboardEntity) {
+    suspend fun updateScoreboard(id: String, newSb: ScoreboardEntity) {
+        logger.info { "new scoreboard received id: $id, sb: $newSb" }
         scoreboards.getOrPut(id) { MutableStateFlow(newSb) }.value = newSb
     }
     fun updateCompetitions(newComps: List<Competition>) {
         var restart = false
-        val sport = newComps.firstOrNull()?.sport?.name
-        newComps.forEach { comp ->
-            val sportComps = competitions.getOrPut(sport) { ConcurrentHashMap() }
-            sportComps.getOrPut(comp.id) { MutableStateFlow(comp) }.value = comp
-            if (comp.status.completed) {
-                sportComps.remove(comp.id)
-                restart = true
+        newComps.firstOrNull()?.sport?.name?.let {sport ->
+            newComps.forEach { comp ->
+                val sportComps = competitions.getOrPut(sport){ ConcurrentHashMap() }
+                sportComps.getOrPut(comp.id) { MutableStateFlow(comp) }.value = comp
+                if (comp.status.completed) {
+                    sportComps.remove(comp.id)
+                    restart = true
+                }
             }
-        }
-        val sportRestart = triggerRestart[sport]
-        if (restart && sportRestart != null) {
-            // when a comp ends we want to restart consumers (flip trigger state - picked up by consumer)
-            sportRestart.value = !sportRestart.value
+            val sportRestart = triggerRestart[sport]
+            if (restart && sportRestart != null) {
+                // when a comp ends we want to restart consumers (flip trigger state - picked up by consumer)
+                sportRestart.value = !sportRestart.value
+            }
         }
     }
 

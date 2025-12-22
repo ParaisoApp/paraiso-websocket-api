@@ -96,8 +96,9 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     val job = SupervisorJob()
@@ -278,8 +279,8 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
     val scheme = config.property("api.scheme").getString()
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json { ignoreUnknownKeys = true })
-        pingPeriod = Duration.ofSeconds(20)
-        timeout = Duration.ofSeconds(45)
+        pingPeriod = 30.seconds
+        timeout = 45.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }

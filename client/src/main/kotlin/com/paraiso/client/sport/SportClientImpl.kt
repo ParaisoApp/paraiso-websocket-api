@@ -150,7 +150,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             when (sport) {
                 SiteRoute.FOOTBALL -> url += "?type=0&level=3"
                 SiteRoute.HOCKEY -> url += "?type=0&level=3"
-                else -> { logger.info { "No subgroup needed" } }
+                else -> {}
             }
             val standingsResponse: RestStandings = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {

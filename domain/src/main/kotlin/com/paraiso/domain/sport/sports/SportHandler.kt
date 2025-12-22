@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -226,6 +227,7 @@ class SportHandler(
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     // if completely new scoreboard save it and generate game posts
                     if (scoreboard.toEntity() != lastSentScoreboard[sport]?.toEntity()) {
+                        logger.info { "New scoreboard incoming for sport: $sport, scoreboard: $scoreboard" }
                         saveScoreboardAndGetBoxScores(
                             sport,
                             scoreboard,
@@ -234,51 +236,57 @@ class SportHandler(
                             true
                         )
                     } else {
-                        // football scoreboard may have games before current day, filter those out based on est
-                        val utcSub10: TimeZone = TimeZone.of("UTC-10")
-                        // grab earliest game's start time and state of all games
-                        val earliestTime = scoreboard.competitions.filter {
-                            Clock.System.todayIn(utcSub10) == it.date?.toLocalDateTime(utcSub10)?.date
-                        }.minOfOrNull { it.date ?: Instant.DISTANT_PAST } ?: Instant.DISTANT_PAST
-                        val allCompletedStates = scoreboard.competitions.map { it.status.completed }.toSet()
-                        val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
-                        // if some games are past the earliest start time update scoreboard and box scores
-                        if (Clock.System.now() > earliestTime) {
-                            // ending comps - filter to last completed false and cur completed true, copy in the end time
-                            val endingCompetitions = scoreboard.competitions.filter {
-                                lastCompState[it.id] == false && it.status.completed
-                            }.map { it.copy(status = it.status.copy(completedTime = Clock.System.now())) }
-                            saveScoreboardAndGetBoxScores(
-                                sport,
-                                scoreboard,
-                                // ensure ending posts are saved (take as active comps)
-                                scoreboard.competitions.filter { !it.status.completed } + endingCompetitions,
-                                scoreboard.competitions.filter { lastCompState[it.id] == true && it.status.completed },
-                                delayBoxScore == 0
-                            )
-                            // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
-                            if (
-                                !allCompletedStates.contains(false) &&
-                                Clock.System.now() > earliestTime.plus(1.hours)
-                            ) {
-                                delay(1.hours)
-                            }
-                            // else if current time is before the earliest time, delay until the earliest time
-                        } else if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
-                            delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
-                            delayBoxScore = 0
-                        }
+                        delayBoxScore = determineActiveComps(sport, scoreboard, delayBoxScore)
                     }
                 }
+            }
+        }
+    }
+    private suspend fun determineActiveComps(sport: SiteRoute, scoreboard: Scoreboard, delayBoxScore: Int) = coroutineScope {
+        // rolling window for active comps
+        val now = Clock.System.now()
+        val sixHoursPast = now.minus(6.hours)
+        val sixHoursFuture = now.plus(6.hours)
+        // grab earliest game's start time and state of all games
+        val earliestTime = scoreboard.competitions.filter {
+            val gameTime = it.date ?: Clock.System.now()
+            gameTime in sixHoursPast..sixHoursFuture
+        }.minOfOrNull { it.date ?: Clock.System.now() } ?: Instant.DISTANT_PAST
+        val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
+        // if some games are past the earliest start time update scoreboard and box scores
+        if (Clock.System.now() > earliestTime) {
+            // ending comps - filter to last completed false and cur completed true, copy in the end time
+            val endingCompetitions = scoreboard.competitions.filter {
+                lastCompState[it.id] == false && it.status.completed
+            }.map { it.copy(status = it.status.copy(completedTime = Clock.System.now())) }
+            val activeComps = scoreboard.competitions.filter { !it.status.completed } + endingCompetitions
+            // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
+            if (activeComps.isEmpty()) {
+                delay(1.hours)
+            }else{
+                saveScoreboardAndGetBoxScores(
+                    sport,
+                    scoreboard,
+                    // ensure ending posts are saved (take as active comps)
+                    activeComps,
+                    scoreboard.competitions.filter { lastCompState[it.id] == true && it.status.completed },
+                    delayBoxScore == 0
+                )
                 // retrieve scoreboard every ten seconds
                 delay(10.seconds)
-                // delay boxscore fetch for 6 ticks of delay (every 1 minute)
-                if (delayBoxScore == 6) {
-                    delayBoxScore = 0
-                } else {
-                    delayBoxScore++
-                }
             }
+            // delay boxscore fetch for 6 ticks of delay (every 1 minute)
+            if (delayBoxScore == 6) {
+                0
+            } else {
+                delayBoxScore + 1
+            }
+        } else {
+            // else if current time is before the earliest time, delay until the earliest time
+            if(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0){
+                delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
+            }
+            delayBoxScore
         }
     }
 

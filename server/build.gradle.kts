@@ -2,7 +2,7 @@ val ktorVersion = "2.3.10"
 
 plugins {
     id("paraiso")
-    id("io.ktor.plugin") version "2.3.10"
+    id("io.ktor.plugin") version "3.0.1"
 }
 
 dependencies {

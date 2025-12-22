@@ -79,7 +79,6 @@ class WebSocketHandler(
         val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { ConcurrentHashMap() }
         sessionsForUser[sessionContext.sessionId] = sessionContext
         session.handleUser(sessionContext.sessionId, currentUser, existingUser == null, sessionContext)
-        logger.info { "Testing logger" }
     }
 
     private suspend fun WebSocketServerSession.handleUser(
