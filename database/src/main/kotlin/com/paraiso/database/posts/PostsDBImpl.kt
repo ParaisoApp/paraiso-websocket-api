@@ -267,7 +267,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 homeFilters.add(
                     and(
                         eqId(Post::rootId),
-                        not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
                     )
                 )
             }
@@ -281,7 +280,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                     and(
                         eq(Post::type.name, PostType.EVENT.name),
                         eq(Post::data.name, basePostName), // route is housed in data field
-                        not(regex(ID, "^TEAM", "i")) // remove team event posts unless in team route
                     )
                 )
             }

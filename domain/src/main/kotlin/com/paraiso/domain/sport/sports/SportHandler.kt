@@ -16,7 +16,6 @@ import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
-import com.paraiso.domain.util.Constants.TEAM_PREFIX
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerConfig.autoBuildPosts
 import io.klogging.Klogging
@@ -144,17 +143,16 @@ class SportHandler(
 
     suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
-            val teams = sportDBs.teamsDB.findBySport(sport.name)
-            teams.map { it.teamId }.map { teamId ->
+            sportDBs.teamsDB.findBySport(sport.name).map { team ->
                 async {
-                    sportClient.getSchedule(sport, teamId)
+                    sportClient.getSchedule(sport, team.teamId)
                 }
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
                     if (autoBuildPosts) {
-                        addTeamPosts(sport, teams, schedulesRes)
+                        addTeamPosts(sport, schedulesRes)
                     }
                 }
             }
@@ -163,41 +161,23 @@ class SportHandler(
 
     private suspend fun addTeamPosts(
         sport: SiteRoute,
-        teams: List<Team>,
         schedules: List<Schedule>
     ) {
         // add posts for team sport route - separate for focused discussion
-        schedules.associate {
-            teams.find { team -> team.teamId == it.teamId }?.abbreviation to it.events
-        }.flatMap { (key, values) ->
-            values.flatMap { competition ->
-                listOf(
-                    Post(
-                        id = "$TEAM_PREFIX$key-${competition.id}",
-                        userId = SYSTEM,
-                        title = competition.shortName,
-                        content = "${competition.date}||${competition.shortName}",
-                        type = PostType.EVENT,
-                        parentId = "/s/${sport.name.lowercase()}/t/$key",
-                        rootId = "$TEAM_PREFIX$key-${competition.id}",
-                        data = sport.name,
-                        route = "/s/${sport.name.lowercase()}/t/$key",
-                        createdOn = competition.date,
-                        updatedOn = competition.date
-                    ),
-                    Post(
-                        id = "$GAME_PREFIX${competition.id}",
-                        userId = SYSTEM,
-                        title = competition.shortName,
-                        content = "${competition.date}||${competition.shortName}",
-                        type = PostType.EVENT,
-                        parentId = "/${sport.name}",
-                        rootId = "$GAME_PREFIX${competition.id}",
-                        data = sport.name,
-                        route = "/${sport.name}",
-                        createdOn = competition.date,
-                        updatedOn = competition.date
-                    )
+        schedules.map { it.events }.flatMap {
+            it.map { competition ->
+                Post(
+                    id = "$GAME_PREFIX${competition.id}",
+                    userId = SYSTEM,
+                    title = competition.shortName,
+                    content = "${competition.date}||${competition.shortName}",
+                    type = PostType.EVENT,
+                    parentId = "/${sport.name}",
+                    rootId = "$GAME_PREFIX${competition.id}",
+                    data = sport.name,
+                    route = "/${sport.name}",
+                    createdOn = competition.date,
+                    updatedOn = competition.date
                 )
             }
         }.let { combinedGamePosts ->
