@@ -34,7 +34,6 @@ object SportState: Klogging {
         scoreboards.getOrPut(id) { MutableStateFlow(Scoreboard.init().toEntity()) }
 
     suspend fun updateScoreboard(id: String, newSb: ScoreboardEntity) {
-        logger.info { "new scoreboard received id: $id, sb: $newSb" }
         scoreboards.getOrPut(id) { MutableStateFlow(newSb) }.value = newSb
     }
     fun updateCompetitions(newComps: List<Competition>) {

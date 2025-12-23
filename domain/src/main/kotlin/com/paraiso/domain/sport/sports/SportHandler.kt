@@ -227,7 +227,6 @@ class SportHandler(
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     // if completely new scoreboard save it and generate game posts
                     if (scoreboard.toEntity() != lastSentScoreboard[sport]?.toEntity()) {
-                        logger.info { "New scoreboard incoming for sport: $sport, scoreboard: $scoreboard" }
                         saveScoreboardAndGetBoxScores(
                             sport,
                             scoreboard,
