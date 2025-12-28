@@ -114,7 +114,8 @@ data class StatusResponse(
     val period: Int,
     val name: String,
     val state: String,
-    val completed: Boolean
+    val completed: Boolean,
+    val completedTime: Instant?
 )
 
 @Serializable
@@ -185,7 +186,8 @@ fun Status.toResponse() =
         period = period,
         name = name,
         state = state,
-        completed = completed
+        completed = completed,
+        completedTime = completedTime
     )
 
 fun Venue.toResponse() =

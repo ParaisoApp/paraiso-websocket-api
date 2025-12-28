@@ -15,6 +15,7 @@ import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
 import com.paraiso.domain.util.Constants.UNKNOWN
@@ -39,28 +40,46 @@ class PostsApi(
 
     // return fully updated root post (for update or load of root post to post tree)
     suspend fun getById(
-        postSearchId: String,
-        rangeModifier: Range,
-        sortType: SortType,
-        filters: FilterTypes,
-        userId: String,
-        sessionId: String
+        postSearchId: PostSearchId
     ): PostsData? =
-        postsDB.findById(postSearchId)?.let { post ->
-            val range = getRange(rangeModifier, sortType)
-            val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
-            val subPosts = postsDB.findByParentId(postSearchId, range, filters, sortType, followees)
+        postsDB.findById(postSearchId.id)?.let { post ->
+            val compStatus = if(post.type == PostType.EVENT && post.id != null){
+                sportApi.findCompetitionById(post.id.removePrefix(GAME_PREFIX))?.status
+            } else null
+            val range = getRange(postSearchId.range, postSearchId.sort)
+            val followees = followsApi.getByFollowerId(postSearchId.userId).map { it.followeeId }.toSet()
+            val resolvedGameState =
+                (postSearchId.gameState
+                    ?: when(compStatus?.state){
+                        "pre" -> GameState.PRE
+                        "in" -> GameState.MID
+                        "post" -> GameState.POST
+                        else -> null
+                    }).takeIf { post.type == PostType.EVENT }
+            val subPosts = postsDB.findByParentIdWithEventFilters(
+                postSearchId.id,
+                range,
+                postSearchId.selectedFilters,
+                postSearchId.sort,
+                followees,
+                post.createdOn,
+                compStatus?.completedTime,
+                resolvedGameState,
+                postSearchId.commentRouteLocation.takeIf { post.type == PostType.EVENT }
+            )
             generatePostTree(
                 post,
                 ArrayDeque(subPosts),
                 range,
-                sortType,
-                filters,
-                userId,
+                postSearchId.sort,
+                postSearchId.selectedFilters,
+                postSearchId.userId,
                 followees
             ).let { posts ->
                 // pull in event related data - with subscription
-                val (teams, comps) = pullEventData(posts, userId, sessionId, subscribe = postSearchId == HOME_PREFIX)
+                val (teams, comps) = pullEventData(
+                    posts, postSearchId.userId, postSearchId.sessionId, subscribe = postSearchId.id == HOME_PREFIX
+                )
 
                 PostsData(posts, teams, comps)
             }
@@ -105,38 +124,32 @@ class PostsApi(
             PostsData(resultPosts.toMutableMap(), teams, comps)
         }
 
-    suspend fun getPosts(
-        postSearchId: String,
-        basePostName: String,
-        rangeModifier: Range,
-        sortType: SortType,
-        filters: FilterTypes,
-        userId: String,
-        sessionId: String
-    ): PostsData {
+    suspend fun getPosts(postSearch: PostSearch): PostsData {
         // grab 50 most recent posts at given super level
-        val followees = followsApi.getByFollowerId(userId).map { it.followeeId }.toSet()
-        val range = getRange(rangeModifier, sortType)
+        val followees = followsApi.getByFollowerId(postSearch.userId).map { it.followeeId }.toSet()
+        val range = getRange(postSearch.range, postSearch.sort)
         return postsDB.findByBaseCriteria(
-            postSearchId,
-            basePostName, // post route
+            postSearch.id,
+            postSearch.name, // post route
             range,
-            filters,
-            sortType,
+            postSearch.selectedFilters,
+            postSearch.sort,
             followees
         ) // generate base post and post tree off of given inputs
             .let { subPosts ->
                 val posts = generatePostTree(
-                    generateBasePost(postSearchId, basePostName),
+                    generateBasePost(postSearch.id, postSearch.name),
                     ArrayDeque(subPosts),
                     range,
-                    sortType,
-                    filters,
-                    userId,
+                    postSearch.sort,
+                    postSearch.selectedFilters,
+                    postSearch.userId,
                     followees
                 )
                 // pull in event related data
-                val (teams, comps) = pullEventData(posts, userId, sessionId, subscribe = postSearchId == HOME_PREFIX)
+                val (teams, comps) = pullEventData(
+                    posts, postSearch.userId, postSearch.sessionId, subscribe = postSearch.id == HOME_PREFIX
+                )
                 PostsData(posts, teams, comps)
             }
     }

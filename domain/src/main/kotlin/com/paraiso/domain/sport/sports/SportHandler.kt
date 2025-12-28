@@ -175,7 +175,7 @@ class SportHandler(
                     parentId = "/${sport.name}",
                     rootId = "$GAME_PREFIX${competition.id}",
                     data = sport.name,
-                    route = "/${sport.name}",
+                    route = "/s/${sport.name.lowercase()}",
                     createdOn = competition.date,
                     updatedOn = competition.date
                 )

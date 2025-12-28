@@ -3,6 +3,8 @@ package com.paraiso.domain.routes
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.InitRouteData
 import com.paraiso.domain.posts.PostPinsApi
+import com.paraiso.domain.posts.PostSearch
+import com.paraiso.domain.posts.PostSearchId
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.Range
 import com.paraiso.domain.posts.SortType
@@ -41,24 +43,30 @@ class RoutesApi(
         val users = async { userSessionsApi.getUserList(filters, userId) }
         routeRes.await()?.let { route ->
             val postsData = postsApi.getPosts(
-                routeId,
-                route.title,
-                Range.DAY,
-                SortType.NEW,
-                filters,
-                userId,
-                sessionId
-            )
-            if (postId != null) {
-                postsApi.getById(
-                    postId,
+                PostSearch(
+                    routeId,
+                    route.title,
                     Range.DAY,
                     SortType.NEW,
                     filters,
                     userId,
                     sessionId
-                )?.posts?.values?.firstOrNull()?.let { postById ->
-                    postsData.posts[postId] = postById
+                )
+            )
+            if (postId != null) {
+                postsApi.getById(
+                    PostSearchId(
+                        postId,
+                        Range.DAY,
+                        SortType.NEW,
+                        filters,
+                        userId,
+                        sessionId
+                    )
+                )?.posts?.values?.forEach { post ->
+                    post.id?.let{
+                        postsData.posts[it] = post
+                    }
                 }
             }
             InitRouteData(postsData, users.await(), route)

@@ -3,10 +3,12 @@ package com.paraiso.database.posts
 import com.mongodb.client.model.Aggregates.limit
 import com.mongodb.client.model.Aggregates.lookup
 import com.mongodb.client.model.Aggregates.match
+import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
+import com.mongodb.client.model.Filters.lt
 import com.mongodb.client.model.Filters.lte
 import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.nin
@@ -22,12 +24,14 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.posts.GameState
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.StatusResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
@@ -324,6 +328,59 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes)
             )
+
+            val pipeline = getInitAggPipeline(initialFilter)
+            pipeline.add(getUserRoleCondition(filters, userFollowing))
+            pipeline.addAll(getSort(sortType))
+            return@withContext collection.aggregate<Post>(pipeline).toList()
+        }
+
+    override suspend fun findByParentIdWithEventFilters(
+        parentId: String,
+        range: Instant,
+        filters: FilterTypes,
+        sortType: SortType,
+        userFollowing: Set<String>,
+        compStartTime: Instant?,
+        compEndTime: Instant?,
+        gameState: GameState?,
+        commentRouteLocation: String?
+    ) =
+        withContext(Dispatchers.IO) {
+            val buildFilters = mutableListOf(
+                eq(Post::parentId.name, parentId),
+                ne(Post::status.name, PostStatus.DELETED),
+                `in`(Post::type.name, filters.postTypes)
+            )
+            commentRouteLocation?.let {
+                buildFilters.add(eq(Post::route.name, commentRouteLocation))
+            }
+            if(gameState != null){
+                when(gameState){
+                    GameState.PRE -> {
+                        compStartTime?.let {
+                            buildFilters.add(lt(Post::createdOn.name, it))
+                        }
+                    }
+                    GameState.MID -> {
+                        compStartTime?.let {
+                            buildFilters.add(gt(Post::createdOn.name, it))
+                        }
+                        compEndTime?.let {
+                            buildFilters.add(lt(Post::createdOn.name, it))
+                        }
+                    }
+                    GameState.POST -> {
+                        compEndTime?.let {
+                            buildFilters.add(gt(Post::createdOn.name, it))
+                        }
+                    }
+                    GameState.ALL -> {}
+                }
+            }else{
+                buildFilters.add(gt(Post::createdOn.name, Date.from(range.toJavaInstant())),)
+            }
+            val initialFilter = and(buildFilters)
 
             val pipeline = getInitAggPipeline(initialFilter)
             pipeline.add(getUserRoleCondition(filters, userFollowing))

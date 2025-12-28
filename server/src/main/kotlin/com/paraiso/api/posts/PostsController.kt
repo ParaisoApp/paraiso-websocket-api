@@ -1,6 +1,8 @@
 package com.paraiso.api.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.posts.PostSearch
+import com.paraiso.domain.posts.PostSearchId
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.Range
 import com.paraiso.domain.posts.SortType
@@ -17,25 +19,14 @@ fun Route.postsController(postsApi: PostsApi) {
     route("posts") {
         post {
             postsApi.getPosts(
-                call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["name"] ?: "",
-                call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
-                call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
-                call.receive<FilterTypes>(),
-                call.request.queryParameters["userId"] ?: "",
-                call.request.queryParameters["sessionId"] ?: ""
+                call.receive<PostSearch>(),
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
         post("getById") {
             postsApi.getById(
-                call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["range"]?.let { Range.valueOf(it) } ?: Range.DAY,
-                call.request.queryParameters["sort"]?.let { SortType.valueOf(it) } ?: SortType.NEW,
-                call.receive<FilterTypes>(),
-                call.request.queryParameters["userId"] ?: "",
-                call.request.queryParameters["sessionId"] ?: ""
+                call.receive<PostSearchId>(),
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
