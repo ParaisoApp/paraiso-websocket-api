@@ -211,7 +211,8 @@ class SportHandler(
                             sport,
                             scoreboard,
                             scoreboard.competitions,
-                            true
+                            enableBoxScore = true,
+                            initScoreboard = true
                         )
                     } else {
                         delayBoxScore = determineActiveComps(sport, scoreboard, delayBoxScore)
@@ -252,7 +253,8 @@ class SportHandler(
                         scoreboard,
                         activeComps,
                         // send boxscores every 60 seconds or when last comps are ending
-                        delayBoxScore == 0 || activeComps.size == endingCompetitions.size
+                        delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
+                        initScoreboard = false
                     )
                 }
                 // retrieve scoreboard every ten seconds
@@ -277,10 +279,16 @@ class SportHandler(
         sport: SiteRoute,
         scoreboard: Scoreboard,
         activeCompetitions: List<Competition>,
-        enableBoxScore: Boolean
+        enableBoxScore: Boolean,
+        initScoreboard: Boolean
     ) = coroutineScope {
         if (activeCompetitions.isNotEmpty()) {
-            sportDBs.competitionsDB.save(activeCompetitions)
+            if(initScoreboard){
+                // don't overwrite existing records if new scoreboard (prevents deleting comp end time on startup)
+                sportDBs.competitionsDB.saveIfNew(activeCompetitions)
+            }else{
+                sportDBs.competitionsDB.save(activeCompetitions)
+            }
             eventService.publish(
                 MessageType.COMPS.name,
                 "$sport:${Json.encodeToString(activeCompetitions)}"
