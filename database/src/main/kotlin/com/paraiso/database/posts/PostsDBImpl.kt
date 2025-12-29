@@ -3,7 +3,6 @@ package com.paraiso.database.posts
 import com.mongodb.client.model.Aggregates.limit
 import com.mongodb.client.model.Aggregates.lookup
 import com.mongodb.client.model.Aggregates.match
-import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
@@ -31,7 +30,6 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.data.StatusResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
@@ -46,7 +44,7 @@ import kotlinx.datetime.toJavaInstant
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
-import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
@@ -300,7 +298,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
                 // handle events (which may be created early but create date of event date)
-                lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
+                lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
 
             range?.let{
