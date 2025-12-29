@@ -238,20 +238,23 @@ class SportHandler(
             val endingCompetitions = scoreboard.competitions.filter {
                 lastCompCompletedStates[it.id] == false && it.status.completed
             }.map { it.copy(status = it.status.copy(completedTime = now)) }
+            // ensure ending posts are saved (take as active comps)
             val activeComps = scoreboard.competitions.filter { !it.status.completed } + endingCompetitions
             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
             if (activeComps.isEmpty()) {
                 delay(1.hours)
                 delayBoxScore
             }else{
-                saveScoreboardAndGetBoxScores(
-                    sport,
-                    scoreboard,
-                    // ensure ending posts are saved (take as active comps)
-                    activeComps,
-                    // send boxscores every 60 seconds or when last comps are ending
-                    delayBoxScore == 0 || activeComps.size == endingCompetitions.size
-                )
+                // deep comparison for changes
+                if (scoreboard != lastSentScoreboard[sport]) {
+                    saveScoreboardAndGetBoxScores(
+                        sport,
+                        scoreboard,
+                        activeComps,
+                        // send boxscores every 60 seconds or when last comps are ending
+                        delayBoxScore == 0 || activeComps.size == endingCompetitions.size
+                    )
+                }
                 // retrieve scoreboard every ten seconds
                 delay(10.seconds)
                 // delay boxscore fetch for 6 ticks of delay (every 1 minute)
@@ -276,32 +279,29 @@ class SportHandler(
         activeCompetitions: List<Competition>,
         enableBoxScore: Boolean
     ) = coroutineScope {
-        // deep comparison for changes
-        if (scoreboard != lastSentScoreboard[sport]) {
-            if (activeCompetitions.isNotEmpty()) {
-                sportDBs.competitionsDB.save(activeCompetitions)
-                eventService.publish(
-                    MessageType.COMPS.name,
-                    "$sport:${Json.encodeToString(activeCompetitions)}"
-                )
-                if (enableBoxScore) {
-                    buildBoxscores(
-                        sport,
-                        activeCompetitions.map { it.id }
-                    )
-                }
-            }
-            // send scoreboard last as it will trigger refresh of comp consumers
-            val scoreboardEntity = scoreboard.toEntity()
-            if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
-                sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))
-                eventService.publish(
-                    MessageType.SCOREBOARD.name,
-                    "$sport:${Json.encodeToString(scoreboardEntity)}"
+        if (activeCompetitions.isNotEmpty()) {
+            sportDBs.competitionsDB.save(activeCompetitions)
+            eventService.publish(
+                MessageType.COMPS.name,
+                "$sport:${Json.encodeToString(activeCompetitions)}"
+            )
+            if (enableBoxScore) {
+                buildBoxscores(
+                    sport,
+                    activeCompetitions.map { it.id }
                 )
             }
-            lastSentScoreboard[sport] = scoreboard
         }
+        // send scoreboard last as it will trigger refresh of comp consumers
+        val scoreboardEntity = scoreboard.toEntity()
+        if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
+            sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))
+            eventService.publish(
+                MessageType.SCOREBOARD.name,
+                "$sport:${Json.encodeToString(scoreboardEntity)}"
+            )
+        }
+        lastSentScoreboard[sport] = scoreboard
     }
 
     private suspend fun buildBoxscores(
