@@ -52,8 +52,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
         const val RETRIEVE_LIM = 50
         const val PARTIAL_RETRIEVE_LIM = 10
-        val TIME_WEIGHTING = 10_000_000_000L
-        val RISING_TIME_MULTIPLIER = 2.0
+        const val TIME_WEIGHTING = 10_000_000_000L
+        const val RISING_TIME_MULTIPLIER = 2.0
         const val COMMENT_WEIGHTING = 2
     }
 
@@ -257,7 +257,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     override suspend fun findByBaseCriteria(
         postSearchId: String,
         basePostName: String,
-        range: Instant,
+        range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
@@ -296,13 +296,16 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
             val andConditions = mutableListOf(
                 or(orConditions),
-                gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
                 // handle events (which may be created early but create date of event date)
                 lte(Post::createdOn.name, Date.from(Clock.System.now().plus(1.days).toJavaInstant()))
             )
+
+            range?.let{
+                andConditions.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
+            }
 
             val initialFilter = and(andConditions)
 
@@ -316,18 +319,21 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
     override suspend fun findByParentId(
         parentId: String,
-        range: Instant,
+        range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
     ) =
         withContext(Dispatchers.IO) {
-            val initialFilter = and(
+            val andConditions = mutableListOf(
                 eq(Post::parentId.name, parentId),
-                gt(Post::createdOn.name, Date.from(range.toJavaInstant())),
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes)
             )
+            range?.let{
+                andConditions.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
+            }
+            val initialFilter = and(andConditions)
 
             val pipeline = getInitAggPipeline(initialFilter)
             pipeline.add(getUserRoleCondition(filters, userFollowing))
@@ -337,7 +343,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
     override suspend fun findByParentIdWithEventFilters(
         parentId: String,
-        range: Instant,
+        range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>,
@@ -355,30 +361,23 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             commentRouteLocation?.let {
                 buildFilters.add(eq(Post::route.name, commentRouteLocation))
             }
-            if(gameState != null){
+            if(gameState != null && compStartTime != null && compEndTime != null){
                 when(gameState){
                     GameState.PRE -> {
-                        compStartTime?.let {
-                            buildFilters.add(lt(Post::createdOn.name, it))
-                        }
+                        buildFilters.add(lt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
                     }
                     GameState.MID -> {
-                        compStartTime?.let {
-                            buildFilters.add(gt(Post::createdOn.name, it))
-                        }
-                        compEndTime?.let {
-                            buildFilters.add(lt(Post::createdOn.name, it))
-                        }
+                        buildFilters.add(gt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
+                        buildFilters.add(lt(Post::createdOn.name, Date.from(compEndTime.toJavaInstant())))
                     }
                     GameState.POST -> {
-                        compEndTime?.let {
-                            buildFilters.add(gt(Post::createdOn.name, it))
-                        }
+                        buildFilters.add(gt(Post::createdOn.name, Date.from(compEndTime.toJavaInstant())))
                     }
                     GameState.ALL -> {}
                 }
-            }else{
-                buildFilters.add(gt(Post::createdOn.name, Date.from(range.toJavaInstant())),)
+            }
+            range?.let{
+                buildFilters.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
             }
             val initialFilter = and(buildFilters)
 

@@ -157,7 +157,7 @@ class PostsApi(
     private suspend fun generatePostTree(
         root: Post,
         postsQueue: ArrayDeque<Post>,
-        range: Instant,
+        range: Instant?,
         sortType: SortType,
         filters: FilterTypes,
         userId: String,
@@ -210,7 +210,7 @@ class PostsApi(
         subscribe: Boolean
     ) = coroutineScope {
         val events = responseMap.filter { it.value.type === PostType.EVENT }
-        val eventIds = events.map { it.key.removePrefix(Constants.GAME_PREFIX) }.toSet()
+        val eventIds = events.map { it.key.removePrefix(GAME_PREFIX) }.toSet()
         if (subscribe) {
             launch {
                 subscribeToEvents(eventIds, userId, sessionId)
@@ -227,17 +227,15 @@ class PostsApi(
     }
 
     private fun getRange(rangeModifier: Range, sortType: SortType) =
-        Instant.fromEpochMilliseconds(Long.MIN_VALUE) // ignore range if looking not finding top posts or range all
-            .takeIf { rangeModifier == Range.ALL || sortType != SortType.TOP }
-            ?: Clock.System.now().let { clock ->
-                when (rangeModifier) {
-                    Range.DAY -> clock.minus(1.days)
-                    Range.WEEK -> clock.minus(7.days)
-                    Range.MONTH -> clock.minus(30.days)
-                    Range.YEAR -> clock.minus(365.days)
-                    else -> Instant.fromEpochMilliseconds(Long.MIN_VALUE)
-                }
+        Clock.System.now().let { clock ->
+            when (rangeModifier) {
+                Range.DAY -> clock.minus(1.days)
+                Range.WEEK -> clock.minus(7.days)
+                Range.MONTH -> clock.minus(30.days)
+                Range.YEAR -> clock.minus(365.days)
+                else -> Instant.fromEpochMilliseconds(Long.MIN_VALUE)
             }
+        }.takeIf { rangeModifier != Range.ALL && sortType == SortType.TOP }
 
     suspend fun putPost(message: Message): Unit = coroutineScope {
         message.id?.let { messageId ->

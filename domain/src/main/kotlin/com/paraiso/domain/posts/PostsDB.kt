@@ -14,21 +14,21 @@ interface PostsDB {
     suspend fun findByBaseCriteria(
         postSearchId: String,
         basePostName: String,
-        range: Instant,
+        range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
     ): List<Post>
     suspend fun findByParentId(
         parentId: String,
-        range: Instant,
+        range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>
     ): List<Post>
     suspend fun findByParentIdWithEventFilters(
         parentId: String,
-        range: Instant,
+        range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
         userFollowing: Set<String>,
