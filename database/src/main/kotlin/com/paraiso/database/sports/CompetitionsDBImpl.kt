@@ -12,6 +12,9 @@ import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts.ascending
 import com.mongodb.client.model.Sorts.descending
+import com.mongodb.client.model.UpdateOneModel
+import com.mongodb.client.model.UpdateOptions
+import com.mongodb.client.model.Updates.setOnInsert
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition
@@ -28,6 +31,9 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.bson.Document
 import java.time.ZoneId
 import java.util.Date
 
@@ -59,16 +65,15 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
     override suspend fun saveIfNew(competitions: List<Competition>) =
         withContext(Dispatchers.IO) {
             val bulkOps = competitions.map { competition ->
-                InsertOneModel(competition)
+                val doc = Document.parse(Json.encodeToString(competition))
+                UpdateOneModel<Competition>(
+                    eq("_id", competition.id),
+                    setOnInsert(doc),
+                    UpdateOptions().upsert(true)
+                )
             }
-
-            try {
-                val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
-                return@withContext result.insertedCount
-            } catch (e: com.mongodb.MongoBulkWriteException) {
-                val insertedCount = e.writeResult.insertedCount
-                return@withContext insertedCount
-            }
+            val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
+            result.insertedCount
         }
 
     override suspend fun findScoreboard(
