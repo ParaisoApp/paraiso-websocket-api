@@ -231,13 +231,13 @@ class SportHandler(
             val gameTime = it.date ?: Instant.DISTANT_PAST
             gameTime in sixHoursPast..sixHoursFuture
         }.minOfOrNull { it.date ?: Instant.DISTANT_PAST } ?: Instant.DISTANT_PAST
-        val lastCompState = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
+        val lastCompCompletedStates = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
         // if some games are past the earliest start time update scoreboard and box scores
-        if (Clock.System.now() > earliestTime) {
+        if (now > earliestTime) {
             // ending comps - filter to last completed false and cur completed true, copy in the end time
             val endingCompetitions = scoreboard.competitions.filter {
-                lastCompState[it.id] == false && it.status.completed
-            }.map { it.copy(status = it.status.copy(completedTime = Clock.System.now())) }
+                lastCompCompletedStates[it.id] == false && it.status.completed
+            }.map { it.copy(status = it.status.copy(completedTime = now)) }
             val activeComps = scoreboard.competitions.filter { !it.status.completed } + endingCompetitions
             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
             if (activeComps.isEmpty()) {
@@ -280,16 +280,16 @@ class SportHandler(
         if (scoreboard != lastSentScoreboard[sport]) {
             if (activeCompetitions.isNotEmpty()) {
                 sportDBs.competitionsDB.save(activeCompetitions)
+                eventService.publish(
+                    MessageType.COMPS.name,
+                    "$sport:${Json.encodeToString(activeCompetitions)}"
+                )
                 if (enableBoxScore) {
                     buildBoxscores(
                         sport,
                         activeCompetitions.map { it.id }
                     )
                 }
-                eventService.publish(
-                    MessageType.COMPS.name,
-                    "$sport:${Json.encodeToString(activeCompetitions)}"
-                )
             }
             // send scoreboard last as it will trigger refresh of comp consumers
             val scoreboardEntity = scoreboard.toEntity()
