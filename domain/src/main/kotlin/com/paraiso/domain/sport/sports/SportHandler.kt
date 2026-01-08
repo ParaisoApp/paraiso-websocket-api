@@ -152,36 +152,33 @@ class SportHandler(
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
                     if (autoBuildPosts) {
-                        addTeamPosts(sport, schedulesRes)
+                        addPosts(sport, schedulesRes.flatMap { it.events })
                     }
                 }
             }
         }
     }
 
-    private suspend fun addTeamPosts(
+    private suspend fun addPosts(
         sport: SiteRoute,
-        schedules: List<Schedule>
+        competitions: List<Competition>
     ) {
-        // add posts for team sport route - separate for focused discussion
-        schedules.map { it.events }.flatMap {
-            it.map { competition ->
-                Post(
-                    id = "$GAME_PREFIX${competition.id}",
-                    userId = SYSTEM,
-                    title = competition.shortName,
-                    content = "${competition.date}||${competition.shortName}",
-                    type = PostType.EVENT,
-                    parentId = "/${sport.name}",
-                    rootId = "$GAME_PREFIX${competition.id}",
-                    data = sport.name,
-                    route = "/s/${sport.name.lowercase()}",
-                    createdOn = competition.date,
-                    updatedOn = competition.date
-                )
-            }
-        }.let { combinedGamePosts ->
-            postsDB.save(combinedGamePosts)
+        competitions.map { competition ->
+            Post(
+                id = "$GAME_PREFIX${competition.id}",
+                userId = SYSTEM,
+                title = competition.shortName,
+                content = "${competition.date}||${competition.shortName}",
+                type = PostType.EVENT,
+                parentId = "/${sport.name}",
+                rootId = "$GAME_PREFIX${competition.id}",
+                data = sport.name,
+                route = "/s/${sport.name.lowercase()}",
+                createdOn = competition.date,
+                updatedOn = competition.date
+            )
+        }.let { gamePosts ->
+            postsDB.saveIfNew(gamePosts)
         }
     }
 
@@ -308,6 +305,7 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboardEntity)}"
             )
+            addPosts(sport, activeCompetitions)
         }
         lastSentScoreboard[sport] = scoreboard
     }

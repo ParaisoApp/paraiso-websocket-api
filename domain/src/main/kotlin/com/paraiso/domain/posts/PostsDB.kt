@@ -2,6 +2,7 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.CompetitionResponse
 import com.paraiso.domain.sport.data.StatusResponse
 import kotlinx.datetime.Instant
@@ -38,6 +39,7 @@ interface PostsDB {
         commentRouteLocation: String?
     ): List<Post>
     suspend fun save(posts: List<Post>): Int
+    suspend fun saveIfNew(posts: List<Post>): Int
     suspend fun editPost(message: Message): Long
     suspend fun setPostDeleted(
         id: String

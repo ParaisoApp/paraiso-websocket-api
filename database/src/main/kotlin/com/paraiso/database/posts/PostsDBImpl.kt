@@ -3,6 +3,7 @@ package com.paraiso.database.posts
 import com.mongodb.client.model.Aggregates.limit
 import com.mongodb.client.model.Aggregates.lookup
 import com.mongodb.client.model.Aggregates.match
+import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
@@ -16,6 +17,9 @@ import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.UpdateOneModel
+import com.mongodb.client.model.UpdateOptions
+import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
@@ -30,6 +34,7 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
@@ -41,6 +46,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
@@ -395,6 +402,21 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 )
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
+        }
+
+
+    override suspend fun saveIfNew(posts: List<Post>) =
+        withContext(Dispatchers.IO) {
+            val bulkOps = posts.map { post ->
+                val doc = Document.parse(Json.encodeToString(post))
+                UpdateOneModel<Post>(
+                    eq("_id", post.id),
+                    Updates.setOnInsert(doc),
+                    UpdateOptions().upsert(true)
+                )
+            }
+            val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
+            result.insertedCount
         }
 
     override suspend fun editPost(message: Message) =
