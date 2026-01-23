@@ -181,14 +181,14 @@ class SportApi(private val sportDBs: SportDBs) {
             }
             val compRef = resolvedComps.firstOrNull()
             val estZone = TimeZone.of("America/New_York")
-            val day = compRef?.date?.toLocalDateTime(estZone)?.date?.atStartOfDayIn(estZone)
+            val day = compRef?.date?.toLocalDateTime(estZone)?.date
             val resolvedModifier = compRef?.week.toString()
                 .takeIf { sport == SiteRoute.FOOTBALL.name } ?: day
             ScoreboardResponse(
                 id = "$sport-${compRef?.season?.type}-${compRef?.season?.year}-$resolvedModifier",
                 season = compRef?.season,
                 week = compRef?.week,
-                day = day,
+                day = day?.atStartOfDayIn(estZone),
                 competitions = resolvedComps.map { it.toResponse() }
             )
         }
