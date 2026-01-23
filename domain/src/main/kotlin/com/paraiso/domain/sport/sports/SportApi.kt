@@ -14,6 +14,16 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
 class SportApi(private val sportDBs: SportDBs) {
+    companion object {
+        //index off one week for conversion and modification in DB layer
+        const val MAX_WEEK_REGULAR_SEASON = 19
+        const val MAX_WEEK_PRE_SEASON = 4
+        const val MAX_WEEK_POST_SEASON = 5
+        const val WEEK_ONE = 0
+        const val PRE_SEASON = 1
+        const val POST_SEASON = 3
+        const val UNKNOWN = 0
+    }
     suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
     suspend fun findTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)?.toResponse()
     suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
@@ -132,25 +142,54 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findScoreboard(
         sport: String,
         year: Int,
-        type: Int,
+        seasonType: Int,
         modifier: String,
         past: Boolean
     ) =
         sportDBs.competitionsDB.findScoreboard(
             sport,
             year,
-            type,
+            seasonType,
             modifier,
             past
         ).let { comps ->
-            val compRef = comps.firstOrNull()
+            //if comps is empty, try diff type or year
+            val resolvedComps = comps.ifEmpty {
+                val (netYear, nextType, nextWeek) = if (past) {
+                    when (seasonType) {
+                        1 -> Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON)
+                        2 -> Triple(year, seasonType - 1, MAX_WEEK_PRE_SEASON)
+                        3 -> Triple(year, seasonType - 1, MAX_WEEK_REGULAR_SEASON)
+                        else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
+                    }
+                } else {
+                    if (seasonType == 3) {
+                        Triple(year + 1, PRE_SEASON, WEEK_ONE)
+                    } else {
+                        Triple(year, seasonType + 1, WEEK_ONE)
+                    }
+                }
+                val resolvedModifier = nextWeek.toString()
+                    .takeIf { sport == SiteRoute.FOOTBALL.name } ?: modifier
+                sportDBs.competitionsDB.findScoreboard(
+                    sport,
+                    netYear,
+                    nextType,
+                    resolvedModifier,
+                    past
+                )
+            }
+            val compRef = resolvedComps.firstOrNull()
             val estZone = TimeZone.of("America/New_York")
+            val day = compRef?.date?.toLocalDateTime(estZone)?.date?.atStartOfDayIn(estZone)
+            val resolvedModifier = compRef?.week.toString()
+                .takeIf { sport == SiteRoute.FOOTBALL.name } ?: day
             ScoreboardResponse(
-                id = "",
+                id = "$sport-${compRef?.season?.type}-${compRef?.season?.year}-$resolvedModifier",
                 season = compRef?.season,
                 week = compRef?.week,
-                day = compRef?.date?.toLocalDateTime(estZone)?.date?.atStartOfDayIn(estZone),
-                competitions = comps.map { it.toResponse() }
+                day = day,
+                competitions = resolvedComps.map { it.toResponse() }
             )
         }
 }

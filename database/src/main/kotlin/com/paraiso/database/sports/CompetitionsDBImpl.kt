@@ -98,7 +98,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                     ).sort(ascending(Competition::date.name)).toList()
                 }
 
-                SiteRoute.BASKETBALL.name -> {
+                else -> {
                     getNextDay(
                         sport,
                         year,
@@ -107,18 +107,6 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                         past
                     )
                 }
-
-                SiteRoute.HOCKEY.name -> {
-                    getNextDay(
-                        sport,
-                        year,
-                        type,
-                        modifier,
-                        past
-                    )
-                }
-
-                else -> emptyList()
             }
         }
 
