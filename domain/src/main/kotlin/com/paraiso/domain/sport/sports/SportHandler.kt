@@ -9,6 +9,10 @@ import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
+import com.paraiso.domain.sport.data.Playoff
+import com.paraiso.domain.sport.data.PlayoffMatchup
+import com.paraiso.domain.sport.data.PlayoffRound
+import com.paraiso.domain.sport.data.PlayoffTeam
 import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
@@ -253,6 +257,15 @@ class SportHandler(
                         delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
                         initScoreboard = false
                     )
+                    //TODO only enable for football until round def is clear for other sports
+                    if(scoreboard.season.type == 3 && endingCompetitions.isNotEmpty() && sport == SiteRoute.FOOTBALL){
+                        savePlayoffResults(
+                            endingCompetitions,
+                            sport,
+                            scoreboard.season.year,
+                            scoreboard.week ?: 0 // TODO any round indicator for non football playoffs?
+                        )
+                    }
                 }
                 // retrieve scoreboard every ten seconds
                 delay(10.seconds)
@@ -329,6 +342,92 @@ class SportHandler(
                 )
                 lastSentBoxScores = newBoxScores
             }
+        }
+    }
+
+    private suspend fun savePlayoffResults(
+        competitions: List<Competition>,
+        sport: SiteRoute,
+        year: Int,
+        round: Int
+    ) {
+        // build new matchup results
+        val newMatchups = competitions.map { comp ->
+            PlayoffMatchup(
+                teams = comp.teams.map {
+                    PlayoffTeam(
+                        it.teamId,
+                        // TODO score only works for football need actual matchup totals for other
+                        it.score?.toIntOrNull() ?: 0,
+                        it.winner
+                    )
+                }
+            )
+        }
+        val updatedPlayoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)?.let{ playoff ->
+            // update existing playoffs with new matchup results
+            val curRound = playoff.rounds[round.toString()]
+                ?: PlayoffRound(round = round, matchups = emptyList())
+            val mutableRounds = playoff.rounds.toMutableMap()
+            mutableRounds[round.toString()] = curRound.copy(
+                matchups = newMatchups + curRound.matchups
+            )
+            playoff.copy(
+                rounds = mutableRounds
+            )
+        } ?: run {
+            // create new playoffs if they don't already exist
+            Playoff(
+                id = "$sport-$year",
+                sport = sport,
+                year = year,
+                rounds = mapOf(
+                    round.toString() to PlayoffRound(
+                        round,
+                        newMatchups
+                    )
+                )
+            )
+        }
+        sportDBs.playoffsDB.save(listOf(updatedPlayoff))
+    }
+
+    suspend fun fillPlayoffs(
+        sport: SiteRoute,
+        year: Int
+    ) {
+        // add posts for base sport route
+        sportDBs.competitionsDB.findPlayoffsByYear(sport.name, year).let { comps ->
+            // build all matchup results
+            val rounds = if(sport == SiteRoute.FOOTBALL) {
+                comps.groupBy { it.week ?: 0 }.map{ round ->
+                    val matchups = round.value.map { comp ->
+                        // TODO week only works for football
+                        PlayoffMatchup(
+                            teams = comp.teams.map {
+                                PlayoffTeam(
+                                    it.teamId,
+                                    // TODO score only works for football need actual matchup totals for other
+                                    it.score?.toIntOrNull() ?: 0,
+                                    it.winner
+                                )
+                            }
+                        )
+                    }
+                    PlayoffRound(
+                        round.key,
+                        matchups
+                    )
+                }
+            } else emptyList()
+            val playoff =
+                Playoff(
+                    id = "$sport-$year",
+                    sport = sport,
+                    year = year,
+                    rounds = rounds.associateBy { it.round.toString() }
+                )
+            sportDBs.playoffsDB.save(listOf(playoff))
         }
     }
 

@@ -110,5 +110,13 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
+        get("/playoff") {
+            sportApi.findPlayoff(
+                call.request.queryParameters["sport"] ?: "",
+                call.request.queryParameters["year"]?.toIntOrNull() ?: 0,
+            )?.let {
+                call.respond(HttpStatusCode.OK, it)
+            } ?: run { call.respond(HttpStatusCode.NoContent) }
+        }
     }
 }

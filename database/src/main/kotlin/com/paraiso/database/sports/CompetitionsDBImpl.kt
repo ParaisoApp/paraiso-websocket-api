@@ -110,6 +110,17 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
             }
         }
 
+    override suspend fun findPlayoffsByYear(sport: String, year: Int): List<Competition> =
+    withContext(Dispatchers.IO) {
+        collection.find(
+            and(
+                eq(Competition::sport.name, sport),
+                eq("${Competition::season.name}.year", year),
+                eq("${Competition::season.name}.type", 3),
+            )
+        ).toList()
+    }
+
     private suspend fun getNextDay(
         sport: String,
         year: Int,

@@ -14,4 +14,9 @@ interface CompetitionsDB {
         modifier: String,
         past: Boolean
     ): List<Competition>
+
+    suspend fun findPlayoffsByYear(
+        sport: String,
+        year: Int
+    ): List<Competition>
 }

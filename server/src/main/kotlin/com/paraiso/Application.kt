@@ -33,6 +33,7 @@ import com.paraiso.database.sports.CoachesDBImpl
 import com.paraiso.database.sports.CompetitionsDBImpl
 import com.paraiso.database.sports.LeadersDBImpl
 import com.paraiso.database.sports.LeaguesDBImpl
+import com.paraiso.database.sports.PlayoffsDBImpl
 import com.paraiso.database.sports.RostersDBImpl
 import com.paraiso.database.sports.SchedulesDBImpl
 import com.paraiso.database.sports.ScoreboardsDBImpl
@@ -52,6 +53,7 @@ import com.paraiso.domain.posts.PostPinsApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.interfaces.PlayoffsDB
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
@@ -144,7 +146,8 @@ fun Application.module(jobScope: CoroutineScope) {
         ScoreboardsDBImpl(database),
         BoxscoresDBImpl(database),
         CompetitionsDBImpl(database),
-        LeadersDBImpl(database)
+        LeadersDBImpl(database),
+        PlayoffsDBImpl(database)
     )
     val postsDb = PostsDBImpl(database)
     val usersDb = UsersDBImpl(database)

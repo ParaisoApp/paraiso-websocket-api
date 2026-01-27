@@ -6,6 +6,7 @@ import com.paraiso.domain.sport.interfaces.CoachesDB
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
 import com.paraiso.domain.sport.interfaces.LeadersDB
 import com.paraiso.domain.sport.interfaces.LeaguesDB
+import com.paraiso.domain.sport.interfaces.PlayoffsDB
 import com.paraiso.domain.sport.interfaces.RostersDB
 import com.paraiso.domain.sport.interfaces.SchedulesDB
 import com.paraiso.domain.sport.interfaces.ScoreboardsDB
@@ -23,5 +24,6 @@ data class SportDBs(
     val scoreboardsDB: ScoreboardsDB,
     val boxscoresDB: BoxscoresDB,
     val competitionsDB: CompetitionsDB,
-    val leadersDB: LeadersDB
+    val leadersDB: LeadersDB,
+    val playoffsDB: PlayoffsDB
 )

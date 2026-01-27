@@ -54,5 +54,12 @@ fun Route.dataGenerationController(
             )
             call.respond(HttpStatusCode.OK)
         }
+        post("/fillPlayoffData") {
+            sportHandler.fillPlayoffs(
+                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                call.request.queryParameters["year"]?.toIntOrNull() ?: 0,
+            )
+            call.respond(HttpStatusCode.OK)
+        }
     }
 }

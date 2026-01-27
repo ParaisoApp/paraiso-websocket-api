@@ -155,7 +155,7 @@ class SportApi(private val sportDBs: SportDBs) {
         ).let { comps ->
             //if comps is empty, try diff type or year
             val resolvedComps = comps.ifEmpty {
-                val (netYear, nextType, nextWeek) = if (past) {
+                val (nextYear, nextType, nextWeek) = if (past) {
                     when (seasonType) {
                         1 -> Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON)
                         2 -> Triple(year, seasonType - 1, MAX_WEEK_PRE_SEASON)
@@ -173,7 +173,7 @@ class SportApi(private val sportDBs: SportDBs) {
                     .takeIf { sport == SiteRoute.FOOTBALL.name } ?: modifier
                 sportDBs.competitionsDB.findScoreboard(
                     sport,
-                    netYear,
+                    nextYear,
                     nextType,
                     resolvedModifier,
                     past
@@ -192,4 +192,13 @@ class SportApi(private val sportDBs: SportDBs) {
                 competitions = resolvedComps.map { it.toResponse() }
             )
         }
+
+    suspend fun findPlayoff(
+        sport: String,
+        year: Int
+    ) =
+        sportDBs.playoffsDB.findBySportAndYear(
+            sport,
+            year,
+        )?.toResponse()
 }
