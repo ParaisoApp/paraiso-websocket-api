@@ -2,6 +2,8 @@ package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -10,15 +12,16 @@ data class Playoff(
     @SerialName(ID) val id: String,
     val sport: SiteRoute,
     val year: Int,
-    val rounds: Map<String, PlayoffRound>
+    val rounds: List<PlayoffRound>
 )
 @Serializable
 data class PlayoffRound(
     val round: Int,
-    val matchups: List<PlayoffMatchup>
+    val matchUps: List<PlayoffMatchUp>
 )
 @Serializable
-data class PlayoffMatchup(
+data class PlayoffMatchUp(
+    val id: String,
     val teams: List<PlayoffTeam>
 )
 @Serializable
@@ -36,10 +39,12 @@ data class PlayoffResponse(
 )
 @Serializable
 data class PlayoffRoundResponse(
-    val matchups: Map<String, PlayoffMatchupResponse>
+    val round: Int,
+    val matchUps: Map<String, PlayoffMatchUpResponse>
 )
 @Serializable
-data class PlayoffMatchupResponse(
+data class PlayoffMatchUpResponse(
+    val id: String,
     val teams: Map<String, PlayoffTeamResponse>
 )
 @Serializable
@@ -54,16 +59,18 @@ fun Playoff.toResponse() =
         id = id,
         sport = sport,
         year = year,
-        rounds = rounds.map { (it.key.toIntOrNull() ?: 0) to it.value.toResponse() }.toMap()
+        rounds = rounds.associate { it.round to it.toResponse() }
     )
 
 fun PlayoffRound.toResponse() =
     PlayoffRoundResponse(
-        matchups.associate { "${it.teams[0].id}-${it.teams[1].id}" to it.toResponse() }
+        round = round,
+        matchUps.associate { it.teams.map { team -> team.id }.sorted().joinToString { "-" } to it.toResponse() }
     )
 
-fun PlayoffMatchup.toResponse() =
-    PlayoffMatchupResponse(
+fun PlayoffMatchUp.toResponse() =
+    PlayoffMatchUpResponse(
+        id = id,
         teams.associate { it.id to it.toResponse() }
     )
 fun PlayoffTeam.toResponse() =
