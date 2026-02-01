@@ -40,6 +40,7 @@ data class PlayoffResponse(
 @Serializable
 data class PlayoffRoundResponse(
     val round: Int,
+    val winners: List<String>,
     val matchUps: Map<String, PlayoffMatchUpResponse>
 )
 @Serializable
@@ -65,7 +66,8 @@ fun Playoff.toResponse() =
 fun PlayoffRound.toResponse() =
     PlayoffRoundResponse(
         round = round,
-        matchUps.associate { it.teams.map { team -> team.id }.sorted().joinToString { "-" } to it.toResponse() }
+        winners = matchUps.flatMap { it.teams }.filter { it.winner == true }.map { it.id },
+        matchUps.associate { it.id to it.toResponse() }
     )
 
 fun PlayoffMatchUp.toResponse() =
