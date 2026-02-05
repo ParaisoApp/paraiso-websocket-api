@@ -31,6 +31,7 @@ data class CategoryLeader(
 
 @Serializable
 data class LeaderResponse(
+    val id: Int,
     val athleteName: String?,
     val leaderStat: Double,
     val teamAbbr: String?

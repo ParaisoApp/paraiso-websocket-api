@@ -72,6 +72,7 @@ class SportApi(private val sportDBs: SportDBs) {
                 it.displayName to it.leaders.mapNotNull { leader ->
                     athletes[leader.athleteId.toString()]?.let { athlete ->
                         LeaderResponse(
+                            id = leader.athleteId,
                             athleteName = athlete.shortName,
                             leaderStat = leader.value,
                             teamAbbr = athlete.teamAbbr
@@ -96,6 +97,7 @@ class SportApi(private val sportDBs: SportDBs) {
                 it.displayName to it.leaders.mapNotNull { leader ->
                     athletes[leader.athleteId.toString()]?.let { athlete ->
                         LeaderResponse(
+                            id = leader.athleteId,
                             athleteName = athlete.shortName,
                             leaderStat = leader.value,
                             teamAbbr = athlete.teamAbbr
