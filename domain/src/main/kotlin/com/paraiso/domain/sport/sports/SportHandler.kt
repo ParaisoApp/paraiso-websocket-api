@@ -207,13 +207,14 @@ class SportHandler(
             while (isActive) {
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     // if completely new scoreboard save it and generate game posts
-                    if (scoreboard.toEntity() != lastSentScoreboard[sport]?.toEntity()) {
+                    val lastScoreboardEntity = lastSentScoreboard[sport]?.toEntity()
+                    if (scoreboard.toEntity() != lastScoreboardEntity) {
                         saveScoreboardAndGetBoxScores(
                             sport,
                             scoreboard,
                             scoreboard.competitions,
                             enableBoxScore = true,
-                            initScoreboard = true
+                            initScoreboard = lastScoreboardEntity == null
                         )
                     } else {
                         delayBoxScore = determineActiveComps(sport, scoreboard, delayBoxScore)
@@ -293,8 +294,19 @@ class SportHandler(
         if (activeCompetitions.isNotEmpty()) {
             if(initScoreboard){
                 // don't overwrite existing records if new scoreboard (prevents deleting comp end time on startup)
-                sportDBs.competitionsDB.saveIfNew(activeCompetitions)
-            }else{
+                sportDBs.competitionsDB.findByIdIn(activeCompetitions.map { it.id }.toSet())
+                    .associate { it.id to it.status.completedTime }.let { existingCompletedTimes ->
+                    activeCompetitions.map {
+                        it.copy(
+                            status = it.status.copy(
+                                completedTime = existingCompletedTimes[it.id]
+                            )
+                        )
+                    }.let { updatedComps ->
+                        sportDBs.competitionsDB.save(updatedComps)
+                    }
+                }
+            } else{
                 sportDBs.competitionsDB.save(activeCompetitions)
             }
             eventService.publish(
