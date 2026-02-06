@@ -12,7 +12,7 @@ data class PostSearch(
     val sort: SortType,
     val selectedFilters: FilterTypes,
     val userId: String,
-    val sessionId: String,
+    val sessionId: String
 )
 
 @Serializable
@@ -27,7 +27,6 @@ data class PostSearchId(
     val commentRouteLocation: String? = null
 )
 
-
 @Serializable
 enum class GameState {
     @SerialName("PRE")
@@ -40,5 +39,5 @@ enum class GameState {
     POST,
 
     @SerialName("ALL")
-    ALL,
+    ALL
 }

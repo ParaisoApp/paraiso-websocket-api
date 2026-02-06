@@ -13,7 +13,6 @@ import com.paraiso.domain.sport.data.Playoff
 import com.paraiso.domain.sport.data.PlayoffMatchUp
 import com.paraiso.domain.sport.data.PlayoffRound
 import com.paraiso.domain.sport.data.PlayoffTeam
-import com.paraiso.domain.sport.data.Schedule
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
@@ -30,11 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.todayIn
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
@@ -223,7 +218,8 @@ class SportHandler(
             }
         }
     }
-    //returns next delayBoxScore state (incremented on every sb update)
+
+    // returns next delayBoxScore state (incremented on every sb update)
     private suspend fun determineActiveComps(sport: SiteRoute, scoreboard: Scoreboard, delayBoxScore: Int) = coroutineScope {
         // rolling window for active comps
         val now = Clock.System.now()
@@ -247,7 +243,7 @@ class SportHandler(
             if (activeComps.isEmpty()) {
                 delay(1.hours)
                 delayBoxScore
-            }else{
+            } else {
                 // deep comparison for changes
                 if (scoreboard != lastSentScoreboard[sport]) {
                     saveScoreboardAndGetBoxScores(
@@ -258,7 +254,7 @@ class SportHandler(
                         delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
                         initScoreboard = false
                     )
-                    if(scoreboard.season.type == 3 && endingCompetitions.isNotEmpty()){
+                    if (scoreboard.season.type == 3 && endingCompetitions.isNotEmpty()) {
                         savePlayoffResults(
                             endingCompetitions,
                             sport,
@@ -277,7 +273,7 @@ class SportHandler(
             }
         } else {
             // else if current time is before the earliest time, delay until the earliest time
-            if(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0){
+            if (earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds() > 0) {
                 delay(earliestTime.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds())
             }
             delayBoxScore
@@ -292,21 +288,21 @@ class SportHandler(
         initScoreboard: Boolean
     ) = coroutineScope {
         if (activeCompetitions.isNotEmpty()) {
-            if(initScoreboard){
+            if (initScoreboard) {
                 // don't overwrite existing records if new scoreboard (prevents deleting comp end time on startup)
                 sportDBs.competitionsDB.findByIdIn(activeCompetitions.map { it.id }.toSet())
                     .associate { it.id to it.status.completedTime }.let { existingCompletedTimes ->
-                    activeCompetitions.map {
-                        it.copy(
-                            status = it.status.copy(
-                                completedTime = existingCompletedTimes[it.id]
+                        activeCompetitions.map {
+                            it.copy(
+                                status = it.status.copy(
+                                    completedTime = existingCompletedTimes[it.id]
+                                )
                             )
-                        )
-                    }.let { updatedComps ->
-                        sportDBs.competitionsDB.save(updatedComps)
+                        }.let { updatedComps ->
+                            sportDBs.competitionsDB.save(updatedComps)
+                        }
                     }
-                }
-            } else{
+            } else {
                 sportDBs.competitionsDB.save(activeCompetitions)
             }
             eventService.publish(
@@ -361,8 +357,8 @@ class SportHandler(
         year: Int
     ) {
         val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
-            ?: Playoff("$sport-$year",  sport, year, emptyList())
-        val round = playoff.rounds.maxByOrNull{ it.round }
+            ?: Playoff("$sport-$year", sport, year, emptyList())
+        val round = playoff.rounds.maxByOrNull { it.round }
         val firstCompTeamIds = comps.first().teams.map { team -> team.teamId }
         // If one team is recognized from the current round but the pairing is different, it's a new round.
         val isNewRound = round?.matchUps?.any { matchUp ->

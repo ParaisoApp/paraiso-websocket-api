@@ -15,7 +15,7 @@ import kotlinx.datetime.toLocalDateTime
 
 class SportApi(private val sportDBs: SportDBs) {
     companion object {
-        //index off one week for conversion and modification in DB layer
+        // index off one week for conversion and modification in DB layer
         const val MAX_WEEK_REGULAR_SEASON = 19
         const val MAX_WEEK_PRE_SEASON = 4
         const val MAX_WEEK_POST_SEASON = 5
@@ -155,7 +155,7 @@ class SportApi(private val sportDBs: SportDBs) {
             modifier,
             past
         ).let { comps ->
-            //if comps is empty, try diff type or year
+            // if comps is empty, try diff type or year
             val resolvedComps = comps.ifEmpty {
                 val (nextYear, nextType, nextWeek) = if (past) {
                     when (seasonType) {
@@ -201,6 +201,6 @@ class SportApi(private val sportDBs: SportDBs) {
     ) =
         sportDBs.playoffsDB.findBySportAndYear(
             sport,
-            year,
+            year
         )?.toResponse()
 }

@@ -2,9 +2,6 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
-import com.paraiso.domain.sport.data.Competition
-import com.paraiso.domain.sport.data.CompetitionResponse
-import com.paraiso.domain.sport.data.StatusResponse
 import kotlinx.datetime.Instant
 
 interface PostsDB {

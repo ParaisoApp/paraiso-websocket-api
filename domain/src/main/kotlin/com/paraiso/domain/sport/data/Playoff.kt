@@ -2,8 +2,6 @@ package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.util.InstantBsonSerializer
-import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,22 +12,26 @@ data class Playoff(
     val year: Int,
     val rounds: List<PlayoffRound>
 )
+
 @Serializable
 data class PlayoffRound(
     val round: Int,
     val matchUps: List<PlayoffMatchUp>
 )
+
 @Serializable
 data class PlayoffMatchUp(
     val id: String,
     val teams: List<PlayoffTeam>
 )
+
 @Serializable
 data class PlayoffTeam(
     val id: String,
     val score: Int,
     val winner: Boolean?
 )
+
 @Serializable
 data class PlayoffResponse(
     val id: String,
@@ -37,17 +39,20 @@ data class PlayoffResponse(
     val year: Int,
     val rounds: Map<Int, PlayoffRoundResponse>
 )
+
 @Serializable
 data class PlayoffRoundResponse(
     val round: Int,
     val winners: List<String>,
     val matchUps: Map<String, PlayoffMatchUpResponse>
 )
+
 @Serializable
 data class PlayoffMatchUpResponse(
     val id: String,
     val teams: Map<String, PlayoffTeamResponse>
 )
+
 @Serializable
 data class PlayoffTeamResponse(
     val id: String,

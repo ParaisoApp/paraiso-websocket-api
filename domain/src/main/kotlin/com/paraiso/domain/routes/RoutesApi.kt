@@ -64,7 +64,7 @@ class RoutesApi(
                         sessionId
                     )
                 )?.posts?.values?.forEach { post ->
-                    post.id?.let{
+                    post.id?.let {
                         postsData.posts[it] = post
                     }
                 }

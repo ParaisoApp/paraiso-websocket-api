@@ -14,7 +14,6 @@ import com.paraiso.domain.sport.data.TeamResponse
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserResponse
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
@@ -43,19 +42,23 @@ class PostsApi(
         postSearchId: PostSearchId
     ): PostsData? =
         postsDB.findById(postSearchId.id)?.let { post ->
-            val compStatus = if(post.type == PostType.EVENT && post.id != null){
+            val compStatus = if (post.type == PostType.EVENT && post.id != null) {
                 sportApi.findCompetitionById(post.id.removePrefix(GAME_PREFIX))?.status
-            } else null
+            } else {
+                null
+            }
             val range = getRange(postSearchId.range, postSearchId.sort)
             val followees = followsApi.getByFollowerId(postSearchId.userId).map { it.followeeId }.toSet()
             val resolvedGameState =
-                (postSearchId.gameState
-                    ?: when(compStatus?.state){
-                        "pre" -> GameState.PRE
-                        "in" -> GameState.MID
-                        "post" -> GameState.POST
-                        else -> null
-                    }).takeIf { post.type == PostType.EVENT }
+                (
+                    postSearchId.gameState
+                        ?: when (compStatus?.state) {
+                            "pre" -> GameState.PRE
+                            "in" -> GameState.MID
+                            "post" -> GameState.POST
+                            else -> null
+                        }
+                    ).takeIf { post.type == PostType.EVENT }
             val subPosts = postsDB.findByParentIdWithEventFilters(
                 postSearchId.id,
                 range,
@@ -78,7 +81,10 @@ class PostsApi(
             ).let { posts ->
                 // pull in event related data - with subscription
                 val (teams, comps) = pullEventData(
-                    posts, postSearchId.userId, postSearchId.sessionId, subscribe = postSearchId.id == HOME_PREFIX
+                    posts,
+                    postSearchId.userId,
+                    postSearchId.sessionId,
+                    subscribe = postSearchId.id == HOME_PREFIX
                 )
 
                 PostsData(posts, teams, comps)
@@ -148,7 +154,10 @@ class PostsApi(
                 )
                 // pull in event related data
                 val (teams, comps) = pullEventData(
-                    posts, postSearch.userId, postSearch.sessionId, subscribe = postSearch.id == HOME_PREFIX
+                    posts,
+                    postSearch.userId,
+                    postSearch.sessionId,
+                    subscribe = postSearch.id == HOME_PREFIX
                 )
                 PostsData(posts, teams, comps)
             }

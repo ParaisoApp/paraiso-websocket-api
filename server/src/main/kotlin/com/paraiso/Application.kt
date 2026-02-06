@@ -53,7 +53,6 @@ import com.paraiso.domain.posts.PostPinsApi
 import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.interfaces.PlayoffsDB
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
@@ -99,7 +98,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {

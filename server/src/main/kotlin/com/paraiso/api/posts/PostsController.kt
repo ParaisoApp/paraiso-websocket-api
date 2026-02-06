@@ -1,11 +1,8 @@
 package com.paraiso.api.posts
 
-import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.PostSearch
 import com.paraiso.domain.posts.PostSearchId
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.posts.Range
-import com.paraiso.domain.posts.SortType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
@@ -19,14 +16,14 @@ fun Route.postsController(postsApi: PostsApi) {
     route("posts") {
         post {
             postsApi.getPosts(
-                call.receive<PostSearch>(),
+                call.receive<PostSearch>()
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
         }
         post("getById") {
             postsApi.getById(
-                call.receive<PostSearchId>(),
+                call.receive<PostSearchId>()
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }

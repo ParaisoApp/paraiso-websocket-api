@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.concurrent.ConcurrentHashMap
 
-object SportState: Klogging {
+object SportState : Klogging {
     private val scoreboards = ConcurrentHashMap<String, MutableStateFlow<ScoreboardEntity>>()
     private val competitions = ConcurrentHashMap<String, ConcurrentHashMap<String, MutableStateFlow<Competition>>>()
     private val boxScores = ConcurrentHashMap<String, MutableStateFlow<BoxScore>>()
@@ -38,9 +38,9 @@ object SportState: Klogging {
     }
     fun updateCompetitions(newComps: List<Competition>) {
         var restart = false
-        newComps.firstOrNull()?.sport?.name?.let {sport ->
+        newComps.firstOrNull()?.sport?.name?.let { sport ->
             newComps.forEach { comp ->
-                val sportComps = competitions.getOrPut(sport){ ConcurrentHashMap() }
+                val sportComps = competitions.getOrPut(sport) { ConcurrentHashMap() }
                 sportComps.getOrPut(comp.id) { MutableStateFlow(comp) }.value = comp
                 if (comp.status.completed) {
                     sportComps.remove(comp.id)

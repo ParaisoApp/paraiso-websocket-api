@@ -57,7 +57,7 @@ fun Route.dataGenerationController(
         post("/fillPlayoffData") {
             sportHandler.fillPlayoffs(
                 enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                call.request.queryParameters["year"]?.toIntOrNull() ?: 0,
+                call.request.queryParameters["year"]?.toIntOrNull() ?: 0
             )
             call.respond(HttpStatusCode.OK)
         }

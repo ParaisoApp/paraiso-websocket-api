@@ -34,7 +34,6 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
@@ -51,7 +50,6 @@ import kotlinx.serialization.json.Json
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
-import kotlin.time.Duration.Companion.hours
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB {
     companion object {
@@ -275,7 +273,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 // home page should have all root posts - will eventually resolve to following
                 homeFilters.add(
                     and(
-                        eqId(Post::rootId),
+                        eqId(Post::rootId)
                     )
                 )
             }
@@ -288,7 +286,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 homeFilters.add(
                     and(
                         eq(Post::type.name, PostType.EVENT.name),
-                        eq(Post::data.name, basePostName), // route is housed in data field
+                        eq(Post::data.name, basePostName) // route is housed in data field
                     )
                 )
             }
@@ -308,7 +306,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
 
-            range?.let{
+            range?.let {
                 andConditions.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
             }
 
@@ -335,7 +333,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes)
             )
-            range?.let{
+            range?.let {
                 andConditions.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
             }
             val initialFilter = and(andConditions)
@@ -366,8 +364,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             commentRouteLocation?.let {
                 buildFilters.add(eq(Post::route.name, commentRouteLocation))
             }
-            if(gameState != null && compStartTime != null && compEndTime != null){
-                when(gameState){
+            if (gameState != null && compStartTime != null && compEndTime != null) {
+                when (gameState) {
                     GameState.PRE -> {
                         buildFilters.add(lt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
                     }
@@ -381,7 +379,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                     GameState.ALL -> {}
                 }
             }
-            range?.let{
+            range?.let {
                 buildFilters.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
             }
             val initialFilter = and(buildFilters)
@@ -403,7 +401,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
-
 
     override suspend fun saveIfNew(posts: List<Post>) =
         withContext(Dispatchers.IO) {

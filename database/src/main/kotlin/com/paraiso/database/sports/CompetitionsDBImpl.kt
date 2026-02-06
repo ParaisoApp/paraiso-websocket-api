@@ -7,7 +7,6 @@ import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.gte
 import com.mongodb.client.model.Filters.lt
-import com.mongodb.client.model.InsertOneModel
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts.ascending
@@ -111,15 +110,15 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
         }
 
     override suspend fun findPlayoffsByYear(sport: String, year: Int): List<Competition> =
-    withContext(Dispatchers.IO) {
-        collection.find(
-            and(
-                eq(Competition::sport.name, sport),
-                eq("${Competition::season.name}.year", year),
-                eq("${Competition::season.name}.type", 3),
-            )
-        ).toList()
-    }
+        withContext(Dispatchers.IO) {
+            collection.find(
+                and(
+                    eq(Competition::sport.name, sport),
+                    eq("${Competition::season.name}.year", year),
+                    eq("${Competition::season.name}.type", 3)
+                )
+            ).toList()
+        }
 
     private suspend fun getNextDay(
         sport: String,
