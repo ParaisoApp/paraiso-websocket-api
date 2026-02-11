@@ -276,6 +276,7 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
     val mainHost = config.property("api.mainHost").getString()
     val altHost = config.property("api.altHost").getString()
     val frontendHost = config.property("api.frontendHost").getString()
+    val frontendPreviewHost = config.property("api.frontendPreviewHost").getString()
     val backendHost = config.property("api.backendHost").getString()
     val scheme = config.property("api.scheme").getString()
     install(WebSockets) {
@@ -289,6 +290,7 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
         allowHost(mainHost, schemes = listOf(scheme))
         allowHost(altHost, schemes = listOf(scheme))
         allowHost(frontendHost, schemes = listOf(scheme))
+        allowHost(frontendPreviewHost, schemes = listOf(scheme))
         allowHost(backendHost, schemes = listOf(scheme))
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Accept)
