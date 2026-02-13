@@ -226,7 +226,7 @@ class WebSocketHandler(
         val isUser = sessionUserId == userId
         val roles = services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
         // user is on home - take any message, otherwise message must come from route
-        val routeCriteria = sessionContext.routeId == message.route
+        val routeCriteria = sessionContext.routeId == HOME_PREFIX || sessionContext.routeId == message.route
         val filterCriteria =
             sessionContext.filterTypes.userRoles.contains(roles) &&
                 sessionContext.filterTypes.postTypes.contains(message.type) &&
