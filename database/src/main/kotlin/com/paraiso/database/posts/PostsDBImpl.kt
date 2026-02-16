@@ -57,7 +57,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         const val PARTIAL_RETRIEVE_LIM = 10
         const val TIME_WEIGHTING = 10_000_000_000L
         const val RISING_TIME_MULTIPLIER = 2.0
-        const val COMMENT_WEIGHTING = 2
+        const val COMMENT_WEIGHTING = 0.5
     }
 
     private val collection = database.getCollection("posts", Post::class.java)
@@ -131,7 +131,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         return match(Document("\$expr", Document("\$or", orConditions)))
     }
 
-    // (voteSum + 2 * count)
+    // (voteSum + commentWeight * count)
     private fun getScore(): Document {
         return Document(
             "\$add",
@@ -237,12 +237,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 Document(
                     "\$addFields",
                     Document(
-                        "score",
-                        // (voteSum + 2 * count)
+                        "calculatedScore",
+                        // (voteSum + commentWeight * count)
                         getScore()
                     )
                 ),
-                Document("\$sort", Document("score", -1))
+                Document("\$sort", Document("calculatedScore", -1))
             )
 
             SortType.HOT -> listOf(
