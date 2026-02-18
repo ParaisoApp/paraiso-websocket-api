@@ -271,62 +271,49 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         userFollowing: Set<String>
     ) =
         withContext(Dispatchers.IO) {
-            val routeFilter = mutableListOf<Bson>()
-            // home page has all root posts
-            if (postSearchId == HOME_PREFIX) {
-                routeFilter.add(
-                    eqId(Post::rootId)
-                )
-            }
-            // user route has all posts made by user
-            if (postSearchId.startsWith(USER_PREFIX)) {
-                routeFilter.add(
-                    eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
-                )
-            }
-            // favorites resolve to user's favorites
-            if (basePostName == SiteRoute.FAVORITES.name) {
-                userFavorites.forEach { fav ->
-                    if(isSportRoute(fav.route) && fav.modifier != null){
-                        //grab games from team favorite routes
-                        routeFilter.add(
-                            and(
-                                eq(Post::data.name, fav.route),
-                                eq(Post::type.name, PostType.EVENT.name),
-                                regex(Post::title.name, fav.modifier ?: "", "i"),
+            val routeFilter = when {
+                // if id == root id then post was made at base route
+                postSearchId == HOME_PREFIX -> eqId(Post::rootId)
+                // Profile case where search id is the user id - match to post's user id
+                postSearchId.startsWith(USER_PREFIX) -> eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
+                // favorites resolve to user's favorites
+                basePostName == SiteRoute.FAVORITES.name -> {
+                    val favConds = userFavorites.map { fav ->
+                        if(isSportRoute(fav.route)){
+                            val sportBase = and(eq(Post::data.name, fav.route), eq(Post::type.name, PostType.EVENT.name))
+                            val teamFilter = fav.modifier?.let { regex(Post::title.name, it, "i") }
+                            or(
+                                if (teamFilter != null) and(sportBase, teamFilter) else sportBase,
+                                eq(Post::parentId.name, fav.routeId)
                             )
-                        )
+                        }else{
+                            //grab all posts in that fav route
+                            eq(Post::parentId.name, fav.routeId)
+                        }
                     }
-                    //grab all posts in that fav route
-                    routeFilter.add(
-                        eq(Post::parentId.name, fav.routeId)
-                    )
+                    // add or condition if more than one condition exists
+                    when {
+                        favConds.isEmpty() -> null
+                        favConds.size == 1 -> favConds.first()
+                        else -> or(favConds)
+                    }
                 }
-            }
-            // sport routes have all of that sport's game posts
-            if (
-                basePostName == SiteRoute.BASKETBALL.name ||
-                basePostName == SiteRoute.FOOTBALL.name ||
-                basePostName == SiteRoute.HOCKEY.name
-            ) {
-                routeFilter.add(
+                // grab events for each sport route
+                basePostName in listOf(SiteRoute.BASKETBALL.name, SiteRoute.FOOTBALL.name, SiteRoute.HOCKEY.name) ->
                     and(
-                        eq(Post::type.name, PostType.EVENT.name),
-                        eq(Post::data.name, basePostName) // route is housed in data field
+                        eq(Post::data.name, basePostName),
+                        eq(Post::type.name, PostType.EVENT.name)
                     )
-                )
+                else -> null
             }
-
-            val orConditions = mutableListOf(
-                eq(Post::parentId.name, postSearchId)
-            )
-
-            if(routeFilter.isNotEmpty()){
-                orConditions.add(or(routeFilter))
+            // add or condition if more than one condition exists
+            val orConditions = when {
+                routeFilter != null -> or(routeFilter, eq(Post::parentId.name, postSearchId))
+                else -> eq(Post::parentId.name, postSearchId)
             }
 
             val andConditions = mutableListOf(
-                or(orConditions),
+                orConditions,
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
@@ -389,9 +376,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes)
             )
-            commentRouteLocation?.let {
-                buildFilters.add(eq(Post::route.name, commentRouteLocation))
-            }
             if (gameState != null && compStartTime != null && compEndTime != null) {
                 when (gameState) {
                     GameState.PRE -> {
@@ -406,6 +390,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                     }
                     GameState.ALL -> {}
                 }
+            }
+            commentRouteLocation?.let {
+                buildFilters.add(eq(Post::route.name, commentRouteLocation))
             }
             range?.let {
                 buildFilters.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
