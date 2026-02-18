@@ -7,6 +7,8 @@ object Constants {
     const val SYSTEM = "SYSTEM"
     const val USER_PREFIX = "/p/"
     const val HOME_PREFIX = "/"
+    const val FAVORITES_PREFIX = "/f"
+    const val SPORT_PREFIX = "/s"
     const val GAME_PREFIX = "GAME-"
     const val ID = "_id"
 }

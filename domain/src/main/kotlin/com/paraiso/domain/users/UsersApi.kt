@@ -15,6 +15,11 @@ class UsersApi(
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
 
+    suspend fun getUserFavorites(userId: String) =
+        usersDB.findById(userId)?.let { user ->
+            user.routeFavorites.filter { it.value.favorite }.map { it.value }
+        } ?: emptyList()
+
     suspend fun addMentions(
         userNames: Set<String>,
         messageUserReceiveId: String?,

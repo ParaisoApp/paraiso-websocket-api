@@ -2,6 +2,7 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.users.UserFavorite
 import kotlinx.datetime.Instant
 
 interface PostsDB {
@@ -15,6 +16,7 @@ interface PostsDB {
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
+        userFavorites: List<UserFavorite>,
         userFollowing: Set<String>
     ): List<Post>
     suspend fun findByParentId(

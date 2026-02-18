@@ -169,6 +169,7 @@ fun Application.module(jobScope: CoroutineScope) {
         postsDb,
         votesApi,
         followsApi,
+        usersApi,
         eventServiceImpl,
         sportApi
     )

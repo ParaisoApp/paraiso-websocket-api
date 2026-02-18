@@ -17,7 +17,9 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.users.EventService
+import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
+import com.paraiso.domain.util.Constants.SPORT_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import com.paraiso.domain.util.ServerConfig.autoBuildPosts
@@ -89,7 +91,7 @@ class SportHandler(
         teams.map {
             val now = Clock.System.now()
             RouteDetails(
-                id = "/s/${sport.name.lowercase()}/t/${it.abbreviation}",
+                id = "${SPORT_PREFIX}/${sport.name.lowercase()}/t/${it.abbreviation}",
                 route = sport,
                 modifier = it.abbreviation,
                 title = it.displayName,
@@ -172,7 +174,7 @@ class SportHandler(
                 parentId = "/${sport.name}",
                 rootId = "$GAME_PREFIX${competition.id}",
                 data = sport.name,
-                route = "/s/${sport.name.lowercase()}",
+                route = "$SPORT_PREFIX/${sport.name.lowercase()}",
                 createdOn = competition.date,
                 updatedOn = competition.date
             )

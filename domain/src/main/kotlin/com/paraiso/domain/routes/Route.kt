@@ -60,6 +60,9 @@ enum class SiteRoute {
     @SerialName("HOME")
     HOME,
 
+    @SerialName("FAVORITES")
+    FAVORITES,
+
     @SerialName("PROFILE")
     PROFILE,
 

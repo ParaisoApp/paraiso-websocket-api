@@ -14,6 +14,7 @@ import com.paraiso.domain.sport.data.TeamResponse
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.PLACEHOLDER_ID
@@ -33,6 +34,7 @@ class PostsApi(
     private val postsDB: PostsDB,
     private val votesApi: VotesApi,
     private val followsApi: FollowsApi,
+    private val usersApi: UsersApi,
     private val eventService: EventService,
     private val sportApi: SportApi
 ) {
@@ -133,6 +135,7 @@ class PostsApi(
     suspend fun getPosts(postSearch: PostSearch): PostsData {
         // grab 50 most recent posts at given super level
         val followees = followsApi.getByFollowerId(postSearch.userId).map { it.followeeId }.toSet()
+        val favorites = usersApi.getUserFavorites(postSearch.userId)
         val range = getRange(postSearch.range, postSearch.sort)
         return postsDB.findByBaseCriteria(
             postSearch.id,
@@ -140,6 +143,7 @@ class PostsApi(
             range,
             postSearch.selectedFilters,
             postSearch.sort,
+            favorites,
             followees
         ) // generate base post and post tree off of given inputs
             .let { subPosts ->

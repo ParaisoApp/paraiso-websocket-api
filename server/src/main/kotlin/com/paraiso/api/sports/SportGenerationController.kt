@@ -15,7 +15,7 @@ fun Route.dataGenerationController(
     sportHandler: SportHandler
 ) {
     route("dataGen") {
-        post("/rosters") {
+        post("/routes") {
             serverHandler.buildRoutes(manual = true)
             call.respond(HttpStatusCode.OK)
         }

@@ -605,6 +605,7 @@ class WebSocketHandler(
     ): List<Job> = coroutineScope {
         when (route.route) {
             SiteRoute.HOME -> HomeJobs().homeJobs(session)
+            SiteRoute.FAVORITES -> HomeJobs().homeJobs(session)
             SiteRoute.PROFILE -> ProfileJobs().profileJobs(route.content, session)
             SiteRoute.SPORT -> {
                 when (route.modifier) {

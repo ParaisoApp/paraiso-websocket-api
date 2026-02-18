@@ -34,9 +34,13 @@ import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.routes.isSportRoute
+import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.util.Constants.FAVORITES_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.Constants.SPORT_PREFIX
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -124,7 +128,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         val orConditions = mutableListOf(roleCondition)
 
         // Only add following condition if FOLLOWING is in filters
-        if (filters.userRoles.contains(UserRole.FOLLOWING)) {
+        if (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.isNotEmpty()) {
             val followingCondition = Document("\$in", listOf("\$userId", userFollowing))
             orConditions.add(followingCondition)
         }
@@ -263,27 +267,49 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
+        userFavorites: List<UserFavorite>,
         userFollowing: Set<String>
     ) =
         withContext(Dispatchers.IO) {
-            val homeFilters = mutableListOf(
-                eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
-            )
+            val routeFilter = mutableListOf<Bson>()
+            // home page has all root posts
             if (postSearchId == HOME_PREFIX) {
-                // home page should have all root posts - will eventually resolve to following
-                homeFilters.add(
-                    and(
-                        eqId(Post::rootId)
-                    )
+                routeFilter.add(
+                    eqId(Post::rootId)
                 )
             }
+            // user route has all posts made by user
+            if (postSearchId.startsWith(USER_PREFIX)) {
+                routeFilter.add(
+                    eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
+                )
+            }
+            // favorites resolve to user's favorites
+            if (basePostName == SiteRoute.FAVORITES.name) {
+                userFavorites.forEach { fav ->
+                    if(isSportRoute(fav.route) && fav.modifier != null){
+                        //grab games from team favorite routes
+                        routeFilter.add(
+                            and(
+                                eq(Post::data.name, fav.route),
+                                eq(Post::type.name, PostType.EVENT.name),
+                                regex(Post::title.name, fav.modifier ?: "", "i"),
+                            )
+                        )
+                    }
+                    //grab all posts in that fav route
+                    routeFilter.add(
+                        eq(Post::parentId.name, fav.routeId)
+                    )
+                }
+            }
+            // sport routes have all of that sport's game posts
             if (
                 basePostName == SiteRoute.BASKETBALL.name ||
                 basePostName == SiteRoute.FOOTBALL.name ||
                 basePostName == SiteRoute.HOCKEY.name
             ) {
-                // for sports add their respective gameposts
-                homeFilters.add(
+                routeFilter.add(
                     and(
                         eq(Post::type.name, PostType.EVENT.name),
                         eq(Post::data.name, basePostName) // route is housed in data field
@@ -291,11 +317,13 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                 )
             }
 
-            val orConditions = listOf(
-                eq(Post::parentId.name, postSearchId),
-                eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX)),
-                or(homeFilters)
+            val orConditions = mutableListOf(
+                eq(Post::parentId.name, postSearchId)
             )
+
+            if(routeFilter.isNotEmpty()){
+                orConditions.add(or(routeFilter))
+            }
 
             val andConditions = mutableListOf(
                 or(orConditions),
