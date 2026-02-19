@@ -6,6 +6,17 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class InitSearch(
+    val routeId: String,
+    val range: Range,
+    val sort: SortType,
+    val selectedFilters: FilterTypes,
+    val userId: String,
+    val sessionId: String,
+    val postId: String?
+)
+
+@Serializable
 data class PostSearch(
     val route: RouteResponse,
     val range: Range,

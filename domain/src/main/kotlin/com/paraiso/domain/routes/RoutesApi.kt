@@ -2,6 +2,7 @@ package com.paraiso.domain.routes
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.InitRouteData
+import com.paraiso.domain.posts.InitSearch
 import com.paraiso.domain.posts.PostPinsApi
 import com.paraiso.domain.posts.PostSearch
 import com.paraiso.domain.posts.PostSearchId
@@ -38,29 +39,29 @@ class RoutesApi(
         }
     }
 
-    suspend fun initPage(routeId: String, userId: String, sessionId: String, filters: FilterTypes, postId: String?) = coroutineScope {
-        val routeRes = async { getById(routeId, userId, sessionId) }
-        val users = async { userSessionsApi.getUserList(filters, userId) }
+    suspend fun initPage(initSearch: InitSearch) = coroutineScope {
+        val routeRes = async { getById(initSearch.routeId, initSearch.userId, initSearch.sessionId) }
+        val users = async { userSessionsApi.getUserList(initSearch.selectedFilters, initSearch.userId) }
         routeRes.await()?.let { route ->
             val postsData = postsApi.getPosts(
                 PostSearch(
                     route,
-                    Range.DAY,
-                    SortType.NEW,
-                    filters,
-                    userId,
-                    sessionId
+                    initSearch.range,
+                    initSearch.sort,
+                    initSearch.selectedFilters,
+                    initSearch.userId,
+                    initSearch.sessionId
                 )
             )
-            if (postId != null) {
+            if (initSearch.postId != null) {
                 postsApi.getById(
                     PostSearchId(
-                        postId,
-                        Range.DAY,
-                        SortType.NEW,
-                        filters,
-                        userId,
-                        sessionId
+                        initSearch.postId,
+                        initSearch.range,
+                        initSearch.sort,
+                        initSearch.selectedFilters,
+                        initSearch.userId,
+                        initSearch.sessionId
                     )
                 )?.posts?.values?.forEach { post ->
                     post.id?.let {

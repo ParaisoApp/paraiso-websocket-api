@@ -1,6 +1,7 @@
 package com.paraiso.api.routes
 
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.posts.InitSearch
 import com.paraiso.domain.routes.RoutesApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -24,11 +25,7 @@ fun Route.routesController(routesApi: RoutesApi) {
         }
         post {
             routesApi.initPage(
-                call.request.queryParameters["routeId"] ?: "",
-                call.request.queryParameters["userId"] ?: "",
-                call.request.queryParameters["sessionId"] ?: "",
-                call.receive<FilterTypes>(),
-                call.request.queryParameters["postId"]
+                call.receive<InitSearch>()
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
