@@ -152,7 +152,7 @@ class SportHandler(
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
-                    if (autoBuildPosts) {
+                    if (autoBuildPosts || manual) {
                         addPosts(sport, schedulesRes.flatMap { it.events }, manual)
                     }
                 }
@@ -180,7 +180,7 @@ class SportHandler(
                 updatedOn = competition.date
             )
         }.let { gamePosts ->
-            if(manual){
+            if(manual || (autoBuild && autoBuildPosts)){
                 postsDB.save(gamePosts)
             }else{
                 postsDB.saveIfNew(gamePosts)
