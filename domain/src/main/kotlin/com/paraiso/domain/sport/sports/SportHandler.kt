@@ -153,7 +153,7 @@ class SportHandler(
                     sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
                     if (autoBuildPosts) {
-                        addPosts(sport, schedulesRes.flatMap { it.events })
+                        addPosts(sport, schedulesRes.flatMap { it.events }, manual)
                     }
                 }
             }
@@ -162,7 +162,8 @@ class SportHandler(
 
     private suspend fun addPosts(
         sport: SiteRoute,
-        competitions: List<Competition>
+        competitions: List<Competition>,
+        manual: Boolean
     ) {
         competitions.map { competition ->
             Post(
@@ -179,7 +180,11 @@ class SportHandler(
                 updatedOn = competition.date
             )
         }.let { gamePosts ->
-            postsDB.saveIfNew(gamePosts)
+            if(manual){
+                postsDB.save(gamePosts)
+            }else{
+                postsDB.saveIfNew(gamePosts)
+            }
         }
     }
 
@@ -326,7 +331,7 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(scoreboardEntity)}"
             )
-            addPosts(sport, activeCompetitions)
+            addPosts(sport, activeCompetitions, false)
         }
         lastSentScoreboard[sport] = scoreboard
     }
