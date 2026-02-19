@@ -65,7 +65,26 @@ class RoutesApi(
                     }
                 }
             }
-            InitRouteData(postsData, users.await(), route)
+            val contentData = if(initSearch.postId == null){
+                postsApi.getPosts(
+                    PostSearch(
+                        route,
+                        initSearch.contentDisplayOps,
+                        initSearch.userId,
+                        initSearch.sessionId
+                    )
+                )
+            }else{
+                postsApi.getById(
+                    PostSearchId(
+                        initSearch.postId,
+                        initSearch.contentDisplayOps,
+                        initSearch.userId,
+                        initSearch.sessionId
+                    )
+                )
+            }
+            InitRouteData(postsData, contentData, users.await(), route)
         }
     }
 }

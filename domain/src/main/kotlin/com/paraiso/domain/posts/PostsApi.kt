@@ -330,6 +330,7 @@ data class PostsData(
 @Serializable
 data class InitRouteData(
     val postsData: PostsData,
+    val contentData: PostsData?,
     val users: Map<String, UserResponse>,
     val route: RouteResponse
 )

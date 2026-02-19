@@ -16,6 +16,7 @@ data class DisplayOps(
 data class InitSearch(
     val routeId: String,
     val postsDisplayOps: DisplayOps,
+    val contentDisplayOps: DisplayOps,
     val userId: String,
     val sessionId: String,
     val postId: String?
