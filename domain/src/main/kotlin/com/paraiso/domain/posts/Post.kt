@@ -1,5 +1,7 @@
 package com.paraiso.domain.posts
 
+import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.RouteResponse
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -146,10 +148,10 @@ fun Post.toResponse(userVote: Boolean?) = PostResponse(
     updatedOn = updatedOn
 )
 
-fun generateBasePost(id: String?, name: String?) = Post(
+fun generateBasePost(id: String?, title: String?) = Post(
     id = id,
     userId = null,
-    title = name,
+    title = title,
     content = null,
     type = PostType.SUPER,
     media = null,

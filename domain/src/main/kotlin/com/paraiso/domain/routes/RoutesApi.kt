@@ -44,8 +44,7 @@ class RoutesApi(
         routeRes.await()?.let { route ->
             val postsData = postsApi.getPosts(
                 PostSearch(
-                    routeId,
-                    route.title,
+                    route,
                     Range.DAY,
                     SortType.NEW,
                     filters,

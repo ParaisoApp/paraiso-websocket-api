@@ -9,6 +9,7 @@ import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.routes.RouteResponse
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.CompetitionResponse
 import com.paraiso.domain.sport.data.TeamResponse
 import com.paraiso.domain.sport.sports.SportApi
@@ -138,8 +139,7 @@ class PostsApi(
         val favorites = usersApi.getUserFavorites(postSearch.userId)
         val range = getRange(postSearch.range, postSearch.sort)
         return postsDB.findByBaseCriteria(
-            postSearch.id,
-            postSearch.name, // post route
+            postSearch.route,
             range,
             postSearch.selectedFilters,
             postSearch.sort,
@@ -148,7 +148,7 @@ class PostsApi(
         ) // generate base post and post tree off of given inputs
             .let { subPosts ->
                 val posts = generatePostTree(
-                    generateBasePost(postSearch.id, postSearch.name),
+                    generateBasePost(postSearch.route.id, postSearch.route.title),
                     ArrayDeque(subPosts),
                     range,
                     postSearch.sort,
@@ -161,7 +161,7 @@ class PostsApi(
                     posts,
                     postSearch.userId,
                     postSearch.sessionId,
-                    subscribe = postSearch.id == HOME_PREFIX
+                    subscribe = postSearch.route.route == SiteRoute.HOME
                 )
                 PostsData(posts, teams, comps)
             }

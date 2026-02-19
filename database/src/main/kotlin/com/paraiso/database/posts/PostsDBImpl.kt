@@ -33,6 +33,7 @@ import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
+import com.paraiso.domain.routes.RouteResponse
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.routes.isSportRoute
 import com.paraiso.domain.users.UserFavorite
@@ -262,8 +263,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     }
 
     override suspend fun findByBaseCriteria(
-        postSearchId: String,
-        basePostName: String,
+        route: RouteResponse?,
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
@@ -272,12 +272,13 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     ) =
         withContext(Dispatchers.IO) {
             val routeFilter = when {
+                route == null -> null
                 // if id == root id then post was made at base route
-                postSearchId == HOME_PREFIX -> eqId(Post::rootId)
+                route.route == SiteRoute.HOME -> eqId(Post::rootId)
                 // Profile case where search id is the user id - match to post's user id
-                postSearchId.startsWith(USER_PREFIX) -> eq(Post::userId.name, postSearchId.removePrefix(USER_PREFIX))
+                route.route == SiteRoute.PROFILE -> eq(Post::userId.name, route.modifier)
                 // favorites resolve to user's favorites
-                basePostName == SiteRoute.FAVORITES.name -> {
+                route.route == SiteRoute.FAVORITES -> {
                     val favConds = userFavorites.map { fav ->
                         if(isSportRoute(fav.route)){
                             val sportBase = and(eq(Post::data.name, fav.route), eq(Post::type.name, PostType.EVENT.name))
@@ -298,18 +299,18 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                         else -> or(favConds)
                     }
                 }
-                // grab events for each sport route
-                basePostName in listOf(SiteRoute.BASKETBALL.name, SiteRoute.FOOTBALL.name, SiteRoute.HOCKEY.name) ->
-                    and(
-                        eq(Post::data.name, basePostName),
-                        eq(Post::type.name, PostType.EVENT.name)
-                    )
+                // grab events for each sport route, add team filter if team route
+                route.route in listOf(SiteRoute.BASKETBALL, SiteRoute.FOOTBALL, SiteRoute.HOCKEY) -> {
+                    val sportBase = and(eq(Post::data.name, route.route), eq(Post::type.name, PostType.EVENT.name))
+                    val teamFilter = route.modifier?.let { regex(Post::title.name, it, "i") }
+                    if (teamFilter != null) and(sportBase, teamFilter) else sportBase
+                }
                 else -> null
             }
             // add or condition if more than one condition exists
             val orConditions = when {
-                routeFilter != null -> or(routeFilter, eq(Post::parentId.name, postSearchId))
-                else -> eq(Post::parentId.name, postSearchId)
+                routeFilter != null -> or(routeFilter, eq(Post::parentId.name, route?.id))
+                else -> eq(Post::parentId.name, route?.id)
             }
 
             val andConditions = mutableListOf(

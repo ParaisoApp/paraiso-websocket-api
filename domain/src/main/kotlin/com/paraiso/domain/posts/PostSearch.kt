@@ -1,13 +1,13 @@
 package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.routes.RouteResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class PostSearch(
-    val id: String,
-    val name: String,
+    val route: RouteResponse,
     val range: Range,
     val sort: SortType,
     val selectedFilters: FilterTypes,
