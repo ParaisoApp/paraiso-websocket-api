@@ -41,14 +41,12 @@ class RoutesApi(
 
     suspend fun initPage(initSearch: InitSearch) = coroutineScope {
         val routeRes = async { getById(initSearch.routeId, initSearch.userId, initSearch.sessionId) }
-        val users = async { userSessionsApi.getUserList(initSearch.selectedFilters, initSearch.userId) }
+        val users = async { userSessionsApi.getUserList(initSearch.postsDisplayOps.selectedFilters, initSearch.userId) }
         routeRes.await()?.let { route ->
             val postsData = postsApi.getPosts(
                 PostSearch(
                     route,
-                    initSearch.range,
-                    initSearch.sort,
-                    initSearch.selectedFilters,
+                    initSearch.postsDisplayOps,
                     initSearch.userId,
                     initSearch.sessionId
                 )
@@ -57,9 +55,7 @@ class RoutesApi(
                 postsApi.getById(
                     PostSearchId(
                         initSearch.postId,
-                        initSearch.range,
-                        initSearch.sort,
-                        initSearch.selectedFilters,
+                        initSearch.postsDisplayOps,
                         initSearch.userId,
                         initSearch.sessionId
                     )

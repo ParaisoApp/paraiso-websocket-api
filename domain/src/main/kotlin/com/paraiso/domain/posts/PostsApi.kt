@@ -50,7 +50,7 @@ class PostsApi(
             } else {
                 null
             }
-            val range = getRange(postSearchId.range, postSearchId.sort)
+            val range = getRange(postSearchId.postsDisplayOps.range, postSearchId.postsDisplayOps.sort)
             val followees = followsApi.getByFollowerId(postSearchId.userId).map { it.followeeId }.toSet()
             val resolvedGameState =
                 (
@@ -65,8 +65,8 @@ class PostsApi(
             val subPosts = postsDB.findByParentIdWithEventFilters(
                 postSearchId.id,
                 range,
-                postSearchId.selectedFilters,
-                postSearchId.sort,
+                postSearchId.postsDisplayOps.selectedFilters,
+                postSearchId.postsDisplayOps.sort,
                 followees,
                 post.createdOn,
                 compStatus?.completedTime,
@@ -77,8 +77,8 @@ class PostsApi(
                 post,
                 ArrayDeque(subPosts),
                 range,
-                postSearchId.sort,
-                postSearchId.selectedFilters,
+                postSearchId.postsDisplayOps.sort,
+                postSearchId.postsDisplayOps.selectedFilters,
                 postSearchId.userId,
                 followees
             ).let { posts ->
@@ -137,12 +137,12 @@ class PostsApi(
         // grab 50 most recent posts at given super level
         val followees = followsApi.getByFollowerId(postSearch.userId).map { it.followeeId }.toSet()
         val favorites = usersApi.getUserFavorites(postSearch.userId)
-        val range = getRange(postSearch.range, postSearch.sort)
+        val range = getRange(postSearch.postsDisplayOps.range, postSearch.postsDisplayOps.sort)
         return postsDB.findByBaseCriteria(
             postSearch.route,
             range,
-            postSearch.selectedFilters,
-            postSearch.sort,
+            postSearch.postsDisplayOps.selectedFilters,
+            postSearch.postsDisplayOps.sort,
             favorites,
             followees
         ) // generate base post and post tree off of given inputs
@@ -151,8 +151,8 @@ class PostsApi(
                     generateBasePost(postSearch.route.id, postSearch.route.title),
                     ArrayDeque(subPosts),
                     range,
-                    postSearch.sort,
-                    postSearch.selectedFilters,
+                    postSearch.postsDisplayOps.sort,
+                    postSearch.postsDisplayOps.selectedFilters,
                     postSearch.userId,
                     followees
                 )
