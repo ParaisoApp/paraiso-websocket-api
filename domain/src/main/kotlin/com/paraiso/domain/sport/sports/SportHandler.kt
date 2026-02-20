@@ -108,11 +108,15 @@ class SportHandler(
     private suspend fun buildLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
-                sportClient.getLeaders(
-                    sport,
-                    league.activeSeasonYear,
-                    league.activeSeasonType
-                )?.let { leadersRes ->
+                // season type 4 is off season
+                val leaders = if((league.activeSeasonType.toIntOrNull() ?: 4) <= 3){
+                    sportClient.getLeaders(
+                        sport,
+                        league.activeSeasonYear,
+                        league.activeSeasonType
+                    )
+                } else null
+                leaders?.let { leadersRes ->
                     sportDBs.leadersDB.save(listOf(leadersRes))
                 }
             }
@@ -125,12 +129,15 @@ class SportHandler(
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
                 sportDBs.teamsDB.findBySport(sport.name).map { team ->
                     async {
-                        sportClient.getTeamLeaders(
-                            sport,
-                            league.activeSeasonYear,
-                            league.activeSeasonType,
-                            team.teamId
-                        )
+                        // season type 4 is off season
+                        if((league.activeSeasonType.toIntOrNull() ?: 4) <= 3){
+                            sportClient.getTeamLeaders(
+                                sport,
+                                league.activeSeasonYear,
+                                league.activeSeasonType,
+                                team.teamId
+                            )
+                        } else null
                     }
                 }.awaitAll().filterNotNull().let { leadersRes ->
                     if (leadersRes.isNotEmpty()) {
