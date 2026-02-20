@@ -65,24 +65,29 @@ class RoutesApi(
                     }
                 }
             }
-            val contentData = if(initSearch.postId == null){
-                postsApi.getPosts(
-                    PostSearch(
-                        route,
-                        initSearch.contentDisplayOps,
-                        initSearch.userId,
-                        initSearch.sessionId
+            val contentData = when {
+                // sport route has curated content
+                isSportRoute(route.route.name) -> null
+                // base route case
+                initSearch.postId == null ->
+                    postsApi.getPosts(
+                        PostSearch(
+                            route,
+                            initSearch.contentDisplayOps,
+                            initSearch.userId,
+                            initSearch.sessionId
+                        )
                     )
-                )
-            }else{
-                postsApi.getById(
-                    PostSearchId(
-                        initSearch.postId,
-                        initSearch.contentDisplayOps,
-                        initSearch.userId,
-                        initSearch.sessionId
+                // specific sub post case
+                else ->
+                    postsApi.getById(
+                        PostSearchId(
+                            initSearch.postId,
+                            initSearch.contentDisplayOps,
+                            initSearch.userId,
+                            initSearch.sessionId
+                        )
                     )
-                )
             }
             InitRouteData(postsData, contentData, users.await(), route)
         }

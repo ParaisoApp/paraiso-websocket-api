@@ -46,15 +46,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
-            val response: RestLeague = getHttpClient().use { httpClient ->
+            val response: RestLeague? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport)
+            response?.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -71,15 +73,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard"
-            val response: RestScoreboard = getHttpClient().use { httpClient ->
+            val response: RestScoreboard? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport)
+            response?.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -99,15 +103,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard?$date"
-            val response: RestScoreboard = getHttpClient().use { httpClient ->
+            val response: RestScoreboard? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport)
+            response?.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -123,15 +129,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/summary?event=$competitionId"
-            val response: RestGameStats = getHttpClient().use { httpClient ->
+            val response: RestGameStats? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(competitionId)
+            response?.toDomain(competitionId)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -152,15 +160,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.HOCKEY -> url += "?type=0&level=3"
                 else -> {}
             }
-            val standingsResponse: RestStandings = getHttpClient().use { httpClient ->
+            val standingsResponse: RestStandings? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            standingsResponse.toDomain(sport)
+            standingsResponse?.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -176,15 +186,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams"
-            val response: RestTeams = getHttpClient().use { httpClient ->
+            val response: RestTeams? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport)
+            response?.toDomain(sport) ?: emptyList()
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             emptyList()
@@ -200,14 +212,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/roster"
-            val response: String = getHttpClient().use { httpClient ->
+            val response: String? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
+            if(response == null) return@withContext null
             val json = Json {
                 prettyPrint = true
                 isLenient = true
@@ -240,15 +255,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/leaders"
-            val response: RestLeaders = getHttpClient().use { httpClient ->
+            val response: RestLeaders? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport, season, type)
+            response?.toDomain(sport, season, type)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -269,15 +286,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/teams/$teamId/leaders"
-            val response: RestLeaders = getHttpClient().use { httpClient ->
+            val response: RestLeaders? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport, season, type, teamId)
+            response?.toDomain(sport, season, type, teamId)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
@@ -293,15 +312,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/schedule"
-            val response: RestSchedule = getHttpClient().use { httpClient ->
+            val response: RestSchedule? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
                         logger.error { "Error fetching data status ${it.status} body: ${it.body<String>()}" }
+                        null
+                    } else {
+                        it.body()
                     }
-                    it.body()
                 }
             }
-            response.toDomain(sport)
+            response?.toDomain(sport)
         } catch (ex: Exception) {
             logger.error("ex: $ex")
             null
