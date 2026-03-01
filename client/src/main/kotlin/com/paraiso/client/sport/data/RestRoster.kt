@@ -42,7 +42,7 @@ data class RestCoach(
     val id: String,
     val firstName: String,
     val lastName: String,
-    val experience: Int
+    val experience: Int? = 0
 )
 
 @Serializable
@@ -88,5 +88,5 @@ fun RestCoach.toDomain() = CoachDomain(
     id = id,
     firstName = firstName,
     lastName = lastName,
-    experience = experience
+    experience = experience ?: 0
 )
