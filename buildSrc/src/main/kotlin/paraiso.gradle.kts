@@ -29,6 +29,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
     implementation("io.klogging:klogging-jvm:0.7.0")
     implementation("io.klogging:slf4j-klogging:0.7.0")
+    implementation("org.jetbrains.kotlinx:atomicfu-jvm:0.23.2")
     // xss filter and scraping
     implementation("org.jsoup:jsoup:1.17.2")
 }
