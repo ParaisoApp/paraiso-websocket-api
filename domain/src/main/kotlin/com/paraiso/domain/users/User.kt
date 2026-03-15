@@ -1,5 +1,6 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -11,6 +12,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class User(
     @SerialName(ID) val id: String,
+    val authIds: List<AuthId>,
     val name: String?,
     val fullName: String?,
     val email: String?,
@@ -141,6 +143,7 @@ fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
 fun UserResponse.toUser() =
     User(
         id = id,
+        authIds = emptyList(),
         name = name,
         fullName = fullName,
         email = email,

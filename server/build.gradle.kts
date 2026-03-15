@@ -28,6 +28,11 @@ dependencies {
 
     // redis
     implementation("io.lettuce:lettuce-core:6.2.0.RELEASE")
+
+    //auth
+    implementation("io.ktor:ktor-server-auth:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
+    implementation("com.auth0:jwks-rsa:0.22.1")
 }
 
 application {

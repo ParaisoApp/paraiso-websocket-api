@@ -1,5 +1,6 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
@@ -55,5 +56,9 @@ interface UsersDB {
     ): Long
     suspend fun setUserBanned(
         ban: Ban
+    ): Long
+
+    suspend fun syncUserAuth(
+        authId: AuthId
     ): Long
 }

@@ -1,5 +1,6 @@
 package com.paraiso
 
+import com.auth0.jwk.UrlJwkProvider
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
@@ -78,6 +79,9 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
+import io.ktor.server.auth.authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.config.HoconApplicationConfig
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -97,6 +101,8 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import java.net.URI
+import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 
@@ -159,7 +165,7 @@ fun Application.module(jobScope: CoroutineScope) {
         messageHandler.messageJobs()
     }
     // setup apis and scopes
-    val authApi = AuthApi()
+    val authApi = AuthApi(usersDb)
     val sportApi = SportApi(sportsDBs)
     val usersApi = UsersApi(usersDb)
     val votesApi = VotesApi(VotesDBImpl(database))
@@ -236,7 +242,7 @@ fun Application.module(jobScope: CoroutineScope) {
     }
     configureSockets(config, handler, services, serverHandler, sportHandler)
     // close subscription to redis
-    environment.monitor.subscribe(ApplicationStopped) {
+    monitor.subscribe(ApplicationStopped) {
         eventServiceImpl.close()
     }
 }
@@ -254,7 +260,7 @@ fun Application.configureSockets(
             handler.connect(this)
         }
         route("paraiso_api/v1") {
-            authController(services.authApi)
+            authController(services.authApi, config)
             postsController(services.postsApi)
             postPinsController(services.postPinsApi)
             usersController(services.usersApi)
@@ -312,5 +318,26 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
                 encodeDefaults = true
             }
         )
+    }
+}
+
+fun Application.configureSecurity(config: HoconApplicationConfig) {
+    authentication {
+        jwt("auth0") {
+            realm = "ekoes-io"
+            val authDomain = config.property("auth.auth0Domain").getString()
+            val authAudience = config.property("auth.auth0Audience").getString()
+            val domain = "https://$authDomain/"
+            val jwkProvider = UrlJwkProvider(URI(domain).toURL())
+            verifier(jwkProvider, domain) {
+                acceptLeeway(3)
+                withAudience(authAudience)
+            }
+            validate { credential ->
+                if (credential.payload.audience.contains(authAudience)) {
+                    JWTPrincipal(credential.payload)
+                } else null
+            }
+        }
     }
 }

@@ -9,10 +9,12 @@ import com.mongodb.client.model.FindOneAndUpdateOptions
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.ReturnDocument
+import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Tag
@@ -271,6 +273,17 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 eq(ID, ban.userId),
                 combine(
                     set(User::banned.name, true),
+                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
+
+    override suspend fun syncUserAuth(authId: AuthId): Long  =
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq("${User::authIds.name}.id", authId.id),
+                combine(
+                    addToSet("${User::authIds.name}.${authId.connection}", authId),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

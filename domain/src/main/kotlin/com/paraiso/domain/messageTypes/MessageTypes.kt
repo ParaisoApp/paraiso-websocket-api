@@ -23,13 +23,6 @@ data class FilterTypes(
 ) { companion object }
 
 @Serializable
-data class Login(
-    val userId: String,
-    val email: String,
-    val password: String
-)
-
-@Serializable
 data class Report(
     val id: String // can be post or userId
 )
