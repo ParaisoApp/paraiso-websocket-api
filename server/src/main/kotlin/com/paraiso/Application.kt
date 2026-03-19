@@ -18,6 +18,7 @@ import com.paraiso.api.userchats.userChatsController
 import com.paraiso.api.users.userSessionsController
 import com.paraiso.api.users.usersController
 import com.paraiso.api.votes.votesController
+import com.paraiso.cache.CacheServiceImpl
 import com.paraiso.client.metadata.MetadataClientImpl
 import com.paraiso.client.sport.SportClientImpl
 import com.paraiso.database.admin.PostReportsDBImpl
@@ -159,15 +160,16 @@ fun Application.module(jobScope: CoroutineScope) {
     val userSessions = ConcurrentHashMap<String, ConcurrentHashMap<String, SessionContext>>()
     val redisClient = RedisClient.create(redisUrl)
     val eventServiceImpl = EventServiceImpl(redisClient)
+    val cacheServiceImpl = CacheServiceImpl(redisClient)
     // subscriber to all incoming messages from other servers
     val messageHandler = MessageHandler(serverId, userSessions, eventServiceImpl)
     jobScope.launch {
         messageHandler.messageJobs()
     }
     // setup apis and scopes
-    val authApi = AuthApi(usersDb)
     val sportApi = SportApi(sportsDBs)
     val usersApi = UsersApi(usersDb)
+    val authApi = AuthApi(usersApi, cacheServiceImpl)
     val votesApi = VotesApi(VotesDBImpl(database))
     val followsApi = FollowsApi(FollowsDBImpl(database))
     val blocksApi = BlocksApi(BlocksDBImpl(database))
@@ -232,6 +234,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val handler = WebSocketHandler(
         serverId = serverId,
         eventServiceImpl,
+        cacheServiceImpl,
         userSessions,
         services
     )
@@ -255,9 +258,14 @@ fun Application.configureSockets(
     sportHandler: SportHandler
 ) {
     configureFeatures(config)
+    configureSecurity(config)
     routing {
         webSocket("chat") {
-            handler.connect(this)
+            handler.connect(
+                this,
+                call.request.queryParameters["userId"],
+                call.request.queryParameters["ticket"]
+            )
         }
         route("paraiso_api/v1") {
             authController(services.authApi, config)

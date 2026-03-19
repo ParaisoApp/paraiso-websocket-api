@@ -265,6 +265,35 @@ fun UserImage.Companion.initImage() =
         scale = 1f
     )
 
+fun User.toResponse(sessionId: String?, status: UserStatus?, viewerContext: ViewerContext) = UserResponse(
+    id = id,
+    name = name,
+    fullName = fullName,
+    email = email,
+    about = about,
+    location = location,
+    birthday = birthday,
+    replies = replies,
+    score = score,
+    followers = followers,
+    following = following,
+    routeFavorites = routeFavorites,
+    reports = reports,
+    chats = chats,
+    roles = roles,
+    banned = banned,
+    image = image,
+    settings = settings,
+    tipLinks = tipLinks,
+    socialLinks = socialLinks,
+    tag = tag,
+    status = status,
+    viewerContext = viewerContext,
+    sessionId = sessionId,
+    createdOn = createdOn,
+    updatedOn = updatedOn
+)
+
 @Serializable
 enum class UserRole {
     @SerialName("ADMIN")

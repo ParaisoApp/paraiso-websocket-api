@@ -16,6 +16,7 @@ import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.userchats.DirectMessageResponse
+import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.VoteResponse
@@ -32,10 +33,10 @@ import java.util.concurrent.ConcurrentHashMap
 class MessageHandler(
     private val serverId: String,
     private val userSessions: ConcurrentHashMap<String, ConcurrentHashMap<String, SessionContext>>,
-    private val eventServiceImpl: EventServiceImpl
+    private val eventService: EventService
 ) : Klogging {
     suspend fun messageJobs() = coroutineScope {
-        eventServiceImpl.addChannels(
+        eventService.addChannels(
             listOf(
                 "server:$serverId",
                 MessageType.USER_UPDATE.name,
@@ -55,7 +56,7 @@ class MessageHandler(
         )
         // pick up dms directed at this server - find active user and send typed message
         launch {
-            eventServiceImpl.subscribe { (channel, messageWithServer) ->
+            eventService.subscribe { (channel, messageWithServer) ->
                 val (incomingModifier, message) = messageWithServer.split(":", limit = 2)
                 // modifier indicates server source on generic sends - otherwise channel indicates which server message is aimed to
                 if (incomingModifier != serverId) {

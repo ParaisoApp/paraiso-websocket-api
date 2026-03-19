@@ -11,6 +11,9 @@ interface UsersDB {
     suspend fun findByName(name: String): User?
     suspend fun existsByName(name: String): Boolean
     suspend fun findByPartial(partial: String): List<User>
+    suspend fun findUserByAuthId(
+        authId: String
+    ): User?
     suspend fun getUserList(
         userIds: List<String>,
         filters: FilterTypes,
