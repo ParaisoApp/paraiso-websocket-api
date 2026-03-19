@@ -70,16 +70,15 @@ class WebSocketHandler(
         ticket: String?
     ) {
         // TODO handle ticket - isAuthenticated var
-        val resolvedUserId = ticket?.let { cacheService.redeemTicket(it) } ?: userId
+        val ticketedUserId = ticket?.let { cacheService.redeemTicket(it) }
+        val resolvedUserId = ticketedUserId ?: userId
         val sessionContext = SessionContext(session)
         // check if user already exists based on user or passed in id
-        val existingUser = if(resolvedUserId != null){
-            services.userSessionsApi.getUserById(resolvedUserId, null)
-        }else{
-            null
+        val existingUser = resolvedUserId?.let{
+            services.userSessionsApi.getUserById(it, null)
         }
         //prevent user from high jacking another user
-        val currentUser = if(existingUser?.roles != UserRole.GUEST && ticket == null || existingUser == null){
+        val currentUser = if(existingUser?.roles != UserRole.GUEST && ticketedUserId == null || existingUser == null){
             UserResponse.newUser(UUID.randomUUID().toString())
         } else {
             existingUser
