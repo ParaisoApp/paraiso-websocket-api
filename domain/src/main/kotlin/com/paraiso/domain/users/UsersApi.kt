@@ -1,5 +1,6 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Tag
@@ -12,8 +13,12 @@ import kotlinx.coroutines.launch
 class UsersApi(
     private val usersDB: UsersDB
 ) {
+    suspend fun findUserByAuthId(authId: String) =
+        usersDB.findUserByAuthId(authId)
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
+    suspend fun syncUser(authId: AuthId) =
+        usersDB.syncUserAuth(authId)
 
     suspend fun getUserFavorites(userId: String) =
         usersDB.findById(userId)?.let { user ->

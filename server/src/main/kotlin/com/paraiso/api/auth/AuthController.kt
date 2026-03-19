@@ -5,6 +5,9 @@ import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.auth.Login
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.principal
 import io.ktor.server.config.HoconApplicationConfig
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.header
@@ -33,6 +36,15 @@ fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
                 authApi.syncUser(call.receive<AuthId>()).let { sync ->
                     call.respond(HttpStatusCode.OK, sync)
                 }
+            }
+        }
+        authenticate("auth0"){
+            post("ticket"){
+                val principal = call.principal<JWTPrincipal>()
+                val auth0Id = principal?.payload?.subject ?: return@post call.respond(HttpStatusCode.Unauthorized)
+                authApi.ticket(auth0Id)?.let { ticket ->
+                    call.respond(HttpStatusCode.OK, ticket)
+                } ?: run { call.respond(HttpStatusCode.NoContent) }
             }
         }
     }

@@ -283,7 +283,8 @@ class PostsApi(
                 postsDB.findById(delete.parentId)?.let { parent ->
                     updateCounts(parent, increment = -1)
                 }
-            }
+                true
+            } else false
         }
 
     private suspend fun updateCounts(post: Post, increment: Int) {

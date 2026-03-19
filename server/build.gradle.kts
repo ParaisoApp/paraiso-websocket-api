@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":client"))
     implementation(project(":database"))
     implementation(project(":events"))
+    implementation(project(":cache"))
 
     // ktor server
     implementation("io.ktor:ktor-server-core:$ktorVersion ")

@@ -68,6 +68,11 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 .toList()
         }
 
+    override suspend fun findUserByAuthId(authId: String) =
+        withContext(Dispatchers.IO) {
+            collection.find(eq("${User::authIds.name}.id", authId)).limit(1).firstOrNull()
+        }
+
     override suspend fun getUserList(
         userIds: List<String>,
         filters: FilterTypes,

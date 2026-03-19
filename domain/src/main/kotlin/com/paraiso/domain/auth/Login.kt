@@ -1,5 +1,7 @@
 package com.paraiso.domain.auth
 
+import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.UserRole
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,4 +18,9 @@ data class AuthId(
     val email: String,
     val name: String?,
     val picture: String?
+)
+@Serializable
+data class TicketResponse(
+    val ticket: String,
+    val userId: String
 )
