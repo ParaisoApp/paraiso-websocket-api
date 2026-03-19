@@ -23,7 +23,7 @@ class AuthApi(
     suspend fun ticket(authId: String) =
         usersApi.findUserByAuthId(authId)?.let { user ->
             val ticket = UUID.randomUUID().toString()
-            cacheService.set("ws_ticket:$ticket", authId, 60L)
+            cacheService.set("ws_ticket:$ticket", user.id, 60L)
             TicketResponse(ticket, user.id)
         }
 

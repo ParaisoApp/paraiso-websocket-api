@@ -66,10 +66,11 @@ class WebSocketHandler(
 
     suspend fun connect(
         session: WebSocketServerSession,
-        userId: String?,
+        // only used for guest accounts
+        userId: String?, 
         ticket: String?
     ) {
-        // TODO handle ticket - isAuthenticated var
+        // use ticket to grab authenticated user, fallback to guest account
         val ticketedUserId = ticket?.let { cacheService.redeemTicket(it) }
         val resolvedUserId = ticketedUserId ?: userId
         val sessionContext = SessionContext(session)
