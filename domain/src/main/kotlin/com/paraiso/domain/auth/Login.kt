@@ -17,7 +17,8 @@ data class AuthId(
     val provider: String,
     val email: String,
     val name: String?,
-    val picture: String?
+    val picture: String?,
+    val userId: String
 )
 @Serializable
 data class TicketResponse(

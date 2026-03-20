@@ -19,12 +19,6 @@ import io.ktor.server.routing.route
 
 fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
     route("auth") {
-        post {
-            // fake auth controller
-            authApi.getAuth(call.receive<Login>()).let { role ->
-                call.respond(HttpStatusCode.OK, role)
-            }
-        }
         post("syncUser") {// 1. Validate Shared Secret
             val receivedSecret = call.request.header("X-Internal-Secret")
             val expectedSecret = config.property("auth.internalSyncSecret").getString()

@@ -286,9 +286,9 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
     override suspend fun syncUserAuth(authId: AuthId): Long  =
         withContext(Dispatchers.IO) {
             collection.updateOne(
-                eq("${User::authIds.name}.id", authId.id),
+                eq(ID, authId.userId),
                 combine(
-                    addToSet("${User::authIds.name}.${authId.connection}", authId),
+                    addToSet(User::authIds.name, authId),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

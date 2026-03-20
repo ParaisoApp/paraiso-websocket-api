@@ -1,5 +1,6 @@
 package com.paraiso
 
+import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwk.UrlJwkProvider
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.api.admin.adminController
@@ -75,6 +76,7 @@ import com.paraiso.server.plugins.WebSocketHandler
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -88,6 +90,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
@@ -105,6 +108,7 @@ import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
@@ -314,6 +318,7 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Options)
         allowCredentials = true
         allowNonSimpleContentTypes = true
     }
@@ -335,16 +340,22 @@ fun Application.configureSecurity(config: HoconApplicationConfig) {
             realm = "ekoes-io"
             val authDomain = config.property("auth.auth0Domain").getString()
             val authAudience = config.property("auth.auth0Audience").getString()
-            val domain = "https://$authDomain/"
-            val jwkProvider = UrlJwkProvider(URI(domain).toURL())
-            verifier(jwkProvider, domain) {
-                acceptLeeway(3)
-                withAudience(authAudience)
+            val jwkProvider = JwkProviderBuilder(authDomain)
+                .cached(10, 24, TimeUnit.HOURS)
+                .rateLimited(10, 1, TimeUnit.MINUTES)
+                .build()
+            verifier(jwkProvider, "https://$authDomain/"){
+                acceptLeeway(30)
             }
             validate { credential ->
                 if (credential.payload.audience.contains(authAudience)) {
                     JWTPrincipal(credential.payload)
                 } else null
+            }
+            challenge { _, _ ->
+                val failures = call.authentication.allFailures
+                println("Auth Validation Failed: ${failures.joinToString()}")
+                call.respond(HttpStatusCode.Unauthorized, "Token is not valid or has expired")
             }
         }
     }

@@ -11,13 +11,6 @@ class AuthApi(
     private val usersApi: UsersApi,
     private val cacheService: CacheService
 ) {
-    fun getAuth(login: Login): UserRole {
-        return if (login.password == ServerConfig.admin) {
-            UserRole.ADMIN
-        } else {
-            UserRole.GUEST
-        }
-    }
     suspend fun syncUser(authId: AuthId) =
         usersApi.syncUser(authId)
     suspend fun ticket(authId: String) =

@@ -67,7 +67,7 @@ class WebSocketHandler(
     suspend fun connect(
         session: WebSocketServerSession,
         // only used for guest accounts
-        userId: String?, 
+        userId: String?,
         ticket: String?
     ) {
         // use ticket to grab authenticated user, fallback to guest account
