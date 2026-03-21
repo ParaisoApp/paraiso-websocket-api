@@ -11,8 +11,13 @@ class AuthApi(
     private val usersApi: UsersApi,
     private val cacheService: CacheService
 ) {
-    suspend fun syncUser(authId: AuthId) =
-        usersApi.syncUser(authId)
+    suspend fun syncUser(authId: AuthIdResponse) =
+        // check if user already created with this authId, otherwise use passed in ID
+        usersApi.findUserByAuthId(authId.id).let { user ->
+            if(user == null){
+                usersApi.syncUser(authId)
+            }
+        }
     suspend fun ticket(authId: String) =
         usersApi.findUserByAuthId(authId)?.let { user ->
             val ticket = UUID.randomUUID().toString()

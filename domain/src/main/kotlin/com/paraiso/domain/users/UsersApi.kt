@@ -1,6 +1,7 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.auth.AuthId
+import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Tag
@@ -17,7 +18,7 @@ class UsersApi(
         usersDB.findUserByAuthId(authId)
     suspend fun saveUser(user: UserResponse) =
         usersDB.save(listOf(user.toUser()))
-    suspend fun syncUser(authId: AuthId) =
+    suspend fun syncUser(authId: AuthIdResponse) =
         usersDB.syncUserAuth(authId)
 
     suspend fun getUserFavorites(userId: String) =

@@ -2,6 +2,7 @@ package com.paraiso.api.auth
 
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.auth.AuthId
+import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.auth.Login
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -27,7 +28,7 @@ fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
                 call.application.environment.log.warn("Unauthorized sync attempt from IP: ${call.request.origin.remoteHost}")
                 call.respond(HttpStatusCode.Unauthorized, "Invalid secret")
             } else {
-                authApi.syncUser(call.receive<AuthId>()).let { sync ->
+                authApi.syncUser(call.receive<AuthIdResponse>()).let { sync ->
                     call.respond(HttpStatusCode.OK, sync)
                 }
             }

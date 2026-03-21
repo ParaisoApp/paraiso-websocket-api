@@ -11,7 +11,7 @@ data class Login(
     val password: String
 )
 @Serializable
-data class AuthId(
+data class AuthIdResponse(
     val id: String,
     val connection: String,
     val provider: String,
@@ -21,7 +21,26 @@ data class AuthId(
     val userId: String
 )
 @Serializable
+data class AuthId(
+    val id: String,
+    val connection: String,
+    val provider: String,
+    val email: String,
+    val name: String?,
+    val picture: String?
+)
+@Serializable
 data class TicketResponse(
     val ticket: String,
     val userId: String
 )
+
+fun AuthIdResponse.toEntity() =
+    AuthId(
+        id = id,
+        connection = connection,
+        provider = provider,
+        email = email,
+        name = name,
+        picture = picture,
+    )
