@@ -255,8 +255,6 @@ fun Application.module(jobScope: CoroutineScope) {
     // build handler and configure sockets
     val handler = WebSocketHandler(
         serverId = serverId,
-        eventServiceImpl,
-        cacheServiceImpl,
         userSessions,
         services
     )
