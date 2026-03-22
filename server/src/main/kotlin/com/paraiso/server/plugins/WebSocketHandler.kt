@@ -62,8 +62,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketHandler(
     private val serverId: String,
-    private val eventService: EventService,
-    private val cacheService: CacheService,
     private val userSessions: ConcurrentHashMap<String, ConcurrentHashMap<String, SessionContext>>,
     private val services: AppServices
 ) : Klogging {
@@ -108,7 +106,7 @@ class WebSocketHandler(
         }
         // create or update session connected status
         launch {
-            val sessionToSave = eventService.getUserSession(currentUser.id)?.let { existingSession ->
+            val sessionToSave = services.eventService.getUserSession(currentUser.id)?.let { existingSession ->
                 val serverSessions = existingSession.serverSessions.toMutableMap()
                 serverSessions[serverId] = (serverSessions[serverId] ?: emptySet()) + sessionId
                 existingSession.copy(
@@ -122,7 +120,7 @@ class WebSocketHandler(
                     status = UserStatus.CONNECTED
                 ).toDomain()
             }
-            eventService.saveUserSession(sessionToSave)
+            services.eventService.saveUserSession(sessionToSave)
         }
         launch {
             services.usersApi.saveUser(currentUser)
@@ -212,7 +210,7 @@ class WebSocketHandler(
         }
 
         ServerState.userUpdateFlowMut.emit(sessionUser)
-        eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
+        services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
         parseAndRouteMessages(sessionUser, sessionId, sessionContext)
     }
 
@@ -289,7 +287,7 @@ class WebSocketHandler(
                                     launch { services.followsApi.follow(follow) }
                                     launch { services.usersApi.follow(follow) }
                                     ServerState.followFlowMut.emit(follow)
-                                    eventService.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
+                                    services.eventService.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
                                 }
                             }
                     }
@@ -305,7 +303,7 @@ class WebSocketHandler(
                                         launch { services.routesApi.toggleFavoriteRoute(favorite) }
                                     }
                                     ServerState.favoriteFlowMut.emit(favorite)
-                                    eventService.publish(MessageType.FAVORITE.name, "$serverId:${Json.encodeToString(favorite)}")
+                                    services.eventService.publish(MessageType.FAVORITE.name, "$serverId:${Json.encodeToString(favorite)}")
                                 }
                             }
                     }
@@ -323,7 +321,7 @@ class WebSocketHandler(
                                         }
                                     }
                                     ServerState.voteFlowMut.emit(vote.copy(score = score))
-                                    eventService.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
+                                    services.eventService.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
                                 }
                             }
                     }
@@ -333,7 +331,7 @@ class WebSocketHandler(
                                 if (user.validateUser()) {
                                     launch { services.usersApi.saveUser(user) }
                                     ServerState.userUpdateFlowMut.emit(user)
-                                    eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
+                                    services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                                 }
                             }
                     }
@@ -350,7 +348,7 @@ class WebSocketHandler(
                                 services.postsApi.deletePost(delete, sessionUser.id)?.let { deleted ->
                                     if( deleted ){
                                         ServerState.deleteFlowMut.emit(delete)
-                                        eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
+                                        services.eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
                                     }
                                 }
                             }
@@ -361,7 +359,7 @@ class WebSocketHandler(
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { services.usersApi.banUser(ban) }
                                     ServerState.banUserFlowMut.emit(ban)
-                                    eventService.publish(MessageType.BAN.name, "$serverId:${Json.encodeToString(ban)}")
+                                    services.eventService.publish(MessageType.BAN.name, "$serverId:${Json.encodeToString(ban)}")
                                 }
                             }
                     }
@@ -371,7 +369,7 @@ class WebSocketHandler(
                                 if (sessionUser.roles == UserRole.ADMIN) {
                                     launch { services.usersApi.tagUser(tag) }
                                     ServerState.tagUserFlowMut.emit(tag)
-                                    eventService.publish(MessageType.TAG.name, "$serverId:${Json.encodeToString(tag)}")
+                                    services.eventService.publish(MessageType.TAG.name, "$serverId:${Json.encodeToString(tag)}")
                                 }
                             }
                     }
@@ -381,7 +379,7 @@ class WebSocketHandler(
                                 launch { services.adminApi.reportUser(sessionUser.id, reportUser) }
                                 launch { services.usersApi.addReport() }
                                 ServerState.reportUserFlowMut.emit(reportUser)
-                                eventService.publish(MessageType.REPORT_USER.name, "$serverId:${Json.encodeToString(reportUser)}")
+                                services.eventService.publish(MessageType.REPORT_USER.name, "$serverId:${Json.encodeToString(reportUser)}")
                             }
                     }
                     MessageType.REPORT_POST -> {
@@ -390,7 +388,7 @@ class WebSocketHandler(
                                 launch { services.adminApi.reportPost(sessionUser.id, reportPost) }
                                 launch { services.usersApi.addReport() }
                                 ServerState.reportPostFlowMut.emit(reportPost)
-                                eventService.publish(MessageType.REPORT_POST.name, "$serverId:${Json.encodeToString(reportPost)}")
+                                services.eventService.publish(MessageType.REPORT_POST.name, "$serverId:${Json.encodeToString(reportPost)}")
                             }
                     }
                     MessageType.ROUTE -> {
@@ -438,7 +436,7 @@ class WebSocketHandler(
             withContext(NonCancellable) {
                 session.close()
                 // create or update session connected status
-                eventService.getUserSession(sessionUser.id)?.let { existingSession ->
+                services.eventService.getUserSession(sessionUser.id)?.let { existingSession ->
                     val serverSessions = existingSession.serverSessions.toMutableMap()
                     // Remove this sessionId from the current server’s set
                     val remainingSessions = (serverSessions[serverId] ?: emptySet()) - sessionId
@@ -451,17 +449,17 @@ class WebSocketHandler(
                         ?.copy(status = UserStatus.DISCONNECTED)
                     if (serverSessions.isEmpty()) {
                         // Fully disconnected, remove from redis and publish out user disconnect
-                        eventService.deleteUserSession(sessionUser.id)
+                        services.eventService.deleteUserSession(sessionUser.id)
                         if (userDisconnected != null) {
                             ServerState.userUpdateFlowMut.emit(userDisconnected)
-                            eventService.publish(
+                            services.eventService.publish(
                                 MessageType.USER_UPDATE.name,
                                 "$serverId:${Json.encodeToString(userDisconnected)}"
                             )
                         }
                     } else {
                         // Not fully disconnected so just update redis session list
-                        eventService.saveUserSession(existingSession.copy(serverSessions = serverSessions))
+                        services.eventService.saveUserSession(existingSession.copy(serverSessions = serverSessions))
                     }
                     // remove user from local map if no sessions remain on server
                     userDisconnected?.id?.let { userId ->
@@ -543,7 +541,7 @@ class WebSocketHandler(
                 // emit to this server, publish downstream to other servers
                 launch { services.postsApi.putPost(messageWithData) }
                 ServerState.messageFlowMut.emit(messageWithData)
-                eventService.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
+                services.eventService.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
             }
         }
     }
@@ -586,12 +584,12 @@ class WebSocketHandler(
                         }
                     }
                     // find any other user server sessions, publish, and map to respective server subscriber
-                    eventService.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
+                    services.eventService.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
                         val dmString = Json.encodeToString(dmWithData)
                         receiveUserSessions.serverSessions.keys
                             .filter { it != serverId }
                             .forEach { server ->
-                                eventService.publish(
+                                services.eventService.publish(
                                     "server:$server",
                                     "$server:${MessageType.DM}:$dmString"
                                 )
