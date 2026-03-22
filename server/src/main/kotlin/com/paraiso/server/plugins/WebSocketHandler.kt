@@ -21,6 +21,7 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.userchats.DirectMessageResponse
 import com.paraiso.domain.users.CacheService
 import com.paraiso.domain.users.EventService
+import com.paraiso.domain.users.UserCookie
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
@@ -41,6 +42,9 @@ import com.paraiso.server.util.getMentions
 import com.paraiso.server.util.sendTypedMessage
 import com.paraiso.server.util.validateUser
 import io.klogging.Klogging
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
+import io.ktor.server.sessions.set
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
@@ -66,42 +70,25 @@ class WebSocketHandler(
 
     suspend fun connect(
         session: WebSocketServerSession,
-        // only used for guest accounts
-        userId: String?,
-        ticket: String?
+        sessionContext: SessionContext,
+        currentUser: UserResponse,
+        isNewUser: Boolean
     ) {
-        // use ticket to grab authenticated user, fallback to guest account
-        val ticketedUserId = ticket?.let { cacheService.redeemTicket(it) }
-        val resolvedUserId = ticketedUserId ?: userId
-        val sessionContext = SessionContext(session)
-        // check if user already exists based on user or passed in id
-        val existingUser = resolvedUserId?.let{
-            services.userSessionsApi.getUserById(it, null)
-        }
-        //prevent user from high jacking another user
-        val currentUser = if(existingUser?.roles != UserRole.GUEST && ticketedUserId == null || existingUser == null){
-            UserResponse.newUser(UUID.randomUUID().toString())
-        } else {
-            existingUser
-        }.copy(
-            status = UserStatus.CONNECTED,
-            sessionId = sessionContext.sessionId
-        )
         // Track this session in the local set
         val sessionsForUser = userSessions.computeIfAbsent(currentUser.id) { ConcurrentHashMap() }
         sessionsForUser[sessionContext.sessionId] = sessionContext
-        session.handleUser(sessionContext.sessionId, currentUser, existingUser == null, sessionContext)
+        session.handleUser(sessionContext.sessionId, currentUser, isNewUser, sessionContext)
     }
 
     private suspend fun WebSocketServerSession.handleUser(
         sessionId: String,
         currentUser: UserResponse,
-        newUser: Boolean,
+        isNewUser: Boolean,
         sessionContext: SessionContext
     ) {
         // new user so create new route entry
         launch {
-            if (newUser) {
+            if (isNewUser) {
                 val now = Clock.System.now()
                 services.routesApi.saveRoutes(
                     listOf(

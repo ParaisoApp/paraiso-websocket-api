@@ -109,6 +109,12 @@ data class ViewerContext(
     val blocking: Boolean?
 )
 
+@Serializable
+data class UserCookie(
+    val userId: String,
+    val role: UserRole
+)
+
 // user list doesn't need all data
 fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
     UserResponse(

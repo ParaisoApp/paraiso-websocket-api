@@ -61,9 +61,14 @@ import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.domain.userchats.DirectMessagesApi
 import com.paraiso.domain.userchats.UserChatsApi
+import com.paraiso.domain.users.UserCookie
 import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.users.UserSession
 import com.paraiso.domain.users.UserSessionsApi
+import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
+import com.paraiso.domain.users.newUser
 import com.paraiso.domain.users.systemUser
 import com.paraiso.domain.util.Constants.MAIN_SERVER
 import com.paraiso.domain.util.ServerConfig.autoBuild
@@ -80,7 +85,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -93,10 +100,18 @@ import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
+import io.ktor.server.sessions.Sessions
+import io.ktor.server.sessions.cookie
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
+import io.ktor.server.sessions.set
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
+import io.ktor.util.AttributeKey
+import io.ktor.util.hex
 import io.lettuce.core.RedisClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -107,6 +122,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.URL
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -208,7 +224,9 @@ fun Application.module(jobScope: CoroutineScope) {
         userChatsApi,
         directMessagesApi,
         sportApi,
-        metadataApi
+        metadataApi,
+        cacheServiceImpl,
+        eventServiceImpl
     )
     // build handlers early - for data generation
     val sportHandler = SportHandler(
@@ -263,13 +281,51 @@ fun Application.configureSockets(
 ) {
     configureFeatures(config)
     configureSecurity(config)
+    val userKey = AttributeKey<UserResponse>("UserKey")
+    val isNewKey = AttributeKey<Boolean>("IsNewKey")
     routing {
-        webSocket("chat") {
-            handler.connect(
-                this,
-                call.request.queryParameters["userId"],
-                call.request.queryParameters["ticket"]
-            )
+        route("/chat") {
+            intercept(ApplicationCallPipeline.Plugins) {
+                // grab userId and roles from signed cookies - need role to validate REST requests
+                val userCookie = call.sessions.get<UserCookie>()
+                // use ticket to grab authenticated user, fallback to guest account
+                val ticketedUserId = call.request.queryParameters["ticket"]?.let { services.cacheService.redeemTicket(it) }
+                val resolvedUserId = ticketedUserId ?: userCookie?.userId
+                // check if user already exists based on user or passed in id
+                val existingUser = resolvedUserId?.let{
+                    services.userSessionsApi.getUserById(it, null) // only need basic user info for session
+                }
+                //prevent user from high jacking another user
+                val (currentUser, isNewUser) = if((existingUser?.roles != UserRole.GUEST && ticketedUserId == null) || existingUser == null){
+                    UserResponse.newUser(UUID.randomUUID().toString()) to true
+                } else {
+                    existingUser to false
+                }
+                // set the final resolved user id as a signed cookie for the user
+                call.sessions.set(UserCookie(
+                    userId = currentUser.id,
+                    role = currentUser.roles
+                ))
+
+                // Store the resolved user in the call attributes so the WS can see it
+                call.attributes.put(userKey, currentUser)
+                call.attributes.put(isNewKey, isNewUser)
+                proceed()
+            }
+            webSocket {
+                val sessionContext = SessionContext(this)
+                val currentUser = call.attributes[userKey].copy(
+                    status = UserStatus.CONNECTED,
+                    sessionId = sessionContext.sessionId
+                )
+                val isNewUser = call.attributes[isNewKey]
+                handler.connect(
+                    this,
+                    sessionContext,
+                    currentUser,
+                    isNewUser
+                )
+            }
         }
         route("paraiso_api/v1") {
             authController(services.authApi, config)
@@ -331,6 +387,21 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
                 encodeDefaults = true
             }
         )
+    }
+    // install signed cookies
+    val secretEncryptKeyString = config.property("api.secretEncryptKey").getString()
+    val secretSignKeyString = config.property("api.secretSignKey").getString()
+    install(Sessions) {
+        cookie<UserCookie>("USER_SESSION") {
+            val secretEncryptKey = hex(secretEncryptKeyString) // Use a real key from ENV
+            val secretSignKey = hex(secretSignKeyString)    // Use a real key from ENV
+
+            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
+            cookie.path = "/"
+            cookie.httpOnly = true  // JS cannot touch this
+            cookie.secure = true    // Only sent over HTTPS
+            cookie.extensions["SameSite"] = "Strict"
+        }
     }
 }
 

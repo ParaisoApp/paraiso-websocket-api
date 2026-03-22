@@ -20,7 +20,7 @@ import io.ktor.server.routing.route
 
 fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
     route("auth") {
-        post("syncUser") {// 1. Validate Shared Secret
+        post("syncUser") {// Validate Shared Secret
             val receivedSecret = call.request.header("X-Internal-Secret")
             val expectedSecret = config.property("auth.internalSyncSecret").getString()
 
@@ -39,7 +39,7 @@ fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
                 val auth0Id = principal?.payload?.subject ?: return@post call.respond(HttpStatusCode.Unauthorized)
                 authApi.ticket(auth0Id)?.let { ticket ->
                     call.respond(HttpStatusCode.OK, ticket)
-                } ?: run { call.respond(HttpStatusCode.NoContent) }
+                } ?: run { call.respond(HttpStatusCode.Unauthorized) }
             }
         }
     }

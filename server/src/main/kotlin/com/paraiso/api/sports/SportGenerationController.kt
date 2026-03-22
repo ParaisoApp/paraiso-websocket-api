@@ -5,6 +5,7 @@ import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.server.plugins.ServerHandler
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
@@ -14,52 +15,54 @@ fun Route.dataGenerationController(
     serverHandler: ServerHandler,
     sportHandler: SportHandler
 ) {
-    route("dataGen") {
-        post("/routes") {
-            serverHandler.buildRoutes(manual = true)
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/league") {
-            sportHandler.buildLeague(
-                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                manual = true
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/teams") {
-            sportHandler.buildTeams(
-                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                manual = true
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/schedules") {
-            sportHandler.buildSchedules(
-                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                manual = true
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/rosters") {
-            sportHandler.buildRosters(
-                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                manual = true
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/fillCompetitionData") {
-            sportHandler.fillCompetitionData(
-                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                call.request.queryParameters["dates"] ?: ""
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/fillPlayoffData") {
-            sportHandler.fillPlayoffs(
-                enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                call.request.queryParameters["year"]?.toIntOrNull() ?: 0
-            )
-            call.respond(HttpStatusCode.OK)
+    authenticate("auth0") {
+        route("dataGen") {
+            post("/routes") {
+                serverHandler.buildRoutes(manual = true)
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/league") {
+                sportHandler.buildLeague(
+                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                    manual = true
+                )
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/teams") {
+                sportHandler.buildTeams(
+                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                    manual = true
+                )
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/schedules") {
+                sportHandler.buildSchedules(
+                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                    manual = true
+                )
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/rosters") {
+                sportHandler.buildRosters(
+                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                    manual = true
+                )
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/fillCompetitionData") {
+                sportHandler.fillCompetitionData(
+                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                    call.request.queryParameters["dates"] ?: ""
+                )
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/fillPlayoffData") {
+                sportHandler.fillPlayoffs(
+                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                    call.request.queryParameters["year"]?.toIntOrNull() ?: 0
+                )
+                call.respond(HttpStatusCode.OK)
+            }
         }
     }
 }
