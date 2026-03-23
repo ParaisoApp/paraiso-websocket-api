@@ -109,12 +109,6 @@ data class ViewerContext(
     val blocking: Boolean?
 )
 
-@Serializable
-data class UserCookie(
-    val userId: String,
-    val role: UserRole
-)
-
 // user list doesn't need all data
 fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
     UserResponse(
@@ -207,7 +201,7 @@ fun UserResponse.Companion.newUser(
                 following = false,
                 blocking = false
             ),
-            sessionId = null,
+            sessionId = null, // session id used to tie event data to user's tab
             createdOn = now,
             updatedOn = now
         )

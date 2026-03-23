@@ -1,5 +1,6 @@
 package com.paraiso.api.sports
 
+import com.paraiso.api.util.withAdminAuth
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.server.plugins.ServerHandler
@@ -18,50 +19,64 @@ fun Route.dataGenerationController(
     authenticate("auth0") {
         route("dataGen") {
             post("/routes") {
-                serverHandler.buildRoutes(manual = true)
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    serverHandler.buildRoutes(manual = true)
+                    call.respond(HttpStatusCode.OK)
+                }
             }
             post("/league") {
-                sportHandler.buildLeague(
-                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                    manual = true
-                )
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    sportHandler.buildLeague(
+                        enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                        manual = true
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
             }
             post("/teams") {
-                sportHandler.buildTeams(
-                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                    manual = true
-                )
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    sportHandler.buildTeams(
+                        enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                        manual = true
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
             }
             post("/schedules") {
-                sportHandler.buildSchedules(
-                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                    manual = true
-                )
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    sportHandler.buildSchedules(
+                        enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                        manual = true
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
             }
             post("/rosters") {
-                sportHandler.buildRosters(
-                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                    manual = true
-                )
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    sportHandler.buildRosters(
+                        enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                        manual = true
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
             }
             post("/fillCompetitionData") {
-                sportHandler.fillCompetitionData(
-                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                    call.request.queryParameters["dates"] ?: ""
-                )
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    sportHandler.fillCompetitionData(
+                        enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                        call.request.queryParameters["dates"] ?: ""
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
             }
             post("/fillPlayoffData") {
-                sportHandler.fillPlayoffs(
-                    enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                    call.request.queryParameters["year"]?.toIntOrNull() ?: 0
-                )
-                call.respond(HttpStatusCode.OK)
+                withAdminAuth {
+                    sportHandler.fillPlayoffs(
+                        enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
+                        call.request.queryParameters["year"]?.toIntOrNull() ?: 0
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
             }
         }
     }

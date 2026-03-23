@@ -23,7 +23,7 @@ class UserChatsApi(
                 newUserChat
             }
         }
-        val dms = directMessagesApi.findByChatId(chat.id)
+        val dms = directMessagesApi.findByChatId(chat.id, userId)
         return chat.toResponse(dms)
     }
 

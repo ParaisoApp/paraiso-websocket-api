@@ -1,5 +1,6 @@
 package com.paraiso.api.users
 
+import com.paraiso.api.util.UserCookie
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.users.UserSessionsApi
 import io.ktor.http.HttpStatusCode
@@ -10,13 +11,15 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
 
 fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
     route("userSessions") {
         get("/getByName") {
             userSessionsApi.getUserByName(
                 call.request.queryParameters["name"] ?: "",
-                call.request.queryParameters["curUserId"] ?: ""
+                call.sessions.get<UserCookie>()?.userId ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
@@ -24,7 +27,7 @@ fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
         get("/getById") {
             userSessionsApi.getUserById(
                 call.request.queryParameters["id"] ?: "",
-                call.request.queryParameters["curUserId"] ?: ""
+                call.sessions.get<UserCookie>()?.userId ?: ""
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
@@ -32,7 +35,7 @@ fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
         get("/getByPartial") {
             userSessionsApi.getUserByPartial(
                 call.request.queryParameters["search"] ?: "",
-                call.request.queryParameters["curUserId"] ?: ""
+                call.sessions.get<UserCookie>()?.userId ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }
@@ -55,7 +58,7 @@ fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
         post("userList") {
             userSessionsApi.getUserList(
                 call.receive<FilterTypes>(),
-                call.request.queryParameters["id"] ?: ""
+                call.sessions.get<UserCookie>()?.userId ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }

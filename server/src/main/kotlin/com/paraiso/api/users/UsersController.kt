@@ -13,25 +13,6 @@ import io.ktor.server.routing.route
 
 fun Route.usersController(usersApi: UsersApi) {
     route("users") {
-        post {
-            usersApi.saveUser(
-                call.receive<UserResponse>()
-            )
-        }
-        post("/settings") {
-            usersApi.setSettings(
-                call.request.queryParameters["id"] ?: "",
-                call.receive<UserSettings>()
-            )
-            call.respond(HttpStatusCode.OK)
-        }
-        post("/settings") {
-            usersApi.setSettings(
-                call.request.queryParameters["id"] ?: "",
-                call.receive<UserSettings>()
-            )
-            call.respond(HttpStatusCode.OK)
-        }
         post("/markNotifsRead") {
             usersApi.markNotifsRead(
                 call.request.queryParameters["id"] ?: ""

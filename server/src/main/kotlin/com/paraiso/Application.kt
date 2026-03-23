@@ -1,7 +1,6 @@
 package com.paraiso
 
 import com.auth0.jwk.JwkProviderBuilder
-import com.auth0.jwk.UrlJwkProvider
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
@@ -18,7 +17,7 @@ import com.paraiso.api.userchats.directMessagesController
 import com.paraiso.api.userchats.userChatsController
 import com.paraiso.api.users.userSessionsController
 import com.paraiso.api.users.usersController
-import com.paraiso.api.votes.votesController
+import com.paraiso.api.util.UserCookie
 import com.paraiso.cache.CacheServiceImpl
 import com.paraiso.client.metadata.MetadataClientImpl
 import com.paraiso.client.sport.SportClientImpl
@@ -61,7 +60,6 @@ import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.domain.userchats.DirectMessagesApi
 import com.paraiso.domain.userchats.UserChatsApi
-import com.paraiso.domain.users.UserCookie
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSession
@@ -300,10 +298,12 @@ fun Application.configureSockets(
                     existingUser to false
                 }
                 // set the final resolved user id as a signed cookie for the user
-                call.sessions.set(UserCookie(
-                    userId = currentUser.id,
-                    role = currentUser.roles
-                ))
+                call.sessions.set(
+                    UserCookie(
+                        userId = currentUser.id,
+                        role = currentUser.roles
+                    )
+                )
 
                 // Store the resolved user in the call attributes so the WS can see it
                 call.attributes.put(userKey, currentUser)
@@ -314,7 +314,7 @@ fun Application.configureSockets(
                 val sessionContext = SessionContext(this)
                 val currentUser = call.attributes[userKey].copy(
                     status = UserStatus.CONNECTED,
-                    sessionId = sessionContext.sessionId
+                    sessionId = sessionContext.sessionId // session id used to tie event data to user's tab
                 )
                 val isNewUser = call.attributes[isNewKey]
                 handler.connect(
@@ -337,7 +337,6 @@ fun Application.configureSockets(
             metadataController(services.metadataApi)
             adminController(services.adminApi)
             routesController(services.routesApi)
-            votesController(services.votesApi)
             followsController(services.followsApi)
             blocksController(services.blocksApi)
             notificationsController(services.notificationsApi)

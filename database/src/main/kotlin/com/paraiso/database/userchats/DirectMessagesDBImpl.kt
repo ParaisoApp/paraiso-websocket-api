@@ -4,6 +4,7 @@ import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.not
+import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.inc
@@ -37,11 +38,15 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB {
                 ).toList()
             }
         }
-    override suspend fun findByChatId(chatId: String) =
+    override suspend fun findByChatId(chatId: String, userId: String) =
         withContext(Dispatchers.IO) {
             collection.find(
                 and(
-                    eq(DirectMessage::chatId.name, chatId)
+                    eq(DirectMessage::chatId.name, chatId),
+                    or(
+                        eq(DirectMessage::userId.name, userId),
+                        eq(DirectMessage::userReceiveId.name, userId),
+                    )
                 )
             ).toList()
         }
