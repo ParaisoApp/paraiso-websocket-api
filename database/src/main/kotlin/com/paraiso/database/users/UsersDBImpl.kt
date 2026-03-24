@@ -291,6 +291,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 eq(ID, authId.userId),
                 combine(
                     addToSet(User::authIds.name, authId.toEntity()),
+                    set(User::roles.name, UserRole.USER),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount
