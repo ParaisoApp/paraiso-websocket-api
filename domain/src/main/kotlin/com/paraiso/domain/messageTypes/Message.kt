@@ -3,6 +3,7 @@ package com.paraiso.domain.messageTypes
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.RecordSerializer
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
@@ -21,7 +22,8 @@ data class Message(
     val replyId: String?,
     val rootId: String?,
     val editId: String?,
-    val route: String
+    val route: String,
+    val userRole: UserRole
 )
 
 fun Message.toNewPost() =

@@ -4,6 +4,7 @@ import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.follows.FollowResponse
 import com.paraiso.domain.messageTypes.Ban
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
 import kotlinx.coroutines.async
@@ -20,6 +21,8 @@ class UsersApi(
         usersDB.save(listOf(user.toUser()))
     suspend fun syncUser(authId: AuthIdResponse) =
         usersDB.syncUserAuth(authId)
+    suspend fun setUserRole(roleUpdate: RoleUpdate) =
+        usersDB.setUserRole(roleUpdate)
 
     suspend fun getUserFavorites(userId: String) =
         usersDB.findById(userId)?.let { user ->

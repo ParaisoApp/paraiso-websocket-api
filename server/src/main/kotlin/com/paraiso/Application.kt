@@ -205,7 +205,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val routesApi = RoutesApi(RoutesDBImpl(database), postsApi, postPinsApi, userSessionsApi)
     val directMessagesApi = DirectMessagesApi(DirectMessagesDBImpl(database))
     val userChatsApi = UserChatsApi(UserChatsDBImpl(database), directMessagesApi)
-    val adminApi = AdminApi(PostReportsDBImpl(database), UserReportsDBImpl(database))
+    val adminApi = AdminApi(PostReportsDBImpl(database), UserReportsDBImpl(database), usersApi)
     val metadataApi = MetadataApi(MetadataClientImpl())
     val services = AppServices(
         authApi,
@@ -291,8 +291,7 @@ fun Application.configureSockets(
                 val existingUser = resolvedUserId?.let{
                     services.userSessionsApi.getUserById(it, null) // only need basic user info for session
                 }
-                //prevent user from high jacking another user
-                val (currentUser, isNewUser) = if((existingUser?.roles != UserRole.GUEST && ticketedUserId == null) || existingUser == null){
+                val (currentUser, isNewUser) = if(existingUser == null){
                     UserResponse.newUser(UUID.randomUUID().toString()) to true
                 } else {
                     existingUser to false

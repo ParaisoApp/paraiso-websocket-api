@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.users.UserResponse
@@ -20,6 +21,7 @@ object ServerState {
     val favoriteFlowMut = MutableSharedFlow<Favorite>(replay = 0)
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
     val userUpdateFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
+    val roleUpdateFlowMut = MutableSharedFlow<RoleUpdate>(replay = 0)
     val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
     val tagUserFlowMut = MutableSharedFlow<Tag>(replay = 0)
     val reportUserFlowMut = MutableSharedFlow<Report>(replay = 0)
@@ -32,6 +34,7 @@ object ServerState {
         Pair(MessageType.FAVORITE, favoriteFlowMut.asSharedFlow()),
         Pair(MessageType.DELETE, deleteFlowMut.asSharedFlow()),
         Pair(MessageType.USER_UPDATE, userUpdateFlowMut.asSharedFlow()),
+        Pair(MessageType.ROLE_UPDATE, roleUpdateFlowMut.asSharedFlow()),
         Pair(MessageType.BAN, banUserFlowMut.asSharedFlow()),
         Pair(MessageType.TAG, tagUserFlowMut.asSharedFlow()),
         Pair(MessageType.REPORT_USER, reportUserFlowMut.asSharedFlow()),

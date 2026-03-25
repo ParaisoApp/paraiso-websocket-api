@@ -19,6 +19,7 @@ import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.auth.toEntity
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserFavorite
@@ -292,6 +293,17 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 combine(
                     addToSet(User::authIds.name, authId.toEntity()),
                     set(User::roles.name, UserRole.USER),
+                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
+
+    override suspend fun setUserRole(roleUpdate: RoleUpdate): Long  =
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq(ID, roleUpdate.userId),
+                combine(
+                    set(User::roles.name, roleUpdate.userRole),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

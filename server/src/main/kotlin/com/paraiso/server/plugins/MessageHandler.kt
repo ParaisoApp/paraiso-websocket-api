@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
@@ -45,6 +46,7 @@ class MessageHandler(
                 MessageType.FAVORITE.name,
                 MessageType.VOTE.name,
                 MessageType.DELETE.name,
+                MessageType.ROLE_UPDATE.name,
                 MessageType.BAN.name,
                 MessageType.TAG.name,
                 MessageType.REPORT_USER.name,
@@ -111,6 +113,12 @@ class MessageHandler(
                         MessageType.DELETE.name -> {
                             decodeMessage<Delete>(message)?.let { delete ->
                                 ServerState.deleteFlowMut.emit(delete)
+                            }
+                        }
+
+                        MessageType.ROLE_UPDATE.name -> {
+                            decodeMessage<RoleUpdate>(message)?.let { roleUpdate ->
+                                ServerState.roleUpdateFlowMut.emit(roleUpdate)
                             }
                         }
 

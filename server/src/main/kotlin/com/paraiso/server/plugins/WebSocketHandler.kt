@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
@@ -216,11 +217,10 @@ class WebSocketHandler(
         sessionContext: SessionContext
     ) = message.userId?.let { userId -> // user id not null condition
         val isUser = sessionUserId == userId
-        val roles = services.userSessionsApi.getUserById(userId, null)?.roles ?: UserRole.GUEST
         // user is on home - take any message, otherwise message must come from route
         val routeCriteria = sessionContext.routeId == HOME_PREFIX || sessionContext.routeId == message.route
         val filterCriteria =
-            sessionContext.filterTypes.userRoles.contains(roles) &&
+            sessionContext.filterTypes.userRoles.contains(message.userRole) &&
                 sessionContext.filterTypes.postTypes.contains(message.type) &&
                 routeCriteria
         val messageCriteria = !blocking && filterCriteria // user isn't in cur user's block list
@@ -345,6 +345,16 @@ class WebSocketHandler(
                                         ServerState.deleteFlowMut.emit(delete)
                                         services.eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
                                     }
+                                }
+                            }
+                    }
+                    MessageType.ROLE_UPDATE -> {
+                        converter?.cleanAndType<TypeMapping<RoleUpdate>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.let { roleUpdate ->
+                                if (sessionUser.roles == UserRole.ADMIN || (sessionUser.roles == UserRole.MOD && roleUpdate.userRole != UserRole.ADMIN)) {
+                                    launch { services.usersApi.setUserRole(roleUpdate) }
+                                    ServerState.roleUpdateFlowMut.emit(roleUpdate)
+                                    services.eventService.publish(MessageType.ROLE_UPDATE.name, "$serverId:${Json.encodeToString(roleUpdate)}")
                                 }
                             }
                     }

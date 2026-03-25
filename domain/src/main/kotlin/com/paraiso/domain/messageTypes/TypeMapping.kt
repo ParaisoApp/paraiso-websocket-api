@@ -41,6 +41,9 @@ enum class MessageType {
     @SerialName("USER_LEAVE")
     USER_LEAVE,
 
+    @SerialName("ROLE_UPDATE")
+    ROLE_UPDATE,
+
     @SerialName("BAN")
     BAN,
 

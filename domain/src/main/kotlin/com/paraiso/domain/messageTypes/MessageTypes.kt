@@ -49,6 +49,12 @@ data class Subscription(
     val subscribe: Boolean
 )
 
+@Serializable
+data class RoleUpdate(
+    val userId: String,
+    val userRole: UserRole
+)
+
 fun SubscriptionInfo.toSubscription() =
     Subscription(
         type = type,
