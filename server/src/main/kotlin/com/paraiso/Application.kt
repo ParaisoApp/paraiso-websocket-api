@@ -8,7 +8,6 @@ import com.paraiso.api.blocks.blocksController
 import com.paraiso.api.follows.followsController
 import com.paraiso.api.metadata.metadataController
 import com.paraiso.api.notifications.notificationsController
-import com.paraiso.api.posts.postPinsController
 import com.paraiso.api.posts.postsController
 import com.paraiso.api.routes.routesController
 import com.paraiso.api.sports.dataGenerationController
@@ -327,7 +326,6 @@ fun Application.configureSockets(
         route("paraiso_api/v1") {
             authController(services.authApi, config)
             postsController(services.postsApi)
-            postPinsController(services.postPinsApi)
             usersController(services.usersApi)
             userSessionsController(services.userSessionsApi)
             userChatsController(services.userChatsApi)

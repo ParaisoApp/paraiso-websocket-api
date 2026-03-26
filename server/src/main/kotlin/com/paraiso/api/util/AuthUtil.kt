@@ -33,12 +33,3 @@ suspend inline fun RoutingContext.withAdminAuth(crossinline block: suspend () ->
         call.respond(HttpStatusCode.Unauthorized, "User not authorized to view reports")
     }
 }
-suspend inline fun RoutingContext.withElevatedAuthRoute(routeId: String, crossinline block: suspend (String) -> Unit) {
-    val userCookie = call.sessions.get<UserCookie>()
-    val userId = userCookie?.userId ?: ""
-    if(userCookie?.isElevated() == true || (userId != "" && routeId.contains(userCookie?.userId ?: ""))){
-        block(userId)
-    } else {
-        call.respond(HttpStatusCode.Unauthorized, "User not authorized to view reports")
-    }
-}

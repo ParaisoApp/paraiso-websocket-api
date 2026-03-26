@@ -11,6 +11,8 @@ import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.toSubscription
+import com.paraiso.domain.posts.PostPin
+import com.paraiso.domain.posts.PostPinResponse
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
@@ -113,6 +115,12 @@ class MessageHandler(
                         MessageType.DELETE.name -> {
                             decodeMessage<Delete>(message)?.let { delete ->
                                 ServerState.deleteFlowMut.emit(delete)
+                            }
+                        }
+
+                        MessageType.PIN_POST.name -> {
+                            decodeMessage<PostPinResponse>(message)?.let { postPin ->
+                                ServerState.postPinFlowMut.emit(postPin)
                             }
                         }
 

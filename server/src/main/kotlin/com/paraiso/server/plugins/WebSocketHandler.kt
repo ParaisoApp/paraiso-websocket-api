@@ -15,6 +15,8 @@ import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.notifications.NotificationResponse
 import com.paraiso.domain.notifications.NotificationType
+import com.paraiso.domain.posts.PostPin
+import com.paraiso.domain.posts.PostPinResponse
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
 import com.paraiso.domain.routes.RouteDetails
@@ -27,6 +29,7 @@ import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.ViewerContext
 import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.Constants.HOME_PREFIX
+import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.VoteResponse
 import com.paraiso.server.plugins.jobs.HomeJobs
@@ -189,6 +192,7 @@ class WebSocketHandler(
                         }
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
+                        MessageType.PIN_POST -> sendTypedMessage(type, message as PostPinResponse)
                         MessageType.ROLE_UPDATE -> sendTypedMessage(type, message as RoleUpdate)
                         MessageType.TAG -> sendTypedMessage(type, message as Tag)
                         MessageType.FAVORITE -> sendTypedMessage(type, message as Favorite)
@@ -346,6 +350,26 @@ class WebSocketHandler(
                                         ServerState.deleteFlowMut.emit(delete)
                                         services.eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
                                     }
+                                }
+                            }
+                    }
+                    MessageType.PIN_POST -> {
+                        converter?.cleanAndType<TypeMapping<PostPinResponse>>(frame)
+                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { postPin ->
+                                // user must have elevated auth or be pinning post on profile
+                                val routeUserId = postPin.routeId.removePrefix(USER_PREFIX)
+                                if (sessionUser.roles == UserRole.ADMIN || sessionUser.roles == UserRole.MOD || (sessionUser.id == routeUserId)) {
+                                    launch {
+                                        if(postPin.order == -1){
+                                            postPin.id?.let{
+                                                services.postPinsApi.delete(it)
+                                            }
+                                        }else{
+                                            services.postPinsApi.save(postPin)
+                                        }
+                                    }
+                                    ServerState.postPinFlowMut.emit(postPin)
+                                    services.eventService.publish(MessageType.PIN_POST.name, "$serverId:${Json.encodeToString(postPin)}")
                                 }
                             }
                     }

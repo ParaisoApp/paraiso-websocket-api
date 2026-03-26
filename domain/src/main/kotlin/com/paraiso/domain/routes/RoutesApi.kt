@@ -21,7 +21,7 @@ class RoutesApi(
 ) {
     suspend fun getById(id: String, userId: String, sessionId: String): RouteResponse? {
         postPinsApi.findByRouteId(id).let { pinnedPosts ->
-            val postIds = pinnedPosts.map { it.postId }
+            val postIds = pinnedPosts.mapNotNull { it.postId }
             val posts = postsApi.getByIds(userId, postIds.toSet(), sessionId)
             return routesDB.findById(id)?.toResponse(postIds, posts.posts)
         }
