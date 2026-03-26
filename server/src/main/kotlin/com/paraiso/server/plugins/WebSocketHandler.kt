@@ -189,6 +189,7 @@ class WebSocketHandler(
                         }
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
+                        MessageType.ROLE_UPDATE -> sendTypedMessage(type, message as RoleUpdate)
                         MessageType.TAG -> sendTypedMessage(type, message as Tag)
                         MessageType.FAVORITE -> sendTypedMessage(type, message as Favorite)
                         MessageType.BAN -> {
