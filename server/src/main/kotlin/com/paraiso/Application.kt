@@ -302,7 +302,6 @@ fun Application.configureSockets(
                         role = currentUser.roles
                     )
                 )
-
                 // Store the resolved user in the call attributes so the WS can see it
                 call.attributes.put(userKey, currentUser)
                 call.attributes.put(isNewKey, isNewUser)

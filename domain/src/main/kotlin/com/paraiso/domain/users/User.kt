@@ -168,7 +168,7 @@ fun UserResponse.toUser() =
         updatedOn = updatedOn
     )
 
-fun randomGuestName() = "Guest${(Math.random() * 10000).toInt()}"
+fun randomGuestName() = "Guest${(Math.random() * 100000000).toInt()}"
 
 fun UserResponse.Companion.newUser(
     id: String
