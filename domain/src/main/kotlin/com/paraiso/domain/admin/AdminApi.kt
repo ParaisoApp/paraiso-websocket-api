@@ -13,14 +13,10 @@ class AdminApi(
     private val usersApi: UsersApi
 ) {
     suspend fun getUserReports() =
-        userReportsDB.getAll().map { userReport ->
-            userReport.toResponse()
-        }
+        userReportsDB.getAll()
 
     suspend fun getPostReports() =
-        postReportsDB.getAll().map { postReport ->
-            postReport.toResponse()
-        }
+        postReportsDB.getAll()
 
     suspend fun reportUser(sessionUserId: String, report: Report) = coroutineScope {
         val now = Clock.System.now()
@@ -30,8 +26,8 @@ class AdminApi(
                 userReportsDB.save(
                     listOf(
                         UserReport(
-                            id = report.id,
-                            reportedBy = setOf(sessionUserId),
+                            userId = report.id,
+                            reportedBy = mapOf(sessionUserId to true),
                             createdOn = now,
                             updatedOn = now
                         )
@@ -49,8 +45,8 @@ class AdminApi(
                 postReportsDB.save(
                     listOf(
                         PostReport(
-                            id = report.id,
-                            reportedBy = setOf(sessionUserId),
+                            postId = report.id,
+                            reportedBy = mapOf(sessionUserId to true),
                             createdOn = now,
                             updatedOn = now
                         )

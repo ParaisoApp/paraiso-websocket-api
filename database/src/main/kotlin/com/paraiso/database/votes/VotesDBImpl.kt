@@ -3,19 +3,18 @@ package com.paraiso.database.votes
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
-import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.combine
-import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.votes.Vote
+import com.paraiso.domain.votes.Vote as VoteDomain
 import com.paraiso.domain.votes.VotesDB
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -33,7 +32,7 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB {
                     eq(Vote::voterId.name, voterId),
                     eq(Vote::postId.name, postId)
                 )
-            ).limit(1).firstOrNull()
+            ).limit(1).firstOrNull()?.toDomain()
         }
 
     override suspend fun findByUserIdAndPostIdIn(userId: String, postIds: Set<String>) =
@@ -43,15 +42,16 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB {
                     eq(Vote::voterId.name, userId),
                     `in`(Vote::postId.name, postIds)
                 )
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(votes: List<Vote>): Int =
+    override suspend fun save(votes: List<VoteDomain>): Int =
         withContext(Dispatchers.IO) {
             val bulkOps = votes.map { vote ->
+                val entity = vote.toEntity()
                 ReplaceOneModel(
-                    eq(ID, vote.id),
-                    vote,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

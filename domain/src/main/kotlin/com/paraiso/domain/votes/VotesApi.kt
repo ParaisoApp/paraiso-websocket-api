@@ -4,7 +4,7 @@ class VotesApi(
     private val votesDB: VotesDB
 ) {
 
-    suspend fun vote(vote: VoteResponse) =
+    suspend fun vote(vote: Vote) =
         votesDB.findByVoterIdAndPostId(vote.voterId, vote.postId)?.let { voteRef ->
             if (voteRef.upvote == vote.upvote) {
                 // remove user's vote on post
@@ -19,7 +19,7 @@ class VotesApi(
             }
         } ?: run {
             // create new vote
-            votesDB.save(listOf(vote.toDomain()))
+            votesDB.save(listOf(vote))
             // score is standard as vote is init
             if (vote.upvote) 1 else -1
         }

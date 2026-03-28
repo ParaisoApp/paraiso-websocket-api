@@ -8,10 +8,11 @@ import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.admin.PostReport
+import com.paraiso.domain.admin.PostReport as PostReportDomain
 import com.paraiso.domain.admin.PostReportsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -23,15 +24,16 @@ class PostReportsDBImpl(database: MongoDatabase) : PostReportsDB {
 
     override suspend fun getAll() =
         withContext(Dispatchers.IO) {
-            collection.find().sort(ascending(PostReport::updatedOn.name)).toList()
+            collection.find().sort(ascending(PostReport::updatedOn.name)).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(postReports: List<PostReport>) =
+    override suspend fun save(postReports: List<PostReportDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = postReports.map { report ->
+                val entity = report.toEntity()
                 ReplaceOneModel(
-                    Filters.eq(ID, report.id),
-                    report,
+                    Filters.eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

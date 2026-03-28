@@ -5,13 +5,12 @@ import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.follows.Follow
+import com.paraiso.domain.follows.Follow as FollowDomain
 import com.paraiso.domain.follows.FollowsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
@@ -27,36 +26,37 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
                         eq(Follow::followerId.name, followerId),
                         eq(Follow::followeeId.name, followeeIds.firstOrNull())
                     )
-                ).toList()
+                ).map { it.toDomain() }.toList()
             } else {
                 collection.find(
                     and(
                         eq(Follow::followerId.name, followerId),
                         `in`(Follow::followerId.name, followeeIds)
                     )
-                ).toList()
+                ).map { it.toDomain() }.toList()
             }
         }
     override suspend fun findByFollowerId(followerId: String) =
         withContext(Dispatchers.IO) {
             collection.find(
                 eq(Follow::followerId.name, followerId)
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
     override suspend fun findByFolloweeId(followeeId: String) =
         withContext(Dispatchers.IO) {
             collection.find(
                 eq(Follow::followeeId.name, followeeId)
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(follows: List<Follow>) =
+    override suspend fun save(follows: List<FollowDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = follows.map { follow ->
+                val entity = follow.toEntity()
                 ReplaceOneModel(
-                    eq(ID, follow.id),
-                    follow,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
