@@ -1,7 +1,7 @@
 package com.paraiso.server.plugins
 
 import com.paraiso.AppServices
-import com.paraiso.domain.follows.FollowResponse
+import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
@@ -31,7 +31,7 @@ import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
-import com.paraiso.domain.votes.VoteResponse
+import com.paraiso.domain.votes.Vote
 import com.paraiso.server.plugins.jobs.HomeJobs
 import com.paraiso.server.plugins.jobs.ProfileJobs
 import com.paraiso.server.plugins.jobs.SportJobs
@@ -165,13 +165,13 @@ class WebSocketHandler(
                             }
                         }
                         MessageType.VOTE -> {
-                            (message as? VoteResponse)?.let { newVote ->
+                            (message as? Vote)?.let { newVote ->
                                 if (sessionContext.filterTypes.postTypes.contains(newVote.type)) {
                                     sendTypedMessage(type, newVote)
                                 }
                             }
                         }
-                        MessageType.FOLLOW -> sendTypedMessage(type, message as FollowResponse)
+                        MessageType.FOLLOW -> sendTypedMessage(type, message as Follow)
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_UPDATE -> {
@@ -279,7 +279,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.FOLLOW -> {
-                        converter?.cleanAndType<TypeMapping<FollowResponse>>(frame)
+                        converter?.cleanAndType<TypeMapping<Follow>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.FOLLOW, follow)
@@ -308,7 +308,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.VOTE -> {
-                        converter?.cleanAndType<TypeMapping<VoteResponse>>(frame)
+                        converter?.cleanAndType<TypeMapping<Vote>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
                                 if (sessionUser.banned) {
                                     sendTypedMessage(MessageType.VOTE, vote)
@@ -541,7 +541,7 @@ class WebSocketHandler(
         // create vote for create user
         launch {
             services.votesApi.vote(
-                VoteResponse(
+                Vote(
                     voterId = sessionUser.id,
                     voteeId = sessionUser.id,
                     type = message.type,

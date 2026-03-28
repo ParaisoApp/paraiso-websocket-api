@@ -1,6 +1,6 @@
 package com.paraiso.server.plugins
 
-import com.paraiso.domain.follows.FollowResponse
+import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.Message
@@ -22,8 +22,7 @@ import com.paraiso.domain.userchats.DirectMessageResponse
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
-import com.paraiso.domain.votes.VoteResponse
-import com.paraiso.events.EventServiceImpl
+import com.paraiso.domain.votes.Vote
 import com.paraiso.server.util.decodeMessage
 import com.paraiso.server.util.sendTypedMessage
 import io.klogging.Klogging
@@ -95,7 +94,7 @@ class MessageHandler(
                         }
 
                         MessageType.FOLLOW.name -> {
-                            decodeMessage<FollowResponse>(message)?.let { follow ->
+                            decodeMessage<Follow>(message)?.let { follow ->
                                 ServerState.followFlowMut.emit(follow)
                             }
                         }
@@ -107,7 +106,7 @@ class MessageHandler(
                         }
 
                         MessageType.VOTE.name -> {
-                            decodeMessage<VoteResponse>(message)?.let { vote ->
+                            decodeMessage<Vote>(message)?.let { vote ->
                                 ServerState.voteFlowMut.emit(vote)
                             }
                         }
