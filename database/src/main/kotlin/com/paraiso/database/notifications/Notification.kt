@@ -2,7 +2,6 @@ package com.paraiso.database.notifications
 
 import com.paraiso.domain.notifications.Notification as NotificationDomain
 import com.paraiso.domain.notifications.NotificationType
-import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant

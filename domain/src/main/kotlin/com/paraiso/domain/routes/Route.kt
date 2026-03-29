@@ -1,8 +1,6 @@
 package com.paraiso.domain.routes
 
-import com.paraiso.domain.posts.PostResponse
-import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.util.InstantBsonSerializer
+import com.paraiso.domain.posts.Post
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -16,7 +14,7 @@ data class RouteDetails(
     val userFavorites: Int,
     val about: String?,
     val pinnedPostIds: List<String>,
-    val pinnedPosts: Map<String, PostResponse>,
+    val pinnedPosts: Map<String, Post>,
     val createdOn: Instant?,
     val updatedOn: Instant?
 )

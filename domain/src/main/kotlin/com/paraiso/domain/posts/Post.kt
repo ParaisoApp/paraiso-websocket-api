@@ -11,27 +11,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Post(
-    @SerialName(ID) val id: String?,
-    val userId: String? = null,
-    val title: String?,
-    val content: String?,
-    val type: PostType,
-    val score: Int = 0,
-    val parentId: String?,
-    val rootId: String?,
-    val status: PostStatus = PostStatus.ACTIVE,
-    val media: String? = null,
-    val data: String?,
-    val count: Int = 0,
-    val route: String? = null,
-    @Serializable(with = InstantBsonSerializer::class)
-    val createdOn: Instant? = Clock.System.now(),
-    @Serializable(with = InstantBsonSerializer::class)
-    val updatedOn: Instant? = Clock.System.now()
-) { companion object }
-
-@Serializable
-data class PostResponse(
     val id: String?,
     val userId: String?,
     val title: String?,
@@ -128,25 +107,6 @@ enum class Range {
     ALL
 }
 
-fun Post.toResponse(userVote: Boolean?) = PostResponse(
-    id = id,
-    userId = userId,
-    title = title,
-    content = content,
-    type = type,
-    media = media,
-    score = score,
-    parentId = parentId,
-    rootId = rootId,
-    status = status,
-    data = data,
-    count = count,
-    route = route,
-    userVote = userVote,
-    createdOn = createdOn,
-    updatedOn = updatedOn
-)
-
 fun generateBasePost(id: String?, title: String?) = Post(
     id = id,
     userId = null,
@@ -161,6 +121,7 @@ fun generateBasePost(id: String?, title: String?) = Post(
     data = null,
     count = 0,
     route = null,
+    userVote = null,
     createdOn = Clock.System.now(),
     updatedOn = Clock.System.now()
 )

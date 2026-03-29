@@ -2,6 +2,7 @@ package com.paraiso.domain.sport.sports
 
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.Post
+import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.RouteDetails
@@ -185,6 +186,11 @@ class SportHandler(
                 rootId = "$GAME_PREFIX${competition.id}",
                 data = sport.name,
                 route = "$SPORT_PREFIX/${sport.name.lowercase()}",
+                count = 0,
+                score = 0,
+                media = null,
+                userVote = null,
+                status = PostStatus.ACTIVE,
                 createdOn = competition.date,
                 updatedOn = competition.date
             )

@@ -28,7 +28,7 @@ import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.GameState
-import com.paraiso.domain.posts.Post
+import com.paraiso.domain.posts.Post as PostDomain
 import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
@@ -38,13 +38,10 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.routes.isSportRoute
 import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.util.Constants.FAVORITES_PREFIX
-import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.util.Constants.SPORT_PREFIX
-import com.paraiso.domain.util.Constants.USER_PREFIX
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -69,15 +66,15 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()
+            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
         }
 
     override suspend fun findByIdsIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(`in`(ID, ids)).toList()
+            collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
         }
 
-    override suspend fun findByPartial(partial: String): List<Post> =
+    override suspend fun findByPartial(partial: String) =
         withContext(Dispatchers.IO) {
             collection.find(
                 and(
@@ -87,12 +84,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
                     ),
                     not(regex(ID, "^TEAM", "i")) // remove team event posts from search
                 )
-            ).limit(PARTIAL_RETRIEVE_LIM).toList()
+            ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
         }
 
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(Post::userId.name, userId)).toList()
+            collection.find(eq(Post::userId.name, userId)).map { it.toDomain() }.toList()
         }
 
     private fun getInitAggPipeline(
@@ -333,7 +330,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             pipeline.addAll(getSort(sortType))
             pipeline.add(limit(RETRIEVE_LIM))
 
-            return@withContext collection.aggregate<Post>(pipeline).toList()
+            return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
         }
 
     override suspend fun findByParentId(
@@ -357,7 +354,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             val pipeline = getInitAggPipeline(initialFilter)
             pipeline.add(getUserRoleCondition(filters, userFollowing))
             pipeline.addAll(getSort(sortType))
-            return@withContext collection.aggregate<Post>(pipeline).toList()
+            return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
         }
 
     override suspend fun findByParentIdWithEventFilters(
@@ -403,27 +400,29 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             val pipeline = getInitAggPipeline(initialFilter)
             pipeline.add(getUserRoleCondition(filters, userFollowing))
             pipeline.addAll(getSort(sortType))
-            return@withContext collection.aggregate<Post>(pipeline).toList()
+            return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(posts: List<Post>) =
+    override suspend fun save(posts: List<PostDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = posts.map { post ->
+                val entity = post.toEntity()
                 ReplaceOneModel(
-                    eq(ID, post.id),
-                    post,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
 
-    override suspend fun saveIfNew(posts: List<Post>) =
+    override suspend fun saveIfNew(posts: List<PostDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = posts.map { post ->
-                val doc = Document.parse(Json.encodeToString(post))
+                val entity = post.toEntity()
+                val doc = Document.parse(Json.encodeToString(entity))
                 UpdateOneModel<Post>(
-                    eq("_id", post.id),
+                    eq("_id", entity.id),
                     Updates.setOnInsert(doc),
                     UpdateOptions().upsert(true)
                 )

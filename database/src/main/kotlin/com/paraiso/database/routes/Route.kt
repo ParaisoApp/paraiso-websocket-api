@@ -1,6 +1,5 @@
 package com.paraiso.database.routes
 
-import com.paraiso.domain.posts.PostResponse
 import com.paraiso.domain.routes.RouteDetails as RouteDetailsDomain
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID

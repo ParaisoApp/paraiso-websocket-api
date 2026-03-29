@@ -1,6 +1,5 @@
 package com.paraiso.domain.posts
 
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
@@ -23,7 +22,7 @@ data class PostPin(
 data class PostPinResponse(
     val id: String?,
     val routeId: String,
-    val post: PostResponse,
+    val post: Post,
     val order: Int,
     val userId: String?,
     val createdOn: Instant?

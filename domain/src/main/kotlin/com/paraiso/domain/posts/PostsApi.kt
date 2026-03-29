@@ -97,7 +97,7 @@ class PostsApi(
     suspend fun getByIdsBasic(userId: String, postSearchIds: Set<String>) =
         postsDB.findByIdsIn(postSearchIds).let { posts ->
             val votes = votesApi.getByUserIdAndPostIdIn(userId, postSearchIds)
-            posts.associate { it.id to it.toResponse(votes[it.id]?.upvote) }
+            posts.associate { it.id to it.copy(userVote = votes[it.id]?.upvote) }
         }
 
     suspend fun getByIds(
@@ -126,7 +126,7 @@ class PostsApi(
         postsDB.findByPartial(search).let { foundPosts ->
             val votes = votesApi.getByUserIdAndPostIdIn(userId, foundPosts.mapNotNull { it.id }.toSet())
             val resultPosts = foundPosts.associate { foundPost ->
-                (foundPost.id ?: UNKNOWN) to foundPost.toResponse(votes[foundPost.id]?.upvote)
+                (foundPost.id ?: UNKNOWN) to foundPost.copy(userVote = votes[foundPost.id]?.upvote)
             }
             // pull in event related data - no subscription
             val (teams, comps) = pullEventData(resultPosts, userId, sessionId, subscribe = false)
@@ -207,17 +207,17 @@ class PostsApi(
             }
             // grab all user votes for each post
             val votes = votesApi.getByUserIdAndPostIdIn(userId, returnPosts.keys)
-            val responseMap = LinkedHashMap<String, PostResponse>()
+            val responseMap = LinkedHashMap<String, Post>()
             // map to response object and add user vote response
             returnPosts.reversed().forEach { (id, post) ->
-                responseMap[id] = post.toResponse(votes[id]?.upvote)
+                responseMap[id] = post.copy(userVote = votes[id]?.upvote)
             }
             responseMap
         }
     }
 
     private suspend fun pullEventData(
-        responseMap: Map<String, PostResponse>,
+        responseMap: Map<String, Post>,
         userId: String,
         sessionId: String,
         subscribe: Boolean
@@ -323,7 +323,7 @@ class PostsApi(
 
 @Serializable
 data class PostsData(
-    val posts: MutableMap<String, PostResponse>,
+    val posts: MutableMap<String, Post>,
     val teams: Map<String, TeamResponse>,
     val competitions: Map<String, CompetitionResponse>
 )
