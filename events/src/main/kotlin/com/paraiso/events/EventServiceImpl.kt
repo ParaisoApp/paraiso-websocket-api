@@ -47,54 +47,6 @@ class EventServiceImpl(
         }
     }
 
-    override suspend fun saveUserSession(userSession: UserSession): String =
-        withContext(Dispatchers.IO) {
-            pubConnection.sync().set(
-                "user:session:${userSession.userId}",
-                Json.encodeToString(userSession)
-            )
-        }
-    override suspend fun getUserSession(userId: String): UserSession? =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                pubConnection.sync().get("user:session:$userId")?.let {
-                    Json.decodeFromString<UserSession>(it)
-                }
-            } catch (e: SerializationException) {
-                logger.error { e }
-                null
-            }
-        }
-
-    override suspend fun deleteUserSession(userId: String): Long =
-        withContext(Dispatchers.IO) {
-            pubConnection.sync().del("user:session:$userId")
-        }
-
-    override suspend fun getAllActiveUsers(): List<UserSession> {
-        val activeSessions = mutableListOf<UserSession>()
-        val sync = pubConnection.sync()
-        var cursor = KeyScanCursor.INITIAL
-        val scanArgs = ScanArgs.Builder.matches("user:session:*")
-
-        do {
-            cursor = sync.scan(cursor, scanArgs)
-            val sessions = cursor.keys.mapNotNull { key ->
-                try {
-                    Json.decodeFromString<UserSession>(
-                        sync.get(key)
-                    )
-                } catch (e: SerializationException) {
-                    logger.error { e }
-                    null
-                }
-            }
-            activeSessions.addAll(sessions)
-        } while (!cursor.isFinished)
-
-        return activeSessions
-    }
-
     override fun close() {
         pubSubConnection.close()
         pubConnection.close()

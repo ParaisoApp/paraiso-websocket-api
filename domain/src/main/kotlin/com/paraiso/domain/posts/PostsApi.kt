@@ -13,6 +13,7 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.CompetitionResponse
 import com.paraiso.domain.sport.data.TeamResponse
 import com.paraiso.domain.sport.sports.SportApi
+import com.paraiso.domain.users.CacheService
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UsersApi
@@ -36,6 +37,7 @@ class PostsApi(
     private val votesApi: VotesApi,
     private val followsApi: FollowsApi,
     private val usersApi: UsersApi,
+    private val cacheService: CacheService,
     private val eventService: EventService,
     private val sportApi: SportApi
 ) {
@@ -301,7 +303,7 @@ class PostsApi(
     // subscribe user to necessary events based on the server/session
     private suspend fun subscribeToEvents(eventIds: Set<String>, userId: String, sessionId: String) = coroutineScope {
         if (eventIds.isNotEmpty()) {
-            eventService.getUserSession(userId)?.let { receiveUserSessions ->
+            cacheService.getUserSession(userId)?.let { receiveUserSessions ->
                 receiveUserSessions.serverSessions.asSequence().find { it.value.contains(sessionId) }
                     ?.let { serverMap ->
                         val subscription = SubscriptionInfo(

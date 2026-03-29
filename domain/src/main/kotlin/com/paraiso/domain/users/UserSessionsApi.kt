@@ -8,7 +8,7 @@ import kotlinx.coroutines.coroutineScope
 
 class UserSessionsApi(
     private val usersDB: UsersDB,
-    private val eventService: EventService,
+    private val cacheService: CacheService,
     private val followsApi: FollowsApi,
     private val blocksApi: BlocksApi
 ) {
@@ -20,7 +20,7 @@ class UserSessionsApi(
             UserStatus.CONNECTED
         }
     suspend fun getUserById(userId: String, curUserId: String?, fullInfo: Boolean) = coroutineScope {
-        eventService.getUserSession(userId).let { session ->
+        cacheService.getUserSession(userId).let { session ->
             val follows = async {
                 if (curUserId != null) {
                     followsApi.findIn(curUserId, listOf(userId)).firstOrNull()
@@ -52,7 +52,7 @@ class UserSessionsApi(
         usersDB.findByName(userName)?.let { user ->
             val follows = async { followsApi.findIn(curUserId, listOf(user.id)).firstOrNull() }
             val blocks = async { blocksApi.findIn(curUserId, listOf(user.id)).firstOrNull() }
-            eventService.getUserSession(user.id).let { session ->
+            cacheService.getUserSession(user.id).let { session ->
                 user.copy(
                     status = getStatus(session, user.settings.hidden),
                     viewerContext = ViewerContext(
@@ -73,7 +73,7 @@ class UserSessionsApi(
             val follows = async { followsApi.findIn(curUserId, userIds).associateBy { it.followeeId } }
             val blocks = async { blocksApi.findIn(curUserId, userIds).associateBy { it.blockeeId } }
             users.map { user ->
-                eventService.getUserSession(user.id).let { session ->
+                cacheService.getUserSession(user.id).let { session ->
                     user.copy(
                         status = getStatus(session, user.settings.hidden),
                         viewerContext = ViewerContext(
@@ -92,7 +92,7 @@ class UserSessionsApi(
                 val followees = usersDB.findByIdIn(followeeIds)
                 val blocks = async { blocksApi.findIn(userId, followeeIds).associateBy { it.blockeeId } }
                 followees.associate { user ->
-                    eventService.getUserSession(user.id).let { session ->
+                    cacheService.getUserSession(user.id).let { session ->
                         user.id to user.copy(
                             status = getStatus(session, user.settings.hidden),
                             viewerContext = ViewerContext(
@@ -112,7 +112,7 @@ class UserSessionsApi(
                 val follows = async { followsApi.findIn(userId, followerIds).associateBy { it.followeeId } }
                 val blocks = async { blocksApi.findIn(userId, followerIds).associateBy { it.blockeeId } }
                 followers.associate { user ->
-                    eventService.getUserSession(user.id).let { session ->
+                    cacheService.getUserSession(user.id).let { session ->
                         user.id to user.copy(
                             status = getStatus(session, user.settings.hidden),
                             viewerContext = ViewerContext(
@@ -126,7 +126,7 @@ class UserSessionsApi(
     }
 
     suspend fun getUserList(filters: FilterTypes, userId: String) = coroutineScope {
-        eventService.getAllActiveUsers().map { it.userId }.let { activeUserIds ->
+        cacheService.getAllActiveUsers().map { it.userId }.let { activeUserIds ->
             val followees = followsApi.getByFollowerId(userId).map { it.followeeId }
             usersDB.getUserList(activeUserIds, filters, followees)
                 .let { userList ->

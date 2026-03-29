@@ -5,4 +5,8 @@ interface CacheService {
     suspend fun get(key: String): String?
     suspend fun delete(key: String): Long
     suspend fun redeemTicket(ticket: String): String?
+    suspend fun saveUserSession(userSession: UserSession): String
+    suspend fun getUserSession(userId: String): UserSession?
+    suspend fun deleteUserSession(userId: String): Long
+    suspend fun getAllActiveUsers(): List<UserSession>
 }

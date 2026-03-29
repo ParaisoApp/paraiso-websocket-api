@@ -108,7 +108,7 @@ class WebSocketHandler(
         }
         // create or update session connected status
         launch {
-            val sessionToSave = services.eventService.getUserSession(currentUser.id)?.let { existingSession ->
+            val sessionToSave = services.cacheService.getUserSession(currentUser.id)?.let { existingSession ->
                 val serverSessions = existingSession.serverSessions.toMutableMap()
                 serverSessions[serverId] = (serverSessions[serverId] ?: emptySet()) + sessionId
                 existingSession.copy(
@@ -122,7 +122,7 @@ class WebSocketHandler(
                     status = UserStatus.CONNECTED
                 ).toDomain()
             }
-            services.eventService.saveUserSession(sessionToSave)
+            services.cacheService.saveUserSession(sessionToSave)
         }
 
         joinChat(currentUser, sessionId, sessionContext)
@@ -470,7 +470,7 @@ class WebSocketHandler(
             withContext(NonCancellable) {
                 session.close()
                 // create or update session connected status
-                services.eventService.getUserSession(sessionUser.id)?.let { existingSession ->
+                services.cacheService.getUserSession(sessionUser.id)?.let { existingSession ->
                     val serverSessions = existingSession.serverSessions.toMutableMap()
                     // Remove this sessionId from the current server’s set
                     val remainingSessions = (serverSessions[serverId] ?: emptySet()) - sessionId
@@ -483,7 +483,7 @@ class WebSocketHandler(
                         ?.copy(status = UserStatus.DISCONNECTED)
                     if (serverSessions.isEmpty()) {
                         // Fully disconnected, remove from redis and publish out user disconnect
-                        services.eventService.deleteUserSession(sessionUser.id)
+                        services.cacheService.deleteUserSession(sessionUser.id)
                         if (userDisconnected != null) {
                             ServerState.userUpdateFlowMut.emit(userDisconnected)
                             services.eventService.publish(
@@ -493,7 +493,7 @@ class WebSocketHandler(
                         }
                     } else {
                         // Not fully disconnected so just update redis session list
-                        services.eventService.saveUserSession(existingSession.copy(serverSessions = serverSessions))
+                        services.cacheService.saveUserSession(existingSession.copy(serverSessions = serverSessions))
                     }
                     // remove user from local map if no sessions remain on server
                     userDisconnected?.id?.let { userId ->
@@ -618,7 +618,7 @@ class WebSocketHandler(
                         }
                     }
                     // find any other user server sessions, publish, and map to respective server subscriber
-                    services.eventService.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
+                    services.cacheService.getUserSession(dmWithData.userReceiveId)?.let { receiveUserSessions ->
                         val dmString = Json.encodeToString(dmWithData)
                         receiveUserSessions.serverSessions.keys
                             .filter { it != serverId }
