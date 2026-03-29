@@ -33,7 +33,7 @@ import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
-import com.paraiso.domain.routes.RouteResponse
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.routes.isSportRoute
 import com.paraiso.domain.users.UserFavorite
@@ -263,7 +263,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
     }
 
     override suspend fun findByBaseCriteria(
-        route: RouteResponse?,
+        route: RouteDetails?,
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,

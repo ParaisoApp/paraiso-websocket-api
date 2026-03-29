@@ -2,7 +2,7 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
-import com.paraiso.domain.routes.RouteResponse
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.UserFavorite
 import kotlinx.datetime.Instant
 
@@ -12,7 +12,7 @@ interface PostsDB {
     suspend fun findByPartial(partial: String): List<Post>
     suspend fun findByUserId(userId: String): List<Post>
     suspend fun findByBaseCriteria(
-        route: RouteResponse?,
+        route: RouteDetails?,
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,

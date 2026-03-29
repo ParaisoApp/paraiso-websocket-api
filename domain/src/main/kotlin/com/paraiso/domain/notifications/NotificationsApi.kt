@@ -10,21 +10,11 @@ class NotificationsApi(
     suspend fun findByUserId(userId: String) =
         notificationsDB.findByUserId(userId).let { notifications ->
             // map notification to basic reference post
-            val posts = postsApi.getByIdsBasic(userId, notifications.mapNotNull { it.refId }.toSet())
-            notifications.map { it.toPostResponse(posts[it.refId]) }
+            val posts = postsApi.getByIdsBasic(userId, notifications.mapNotNull { it.second }.toSet())
+            notifications.map { it.first.copy(content = PostNotificationContent(posts[it.second])) }
         }
-
-    suspend fun save(notifications: List<NotificationResponse>): Int {
-        val typedNotifs = notifications.map { notification ->
-            when (notification.type) {
-                NotificationType.POST -> {
-                    notification.toDomain(null)
-                }
-                else -> notification.toDomain(notification.content.toString())
-            }
-        }
-        return notificationsDB.save(typedNotifs)
-    }
+    suspend fun save(notifications: List<Notification>) =
+        notificationsDB.save(notifications)
     suspend fun setNotificationsRead(
         userId: String,
         type: String,

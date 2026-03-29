@@ -1,7 +1,7 @@
 package com.paraiso.api.blocks
 
 import com.paraiso.api.util.UserCookie
-import com.paraiso.domain.blocks.BlockResponse
+import com.paraiso.domain.blocks.Block
 import com.paraiso.domain.blocks.BlocksApi
 import io.ktor.server.application.call
 import io.ktor.server.routing.Route
@@ -15,7 +15,7 @@ fun Route.blocksController(blocksApi: BlocksApi) {
     route("blocks") {
         post {
             blocksApi.block(
-                BlockResponse(
+                Block(
                     blockerId = call.sessions.get<UserCookie>()?.userId ?: "",
                     blockeeId = call.request.queryParameters["blockeeId"] ?: "",
                     blocking = call.request.queryParameters["blocking"]?.toBoolean() == true

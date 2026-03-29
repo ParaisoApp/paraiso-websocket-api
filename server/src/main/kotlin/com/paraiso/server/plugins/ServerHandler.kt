@@ -30,6 +30,8 @@ class ServerHandler(
                         title = "${SiteRoute.HOME}",
                         userFavorites = 0,
                         about = null,
+                        pinnedPostIds = emptyList(),
+                        pinnedPosts = emptyMap(),
                         createdOn = now,
                         updatedOn = now
                     ),
@@ -40,6 +42,8 @@ class ServerHandler(
                         title = "${SiteRoute.FAVORITES}",
                         userFavorites = 0,
                         about = null,
+                        pinnedPostIds = emptyList(),
+                        pinnedPosts = emptyMap(),
                         createdOn = now,
                         updatedOn = now
                     ),
@@ -50,6 +54,8 @@ class ServerHandler(
                         title = "${SiteRoute.FOOTBALL}",
                         userFavorites = 0,
                         about = null,
+                        pinnedPostIds = emptyList(),
+                        pinnedPosts = emptyMap(),
                         createdOn = now,
                         updatedOn = now
                     ),
@@ -60,6 +66,8 @@ class ServerHandler(
                         title = "${SiteRoute.BASKETBALL}",
                         userFavorites = 0,
                         about = null,
+                        pinnedPostIds = emptyList(),
+                        pinnedPosts = emptyMap(),
                         createdOn = now,
                         updatedOn = now
                     ),
@@ -70,6 +78,8 @@ class ServerHandler(
                         title = "${SiteRoute.HOCKEY}",
                         userFavorites = 0,
                         about = null,
+                        pinnedPostIds = emptyList(),
+                        pinnedPosts = emptyMap(),
                         createdOn = now,
                         updatedOn = now
                     )

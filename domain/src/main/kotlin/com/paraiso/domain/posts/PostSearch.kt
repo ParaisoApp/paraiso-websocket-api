@@ -1,7 +1,7 @@
 package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
-import com.paraiso.domain.routes.RouteResponse
+import com.paraiso.domain.routes.RouteDetails
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -33,14 +33,14 @@ data class InitSearch(
 
 @Serializable
 data class PostSearchRequest(
-    val route: RouteResponse,
+    val route: RouteDetails,
     val postsDisplayOps: DisplayOps,
     val sessionId: String
 )
 
 @Serializable
 data class PostSearch(
-    val route: RouteResponse,
+    val route: RouteDetails,
     val postsDisplayOps: DisplayOps,
     val userId: String,
     val sessionId: String

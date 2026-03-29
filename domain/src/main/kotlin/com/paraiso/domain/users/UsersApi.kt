@@ -2,7 +2,7 @@ package com.paraiso.domain.users
 
 import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.auth.AuthIdResponse
-import com.paraiso.domain.follows.FollowResponse
+import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
@@ -60,7 +60,7 @@ class UsersApi(
     suspend fun addReport() =
         usersDB.addReport()
 
-    suspend fun follow(follow: FollowResponse) = coroutineScope {
+    suspend fun follow(follow: Follow) = coroutineScope {
         // add follower to followers list of followee user
         launch {
             usersDB.findById(follow.followeeId)?.let { followee ->

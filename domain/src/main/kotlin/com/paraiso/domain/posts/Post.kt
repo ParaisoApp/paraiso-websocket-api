@@ -1,7 +1,6 @@
 package com.paraiso.domain.posts
 
 import com.paraiso.domain.routes.RouteDetails
-import com.paraiso.domain.routes.RouteResponse
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer

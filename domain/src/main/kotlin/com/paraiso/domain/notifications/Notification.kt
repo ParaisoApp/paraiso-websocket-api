@@ -9,22 +9,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Notification(
-    @SerialName(ID) val id: String?,
-    val userId: String,
-    val createUserId: String?,
-    val refId: String?,
-    val replyId: String?,
-    val content: String?,
-    val type: NotificationType,
-    val userRead: Boolean,
-    @Serializable(with = InstantBsonSerializer::class)
-    val createdOn: Instant?,
-    @Serializable(with = InstantBsonSerializer::class)
-    val updatedOn: Instant?
-)
-
-@Serializable
-data class NotificationResponse(
     val id: String?,
     val userId: String,
     val createUserId: String?,
@@ -68,29 +52,3 @@ enum class NotificationType {
     @SerialName("VOTE")
     VOTE
 }
-
-fun NotificationResponse.toDomain(stringContent: String?) = Notification(
-    id = id ?: "$userId-$createUserId-$refId-$replyId",
-    userId = userId,
-    createUserId = createUserId,
-    refId = refId,
-    replyId = replyId,
-    content = stringContent,
-    type = type,
-    userRead = userRead,
-    createdOn = createdOn,
-    updatedOn = updatedOn
-)
-
-fun Notification.toPostResponse(refContent: PostResponse?) = NotificationResponse(
-    id = id,
-    userId = userId,
-    createUserId = createUserId,
-    refId = refId,
-    replyId = replyId,
-    content = PostNotificationContent(refContent),
-    type = type,
-    userRead = userRead,
-    createdOn = createdOn,
-    updatedOn = updatedOn
-)

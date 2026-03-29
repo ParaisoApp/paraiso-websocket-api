@@ -97,6 +97,8 @@ class SportHandler(
                 title = it.displayName,
                 userFavorites = 0,
                 about = null,
+                pinnedPostIds = emptyList(),
+                pinnedPosts = emptyMap(),
                 createdOn = now,
                 updatedOn = now
             )

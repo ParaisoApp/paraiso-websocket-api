@@ -8,11 +8,13 @@ import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.notifications.Notification
+import com.paraiso.domain.notifications.Notification as NotificationDomain
 import com.paraiso.domain.notifications.NotificationsDB
+import com.paraiso.domain.notifications.PostNotificationContent
 import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -30,15 +32,20 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB {
                     eq(Notification::userId.name, userId),
                     eq(Notification::createUserId.name, userId)
                 )
-            ).toList()
+            ).map { Pair(it.toDomain(), it.content) }.toList()
         }
 
-    override suspend fun save(notifications: List<Notification>) =
+    override suspend fun save(notifications: List<NotificationDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = notifications.map { notification ->
+                val parsedContent = when(val content = notification.content){
+                    is PostNotificationContent -> content.post?.id
+                    else -> content.toString()
+                }
+                val entity = notification.toEntity(parsedContent)
                 ReplaceOneModel(
-                    eq(ID, notification.id),
-                    notification,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

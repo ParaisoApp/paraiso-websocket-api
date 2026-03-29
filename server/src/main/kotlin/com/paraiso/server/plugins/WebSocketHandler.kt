@@ -13,7 +13,7 @@ import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.init
-import com.paraiso.domain.notifications.NotificationResponse
+import com.paraiso.domain.notifications.Notification
 import com.paraiso.domain.notifications.NotificationType
 import com.paraiso.domain.posts.PostPin
 import com.paraiso.domain.posts.PostPinResponse
@@ -96,6 +96,8 @@ class WebSocketHandler(
                             title = currentUser.name ?: "UNKNOWN",
                             userFavorites = 0,
                             about = null,
+                            pinnedPostIds = emptyList(),
+                            pinnedPosts = emptyMap(),
                             createdOn = now,
                             updatedOn = now
                         )
@@ -521,7 +523,7 @@ class WebSocketHandler(
             } else {
                 NotificationType.MENTION
             }
-            NotificationResponse(
+            Notification(
                 id = "$userReceiveId-${sessionUser.id}-$messageId-${message.replyId}",
                 userId = userReceiveId,
                 createUserId = sessionUser.id,

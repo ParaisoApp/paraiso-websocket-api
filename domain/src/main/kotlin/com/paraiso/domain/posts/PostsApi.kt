@@ -8,7 +8,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
-import com.paraiso.domain.routes.RouteResponse
+import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.CompetitionResponse
 import com.paraiso.domain.sport.data.TeamResponse
@@ -333,5 +333,5 @@ data class InitRouteData(
     val postsData: PostsData,
     val contentData: PostsData?,
     val users: Map<String, UserResponse>,
-    val route: RouteResponse
+    val route: RouteDetails
 )
