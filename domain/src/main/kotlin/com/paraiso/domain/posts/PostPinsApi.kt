@@ -5,8 +5,8 @@ class PostPinsApi(
 ) {
     suspend fun findByRouteId(routeId: String) =
         postPinsDB.findByRouteId(routeId)
-    suspend fun save(postPin: PostPinResponse) =
-        postPinsDB.save(listOf(postPin.toEntity()))
+    suspend fun save(postPin: PostPin) =
+        postPinsDB.save(listOf(postPin))
     suspend fun delete(id: String) =
         postPinsDB.delete(id)
 }

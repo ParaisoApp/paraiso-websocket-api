@@ -3,7 +3,7 @@ package com.paraiso.domain.posts
 interface PostPinsDB {
     suspend fun findByRouteId(
         routeId: String
-    ): List<PostPin>
+    ): List<Pair<PostPin, String?>>
     suspend fun save(
         postPins: List<PostPin>
     ): Int
