@@ -23,11 +23,10 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserSessionResponse
+import com.paraiso.domain.users.UserSession
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.ViewerContext
 import com.paraiso.domain.users.toBasicResponse
-import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.USER_PREFIX
 import com.paraiso.domain.util.ServerState
@@ -115,12 +114,12 @@ class WebSocketHandler(
                     serverSessions = serverSessions
                 )
             } ?: run {
-                UserSessionResponse(
+                UserSession(
                     id = UUID.randomUUID().toString(),
                     userId = currentUser.id,
                     serverSessions = mapOf(serverId to setOf(sessionId)),
                     status = UserStatus.CONNECTED
-                ).toDomain()
+                )
             }
             services.cacheService.saveUserSession(sessionToSave)
         }

@@ -1,7 +1,7 @@
 package com.paraiso.cache
 
 import com.paraiso.domain.users.CacheService
-import com.paraiso.domain.users.UserSession
+import com.paraiso.domain.users.UserSession as UserSessionDomain
 import io.klogging.Klogging
 import io.lettuce.core.KeyScanCursor
 import io.lettuce.core.RedisClient
@@ -52,18 +52,18 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
         ).await()
     }
 
-    override suspend fun saveUserSession(userSession: UserSession): String =
+    override suspend fun saveUserSession(userSession: UserSessionDomain): String =
         withContext(Dispatchers.IO) {
             commands.set(
                 "user:session:${userSession.userId}",
-                Json.encodeToString(userSession)
+                Json.encodeToString(userSession.toEntity())
             ).await()
         }
-    override suspend fun getUserSession(userId: String): UserSession? =
+    override suspend fun getUserSession(userId: String): UserSessionDomain? =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 commands.get("user:session:$userId")?.await()?.let {
-                    Json.decodeFromString<UserSession>(it)
+                    Json.decodeFromString<UserSession>(it).toDomain()
                 }
             } catch (e: SerializationException) {
                 logger.error { e }
@@ -76,8 +76,8 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
             commands.del("user:session:$userId").await()
         }
 
-    override suspend fun getAllActiveUsers(): List<UserSession> {
-        val activeSessions = mutableListOf<UserSession>()
+    override suspend fun getAllActiveUsers(): List<UserSessionDomain> {
+        val activeSessions = mutableListOf<UserSessionDomain>()
         var cursor = KeyScanCursor.INITIAL
         val scanArgs = ScanArgs.Builder.matches("user:session:*")
 
@@ -87,7 +87,7 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
                 try {
                     Json.decodeFromString<UserSession>(
                         commands.get(key).await()
-                    )
+                    ).toDomain()
                 } catch (e: SerializationException) {
                     logger.error { e }
                     null
