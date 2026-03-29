@@ -6,11 +6,16 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.sport.data.Team
+import com.paraiso.database.sports.data.Team
+import com.paraiso.database.sports.data.toDomain
+import com.paraiso.database.sports.data.toEntity
+import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.Team as TeamDomain
 import com.paraiso.domain.sport.interfaces.TeamsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
@@ -19,7 +24,7 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()
+            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
         }
 
     override suspend fun findBySportAndTeamId(sport: String, teamId: String) =
@@ -29,14 +34,14 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
                     eq(Team::sport.name, sport),
                     eq(Team::teamId.name, teamId)
                 )
-            ).limit(1).firstOrNull()
+            ).limit(1).firstOrNull()?.toDomain()
         }
 
-    override suspend fun findByIds(ids: Set<String>): List<Team> =
+    override suspend fun findByIds(ids: Set<String>) =
         withContext(Dispatchers.IO) {
             collection.find(
                 `in`(ID, ids)
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
     override suspend fun findBySportAndAbbr(sport: String, abbr: String) =
@@ -46,20 +51,21 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
                     eq(Team::sport.name, sport),
                     eq(Team::abbreviation.name, abbr)
                 )
-            ).limit(1).firstOrNull()
+            ).limit(1).firstOrNull()?.toDomain()
         }
 
     override suspend fun findBySport(sport: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(Team::sport.name, sport)).toList()
+            collection.find(eq(Team::sport.name, sport)).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(teams: List<Team>) =
+    override suspend fun save(teams: List<TeamDomain>, sport: SiteRoute) =
         withContext(Dispatchers.IO) {
             val bulkOps = teams.map { team ->
+                val entity = team.toEntity(sport)
                 ReplaceOneModel(
-                    eq(ID, team.id),
-                    team,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

@@ -1,5 +1,6 @@
 package com.paraiso.domain.sport.interfaces
 
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Team
 
 interface TeamsDB {
@@ -8,5 +9,5 @@ interface TeamsDB {
     suspend fun findByIds(ids: Set<String>): List<Team>
     suspend fun findBySportAndAbbr(sport: String, abbr: String): Team?
     suspend fun findBySport(sport: String): List<Team>
-    suspend fun save(teams: List<Team>): Int
+    suspend fun save(teams: List<Team>, sport: SiteRoute): Int
 }

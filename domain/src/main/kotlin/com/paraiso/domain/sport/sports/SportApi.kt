@@ -25,10 +25,10 @@ class SportApi(private val sportDBs: SportDBs) {
         const val UNKNOWN = 0
     }
     suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
-    suspend fun findTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)?.toResponse()
-    suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).map { it.toResponse() }.associateBy { it.id }
-    suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)?.toResponse()
-    suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids).map { it.toResponse() }
+    suspend fun findTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)
+    suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).associateBy { it.id }
+    suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)
+    suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids)
     suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
     suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids).map { it.toResponse() }
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()

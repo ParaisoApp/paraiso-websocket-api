@@ -83,7 +83,7 @@ class SportHandler(
                 launch {
                     addTeamRoutes(sport, teamsRes)
                 }
-                sportDBs.teamsDB.save(teamsRes)
+                sportDBs.teamsDB.save(teamsRes, sport)
             }
         }
     }

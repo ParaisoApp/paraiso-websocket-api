@@ -11,7 +11,7 @@ import com.paraiso.domain.messageTypes.toNewPost
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.CompetitionResponse
-import com.paraiso.domain.sport.data.TeamResponse
+import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.CacheService
 import com.paraiso.domain.users.EventService
@@ -326,7 +326,7 @@ class PostsApi(
 @Serializable
 data class PostsData(
     val posts: MutableMap<String, Post>,
-    val teams: Map<String, TeamResponse>,
+    val teams: Map<String, Team>,
     val competitions: Map<String, CompetitionResponse>
 )
 

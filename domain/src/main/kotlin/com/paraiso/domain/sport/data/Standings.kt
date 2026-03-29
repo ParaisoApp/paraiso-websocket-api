@@ -43,7 +43,7 @@ data class StandingsStat(
 @Serializable
 data class StandingsResponse(
     val teamId: String,
-    val team: TeamResponse?,
+    val team: Team?,
     val seed: Int,
     val confName: String,
     val confAbbr: String,
@@ -85,7 +85,7 @@ fun Standings.toResponse(
     )
     return StandingsResponse(
         teamId = teamId,
-        team = team?.toResponse(),
+        team = team,
         seed = mappedResponse["POS"]?.displayValue?.toIntOrNull() ?: 0,
         confName = confName,
         confAbbr = confAbbr,
