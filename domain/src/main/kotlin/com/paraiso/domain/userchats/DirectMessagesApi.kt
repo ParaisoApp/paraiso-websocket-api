@@ -5,9 +5,9 @@ class DirectMessagesApi(
 ) {
 
     suspend fun findByIdIn(ids: List<String>) =
-        directMessagesDB.findByIdIn(ids).map { it.toResponse() }
+        directMessagesDB.findByIdIn(ids)
     suspend fun findByChatId(chatId: String, userId: String) =
-        directMessagesDB.findByChatId(chatId, userId).map { it.toResponse() }
-    suspend fun save(dm: DirectMessageResponse) =
-        directMessagesDB.save(listOf(dm.toDomain()))
+        directMessagesDB.findByChatId(chatId, userId)
+    suspend fun save(dm: DirectMessage) =
+        directMessagesDB.save(listOf(dm))
 }

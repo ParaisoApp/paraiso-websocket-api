@@ -8,35 +8,37 @@ class UserChatsApi(
     private val directMessagesApi: DirectMessagesApi
 ) {
 
-    suspend fun getOrPutUserChat(userId: String, otherUserId: String): UserChatResponse {
-        val chat = userChatsDB.findByUserIds(userId, otherUserId) ?: run {
+    suspend fun getOrPutUserChat(userId: String, otherUserId: String): UserChat {
+        val chat = userChatsDB.findByUserIds(userId, otherUserId)
+        if(chat != null){
+            val dms = directMessagesApi.findByChatId(chat.id, userId)
+            return chat.copy(dms = dms)
+        }else{
             val now = Clock.System.now()
             UUID.randomUUID().toString().let { newChatId ->
                 val newUserChat = UserChat(
                     id = newChatId,
-                    userIds = setOf(userId, otherUserId),
-                    recentDm = null,
+                    userIds = mapOf(userId to true, otherUserId to true),
+                    dms = emptyList(),
                     createdOn = now,
                     updatedOn = now
                 )
                 userChatsDB.save(listOf(newUserChat))
-                newUserChat
+                return newUserChat
             }
         }
-        val dms = directMessagesApi.findByChatId(chat.id, userId)
-        return chat.toResponse(dms)
     }
 
     suspend fun findByUserId(userId: String) =
         userChatsDB.findByUserId(userId).let { userChats ->
-            val recentDms = directMessagesApi.findByIdIn(userChats.mapNotNull { it.recentDm }).associateBy {
+            val recentDms = directMessagesApi.findByIdIn(userChats.mapNotNull { it.second }).associateBy {
                 it.id
             }
             userChats.map {
-                val dms = recentDms[it.recentDm]?.let { recentDm ->
+                val dms = recentDms[it.second]?.let { recentDm ->
                     listOf(recentDm)
                 } ?: emptyList()
-                it.toResponse(dms)
+                it.first.copy(dms = dms)
             }
         }
 

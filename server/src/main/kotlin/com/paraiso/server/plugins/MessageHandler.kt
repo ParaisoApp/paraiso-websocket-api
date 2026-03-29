@@ -18,7 +18,7 @@ import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.sports.SportState
-import com.paraiso.domain.userchats.DirectMessageResponse
+import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.util.ServerState
@@ -74,7 +74,7 @@ class MessageHandler(
                                     }
                                 }
                                 MessageType.DM.name -> {
-                                    decodeMessage<DirectMessageResponse>(payload)?.let { dm ->
+                                    decodeMessage<DirectMessage>(payload)?.let { dm ->
                                         userSessions[dm.userReceiveId]?.map { it.value.session }?.forEach { session ->
                                             session.sendTypedMessage(MessageType.DM, dm)
                                         }

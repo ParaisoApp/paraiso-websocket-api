@@ -3,18 +3,15 @@ package com.paraiso.database.userchats
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
-import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.Updates.inc
-import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.userchats.DirectMessage
+import com.paraiso.domain.userchats.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.userchats.DirectMessagesDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
@@ -29,13 +26,13 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB {
                     and(
                         eq(ID, ids.firstOrNull())
                     )
-                ).toList()
+                ).map { it.toDomain() }.toList()
             } else {
                 collection.find(
                     and(
                         `in`(ID, ids)
                     )
-                ).toList()
+                ).map { it.toDomain() }.toList()
             }
         }
     override suspend fun findByChatId(chatId: String, userId: String) =
@@ -48,15 +45,16 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB {
                         eq(DirectMessage::userReceiveId.name, userId),
                     )
                 )
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(dms: List<DirectMessage>) =
+    override suspend fun save(dms: List<DirectMessageDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = dms.map { dm ->
+                val entity = dm.toEntity()
                 ReplaceOneModel(
-                    eq(ID, dm.id),
-                    dm,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

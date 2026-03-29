@@ -21,7 +21,7 @@ import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.userchats.DirectMessageResponse
+import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.users.UserResponse
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
@@ -273,7 +273,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.DM -> {
-                        converter?.cleanAndType<TypeMapping<DirectMessageResponse>>(frame)
+                        converter?.cleanAndType<TypeMapping<DirectMessage>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
                                 handleDm(dm, sessionUser)
                             }
@@ -576,7 +576,7 @@ class WebSocketHandler(
         }
     }
     private suspend fun WebSocketServerSession.handleDm(
-        dm: DirectMessageResponse,
+        dm: DirectMessage,
         sessionUser: UserResponse
     ) = coroutineScope {
         dm.copy(
