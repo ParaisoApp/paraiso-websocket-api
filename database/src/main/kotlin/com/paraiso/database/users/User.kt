@@ -1,14 +1,13 @@
 package com.paraiso.database.users
 
-import com.paraiso.domain.auth.AuthId
-import com.paraiso.domain.users.Location
 import com.paraiso.domain.users.User as UserDomain
+import com.paraiso.domain.auth.AuthId as AuthIdDomain
 import com.paraiso.domain.users.UserFavorite as UserFavoriteDomain
 import com.paraiso.domain.users.UserImage as UserImageDomain
 import com.paraiso.domain.users.UserSettings as UserSettingsDomain
+import com.paraiso.domain.users.Location as LocationDomain
+import com.paraiso.domain.users.Country as CountryDomain
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserStatus
-import com.paraiso.domain.users.ViewerContext
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
@@ -43,8 +42,16 @@ data class User(
     val createdOn: Instant,
     @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
-) { companion object }
-
+)
+@Serializable
+data class AuthId(
+    val id: String,
+    val connection: String,
+    val provider: String,
+    val email: String,
+    val name: String?,
+    val picture: String?
+)
 @Serializable
 data class UserSettings(
     val theme: Int,
@@ -59,16 +66,14 @@ data class UserSettings(
     val showLocation: Boolean,
     val showBirthday: Boolean,
     val hidden: Boolean
-) { companion object }
-
+)
 @Serializable
 data class UserImage(
     val url: String?,
     val posX: Int,
     val posY: Int,
     val scale: Float
-) { companion object }
-
+)
 @Serializable
 data class UserFavorite(
     val routeId: String,
@@ -78,12 +83,22 @@ data class UserFavorite(
     val favorite: Boolean,
     val icon: String?
 )
-
 @Serializable
 data class ViewerContext(
     val following: Boolean?,
     val blocking: Boolean?
 )
+@Serializable
+data class Location(
+    val city: String?,
+    val state: String?,
+    val country: Country?
+) { companion object }
+@Serializable
+data class Country(
+    val name: String?,
+    val code: String?
+) { companion object }
 
 fun UserDomain.toEntity() = User(
     id = id,
@@ -92,7 +107,7 @@ fun UserDomain.toEntity() = User(
     fullName = fullName,
     email = email,
     about = about,
-    location = location,
+    location = location?.toEntity(),
     birthday = birthday,
     replies = replies,
     score = score,
@@ -111,6 +126,16 @@ fun UserDomain.toEntity() = User(
     createdOn = createdOn,
     updatedOn = updatedOn
 )
+
+fun AuthIdDomain.toEntity() =
+    AuthId(
+        id = id,
+        connection = connection,
+        provider = provider,
+        email = email,
+        name = name,
+        picture = picture,
+    )
 
 fun UserFavoriteDomain.toEntity() = UserFavorite(
     routeId = routeId,
@@ -143,13 +168,24 @@ fun UserSettingsDomain.toEntity() = UserSettings(
     hidden = hidden,
 )
 
+fun LocationDomain.toEntity() = Location(
+    city = city,
+    state = state,
+    country = country?.toEntity(),
+)
+
+fun CountryDomain.toEntity() = Country(
+    name = name,
+    code = code,
+)
+
 fun User.toDomain() = UserDomain(
     id = id,
     name = name,
     fullName = fullName,
     email = email,
     about = about,
-    location = location,
+    location = location?.toDomain(),
     birthday = birthday,
     replies = replies,
     score = score,
@@ -201,4 +237,15 @@ fun UserSettings.toDomain() = UserSettingsDomain(
     showLocation = showLocation,
     showBirthday = showBirthday,
     hidden = hidden,
+)
+
+fun Location.toDomain() = LocationDomain(
+    city = city,
+    state = state,
+    country = country?.toDomain(),
+)
+
+fun Country.toDomain() = CountryDomain(
+    name = name,
+    code = code,
 )

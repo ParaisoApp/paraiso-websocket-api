@@ -1,7 +1,6 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.auth.AuthId
-import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.RoleUpdate
@@ -65,7 +64,7 @@ interface UsersDB {
     ): Long
 
     suspend fun syncUserAuth(
-        authId: AuthIdResponse
+        authId: AuthId
     ): Long
 
     suspend fun setUserRole(

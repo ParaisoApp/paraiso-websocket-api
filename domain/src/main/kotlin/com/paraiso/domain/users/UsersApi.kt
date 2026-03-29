@@ -1,7 +1,6 @@
 package com.paraiso.domain.users
 
 import com.paraiso.domain.auth.AuthId
-import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.follows.Follow
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.RoleUpdate
@@ -19,7 +18,7 @@ class UsersApi(
         usersDB.findUserByAuthId(authId)
     suspend fun saveUser(user: User) =
         usersDB.save(listOf(user))
-    suspend fun syncUser(authId: AuthIdResponse) =
+    suspend fun syncUser(authId: AuthId) =
         usersDB.syncUserAuth(authId)
     suspend fun setUserRole(roleUpdate: RoleUpdate) =
         usersDB.setUserRole(roleUpdate)

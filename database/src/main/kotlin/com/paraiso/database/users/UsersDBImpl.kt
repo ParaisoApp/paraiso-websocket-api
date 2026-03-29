@@ -14,8 +14,7 @@ import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.auth.AuthIdResponse
-import com.paraiso.domain.auth.toEntity
+import com.paraiso.domain.auth.AuthId as AuthIdDomain
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.RoleUpdate
@@ -308,7 +307,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
             ).modifiedCount
         }
 
-    override suspend fun syncUserAuth(authId: AuthIdResponse): Long  =
+    override suspend fun syncUserAuth(authId: AuthIdDomain): Long  =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, authId.userId),

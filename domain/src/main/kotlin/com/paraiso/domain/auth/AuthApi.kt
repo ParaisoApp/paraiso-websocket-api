@@ -12,7 +12,7 @@ class AuthApi(
     private val cacheService: CacheService
 ) {
     // link user to guest account that already exists on new
-    suspend fun syncUser(authId: AuthIdResponse) =
+    suspend fun syncUser(authId: AuthId) =
         // check if user already created with this authId, otherwise use passed in ID
         usersApi.findUserByAuthId(authId.id).let { user ->
             if(user == null){
