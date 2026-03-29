@@ -7,7 +7,7 @@ import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.routes.RouteDetails as RouteDetailsDomain
 import com.paraiso.domain.routes.RoutesDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
@@ -22,15 +22,16 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
+            collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
         }
 
-    override suspend fun save(routes: List<RouteDetails>) =
+    override suspend fun save(routes: List<RouteDetailsDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = routes.map { route ->
+                val entity = route.toEntity()
                 ReplaceOneModel(
-                    Filters.eq(ID, route.id),
-                    route,
+                    Filters.eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

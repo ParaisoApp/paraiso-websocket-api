@@ -9,20 +9,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RouteDetails(
-    @SerialName(ID) val id: String,
-    val route: SiteRoute,
-    val modifier: String?,
-    val title: String,
-    val userFavorites: Int,
-    val about: String?,
-    @Serializable(with = InstantBsonSerializer::class)
-    val createdOn: Instant?,
-    @Serializable(with = InstantBsonSerializer::class)
-    val updatedOn: Instant?
-)
-
-@Serializable
-data class RouteResponse(
     val id: String,
     val route: SiteRoute,
     val modifier: String?,
@@ -93,18 +79,5 @@ enum class SiteRoute {
     @SerialName("GOLF")
     GOLF
 }
-fun RouteDetails.toResponse(pinnedPostIds: List<String>, pinnedPosts: Map<String, PostResponse>) =
-    RouteResponse(
-        id = id,
-        route = route,
-        modifier = modifier,
-        title = title,
-        userFavorites = userFavorites,
-        about = about,
-        pinnedPostIds = pinnedPostIds,
-        pinnedPosts = pinnedPosts,
-        createdOn = createdOn,
-        updatedOn = updatedOn
-    )
 
 fun isSportRoute(route: String) = route == SiteRoute.FOOTBALL.name || route == SiteRoute.BASKETBALL.name || route == SiteRoute.HOCKEY.name
