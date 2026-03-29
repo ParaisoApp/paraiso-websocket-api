@@ -19,7 +19,7 @@ class UserSessionsApi(
         } else {
             UserStatus.CONNECTED
         }
-    suspend fun getUserById(userId: String, curUserId: String?) = coroutineScope {
+    suspend fun getUserById(userId: String, curUserId: String?, fullInfo: Boolean) = coroutineScope {
         eventService.getUserSession(userId).let { session ->
             val follows = async {
                 if (curUserId != null) {
@@ -36,29 +36,30 @@ class UserSessionsApi(
                 }
             }
             usersDB.findById(userId)?.let {
-                it.toBasicResponse(
-                    getStatus(session, it.settings.hidden),
-                    ViewerContext(
+                val user = it.copy(
+                    status = getStatus(session, it.settings.hidden),
+                    viewerContext = ViewerContext(
                         follows.await()?.following,
                         blocks.await()?.blocking
                     )
                 )
+                if(fullInfo) user else user.toBasicResponse()
             }
         }
     }
 
-    suspend fun getUserByName(userName: String, curUserId: String): UserResponse? = coroutineScope {
+    suspend fun getUserByName(userName: String, curUserId: String): User? = coroutineScope {
         usersDB.findByName(userName)?.let { user ->
             val follows = async { followsApi.findIn(curUserId, listOf(user.id)).firstOrNull() }
             val blocks = async { blocksApi.findIn(curUserId, listOf(user.id)).firstOrNull() }
             eventService.getUserSession(user.id).let { session ->
-                user.toBasicResponse(
-                    getStatus(session, user.settings.hidden),
-                    ViewerContext(
+                user.copy(
+                    status = getStatus(session, user.settings.hidden),
+                    viewerContext = ViewerContext(
                         follows.await()?.following,
                         blocks.await()?.blocking
                     )
-                )
+                ).toBasicResponse()
             }
         }
     }
@@ -73,13 +74,13 @@ class UserSessionsApi(
             val blocks = async { blocksApi.findIn(curUserId, userIds).associateBy { it.blockeeId } }
             users.map { user ->
                 eventService.getUserSession(user.id).let { session ->
-                    user.toBasicResponse(
-                        getStatus(session, user.settings.hidden),
-                        ViewerContext(
+                    user.copy(
+                        status = getStatus(session, user.settings.hidden),
+                        viewerContext = ViewerContext(
                             follows.await()[user.id]?.following,
                             blocks.await()[user.id]?.blocking
                         )
-                    )
+                    ).toBasicResponse()
                 }
             }
         }
@@ -92,13 +93,13 @@ class UserSessionsApi(
                 val blocks = async { blocksApi.findIn(userId, followeeIds).associateBy { it.blockeeId } }
                 followees.associate { user ->
                     eventService.getUserSession(user.id).let { session ->
-                        user.id to user.toBasicResponse(
-                            getStatus(session, user.settings.hidden),
-                            ViewerContext(
+                        user.id to user.copy(
+                            status = getStatus(session, user.settings.hidden),
+                            viewerContext = ViewerContext(
                                 true,
                                 blocks.await()[user.id]?.blocking
                             )
-                        )
+                        ).toBasicResponse()
                     }
                 }
             }
@@ -112,13 +113,13 @@ class UserSessionsApi(
                 val blocks = async { blocksApi.findIn(userId, followerIds).associateBy { it.blockeeId } }
                 followers.associate { user ->
                     eventService.getUserSession(user.id).let { session ->
-                        user.id to user.toBasicResponse(
-                            getStatus(session, user.settings.hidden),
-                            ViewerContext(
+                        user.id to user.copy(
+                            status = getStatus(session, user.settings.hidden),
+                            viewerContext = ViewerContext(
                                 follows.await()[user.id]?.following,
                                 blocks.await()[user.id]?.blocking
                             )
-                        )
+                        ).toBasicResponse()
                     }
                 }
             }
@@ -134,13 +135,13 @@ class UserSessionsApi(
                     val blocks = async { blocksApi.findIn(userId, userIds).associateBy { it.blockeeId } }
                     userList.associate {
                             user ->
-                        user.id to user.toBasicResponse(
-                            UserStatus.CONNECTED,
-                            ViewerContext(
+                        user.id to user.copy(
+                            status = UserStatus.CONNECTED,
+                            viewerContext = ViewerContext(
                                 follows[user.id]?.following,
                                 blocks.await()[user.id]?.blocking
                             )
-                        )
+                        ).toBasicResponse()
                     }
                 }
         }

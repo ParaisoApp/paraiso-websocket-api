@@ -1,7 +1,5 @@
 package com.paraiso.domain.auth
 
-import com.paraiso.domain.users.UserResponse
-import com.paraiso.domain.users.UserRole
 import kotlinx.serialization.Serializable
 
 @Serializable

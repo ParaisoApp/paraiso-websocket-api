@@ -24,6 +24,7 @@ interface UsersDB {
     suspend fun save(users: List<User>): Int
     suspend fun addMentions(id: String): String?
     suspend fun addMentionsByName(name: String): String?
+    suspend fun updateUser(user: User): Long
     suspend fun setSettings(id: String, settings: UserSettings): Long
     suspend fun markNotifsRead(
         id: String

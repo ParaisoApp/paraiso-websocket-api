@@ -17,8 +17,8 @@ class UsersApi(
 ) {
     suspend fun findUserByAuthId(authId: String) =
         usersDB.findUserByAuthId(authId)
-    suspend fun saveUser(user: UserResponse) =
-        usersDB.save(listOf(user.toUser()))
+    suspend fun saveUser(user: User) =
+        usersDB.save(listOf(user))
     suspend fun syncUser(authId: AuthIdResponse) =
         usersDB.syncUserAuth(authId)
     suspend fun setUserRole(roleUpdate: RoleUpdate) =
@@ -47,6 +47,9 @@ class UsersApi(
         }
         userIds.toSet()
     }
+
+    suspend fun updateUser(user: User) =
+        usersDB.updateUser(user)
 
     suspend fun setSettings(userId: String, settings: UserSettings) =
         usersDB.setSettings(userId, settings)

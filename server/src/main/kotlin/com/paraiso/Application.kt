@@ -59,9 +59,7 @@ import com.paraiso.domain.sport.sports.SportDBs
 import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.domain.userchats.DirectMessagesApi
 import com.paraiso.domain.userchats.UserChatsApi
-import com.paraiso.domain.users.UserResponse
-import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserSession
+import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
@@ -257,7 +255,7 @@ fun Application.module(jobScope: CoroutineScope) {
     )
     if (autoBuild) {
         runBlocking {
-            usersApi.saveUser(UserResponse.systemUser())
+            usersApi.saveUser(User.systemUser())
         }
     }
     configureSockets(config, handler, services, serverHandler, sportHandler)
@@ -276,7 +274,7 @@ fun Application.configureSockets(
 ) {
     configureFeatures(config)
     configureSecurity(config)
-    val userKey = AttributeKey<UserResponse>("UserKey")
+    val userKey = AttributeKey<User>("UserKey")
     val isNewKey = AttributeKey<Boolean>("IsNewKey")
     routing {
         route("/chat") {
@@ -288,10 +286,11 @@ fun Application.configureSockets(
                 val resolvedUserId = ticketedUserId ?: userCookie?.userId
                 // check if user already exists based on user or passed in id
                 val existingUser = resolvedUserId?.let{
-                    services.userSessionsApi.getUserById(it, null) // only need basic user info for session
+                    //need to fetch full user info
+                    services.userSessionsApi.getUserById(it, null, true)
                 }
                 val (currentUser, isNewUser) = if(existingUser == null){
-                    UserResponse.newUser(UUID.randomUUID().toString()) to true
+                    User.newUser(UUID.randomUUID().toString()) to true
                 } else {
                     existingUser to false
                 }

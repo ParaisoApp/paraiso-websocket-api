@@ -14,21 +14,21 @@ import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.auth.AuthId
 import com.paraiso.domain.auth.AuthIdResponse
 import com.paraiso.domain.auth.toEntity
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.users.User
-import com.paraiso.domain.users.UserFavorite
+import com.paraiso.domain.users.User as UserDomain
+import com.paraiso.domain.users.UserFavorite as UserFavoriteDomain
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserSettings
+import com.paraiso.domain.users.UserSettings as UserSettingsDomain
 import com.paraiso.domain.users.UsersDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -45,16 +45,16 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()
+            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
         }
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(`in`(ID, ids)).toList()
+            collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
         }
 
     override suspend fun findByName(name: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(User::name.name, name)).limit(1).firstOrNull()
+            collection.find(eq(User::name.name, name)).limit(1).firstOrNull()?.toDomain()
         }
 
     override suspend fun existsByName(name: String) =
@@ -68,12 +68,13 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         withContext(Dispatchers.IO) {
             collection.find(regex(User::name.name, partial, "i"))
                 .limit(PARTIAL_RETRIEVE_LIM)
+                .map { it.toDomain() }
                 .toList()
         }
 
     override suspend fun findUserByAuthId(authId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq("${User::authIds.name}.id", authId)).limit(1).firstOrNull()
+            collection.find(eq("${User::authIds.name}.id", authId)).limit(1).firstOrNull()?.toDomain()
         }
 
     override suspend fun getUserList(
@@ -93,15 +94,16 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                         )
                     )
                 )
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(users: List<User>) =
+    override suspend fun save(users: List<UserDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = users.map { user ->
+                val entity = user.toEntity()
                 ReplaceOneModel(
-                    eq(ID, user.id),
-                    user,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
@@ -130,12 +132,32 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
                 FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
             )?.id
         }
-    override suspend fun setSettings(id: String, settings: UserSettings) =
+    override suspend fun updateUser(user: UserDomain) =
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                eq(ID, user.id),
+                combine(
+                    set(User::name.name, user.name),
+                    set(User::fullName.name, user.fullName),
+                    set(User::email.name, user.email),
+                    set(User::about.name, user.about),
+                    set(User::location.name, user.location),
+                    set(User::birthday.name, user.birthday),
+                    set(User::image.name, user.image.toEntity()),
+                    set(User::settings.name, user.settings.toEntity()),
+                    set(User::birthday.name, user.birthday),
+                    set(User::tipLinks.name, user.tipLinks),
+                    set(User::socialLinks.name, user.socialLinks),
+                    set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
+    override suspend fun setSettings(id: String, settings: UserSettingsDomain) =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, id),
                 combine(
-                    set(User::settings.name, settings),
+                    set(User::settings.name, settings.toEntity()),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount
@@ -208,13 +230,13 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
     override suspend fun addFavoriteRoute(
         id: String,
         routeId: String,
-        routeFavorite: UserFavorite
+        routeFavorite: UserFavoriteDomain
     ) =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, id),
                 combine(
-                    set("${User::routeFavorites.name}.$routeId", routeFavorite),
+                    set("${User::routeFavorites.name}.$routeId", routeFavorite.toEntity()),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

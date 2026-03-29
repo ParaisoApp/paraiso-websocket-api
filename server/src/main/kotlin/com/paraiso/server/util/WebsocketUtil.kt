@@ -1,6 +1,7 @@
 package com.paraiso.server.util
 
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.users.User
 import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.sendSerialized
@@ -18,7 +19,6 @@ import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import java.nio.charset.Charset
 import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
-import com.paraiso.domain.users.UserResponse as UserResponseDomain
 
 val safeList: Safelist = Safelist()
     .addTags(
@@ -129,7 +129,7 @@ fun getMentions(content: String?): Set<String> {
     return if (content != null) Regex(">@(.*?)</a>").find(content)?.groupValues?.toSet() ?: emptySet() else emptySet()
 }
 
-fun UserResponseDomain.validateUser(): Boolean =
+fun User.validateUser(): Boolean =
     this.name?.replace("\\s+".toRegex(), "")?.length != 0
 
 inline fun <reified T> decodeMessage(payload: String): T? =

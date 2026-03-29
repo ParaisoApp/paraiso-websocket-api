@@ -1,9 +1,6 @@
 package com.paraiso.domain.users
 
-import com.paraiso.domain.auth.AuthId
-import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.Constants.SYSTEM
-import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -11,21 +8,20 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class User(
-    @SerialName(ID) val id: String,
-    val authIds: List<AuthId>,
+    val id: String,
     val name: String?,
     val fullName: String?,
     val email: String?,
     val about: String?,
     val location: Location?,
     val birthday: Instant?,
+    val chats: Int,
     val replies: Int,
     val score: Int,
     val followers: Int,
     val following: Int,
     val routeFavorites: Map<String, UserFavorite>,
     val reports: Int,
-    val chats: Int,
     val roles: UserRole,
     val banned: Boolean,
     val image: UserImage,
@@ -33,9 +29,10 @@ data class User(
     val settings: UserSettings,
     val tipLinks: Map<String, String>,
     val socialLinks: Map<String, String>,
-    @Serializable(with = InstantBsonSerializer::class)
+    val status: UserStatus?,
+    val viewerContext: ViewerContext?,
+    val sessionId: String?,
     val createdOn: Instant,
-    @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
 ) { companion object }
 
@@ -64,36 +61,6 @@ data class UserImage(
 ) { companion object }
 
 @Serializable
-data class UserResponse(
-    val id: String,
-    val name: String?,
-    val fullName: String?,
-    val email: String?,
-    val about: String?,
-    val location: Location?,
-    val birthday: Instant?,
-    val chats: Int,
-    val replies: Int,
-    val score: Int,
-    val followers: Int,
-    val following: Int,
-    val routeFavorites: Map<String, UserFavorite>,
-    val reports: Int,
-    val roles: UserRole,
-    val banned: Boolean,
-    val image: UserImage,
-    val tag: String?,
-    val settings: UserSettings,
-    val tipLinks: Map<String, String>,
-    val socialLinks: Map<String, String>,
-    val status: UserStatus?,
-    val viewerContext: ViewerContext,
-    val sessionId: String?,
-    val createdOn: Instant,
-    val updatedOn: Instant
-) { companion object }
-
-@Serializable
 data class UserFavorite(
     val routeId: String,
     val route: String,
@@ -109,72 +76,13 @@ data class ViewerContext(
     val blocking: Boolean?
 )
 
-// user list doesn't need all data
-fun User.toBasicResponse(status: UserStatus?, viewerContext: ViewerContext) =
-    UserResponse(
-        id = id,
-        name = name,
-        fullName = if(settings.showName) fullName else null,
-        email = if(settings.showEmail) email else null,
-        about = about,
-        location = if(settings.showLocation) location else null,
-        birthday = if(settings.showBirthday) birthday else null,
-        chats = chats,
-        replies = replies,
-        score = score,
-        followers = followers,
-        following = following,
-        routeFavorites = routeFavorites,
-        reports = 0, // Default - hide info
-        roles = roles,
-        banned = false, // Default - hide info
-        image = image,
-        settings = settings,
-        tipLinks = tipLinks,
-        socialLinks = socialLinks,
-        tag = tag,
-        status = status,
-        viewerContext = viewerContext,
-        sessionId = null,
-        createdOn = createdOn,
-        updatedOn = updatedOn
-    )
-
-fun UserResponse.toUser() =
-    User(
-        id = id,
-        authIds = emptyList(),
-        name = name,
-        fullName = fullName,
-        email = email,
-        about = about,
-        location = location,
-        birthday = birthday,
-        replies = replies,
-        score = score,
-        followers = followers,
-        following = following,
-        routeFavorites = routeFavorites,
-        reports = reports,
-        chats = chats,
-        roles = roles,
-        banned = banned,
-        image = image,
-        settings = settings,
-        tipLinks = tipLinks,
-        socialLinks = socialLinks,
-        tag = tag,
-        createdOn = createdOn,
-        updatedOn = updatedOn
-    )
-
 fun randomGuestName() = "Guest${(Math.random() * 100000000).toInt()}"
 
-fun UserResponse.Companion.newUser(
+fun User.Companion.newUser(
     id: String
 ) =
     Clock.System.now().let { now ->
-        UserResponse(
+        User(
             id = id,
             name = randomGuestName(),
             fullName = null,
@@ -206,9 +114,9 @@ fun UserResponse.Companion.newUser(
             updatedOn = now
         )
     }
-fun UserResponse.Companion.systemUser() =
+fun User.Companion.systemUser() =
     Clock.System.now().let { now ->
-        UserResponse(
+        User(
             id = SYSTEM,
             name = SYSTEM,
             fullName = null,
@@ -265,31 +173,31 @@ fun UserImage.Companion.initImage() =
         scale = 1f
     )
 
-fun User.toResponse(sessionId: String?, status: UserStatus?, viewerContext: ViewerContext) = UserResponse(
+fun User.toBasicResponse() = User(
     id = id,
     name = name,
-    fullName = fullName,
-    email = email,
+    fullName = if(settings.showName) fullName else null,
+    email = if(settings.showEmail) email else null,
     about = about,
-    location = location,
-    birthday = birthday,
+    location = if(settings.showLocation) location else null,
+    birthday = if(settings.showBirthday) birthday else null,
+    chats = chats,
     replies = replies,
     score = score,
     followers = followers,
     following = following,
     routeFavorites = routeFavorites,
-    reports = reports,
-    chats = chats,
+    reports = 0, // Default - hide info
     roles = roles,
-    banned = banned,
+    banned = false, // Default - hide info
     image = image,
     settings = settings,
     tipLinks = tipLinks,
     socialLinks = socialLinks,
     tag = tag,
     status = status,
-    viewerContext = viewerContext,
-    sessionId = sessionId,
+    viewerContext = null,
+    sessionId = null,
     createdOn = createdOn,
     updatedOn = updatedOn
 )

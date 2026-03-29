@@ -14,7 +14,7 @@ import com.paraiso.domain.sport.data.CompetitionResponse
 import com.paraiso.domain.sport.data.TeamResponse
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.EventService
-import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
@@ -332,6 +332,6 @@ data class PostsData(
 data class InitRouteData(
     val postsData: PostsData,
     val contentData: PostsData?,
-    val users: Map<String, UserResponse>,
+    val users: Map<String, User>,
     val route: RouteDetails
 )

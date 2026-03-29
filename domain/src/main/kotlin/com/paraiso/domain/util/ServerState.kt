@@ -8,9 +8,9 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.posts.PostPinResponse
+import com.paraiso.domain.posts.PostPin
 import com.paraiso.domain.routes.Favorite
-import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.User
 import com.paraiso.domain.votes.Vote
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -21,8 +21,8 @@ object ServerState {
     val followFlowMut = MutableSharedFlow<Follow>(replay = 0)
     val favoriteFlowMut = MutableSharedFlow<Favorite>(replay = 0)
     val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
-    val userUpdateFlowMut = MutableSharedFlow<UserResponse>(replay = 0)
-    val postPinFlowMut = MutableSharedFlow<PostPinResponse>(replay = 0)
+    val userUpdateFlowMut = MutableSharedFlow<User>(replay = 0)
+    val postPinFlowMut = MutableSharedFlow<PostPin>(replay = 0)
     val roleUpdateFlowMut = MutableSharedFlow<RoleUpdate>(replay = 0)
     val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
     val tagUserFlowMut = MutableSharedFlow<Tag>(replay = 0)

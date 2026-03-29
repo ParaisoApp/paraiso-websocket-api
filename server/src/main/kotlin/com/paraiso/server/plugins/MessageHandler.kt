@@ -12,7 +12,6 @@ import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
 import com.paraiso.domain.messageTypes.toSubscription
 import com.paraiso.domain.posts.PostPin
-import com.paraiso.domain.posts.PostPinResponse
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
@@ -20,7 +19,7 @@ import com.paraiso.domain.sport.data.ScoreboardEntity
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.users.EventService
-import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.User
 import com.paraiso.domain.util.ServerState
 import com.paraiso.domain.votes.Vote
 import com.paraiso.server.util.decodeMessage
@@ -83,7 +82,7 @@ class MessageHandler(
                             }
                         }
                         MessageType.USER_UPDATE.name -> {
-                            decodeMessage<UserResponse>(message)?.let { userUpdate ->
+                            decodeMessage<User>(message)?.let { userUpdate ->
                                 ServerState.userUpdateFlowMut.emit(userUpdate)
                             }
                         }
@@ -118,7 +117,7 @@ class MessageHandler(
                         }
 
                         MessageType.PIN_POST.name -> {
-                            decodeMessage<PostPinResponse>(message)?.let { postPin ->
+                            decodeMessage<PostPin>(message)?.let { postPin ->
                                 ServerState.postPinFlowMut.emit(postPin)
                             }
                         }

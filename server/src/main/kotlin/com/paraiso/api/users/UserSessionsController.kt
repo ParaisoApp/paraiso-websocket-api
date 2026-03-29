@@ -27,7 +27,8 @@ fun Route.userSessionsController(userSessionsApi: UserSessionsApi) {
         get("/getById") {
             userSessionsApi.getUserById(
                 call.request.queryParameters["id"] ?: "",
-                call.sessions.get<UserCookie>()?.userId ?: ""
+                call.sessions.get<UserCookie>()?.userId ?: "",
+                false
             )?.let {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }

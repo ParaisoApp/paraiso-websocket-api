@@ -16,17 +16,17 @@ import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.notifications.Notification
 import com.paraiso.domain.notifications.NotificationType
 import com.paraiso.domain.posts.PostPin
-import com.paraiso.domain.posts.PostPinResponse
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.routes.Route
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.userchats.DirectMessage
-import com.paraiso.domain.users.UserResponse
+import com.paraiso.domain.users.User
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionResponse
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.ViewerContext
+import com.paraiso.domain.users.toBasicResponse
 import com.paraiso.domain.users.toDomain
 import com.paraiso.domain.util.Constants.HOME_PREFIX
 import com.paraiso.domain.util.Constants.USER_PREFIX
@@ -68,7 +68,7 @@ class WebSocketHandler(
     suspend fun connect(
         session: WebSocketServerSession,
         sessionContext: SessionContext,
-        currentUser: UserResponse,
+        currentUser: User,
         isNewUser: Boolean
     ) {
         // Track this session in the local set
@@ -79,7 +79,7 @@ class WebSocketHandler(
 
     private suspend fun WebSocketServerSession.handleUser(
         sessionId: String,
-        currentUser: UserResponse,
+        currentUser: User,
         isNewUser: Boolean,
         sessionContext: SessionContext
     ) {
@@ -103,6 +103,7 @@ class WebSocketHandler(
                         )
                     )
                 )
+                services.usersApi.saveUser(currentUser)
             }
         }
         // create or update session connected status
@@ -123,15 +124,12 @@ class WebSocketHandler(
             }
             services.eventService.saveUserSession(sessionToSave)
         }
-        launch {
-            services.usersApi.saveUser(currentUser)
-        }
 
         joinChat(currentUser, sessionId, sessionContext)
     }
 
     private suspend fun WebSocketServerSession.joinChat(
-        incomingUser: UserResponse,
+        incomingUser: User,
         sessionId: String,
         sessionContext: SessionContext
     ) {
@@ -177,24 +175,27 @@ class WebSocketHandler(
                         MessageType.DELETE -> sendTypedMessage(type, message as Delete)
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_UPDATE -> {
-                            val user = (message as UserResponse)
+                            val user = (message as User)
                             val follow = services.followsApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
                             val block = services.blocksApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
-                            sendTypedMessage(
-                                type, // remove private data from user update socket messages
-                                user.copy(
-                                    reports = 0,
-                                    banned = false,
-                                    viewerContext = ViewerContext(
-                                        following = follow?.following,
-                                        blocking = block?.blocking
-                                    )
+                            val userWithData = user.copy(
+                                reports = 0,
+                                banned = false,
+                                viewerContext = ViewerContext(
+                                    following = follow?.following,
+                                    blocking = block?.blocking
                                 )
+                            )
+                            // remove private data from user update socket messages
+                            val finalizedUser = if(userWithData.id == sessionUser.id) userWithData else userWithData.toBasicResponse()
+                            sendTypedMessage(
+                                type,
+                                finalizedUser
                             )
                         }
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
-                        MessageType.PIN_POST -> sendTypedMessage(type, message as PostPinResponse)
+                        MessageType.PIN_POST -> sendTypedMessage(type, message as PostPin)
                         MessageType.ROLE_UPDATE -> sendTypedMessage(type, message as RoleUpdate)
                         MessageType.TAG -> sendTypedMessage(type, message as Tag)
                         MessageType.FAVORITE -> sendTypedMessage(type, message as Favorite)
@@ -212,7 +213,7 @@ class WebSocketHandler(
             }
         }
 
-        ServerState.userUpdateFlowMut.emit(sessionUser)
+        ServerState.userUpdateFlowMut.emit(sessionUser.toBasicResponse())
         services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
         parseAndRouteMessages(sessionUser, sessionId, sessionContext)
     }
@@ -235,7 +236,7 @@ class WebSocketHandler(
     } ?: false
 
     private suspend fun WebSocketServerSession.parseAndRouteMessages(
-        sessionUser: UserResponse,
+        sessionUser: User,
         sessionId: String,
         sessionContext: SessionContext
     ) {
@@ -328,11 +329,12 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.USER_UPDATE -> {
-                        converter?.cleanAndType<TypeMapping<UserResponse>>(frame)
+                        converter?.cleanAndType<TypeMapping<User>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
                                 if (user.validateUser()) {
-                                    launch { services.usersApi.saveUser(user) }
-                                    ServerState.userUpdateFlowMut.emit(user)
+                                    launch { services.usersApi.updateUser(user) }
+                                    ServerState.userUpdateFlowMut.emit(user.toBasicResponse())
+                                    sendTypedMessage(MessageType.USER, user) // send full user details back to user
                                     services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                                 }
                             }
@@ -356,7 +358,7 @@ class WebSocketHandler(
                             }
                     }
                     MessageType.PIN_POST -> {
-                        converter?.cleanAndType<TypeMapping<PostPinResponse>>(frame)
+                        converter?.cleanAndType<TypeMapping<PostPin>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { postPin ->
                                 // user must have elevated auth or be pinning post on profile
                                 val routeUserId = postPin.routeId.removePrefix(USER_PREFIX)
@@ -477,7 +479,7 @@ class WebSocketHandler(
                     } else {
                         serverSessions[serverId] = remainingSessions
                     }
-                    val userDisconnected = services.userSessionsApi.getUserById(sessionUser.id, null)
+                    val userDisconnected = services.userSessionsApi.getUserById(sessionUser.id, null, false)
                         ?.copy(status = UserStatus.DISCONNECTED)
                     if (serverSessions.isEmpty()) {
                         // Fully disconnected, remove from redis and publish out user disconnect
@@ -507,7 +509,7 @@ class WebSocketHandler(
 
     private suspend fun WebSocketServerSession.handleMessage(
         message: Message,
-        sessionUser: UserResponse
+        sessionUser: User
     ) = coroutineScope {
         val messageId: String = message.editId ?: UUID.randomUUID().toString()
         val userIdMentions = services.usersApi.addMentions(
@@ -579,7 +581,7 @@ class WebSocketHandler(
     }
     private suspend fun WebSocketServerSession.handleDm(
         dm: DirectMessage,
-        sessionUser: UserResponse
+        sessionUser: User
     ) = coroutineScope {
         dm.copy(
             id = UUID.randomUUID().toString(),
