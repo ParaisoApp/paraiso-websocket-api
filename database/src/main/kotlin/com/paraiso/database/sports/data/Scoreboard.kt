@@ -6,7 +6,6 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
-import com.paraiso.domain.sport.data.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.data.TeamYearStats as TeamYearStatsDomain
 import com.paraiso.domain.sport.data.Record as RecordDomain
 
@@ -19,17 +18,6 @@ data class Scoreboard(
     @Serializable(with = InstantBsonSerializer::class)
     val day: Instant?,
     val competitions: List<String>
-)
-
-@Serializable
-data class TeamGameStats(
-    val teamId: String,
-    val homeAway: String,
-    val records: List<Record>,
-    val winner: Boolean,
-    val teamYearStats: List<TeamYearStats>,
-    val lineScores: List<Double>,
-    val score: String?
 )
 
 @Serializable
@@ -56,17 +44,6 @@ fun ScoreboardDomain.toEntity() =
         competitions = competitions.map { it.id }
     )
 
-fun TeamGameStatsDomain.toEntity() =
-    TeamGameStats(
-        teamId = teamId,
-        homeAway = homeAway,
-        records = records.map { it.toEntity() },
-        winner = winner,
-        teamYearStats = teamYearStats.map { it.toEntity() },
-        lineScores = lineScores,
-        score = score
-    )
-
 fun RecordDomain.toEntity() =
     Record(
         name = name,
@@ -89,17 +66,6 @@ fun Scoreboard.toDomain() =
         week = week,
         day = day,
         competitions = emptyList()
-    )
-
-fun TeamGameStats.toDomain() =
-    TeamGameStatsDomain(
-        teamId = teamId,
-        homeAway = homeAway,
-        records = records.map { it.toDomain() },
-        winner = winner,
-        teamYearStats = teamYearStats.map { it.toDomain() },
-        lineScores = lineScores,
-        score = score
     )
 
 fun Record.toDomain() =

@@ -2,7 +2,7 @@ package com.paraiso.domain.sport.sports
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.LeaderResponse
-import com.paraiso.domain.sport.data.RosterResponse
+import com.paraiso.domain.sport.data.Roster
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.StandingsResponse
 import com.paraiso.domain.sport.data.toResponse
@@ -23,14 +23,14 @@ class SportApi(private val sportDBs: SportDBs) {
         const val POST_SEASON = 3
         const val UNKNOWN = 0
     }
-    suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)?.toResponse()
+    suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)
     suspend fun findTeamByAbbr(sport: String, teamAbbr: String) = sportDBs.teamsDB.findBySportAndAbbr(sport, teamAbbr)
     suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).associateBy { it.id }
     suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)
     suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids)
     suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)
     suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids)
-    suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
+    suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
         if (sport == SiteRoute.BASKETBALL.name) {
@@ -107,19 +107,22 @@ class SportApi(private val sportDBs: SportDBs) {
         }
 
     suspend fun findTeamRoster(sport: String, teamId: String) = coroutineScope {
-        sportDBs.rostersDB.findBySportAndTeamId(sport, teamId)?.let { rosterEntity ->
+        sportDBs.rostersDB.findBySportAndTeamId(sport, teamId).let { (roster, athleteIds, coachId) ->
             val athletes = async {
-                sportDBs.athletesDB.findByIdsIn(rosterEntity.athletes)
+                sportDBs.athletesDB.findByIdsIn(athleteIds)
             }
             val coach = async {
-                rosterEntity.coach?.let { sportDBs.coachesDB.findById(it) }
+                coachId?.let { sportDBs.coachesDB.findById(it) }
             }
-            RosterResponse(
-                id = rosterEntity.id,
-                athletes = athletes.await().map { it.toResponse() },
-                coach = coach.await()?.toResponse(),
-                teamId = rosterEntity.teamId
-            )
+            roster?.let {
+                Roster(
+                    id = it.id,
+                    sport = it.sport,
+                    athletes = athletes.await(),
+                    coach = coach.await(),
+                    teamId = it.teamId
+                )
+            }
         }
     }
 
@@ -202,5 +205,5 @@ class SportApi(private val sportDBs: SportDBs) {
         sportDBs.playoffsDB.findBySportAndYear(
             sport,
             year
-        )?.toResponse()
+        )
 }

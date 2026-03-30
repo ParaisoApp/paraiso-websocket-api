@@ -22,6 +22,7 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -40,17 +41,27 @@ import org.bson.Document
 import java.time.ZoneId
 import java.util.Date
 
-class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
+class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
     private val collection = database.getCollection("competitions", Competition::class.java)
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding competition by id: $ex" }
+                null
+            }
         }
 
     override suspend fun findByIdIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.`in`(ID, ids)).map { it.toDomain() }.toList()
+            try{
+                collection.find(Filters.`in`(ID, ids)).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding competitions by ids: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(competitions: List<CompetitionDomain>) =

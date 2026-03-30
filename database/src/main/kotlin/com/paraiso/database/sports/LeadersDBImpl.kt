@@ -11,16 +11,22 @@ import com.paraiso.database.sports.data.toEntity
 import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 import com.paraiso.domain.sport.interfaces.LeadersDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
-class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
+class LeadersDBImpl(database: MongoDatabase) : LeadersDB, Klogging {
     private val collection = database.getCollection("leaders", StatLeaders::class.java)
 
     override suspend fun findBySport(sport: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, sport)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq(ID, sport)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding leaders by sport: $ex" }
+                null
+            }
         }
 
     override suspend fun findBySportAndSeasonAndType(
@@ -29,14 +35,19 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
         type: Int
     ) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                and(
-                    eq(StatLeaders::sport.name, sport),
-                    eq(StatLeaders::teamId.name, null),
-                    eq(StatLeaders::season.name, season),
-                    eq(StatLeaders::type.name, type)
-                )
-            ).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(
+                    and(
+                        eq(StatLeaders::sport.name, sport),
+                        eq(StatLeaders::teamId.name, null),
+                        eq(StatLeaders::season.name, season),
+                        eq(StatLeaders::type.name, type)
+                    )
+                ).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding leaders by sport, season, and type: $ex" }
+                null
+            }
         }
 
     override suspend fun findBySportAndSeasonAndTypeAndTeam(
@@ -46,14 +57,19 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB {
         type: Int
     ) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                and(
-                    eq(StatLeaders::sport.name, sport),
-                    eq(StatLeaders::teamId.name, teamId),
-                    eq(StatLeaders::season.name, season),
-                    eq(StatLeaders::type.name, type)
-                )
-            ).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(
+                    and(
+                        eq(StatLeaders::sport.name, sport),
+                        eq(StatLeaders::teamId.name, teamId),
+                        eq(StatLeaders::season.name, season),
+                        eq(StatLeaders::type.name, type)
+                    )
+                ).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding leaders by sport, teamId, season, and type: $ex" }
+                null
+            }
         }
 
     override suspend fun save(statLeaders: List<StatLeadersDomain>) =

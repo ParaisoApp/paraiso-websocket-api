@@ -90,7 +90,7 @@ class SportJobs(
         ids.forEach { id ->
             activeSubs[id] = launch {
                 boxScores[id]?.collect { boxScore ->
-                    session.sendTypedMessage(MessageType.BOX_SCORES, boxScore.toResponse())
+                    session.sendTypedMessage(MessageType.BOX_SCORES, boxScore)
                     if (boxScore.completed == true) coroutineContext.cancel()
                 }
             }

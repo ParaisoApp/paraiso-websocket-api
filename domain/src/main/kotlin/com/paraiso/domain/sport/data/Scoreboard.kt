@@ -17,17 +17,6 @@ data class Scoreboard(
 ) { companion object }
 
 @Serializable
-data class TeamGameStats(
-    val teamId: String,
-    val homeAway: String,
-    val records: List<Record>,
-    val winner: Boolean,
-    val teamYearStats: List<TeamYearStats>,
-    val lineScores: List<Double>,
-    val score: String?
-)
-
-@Serializable
 data class TeamYearStats(
     val name: String,
     val abbreviation: String,

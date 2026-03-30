@@ -10,16 +10,22 @@ import com.paraiso.database.sports.data.toEntity
 import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.interfaces.ScoreboardsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
-class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB {
+class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB, Klogging {
     private val collection = database.getCollection("scoreboards", Scoreboard::class.java)
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding scoreboard by id: $ex" }
+                null
+            }
         }
 
     override suspend fun save(scoreboards: List<ScoreboardDomain>) =

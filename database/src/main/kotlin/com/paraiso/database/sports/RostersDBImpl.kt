@@ -4,37 +4,53 @@ import com.mongodb.client.model.Filters
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.sport.data.RosterEntity
+import com.paraiso.database.sports.data.Roster
+import com.paraiso.database.sports.data.toDomain
+import com.paraiso.database.sports.data.toEntity
+import com.paraiso.domain.sport.data.Roster as RosterDomain
 import com.paraiso.domain.sport.interfaces.RostersDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
-class RostersDBImpl(database: MongoDatabase) : RostersDB {
-    private val collection = database.getCollection("rosters", RosterEntity::class.java)
+class RostersDBImpl(database: MongoDatabase) : RostersDB, Klogging {
+    private val collection = database.getCollection("rosters", Roster::class.java)
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()
+            try{
+                collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding roster by id: $ex" }
+                null
+            }
         }
 
     override suspend fun findBySportAndTeamId(sport: String, teamId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                Filters.and(
-                    Filters.eq(RosterEntity::sport.name, sport),
-                    Filters.eq(RosterEntity::teamId.name, teamId)
-                )
-            ).limit(1).firstOrNull()
+            try{
+                val roster = collection.find(
+                    Filters.and(
+                        Filters.eq(Roster::sport.name, sport),
+                        Filters.eq(Roster::teamId.name, teamId)
+                    )
+                ).limit(1).firstOrNull()
+                Triple(roster?.toDomain(), roster?.athletes ?: emptyList(), roster?.coach)
+            } catch (ex: Exception){
+                logger.error { "Error finding roster by sport and team id: $ex" }
+                Triple(null, emptyList(), null)
+            }
         }
 
-    override suspend fun save(rosters: List<RosterEntity>) =
+    override suspend fun save(rosters: List<RosterDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = rosters.map { roster ->
+                val entity = roster.toEntity()
                 ReplaceOneModel(
-                    Filters.eq(ID, roster.id),
-                    roster,
+                    Filters.eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }

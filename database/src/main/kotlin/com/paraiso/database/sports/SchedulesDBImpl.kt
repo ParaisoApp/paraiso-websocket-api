@@ -10,16 +10,22 @@ import com.paraiso.database.sports.data.toEntity
 import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.interfaces.SchedulesDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
-class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB {
+class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
     private val collection = database.getCollection("schedules", Schedule::class.java)
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding schedule by id: $ex" }
+                null
+            }
         }
 
     override suspend fun findBySportAndTeamIdAndYearAndType(
@@ -29,14 +35,19 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB {
         seasonType: Int
     ) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                Filters.and(
-                    Filters.eq(Schedule::sport.name, sport),
-                    Filters.eq(Schedule::teamId.name, teamId),
-                    Filters.eq("${Schedule::season.name}.year", seasonYear),
-                    Filters.eq("${Schedule::season.name}.type", seasonType)
-                )
-            ).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(
+                    Filters.and(
+                        Filters.eq(Schedule::sport.name, sport),
+                        Filters.eq(Schedule::teamId.name, teamId),
+                        Filters.eq("${Schedule::season.name}.year", seasonYear),
+                        Filters.eq("${Schedule::season.name}.type", seasonType)
+                    )
+                ).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding schedule by sport, teamId, season, and type: $ex" }
+                null
+            }
         }
 
     override suspend fun save(schedules: List<ScheduleDomain>) =

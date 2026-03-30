@@ -7,7 +7,6 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.ScoreboardBasic
 import com.paraiso.domain.sport.data.init
 import com.paraiso.domain.sport.data.toBasic
-import com.paraiso.domain.sport.data.toEntity
 import io.klogging.Klogging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

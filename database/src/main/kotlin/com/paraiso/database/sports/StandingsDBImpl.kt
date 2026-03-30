@@ -10,16 +10,22 @@ import com.paraiso.database.sports.data.toEntity
 import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
 import com.paraiso.domain.sport.interfaces.StandingsDB
 import com.paraiso.domain.util.Constants
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
-class StandingsDBImpl(database: MongoDatabase) : StandingsDB {
+class StandingsDBImpl(database: MongoDatabase) : StandingsDB, Klogging {
     private val collection = database.getCollection("standings", AllStandings::class.java)
 
     override suspend fun findById(sport: String) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.eq(Constants.ID, sport)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(Filters.eq(Constants.ID, sport)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding standings by id: $ex" }
+                null
+            }
         }
 
     override suspend fun save(allStandings: List<AllStandingsDomain>) =

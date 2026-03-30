@@ -7,22 +7,23 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Playoff(
-    @SerialName(ID) val id: String,
+    val id: String,
     val sport: SiteRoute,
     val year: Int,
-    val rounds: List<PlayoffRound>
+    val rounds: Map<Int, PlayoffRound>
 )
 
 @Serializable
 data class PlayoffRound(
     val round: Int,
-    val matchUps: List<PlayoffMatchUp>
+    val winners: List<String>,
+    val matchUps: Map<String, PlayoffMatchUp>
 )
 
 @Serializable
 data class PlayoffMatchUp(
     val id: String,
-    val teams: List<PlayoffTeam>
+    val teams: Map<String, PlayoffTeam>
 )
 
 @Serializable
@@ -31,58 +32,3 @@ data class PlayoffTeam(
     val score: Int,
     val winner: Boolean?
 )
-
-@Serializable
-data class PlayoffResponse(
-    val id: String,
-    val sport: SiteRoute,
-    val year: Int,
-    val rounds: Map<Int, PlayoffRoundResponse>
-)
-
-@Serializable
-data class PlayoffRoundResponse(
-    val round: Int,
-    val winners: List<String>,
-    val matchUps: Map<String, PlayoffMatchUpResponse>
-)
-
-@Serializable
-data class PlayoffMatchUpResponse(
-    val id: String,
-    val teams: Map<String, PlayoffTeamResponse>
-)
-
-@Serializable
-data class PlayoffTeamResponse(
-    val id: String,
-    val score: Int,
-    val winner: Boolean?
-)
-
-fun Playoff.toResponse() =
-    PlayoffResponse(
-        id = id,
-        sport = sport,
-        year = year,
-        rounds = rounds.associate { it.round to it.toResponse() }
-    )
-
-fun PlayoffRound.toResponse() =
-    PlayoffRoundResponse(
-        round = round,
-        winners = matchUps.flatMap { it.teams }.filter { it.winner == true }.map { it.id },
-        matchUps.associate { it.id to it.toResponse() }
-    )
-
-fun PlayoffMatchUp.toResponse() =
-    PlayoffMatchUpResponse(
-        id = id,
-        teams.associate { it.id to it.toResponse() }
-    )
-fun PlayoffTeam.toResponse() =
-    PlayoffTeamResponse(
-        id = id,
-        score = score,
-        winner = winner
-    )

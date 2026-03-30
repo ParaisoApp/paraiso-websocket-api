@@ -17,7 +17,6 @@ import com.paraiso.domain.sport.data.PlayoffTeam
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toBasic
-import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
@@ -212,7 +211,7 @@ class SportHandler(
                 }
             }.awaitAll().filterNotNull().let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
-                    sportDBs.rostersDB.save(rostersRes.map { it.toEntity() })
+                    sportDBs.rostersDB.save(rostersRes)
                     sportDBs.athletesDB.save(rostersRes.flatMap { it.athletes })
                     sportDBs.coachesDB.save(rostersRes.mapNotNull { it.coach })
                 }
@@ -380,34 +379,34 @@ class SportHandler(
         year: Int
     ) {
         val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
-            ?: Playoff("$sport-$year", sport, year, emptyList())
-        val round = playoff.rounds.maxByOrNull { it.round }
+            ?: Playoff("$sport-$year", sport, year, emptyMap())
+        val round = playoff.rounds.values.maxByOrNull { it.round }
         val firstCompTeamIds = comps.first().teams.map { team -> team.teamId }
         // If one team is recognized from the current round but the pairing is different, it's a new round.
-        val isNewRound = round?.matchUps?.any { matchUp ->
-            val existingIds = matchUp.teams.map { it.id }
+        val isNewRound = round?.matchUps?.values?.any { matchUp ->
+            val existingIds = matchUp.teams.values.map { it.id }
             firstCompTeamIds.any { it in existingIds } && !firstCompTeamIds.all { it in existingIds }
         } ?: false
         val targetRound = if (isNewRound || round == null) {
-            PlayoffRound(round = (round?.round ?: 0) + 1, matchUps = emptyList())
+            PlayoffRound(round = (round?.round ?: 0) + 1, winners = emptyList(), matchUps = emptyMap())
         } else {
             round
         }
         // merge existing matchUps with new or updated matchUps
-        val mergeMatchUps = targetRound.matchUps.associateBy { it.id }.toMutableMap()
+        val mergeMatchUps = targetRound.matchUps.toMutableMap()
         comps.forEach { comp ->
             val matchUpId = comp.teams.map { team -> team.teamId }.sorted().joinToString("-")
             // grab existing matchUp to get existing series score if needed
             val matchUp = mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
                 id = matchUpId,
-                teams = emptyList()
+                teams = emptyMap()
             )
             // map comp teams to results (score and winner)
             val teams = comp.teams.map { team ->
                 val (score, winner) = when (sport) {
                     SiteRoute.FOOTBALL -> (team.score?.toIntOrNull() ?: 0) to team.winner
                     else -> {
-                        val currentScore = matchUp.teams.find { it.id == team.teamId }?.score ?: 0
+                        val currentScore = matchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                         val updatedScore = if (team.winner) currentScore + 1 else currentScore
                         updatedScore to (updatedScore == 4)
                     }
@@ -415,13 +414,13 @@ class SportHandler(
                 PlayoffTeam(team.teamId, score, winner)
             }
             // copy updated teams into matchUp
-            mergeMatchUps[matchUpId] = matchUp.copy(teams = teams)
+            mergeMatchUps[matchUpId] = matchUp.copy(teams = teams.associateBy { it.id })
         }
-        val finalRounds = playoff.rounds.filter { it.round != targetRound.round } +
-            targetRound.copy(matchUps = mergeMatchUps.values.toList())
+        val finalRounds = playoff.rounds.values.filter { it.round != targetRound.round } +
+            targetRound.copy(matchUps = mergeMatchUps)
         // remove old round if it exists and add updated round
         val updatedPlayoff = playoff.copy(
-            rounds = finalRounds.sortedBy { it.round }
+            rounds = finalRounds.sortedBy { it.round }.associateBy { it.round }
         )
         sportDBs.playoffsDB.save(listOf(updatedPlayoff))
     }
@@ -432,47 +431,47 @@ class SportHandler(
     ) =
         sportDBs.competitionsDB.findPlayoffsByYear(sport.name, year).let { comps ->
             val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
-                ?: Playoff("$sport-$year", sport, year, emptyList())
+                ?: Playoff("$sport-$year", sport, year, emptyMap())
 
             // Sort by date to ensure chronological processing
             val sortedComps = comps.sortedBy { it.date }
             val rounds = mutableListOf<PlayoffRound>()
-            var currentRound = PlayoffRound(round = 1, matchUps = emptyList())
+            var currentRound = PlayoffRound(round = 1, winners = emptyList(), matchUps = emptyMap())
 
             sortedComps.forEach { comp ->
                 val teamIds = comp.teams.map { it.teamId }
                 val matchUpId = teamIds.sorted().joinToString("-")
 
                 // Determine if we need a new round based on this specific competition
-                val isProgression = currentRound.matchUps.any { matchUp ->
-                    val existingIds = matchUp.teams.map { it.id }
+                val isProgression = currentRound.matchUps.values.any { matchUp ->
+                    val existingIds = matchUp.teams.values.map { it.id }
                     teamIds.any { it in existingIds } && !teamIds.all { it in existingIds }
                 }
 
                 if (isProgression) {
                     rounds.add(currentRound)
-                    currentRound = PlayoffRound(round = currentRound.round + 1, matchUps = emptyList())
+                    currentRound = PlayoffRound(round = currentRound.round + 1, winners = emptyList(), matchUps = emptyMap())
                 }
 
                 // Update the MatchUp within the Target Round
-                val matchUpMap = currentRound.matchUps.associateBy { it.id }.toMutableMap()
-                val existingMatchUp = matchUpMap[matchUpId] ?: PlayoffMatchUp(id = matchUpId, teams = emptyList())
+                val matchUpMap = currentRound.matchUps.toMutableMap()
+                val existingMatchUp = matchUpMap[matchUpId] ?: PlayoffMatchUp(id = matchUpId, teams = emptyMap())
 
                 val updatedTeams = comp.teams.map { team ->
                     val (score, winner) = when (sport) {
                         SiteRoute.FOOTBALL -> (team.score?.toIntOrNull() ?: 0) to team.winner
                         else -> {
-                            val currentScore = existingMatchUp.teams.find { it.id == team.teamId }?.score ?: 0
+                            val currentScore = existingMatchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                             val updatedScore = if (team.winner) currentScore + 1 else currentScore
                             updatedScore to (updatedScore == 4)
                         }
                     }
                     PlayoffTeam(team.teamId, score, winner)
                 }
-                matchUpMap[matchUpId] = existingMatchUp.copy(teams = updatedTeams)
-                currentRound = currentRound.copy(matchUps = matchUpMap.values.toList())
+                matchUpMap[matchUpId] = existingMatchUp.copy(teams = updatedTeams.associateBy { it.id })
+                currentRound = currentRound.copy(matchUps = matchUpMap)
             }
-            sportDBs.playoffsDB.save(listOf(playoff.copy(rounds = rounds + currentRound)))
+            sportDBs.playoffsDB.save(listOf(playoff.copy(rounds = (rounds + currentRound).associateBy { it.round })))
         }
 
     suspend fun fillCompetitionData(
