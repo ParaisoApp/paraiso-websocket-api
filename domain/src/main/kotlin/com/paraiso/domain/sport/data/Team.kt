@@ -1,10 +1,12 @@
 package com.paraiso.domain.sport.data
 
+import com.paraiso.domain.routes.SiteRoute
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Team(
     val id: String?,
+    val sport: SiteRoute,
     val teamId: String,
     val location: String,
     val name: String?,

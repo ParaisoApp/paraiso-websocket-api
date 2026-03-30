@@ -19,21 +19,22 @@ data class Team(
     val shortDisplayName: String?
 )
 
-fun TeamDomain.toEntity(sport: SiteRoute) =
-    Team(
-        id = "$sport-$teamId",
+fun TeamDomain.toEntity() =
+    Team( // needed to search teams on abbreviation over id (for init page)
+        id = "$sport-$abbreviation",
+        sport = sport,
         teamId = teamId,
         location = location,
         name = name,
         abbreviation = abbreviation,
         displayName = displayName,
-        sport = sport,
         shortDisplayName = shortDisplayName
     )
 
 fun Team.toDomain() =
     TeamDomain(
-        id = id,
+        id = "$sport-$teamId",
+        sport = sport,
         teamId = teamId,
         location = location,
         name = name,

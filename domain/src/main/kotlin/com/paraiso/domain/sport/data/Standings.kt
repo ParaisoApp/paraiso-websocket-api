@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AllStandings(
-    @SerialName(ID) val id: String,
+    val id: String,
     val standingsGroups: List<StandingsGroup>
 )
 

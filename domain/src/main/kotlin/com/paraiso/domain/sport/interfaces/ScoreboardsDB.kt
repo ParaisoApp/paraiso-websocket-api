@@ -1,8 +1,8 @@
 package com.paraiso.domain.sport.interfaces
 
-import com.paraiso.domain.sport.data.ScoreboardEntity
+import com.paraiso.domain.sport.data.Scoreboard
 
 interface ScoreboardsDB {
-    suspend fun findById(id: String): ScoreboardEntity?
-    suspend fun save(scoreboards: List<ScoreboardEntity>): Int
+    suspend fun findById(id: String): Scoreboard?
+    suspend fun save(scoreboards: List<Scoreboard>): Int
 }

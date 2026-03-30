@@ -15,12 +15,16 @@ import com.mongodb.client.model.UpdateOneModel
 import com.mongodb.client.model.UpdateOptions
 import com.mongodb.client.model.Updates.setOnInsert
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.database.sports.data.Competition
+import com.paraiso.database.sports.data.toDomain
+import com.paraiso.database.sports.data.toEntity
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.data.Competition
+import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
 import com.paraiso.domain.util.Constants.ID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
@@ -41,32 +45,34 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()
+            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
         }
 
-    override suspend fun findByIdIn(ids: Set<String>): List<Competition> =
+    override suspend fun findByIdIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.`in`(ID, ids)).toList()
+            collection.find(Filters.`in`(ID, ids)).map { it.toDomain() }.toList()
         }
 
-    override suspend fun save(competitions: List<Competition>) =
+    override suspend fun save(competitions: List<CompetitionDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = competitions.map { competition ->
+                val entity = competition.toEntity()
                 ReplaceOneModel(
-                    eq(ID, competition.id),
-                    competition,
+                    eq(ID, entity.id),
+                    entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
 
-    override suspend fun saveIfNew(competitions: List<Competition>) =
+    override suspend fun saveIfNew(competitions: List<CompetitionDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = competitions.map { competition ->
-                val doc = Document.parse(Json.encodeToString(competition))
+                val entity = competition.toEntity()
+                val doc = Document.parse(Json.encodeToString(entity))
                 UpdateOneModel<Competition>(
-                    eq("_id", competition.id),
+                    eq("_id", entity.id),
                     setOnInsert(doc),
                     UpdateOptions().upsert(true)
                 )
@@ -94,7 +100,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                             eq("${Competition::season.name}.type", type),
                             eq(Competition::week.name, week)
                         )
-                    ).sort(ascending(Competition::date.name)).toList()
+                    ).sort(ascending(Competition::date.name)).map { it.toDomain() }.toList()
                 }
 
                 else -> {
@@ -109,7 +115,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
             }
         }
 
-    override suspend fun findPlayoffsByYear(sport: String, year: Int): List<Competition> =
+    override suspend fun findPlayoffsByYear(sport: String, year: Int): List<CompetitionDomain> =
         withContext(Dispatchers.IO) {
             collection.find(
                 and(
@@ -117,7 +123,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                     eq("${Competition::season.name}.year", year),
                     eq("${Competition::season.name}.type", 3)
                 )
-            ).toList()
+            ).map { it.toDomain() }.toList()
         }
 
     private suspend fun getNextDay(
@@ -126,7 +132,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
         type: Int,
         modifier: String,
         past: Boolean
-    ): List<Competition> =
+    ): List<CompetitionDomain> =
         withContext(Dispatchers.IO) {
             val estZone = TimeZone.of("America/New_York") // for kotlinx.datetime
             val estJavaZone = ZoneId.of("America/New_York") // for java.time conversions
@@ -183,7 +189,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB {
                         gte(Competition::date.name, Date.from(startOfDay)),
                         lt(Competition::date.name, Date.from(endOfDay))
                     )
-                ).sort(ascending(Competition::date.name)).toList()
+                ).sort(ascending(Competition::date.name)).map { it.toDomain() }.toList()
             } ?: emptyList()
         }
 }

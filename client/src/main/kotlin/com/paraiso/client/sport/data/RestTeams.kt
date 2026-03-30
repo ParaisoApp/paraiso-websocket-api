@@ -35,10 +35,11 @@ data class RestTeam(
     val seed: String? = null
 )
 
-fun RestTeams.toDomain(): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain() }
+fun RestTeams.toDomain(sport: SiteRoute): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain(sport) }
 
-fun RestTeam.toDomain(): TeamDomain = TeamDomain(
+fun RestTeam.toDomain(sport: SiteRoute): TeamDomain = TeamDomain(
     id = null,
+    sport = sport,
     teamId = id,
     location = location,
     name = name,

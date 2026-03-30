@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Schedule(
-    @SerialName(ID) val id: String,
+    val id: String,
     val sport: SiteRoute,
     val season: Season,
     val teamId: String,
@@ -18,11 +18,10 @@ data class Schedule(
 
 @Serializable
 data class Competition(
-    @SerialName(ID) val id: String,
+    val id: String,
     val sport: SiteRoute,
     val name: String,
     val shortName: String,
-    @Serializable(with = InstantBsonSerializer::class)
     val date: Instant?,
     val week: Int?,
     val season: Season?,
@@ -58,7 +57,6 @@ data class Status(
     val name: String,
     val state: String,
     val completed: Boolean,
-    @Serializable(with = InstantBsonSerializer::class)
     val completedTime: Instant?
 )
 
@@ -69,164 +67,11 @@ data class Venue(
     val state: String?
 )
 
-@Serializable
-data class ScheduleResponse(
-    val id: String,
-    val season: SeasonResponse,
-    val teamId: String,
-    val events: List<CompetitionResponse>
+fun ScoreboardBasic.toFullData(competitions: List<Competition>) = Scoreboard(
+    id = id,
+    sport = sport,
+    season = season,
+    week = week,
+    day = day,
+    competitions = competitions
 )
-
-@Serializable
-data class CompetitionResponse(
-    val id: String,
-    val name: String,
-    val shortName: String,
-    val date: Instant?,
-    val teams: List<TeamGameStatsResponse>,
-    val venue: VenueResponse,
-    val situation: SituationResponse?,
-    val status: StatusResponse
-)
-
-@Serializable
-data class SeasonResponse(
-    val year: Int,
-    val type: Int,
-    val name: String?,
-    val displayName: String?
-)
-
-@Serializable
-data class SituationResponse(
-    val down: Int? = null,
-    val distance: Int? = null,
-    val downDistanceText: String? = null,
-    val isRedZone: Boolean? = null,
-    val homeTimeouts: Int? = null,
-    val awayTimeouts: Int? = null,
-    val possession: String? = null
-)
-
-@Serializable
-data class StatusResponse(
-    val clock: String,
-    val period: Int,
-    val name: String,
-    val state: String,
-    val completed: Boolean,
-    val completedTime: Instant?
-)
-
-@Serializable
-data class VenueResponse(
-    val fullName: String,
-    val city: String,
-    val state: String?
-)
-
-@Serializable
-data class ScheduleEntity(
-    @SerialName(ID) val id: String,
-    val sport: SiteRoute,
-    val season: SeasonEntity,
-    val teamId: String,
-    val events: List<String>
-)
-
-@Serializable
-data class SeasonEntity(
-    val year: Int,
-    val type: Int,
-    val name: String?,
-    val displayName: String?
-)
-
-fun Schedule.toResponse() =
-    ScheduleResponse(
-        id = id,
-        season = season.toResponse(),
-        teamId = teamId,
-        events = events.map { it.toResponse() }
-    )
-
-fun Competition.toResponse() =
-    CompetitionResponse(
-        id = id,
-        name = name,
-        shortName = shortName,
-        date = date,
-        teams = teams.map { it.toResponse() },
-        venue = venue.toResponse(),
-        situation = situation?.toResponse(),
-        status = status.toResponse()
-    )
-
-fun Season.toResponse() =
-    SeasonResponse(
-        year = year,
-        type = type,
-        name = name,
-        displayName = displayName
-    )
-
-fun Situation.toResponse() = SituationResponse(
-    down = down,
-    distance = distance,
-    downDistanceText = downDistanceText,
-    isRedZone = isRedZone,
-    homeTimeouts = homeTimeouts,
-    awayTimeouts = awayTimeouts,
-    possession = possession
-)
-
-fun Status.toResponse() =
-    StatusResponse(
-        clock = clock,
-        period = period,
-        name = name,
-        state = state,
-        completed = completed,
-        completedTime = completedTime
-    )
-
-fun Venue.toResponse() =
-    VenueResponse(
-        fullName = fullName,
-        city = city,
-        state = state
-    )
-
-fun Schedule.toEntity() =
-    ScheduleEntity(
-        id = id,
-        sport = sport,
-        season = season.toEntity(),
-        teamId = teamId,
-        events = events.map { it.id }
-    )
-
-fun Season.toEntity() =
-    SeasonEntity(
-        year = year,
-        type = type,
-        name = name,
-        displayName = displayName
-    )
-
-fun ScheduleEntity.toDomain(events: List<Competition>) =
-    Schedule(
-        id = id,
-        sport = sport,
-        season = season.toDomain(),
-        teamId = teamId,
-        events = events
-    )
-
-fun SeasonEntity.toDomain() =
-    Season(
-        year = year,
-        type = type,
-        name = name,
-        displayName = displayName
-    )

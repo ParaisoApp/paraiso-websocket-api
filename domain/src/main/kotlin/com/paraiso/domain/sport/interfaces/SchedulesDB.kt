@@ -1,14 +1,15 @@
 package com.paraiso.domain.sport.interfaces
 
-import com.paraiso.domain.sport.data.ScheduleEntity
+import com.paraiso.domain.sport.data.Schedule
+
 
 interface SchedulesDB {
-    suspend fun findById(id: String): ScheduleEntity?
+    suspend fun findById(id: String): Schedule?
     suspend fun findBySportAndTeamIdAndYearAndType(
         sport: String,
         teamId: String,
         seasonYear: Int,
         seasonType: Int
-    ): ScheduleEntity?
-    suspend fun save(schedules: List<ScheduleEntity>): Int
+    ): Schedule?
+    suspend fun save(schedules: List<Schedule>): Int
 }

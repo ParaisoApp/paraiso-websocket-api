@@ -205,7 +205,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                     }
                 }
             }
-            response?.toDomain() ?: emptyList()
+            response?.toDomain(sport) ?: emptyList()
         } catch (ex: Exception) {
             logger.error("getTeams sport: $sport ex: $ex")
             emptyList()

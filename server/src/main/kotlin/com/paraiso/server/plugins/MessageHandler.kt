@@ -15,7 +15,7 @@ import com.paraiso.domain.posts.PostPin
 import com.paraiso.domain.routes.Favorite
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
-import com.paraiso.domain.sport.data.ScoreboardEntity
+import com.paraiso.domain.sport.data.ScoreboardBasic
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.users.EventService
@@ -153,7 +153,7 @@ class MessageHandler(
                         }
 
                         MessageType.SCOREBOARD.name -> {
-                            decodeMessage<ScoreboardEntity>(message)?.let { scoreboard ->
+                            decodeMessage<ScoreboardBasic>(message)?.let { scoreboard ->
                                 SportState.updateScoreboard(incomingModifier, scoreboard)
                             }
                         }

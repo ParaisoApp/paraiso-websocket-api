@@ -4,8 +4,9 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.BoxScore
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.Scoreboard
-import com.paraiso.domain.sport.data.ScoreboardEntity
+import com.paraiso.domain.sport.data.ScoreboardBasic
 import com.paraiso.domain.sport.data.init
+import com.paraiso.domain.sport.data.toBasic
 import com.paraiso.domain.sport.data.toEntity
 import io.klogging.Klogging
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import java.util.concurrent.ConcurrentHashMap
 
 object SportState : Klogging {
-    private val scoreboards = ConcurrentHashMap<String, MutableStateFlow<ScoreboardEntity>>()
+    private val scoreboards = ConcurrentHashMap<String, MutableStateFlow<ScoreboardBasic>>()
     private val competitions = ConcurrentHashMap<String, ConcurrentHashMap<String, MutableStateFlow<Competition>>>()
     private val boxScores = ConcurrentHashMap<String, MutableStateFlow<BoxScore>>()
     private val triggerRestart = ConcurrentHashMap(
@@ -30,10 +31,10 @@ object SportState : Klogging {
         competitions.values.flatMap { it.entries }.firstOrNull { it.key == id }?.value
     fun getCompetitionsBySport(sport: String): Map<String, StateFlow<Competition>>? = competitions[sport]
     fun getAllBoxScores(): Map<String, StateFlow<BoxScore>> = boxScores
-    fun getScoreboardFlow(id: String): StateFlow<ScoreboardEntity> =
-        scoreboards.getOrPut(id) { MutableStateFlow(Scoreboard.init().toEntity()) }
+    fun getScoreboardFlow(id: String): StateFlow<ScoreboardBasic> =
+        scoreboards.getOrPut(id) { MutableStateFlow(Scoreboard.init().toBasic()) }
 
-    suspend fun updateScoreboard(id: String, newSb: ScoreboardEntity) {
+    suspend fun updateScoreboard(id: String, newSb: ScoreboardBasic) {
         scoreboards.getOrPut(id) { MutableStateFlow(newSb) }.value = newSb
     }
     fun updateCompetitions(newComps: List<Competition>) {

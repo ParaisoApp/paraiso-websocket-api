@@ -3,9 +3,8 @@ package com.paraiso.domain.sport.sports
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.LeaderResponse
 import com.paraiso.domain.sport.data.RosterResponse
-import com.paraiso.domain.sport.data.ScoreboardResponse
+import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.StandingsResponse
-import com.paraiso.domain.sport.data.toDomain
 import com.paraiso.domain.sport.data.toResponse
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -29,8 +28,8 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).associateBy { it.id }
     suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)
     suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids)
-    suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)?.toResponse()
-    suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids).map { it.toResponse() }
+    suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)
+    suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids)
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)?.toResponse()
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
@@ -136,10 +135,10 @@ class SportApi(private val sportDBs: SportDBs) {
             seasonYear,
             seasonType
         )?.let { schedule ->
-            val competitions = sportDBs.competitionsDB.findByIdIn(schedule.events.toSet())
+            val competitions = sportDBs.competitionsDB.findByIdIn(schedule.events.map { it.id }.toSet())
                 .sortedBy { it.date }
-            schedule.toDomain(competitions)
-        }?.toResponse()
+            schedule.copy(events = competitions)
+        }
 
     suspend fun findScoreboard(
         sport: String,
@@ -186,12 +185,13 @@ class SportApi(private val sportDBs: SportDBs) {
             val day = compRef?.date?.toLocalDateTime(estZone)?.date
             val resolvedModifier = compRef?.week.toString()
                 .takeIf { sport == SiteRoute.FOOTBALL.name } ?: day
-            ScoreboardResponse(
+            Scoreboard(
                 id = "$sport-${compRef?.season?.type}-${compRef?.season?.year}-$resolvedModifier",
+                sport = sport,
                 season = compRef?.season,
                 week = compRef?.week,
                 day = day?.atStartOfDayIn(estZone),
-                competitions = resolvedComps.map { it.toResponse() }
+                competitions = resolvedComps
             )
         }
 

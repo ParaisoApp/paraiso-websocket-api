@@ -62,7 +62,7 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB {
     override suspend fun save(teams: List<TeamDomain>, sport: SiteRoute) =
         withContext(Dispatchers.IO) {
             val bulkOps = teams.map { team ->
-                val entity = team.toEntity(sport)
+                val entity = team.toEntity()
                 ReplaceOneModel(
                     eq(ID, entity.id),
                     entity,

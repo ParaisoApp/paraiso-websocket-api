@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 data class Scoreboard(
     val id: String,
     val sport: String?,
-    val season: Season,
+    val season: Season?,
     val week: Int?,
     val day: Instant?,
     val competitions: List<Competition>
@@ -42,114 +42,23 @@ data class Record(
 )
 
 @Serializable
-data class ScoreboardResponse(
+data class ScoreboardBasic(
     val id: String,
+    val sport: String?,
     val season: Season?,
     val week: Int?,
-    val day: Instant?,
-    val competitions: List<CompetitionResponse>
-)
-
-@Serializable
-data class TeamGameStatsResponse(
-    val teamId: String,
-    val homeAway: String,
-    val records: List<RecordResponse>,
-    val winner: Boolean,
-    val teamYearStats: List<TeamYearStatsResponse>,
-    val lineScores: List<Double>,
-    val score: String?
-)
-
-@Serializable
-data class RecordResponse(
-    val name: String?,
-    val summary: String?
-)
-
-@Serializable
-data class TeamYearStatsResponse(
-    val name: String,
-    val abbreviation: String,
-    val displayValue: String,
-    val rankDisplayValue: String?
-)
-
-@Serializable
-data class ScoreboardEntity(
-    @SerialName(ID) val id: String,
-    val sport: String?,
-    val season: Season,
-    val week: Int?,
-    @Serializable(with = InstantBsonSerializer::class)
     val day: Instant?,
     val competitions: List<String>
 )
 
-fun Scoreboard.toResponse() =
-    ScoreboardResponse(
-        id = id,
-        season = season,
-        week = week,
-        day = day,
-        competitions = competitions.map { it.toResponse() }
-    )
-
-fun TeamGameStats.toResponse() =
-    TeamGameStatsResponse(
-        teamId = teamId,
-        homeAway = homeAway,
-        records = records.map { it.toResponse() },
-        winner = winner,
-        teamYearStats = teamYearStats.map { it.toResponse() },
-        lineScores = lineScores,
-        score = score
-    )
-
-fun Record.toResponse() =
-    RecordResponse(
-        name = name,
-        summary = summary
-    )
-
-fun TeamYearStats.toResponse() =
-    TeamYearStatsResponse(
-        name = name,
-        abbreviation = abbreviation,
-        displayValue = displayValue,
-        rankDisplayValue = rankDisplayValue
-    )
-
-fun Scoreboard.toEntity() =
-    ScoreboardEntity(
+fun Scoreboard.toBasic() =
+    ScoreboardBasic(
         id = id,
         sport = sport,
         season = season,
         week = week,
         day = day,
         competitions = competitions.map { it.id }
-    )
-
-fun ScoreboardEntity.toDomain(
-    competitions: List<Competition>
-) =
-    Scoreboard(
-        id = id,
-        sport = sport,
-        season = season,
-        week = week,
-        day = day,
-        competitions = competitions
-    )
-fun ScoreboardEntity.toResponse(
-    competitions: List<CompetitionResponse>
-) =
-    ScoreboardResponse(
-        id = id,
-        season = season,
-        week = week,
-        day = day,
-        competitions = competitions
     )
 
 fun Scoreboard.Companion.init() =

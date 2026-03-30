@@ -2,6 +2,7 @@ package com.paraiso.server.plugins.jobs
 
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.Competition
+import com.paraiso.domain.sport.data.toFullData
 import com.paraiso.domain.sport.data.toResponse
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportState
@@ -49,13 +50,13 @@ class SportJobs(
                 SportState.getScoreboardFlow(sport).collect { sb ->
                     session.sendTypedMessage(
                         MessageType.SCOREBOARD,
-                        sb.toResponse(sportApi.findCompetitionsByIds(sb.competitions.toSet()))
+                        sb.toFullData(competitions = sportApi.findCompetitionsByIds(sb.competitions.toSet()))
                     )
                 }
             },
             launch {
                 combinedCompsFlow?.sample(FLOW_DELAY)?.collect { comps ->
-                    session.sendTypedMessage(MessageType.COMPS, comps.map { it.toResponse() }.associateBy { it.id })
+                    session.sendTypedMessage(MessageType.COMPS, comps.associateBy { it.id })
                 }
             }
         )
@@ -73,7 +74,7 @@ class SportJobs(
             listOf(
                 launch {
                     compFlow?.collect { comp ->
-                        session.sendTypedMessage(MessageType.COMPS, mapOf(comp.id to comp.toResponse()))
+                        session.sendTypedMessage(MessageType.COMPS, mapOf(comp.id to comp))
                         if (comp.status.completed) coroutineContext.cancel() // cancel collecting on game end
                     }
                 }
@@ -109,7 +110,7 @@ class SportJobs(
         }
         launch {
             combinedCompsFlow.sample(FLOW_DELAY).collect { comps ->
-                session.sendTypedMessage(MessageType.COMPS, comps.map { it.toResponse() }.associateBy { it.id })
+                session.sendTypedMessage(MessageType.COMPS, comps.associateBy { it.id })
             }
         }
     }

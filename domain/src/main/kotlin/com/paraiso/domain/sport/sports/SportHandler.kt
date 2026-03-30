@@ -16,6 +16,7 @@ import com.paraiso.domain.sport.data.PlayoffRound
 import com.paraiso.domain.sport.data.PlayoffTeam
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
+import com.paraiso.domain.sport.data.toBasic
 import com.paraiso.domain.sport.data.toEntity
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.util.Constants
@@ -160,7 +161,7 @@ class SportHandler(
                 }
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
-                    sportDBs.schedulesDB.save(schedulesRes.map { it.toEntity() })
+                    sportDBs.schedulesDB.save(schedulesRes)
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
                     if (autoBuildPosts || manual) {
                         addPosts(sport, schedulesRes.flatMap { it.events }, manual)
@@ -224,8 +225,8 @@ class SportHandler(
             while (isActive) {
                 sportClient.getScoreboard(sport)?.let { scoreboard ->
                     // if completely new scoreboard save it and generate game posts
-                    val lastScoreboardEntity = lastSentScoreboard[sport]?.toEntity()
-                    if (scoreboard.toEntity() != lastScoreboardEntity) {
+                    val lastScoreboardEntity = lastSentScoreboard[sport]?.toBasic()
+                    if (scoreboard.toBasic() != lastScoreboardEntity) {
                         saveScoreboardAndGetBoxScores(
                             sport,
                             scoreboard,
@@ -276,7 +277,7 @@ class SportHandler(
                         delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
                         initScoreboard = false
                     )
-                    if (scoreboard.season.type == 3 && endingCompetitions.isNotEmpty()) {
+                    if (scoreboard.season?.type == 3 && endingCompetitions.isNotEmpty()) {
                         savePlayoffResults(
                             endingCompetitions,
                             sport,
@@ -339,12 +340,12 @@ class SportHandler(
             }
         }
         // send scoreboard last as it will trigger refresh of comp consumers
-        val scoreboardEntity = scoreboard.toEntity()
-        if (scoreboardEntity != lastSentScoreboard[sport]?.toEntity()) {
-            sportDBs.scoreboardsDB.save(listOf(scoreboardEntity))
+        val basicScoreboard = scoreboard.toBasic()
+        if (basicScoreboard != lastSentScoreboard[sport]?.toBasic()) {
+            sportDBs.scoreboardsDB.save(listOf(scoreboard))
             eventService.publish(
                 MessageType.SCOREBOARD.name,
-                "$sport:${Json.encodeToString(scoreboardEntity)}"
+                "$sport:${Json.encodeToString(basicScoreboard)}"
             )
             addPosts(sport, activeCompetitions, false)
         }
