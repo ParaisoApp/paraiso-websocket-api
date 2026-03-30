@@ -9,45 +9,61 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.follows.Follow as FollowDomain
 import com.paraiso.domain.follows.FollowsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
-class FollowsDBImpl(database: MongoDatabase) : FollowsDB {
+class FollowsDBImpl(database: MongoDatabase) : FollowsDB, Klogging {
 
     private val collection = database.getCollection("follows", Follow::class.java)
 
     override suspend fun findIn(followerId: String, followeeIds: List<String>) =
         withContext(Dispatchers.IO) {
-            if (followeeIds.size == 1) {
-                collection.find(
-                    and(
-                        eq(Follow::followerId.name, followerId),
-                        eq(Follow::followeeId.name, followeeIds.firstOrNull())
-                    )
-                ).map { it.toDomain() }.toList()
-            } else {
-                collection.find(
-                    and(
-                        eq(Follow::followerId.name, followerId),
-                        `in`(Follow::followerId.name, followeeIds)
-                    )
-                ).map { it.toDomain() }.toList()
+            try{
+                if (followeeIds.size == 1) {
+                    collection.find(
+                        and(
+                            eq(Follow::followerId.name, followerId),
+                            eq(Follow::followeeId.name, followeeIds.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        and(
+                            eq(Follow::followerId.name, followerId),
+                            `in`(Follow::followerId.name, followeeIds)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
+            } catch (ex: Exception){
+                logger.error { "Error finding follows by ids: $ex" }
+                emptyList()
             }
         }
     override suspend fun findByFollowerId(followerId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                eq(Follow::followerId.name, followerId)
-            ).map { it.toDomain() }.toList()
+            try{
+                collection.find(
+                    eq(Follow::followerId.name, followerId)
+                ).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding follows by follower id: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun findByFolloweeId(followeeId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                eq(Follow::followeeId.name, followeeId)
-            ).map { it.toDomain() }.toList()
+            try{
+                collection.find(
+                    eq(Follow::followeeId.name, followeeId)
+                ).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding follows by followee id: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(follows: List<FollowDomain>) =

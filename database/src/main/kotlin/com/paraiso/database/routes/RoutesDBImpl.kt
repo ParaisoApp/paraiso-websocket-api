@@ -10,6 +10,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.routes.RouteDetails as RouteDetailsDomain
 import com.paraiso.domain.routes.RoutesDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
@@ -17,12 +18,17 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
 
-class RoutesDBImpl(database: MongoDatabase) : RoutesDB {
+class RoutesDBImpl(database: MongoDatabase) : RoutesDB, Klogging {
     private val collection = database.getCollection("routes", RouteDetails::class.java)
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding route by id: $ex" }
+                null
+            }
         }
 
     override suspend fun save(routes: List<RouteDetailsDomain>) =

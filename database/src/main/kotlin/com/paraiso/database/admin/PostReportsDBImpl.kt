@@ -11,6 +11,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.admin.PostReport as PostReportDomain
 import com.paraiso.domain.admin.PostReportsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -19,12 +20,17 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
 
-class PostReportsDBImpl(database: MongoDatabase) : PostReportsDB {
+class PostReportsDBImpl(database: MongoDatabase) : PostReportsDB, Klogging {
     private val collection = database.getCollection("postReports", PostReport::class.java)
 
     override suspend fun getAll() =
         withContext(Dispatchers.IO) {
-            collection.find().sort(ascending(PostReport::updatedOn.name)).map { it.toDomain() }.toList()
+            try{
+                collection.find().sort(ascending(PostReport::updatedOn.name)).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error getting all post reports: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(postReports: List<PostReportDomain>) =

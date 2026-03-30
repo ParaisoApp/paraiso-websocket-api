@@ -8,17 +8,23 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.posts.PostPin as PostPinDomain
 import com.paraiso.domain.posts.PostPinsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
-class PostPinsDBImpl(database: MongoDatabase) : PostPinsDB {
+class PostPinsDBImpl(database: MongoDatabase) : PostPinsDB, Klogging {
 
     private val collection = database.getCollection("postPins", PostPin::class.java)
     override suspend fun findByRouteId(routeId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(`in`(PostPin::routeId.name, routeId)).map { Pair(it.toDomain(), it.postId) }.toList()
+            try{
+                collection.find(`in`(PostPin::routeId.name, routeId)).map { Pair(it.toDomain(), it.postId) }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding post pins by route id: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(postPins: List<PostPinDomain>) =

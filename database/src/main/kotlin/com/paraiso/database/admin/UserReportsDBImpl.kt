@@ -11,6 +11,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.admin.UserReport as UserReportDomain
 import com.paraiso.domain.admin.UserReportsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -19,12 +20,17 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
 
-class UserReportsDBImpl(database: MongoDatabase) : UserReportsDB {
+class UserReportsDBImpl(database: MongoDatabase) : UserReportsDB, Klogging {
     private val collection = database.getCollection("userReports", UserReport::class.java)
 
     override suspend fun getAll() =
         withContext(Dispatchers.IO) {
-            collection.find().sort(ascending(UserReport::updatedOn.name)).map { it.toDomain() }.toList()
+            try{
+                collection.find().sort(ascending(UserReport::updatedOn.name)).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error getting all user reports: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(userReports: List<UserReportDomain>) =

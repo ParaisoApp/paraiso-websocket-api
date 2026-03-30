@@ -13,6 +13,7 @@ import com.paraiso.domain.notifications.NotificationsDB
 import com.paraiso.domain.notifications.PostNotificationContent
 import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -21,18 +22,23 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
 
-class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB {
+class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB, Klogging {
 
     private val collection = database.getCollection("notifications", Notification::class.java)
 
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                or(
-                    eq(Notification::userId.name, userId),
-                    eq(Notification::createUserId.name, userId)
-                )
-            ).map { Pair(it.toDomain(), it.content) }.toList()
+            try{
+                collection.find(
+                    or(
+                        eq(Notification::userId.name, userId),
+                        eq(Notification::createUserId.name, userId)
+                    )
+                ).map { Pair(it.toDomain(), it.content) }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding notifications by userId: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(notifications: List<NotificationDomain>) =

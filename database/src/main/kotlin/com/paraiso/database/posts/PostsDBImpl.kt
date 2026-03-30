@@ -39,6 +39,7 @@ import com.paraiso.domain.routes.isSportRoute
 import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -53,7 +54,7 @@ import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
 
-class PostsDBImpl(database: MongoDatabase) : PostsDB {
+class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     companion object {
         const val RETRIEVE_LIM = 50
         const val PARTIAL_RETRIEVE_LIM = 10
@@ -66,30 +67,50 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding post by id: $ex" }
+                null
+            }
         }
 
     override suspend fun findByIdsIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+            try{
+                collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding posts by ids: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun findByPartial(partial: String) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                and(
-                    or(
-                        regex(Post::title.name, partial, "i"),
-                        regex(Post::content.name, partial, "i")
-                    ),
-                    not(regex(ID, "^TEAM", "i")) // remove team event posts from search
-                )
-            ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
+            try{
+                collection.find(
+                    and(
+                        or(
+                            regex(Post::title.name, partial, "i"),
+                            regex(Post::content.name, partial, "i")
+                        ),
+                        not(regex(ID, "^TEAM", "i")) // remove team event posts from search
+                    )
+                ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding posts by partial: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(Post::userId.name, userId)).map { it.toDomain() }.toList()
+            try{
+                collection.find(eq(Post::userId.name, userId)).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding posts by user id: $ex" }
+                emptyList()
+            }
         }
 
     private fun getInitAggPipeline(
@@ -330,7 +351,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             pipeline.addAll(getSort(sortType))
             pipeline.add(limit(RETRIEVE_LIM))
 
-            return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+            try{
+                return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding posts by base criteria: $ex" }
+                return@withContext emptyList()
+            }
         }
 
     override suspend fun findByParentId(
@@ -354,7 +380,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             val pipeline = getInitAggPipeline(initialFilter)
             pipeline.add(getUserRoleCondition(filters, userFollowing))
             pipeline.addAll(getSort(sortType))
-            return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+            try{
+                return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding posts by parent id: $ex" }
+                return@withContext emptyList()
+            }
         }
 
     override suspend fun findByParentIdWithEventFilters(
@@ -400,7 +431,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB {
             val pipeline = getInitAggPipeline(initialFilter)
             pipeline.add(getUserRoleCondition(filters, userFollowing))
             pipeline.addAll(getSort(sortType))
-            return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+            try{
+                return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding posts by parent id with event filters: $ex" }
+                return@withContext emptyList()
+            }
         }
 
     override suspend fun save(posts: List<PostDomain>) =

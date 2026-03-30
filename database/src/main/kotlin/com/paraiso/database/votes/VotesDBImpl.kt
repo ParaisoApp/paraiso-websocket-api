@@ -12,6 +12,7 @@ import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.votes.Vote as VoteDomain
 import com.paraiso.domain.votes.VotesDB
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -21,28 +22,38 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
 
-class VotesDBImpl(database: MongoDatabase) : VotesDB {
+class VotesDBImpl(database: MongoDatabase) : VotesDB, Klogging {
 
     private val collection = database.getCollection("votes", Vote::class.java)
 
     override suspend fun findByVoterIdAndPostId(voterId: String, postId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                and(
-                    eq(Vote::voterId.name, voterId),
-                    eq(Vote::postId.name, postId)
-                )
-            ).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(
+                    and(
+                        eq(Vote::voterId.name, voterId),
+                        eq(Vote::postId.name, postId)
+                    )
+                ).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding vote by id: $ex" }
+                null
+            }
         }
 
     override suspend fun findByUserIdAndPostIdIn(userId: String, postIds: Set<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                and(
-                    eq(Vote::voterId.name, userId),
-                    `in`(Vote::postId.name, postIds)
-                )
-            ).map { it.toDomain() }.toList()
+            try{
+                collection.find(
+                    and(
+                        eq(Vote::voterId.name, userId),
+                        `in`(Vote::postId.name, postIds)
+                    )
+                ).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding votes by id user id and post id in: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(votes: List<VoteDomain>): Int =

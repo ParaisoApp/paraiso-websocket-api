@@ -25,6 +25,7 @@ import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSettings as UserSettingsDomain
 import com.paraiso.domain.users.UsersDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -35,7 +36,7 @@ import kotlinx.datetime.toJavaInstant
 import org.bson.Document
 import java.util.Date
 
-class UsersDBImpl(database: MongoDatabase) : UsersDB {
+class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
     companion object {
         const val PARTIAL_RETRIEVE_LIM = 5
     }
@@ -44,36 +45,66 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding user by id: $ex" }
+                null
+            }
         }
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+            try{
+                collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding users by ids: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun findByName(name: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(User::name.name, name)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq(User::name.name, name)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding user by name: $ex" }
+                null
+            }
         }
 
     override suspend fun existsByName(name: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(User::name.name, name))
+            try{
+                collection.find(eq(User::name.name, name))
                 .limit(1)
                 .firstOrNull() != null
+            } catch (ex: Exception){
+                logger.error { "Error checking if user exists by name: $ex" }
+                false
+            }
         }
 
     override suspend fun findByPartial(partial: String) =
         withContext(Dispatchers.IO) {
-            collection.find(regex(User::name.name, partial, "i"))
-                .limit(PARTIAL_RETRIEVE_LIM)
-                .map { it.toDomain() }
-                .toList()
+            try{
+                collection.find(regex(User::name.name, partial, "i"))
+                    .limit(PARTIAL_RETRIEVE_LIM)
+                    .map { it.toDomain() }
+                    .toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding users by partial: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun findUserByAuthId(authId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq("${User::authIds.name}.id", authId)).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(eq("${User::authIds.name}.id", authId)).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding user by auth id: $ex" }
+                null
+            }
         }
 
     override suspend fun getUserList(
@@ -82,18 +113,23 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB {
         followingList: List<String>
     ) =
         withContext(Dispatchers.IO) {
-            collection.find(
-                and(
-                    `in`(ID, userIds),
-                    or(
-                        `in`(User::roles.name, filters.userRoles),
-                        and(
-                            `in`(User::roles.name, UserRole.FOLLOWING),
-                            `in`(User::id.name, followingList)
+            try{
+                collection.find(
+                    and(
+                        `in`(ID, userIds),
+                        or(
+                            `in`(User::roles.name, filters.userRoles),
+                            and(
+                                `in`(User::roles.name, UserRole.FOLLOWING),
+                                `in`(User::id.name, followingList)
+                            )
                         )
                     )
-                )
-            ).map { it.toDomain() }.toList()
+                ).map { it.toDomain() }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error getting user list: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(users: List<UserDomain>) =

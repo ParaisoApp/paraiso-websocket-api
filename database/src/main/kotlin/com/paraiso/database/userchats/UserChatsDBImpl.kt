@@ -10,6 +10,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.userchats.UserChat as UserChatDomain
 import com.paraiso.domain.userchats.UserChatsDB
 import com.paraiso.domain.util.Constants.ID
+import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -19,16 +20,26 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
 
-class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB {
+class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB, Klogging {
     private val collection = database.getCollection("userChats", UserChat::class.java)
 
     override suspend fun findByUserIds(userId: String, otherUserId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(all(UserChat::userIds.name, listOf(userId, otherUserId))).limit(1).firstOrNull()?.toDomain()
+            try{
+                collection.find(all(UserChat::userIds.name, listOf(userId, otherUserId))).limit(1).firstOrNull()?.toDomain()
+            } catch (ex: Exception){
+                logger.error { "Error finding user chat by id: $ex" }
+                null
+            }
         }
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(UserChat::userIds.name, userId)).map { Pair(it.toDomain(), it.recentDm) }.toList()
+            try{
+                collection.find(eq(UserChat::userIds.name, userId)).map { Pair(it.toDomain(), it.recentDm) }.toList()
+            } catch (ex: Exception){
+                logger.error { "Error finding user chat by userId: $ex" }
+                emptyList()
+            }
         }
 
     override suspend fun save(chats: List<UserChatDomain>) =
