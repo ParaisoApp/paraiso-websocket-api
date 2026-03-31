@@ -92,6 +92,9 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -280,6 +283,10 @@ fun Application.configureSockets(
     routing {
         route("/chat") {
             intercept(ApplicationCallPipeline.Plugins) {
+                //hacky resolution but other paths were bleeding into the chat route
+                if (!call.request.path().startsWith("/chat")) {
+                    return@intercept
+                }
                 // grab userId and roles from signed cookies - need role to validate REST requests
                 val userCookie = call.sessions.get<UserCookie>()
                 // use ticket to grab authenticated user, fallback to guest account
@@ -322,7 +329,7 @@ fun Application.configureSockets(
                 )
             }
         }
-        route("paraiso_api/v1") {
+        route("/paraiso_api/v1") {
             authController(services.authApi, config)
             postsController(services.postsApi)
             usersController(services.usersApi)

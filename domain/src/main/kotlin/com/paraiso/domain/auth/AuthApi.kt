@@ -23,7 +23,7 @@ class AuthApi(
         usersApi.findUserByAuthId(authId)?.let { user ->
             val ticket = UUID.randomUUID().toString()
             cacheService.set("ws_ticket:$ticket", user.id, 60L)
-            TicketResponse(ticket, user.id)
+            TicketResponse(ticket)
         }
 
 }

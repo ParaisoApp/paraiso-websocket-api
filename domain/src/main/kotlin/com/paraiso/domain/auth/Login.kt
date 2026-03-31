@@ -20,6 +20,5 @@ data class AuthId(
 )
 @Serializable
 data class TicketResponse(
-    val ticket: String,
-    val userId: String
+    val ticket: String
 )
