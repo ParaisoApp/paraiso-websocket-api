@@ -26,7 +26,7 @@ class MetadataClientImpl : MetadataClient, BaseAdapter, Klogging {
             }
             response.toDomain(baseUrl)
         } catch (e: Exception) {
-            println("Failed to fetch oEmbed for $url: ${e.message}")
+            logger.error { "Failed to fetch oEmbed for $url: ${e.message}" }
             null
         }
     }
