@@ -53,6 +53,7 @@ import kotlinx.serialization.json.Json
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
+import kotlin.time.Duration.Companion.hours
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     companion object {
@@ -336,8 +337,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 ne(Post::status.name, PostStatus.DELETED),
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
-                // handle events (which may be created early but create date of event date)
-                lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                // event's create date is the date and time of event, offset to include upcoming events for route
+                lte(Post::createdOn.name, Date.from(Clock.System.now().plus(12.hours).toJavaInstant()))
             )
 
             range?.let {
