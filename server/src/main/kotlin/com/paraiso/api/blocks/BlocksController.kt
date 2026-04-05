@@ -3,7 +3,9 @@ package com.paraiso.api.blocks
 import com.paraiso.api.util.UserCookie
 import com.paraiso.domain.blocks.Block
 import com.paraiso.domain.blocks.BlocksApi
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -20,7 +22,9 @@ fun Route.blocksController(blocksApi: BlocksApi) {
                     blockeeId = call.request.queryParameters["blockeeId"] ?: "",
                     blocking = call.request.queryParameters["blocking"]?.toBoolean() == true
                 )
-            )
+            ).let {
+                call.respond(HttpStatusCode.OK, it)
+            }
         }
     }
 }
