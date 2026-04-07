@@ -18,32 +18,23 @@ import kotlinx.coroutines.withContext
 class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
     private val collection = database.getCollection("schedules", Schedule::class.java)
 
-    override suspend fun findById(id: String) =
-        withContext(Dispatchers.IO) {
-            try{
-                collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
-                logger.error { "Error finding schedule by id: $ex" }
-                null
-            }
-        }
-
     override suspend fun findBySportAndTeamIdAndYearAndType(
         sport: String,
         teamId: String,
         seasonYear: Int,
         seasonType: Int
-    ) =
+    ): Pair<ScheduleDomain?, List<String>>? =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(
+                val schedule = collection.find(
                     Filters.and(
                         Filters.eq(Schedule::sport.name, sport),
                         Filters.eq(Schedule::teamId.name, teamId),
                         Filters.eq("${Schedule::season.name}.year", seasonYear),
                         Filters.eq("${Schedule::season.name}.type", seasonType)
                     )
-                ).limit(1).firstOrNull()?.toDomain()
+                ).limit(1).firstOrNull()
+                Pair(schedule?.toDomain(), schedule?.events ?: emptyList())
             } catch (ex: Exception){
                 logger.error { "Error finding schedule by sport, teamId, season, and type: $ex" }
                 null

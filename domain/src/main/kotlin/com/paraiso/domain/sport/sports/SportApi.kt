@@ -137,10 +137,10 @@ class SportApi(private val sportDBs: SportDBs) {
             teamId,
             seasonYear,
             seasonType
-        )?.let { schedule ->
-            val competitions = sportDBs.competitionsDB.findByIdIn(schedule.events.map { it.id }.toSet())
+        )?.let { (schedule, eventIds) ->
+            val competitions = sportDBs.competitionsDB.findByIdIn(eventIds.toSet())
                 .sortedBy { it.date }
-            schedule.copy(events = competitions)
+            schedule?.copy(events = competitions)
         }
 
     suspend fun findScoreboard(

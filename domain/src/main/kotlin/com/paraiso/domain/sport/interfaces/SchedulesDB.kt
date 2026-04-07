@@ -4,12 +4,11 @@ import com.paraiso.domain.sport.data.Schedule
 
 
 interface SchedulesDB {
-    suspend fun findById(id: String): Schedule?
     suspend fun findBySportAndTeamIdAndYearAndType(
         sport: String,
         teamId: String,
         seasonYear: Int,
         seasonType: Int
-    ): Schedule?
+    ): Pair<Schedule?, List<String>>?
     suspend fun save(schedules: List<Schedule>): Int
 }

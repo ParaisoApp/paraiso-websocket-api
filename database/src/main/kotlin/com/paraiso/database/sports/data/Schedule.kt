@@ -15,7 +15,7 @@ data class Schedule(
     val sport: SiteRoute,
     val season: Season,
     val teamId: String,
-    val events: List<Competition>
+    val events: List<String>
 )
 
 @Serializable
@@ -32,7 +32,7 @@ fun ScheduleDomain.toEntity() =
         sport = sport,
         season = season.toEntity(),
         teamId = teamId,
-        events = events.map { it.toEntity() }
+        events = events.map { it.id }
     )
 
 fun SeasonDomain.toEntity() =
@@ -49,7 +49,7 @@ fun Schedule.toDomain() =
         sport = sport,
         season = season.toDomain(),
         teamId = teamId,
-        events = events.map { it.toDomain() }
+        events = emptyList()
     )
 
 fun Season.toDomain() =
