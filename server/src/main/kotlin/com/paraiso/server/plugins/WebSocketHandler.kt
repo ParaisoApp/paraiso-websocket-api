@@ -50,6 +50,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -57,6 +59,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.hours
 
 class WebSocketHandler(
     private val serverId: String,
@@ -244,9 +247,9 @@ class WebSocketHandler(
         val activeComps = ConcurrentHashMap<Set<String>, Job>()
         val activeBoxScores = ConcurrentHashMap<String, Job>()
         try {
+            // Continuously collect messages pushed from the Redis listener
             launch {
                 try {
-                    // Continuously collect messages pushed from the Redis listener
                     for (encodedMessage in sessionContext.inboundChannel) {
                         val messageType = determineMessageType(encodedMessage)
                         when (messageType) {
@@ -265,7 +268,17 @@ class WebSocketHandler(
                     logger.error { "Redis Collector Job failed: $e" }
                 }
             }
-
+            // Wait 23 hours before bumping the user session (refresh ttl of key)
+            launch {
+                while (isActive) {
+                    delay(23.hours)
+                    val extended = services.cacheService.bumpUserSession(sessionUser.id) ?: false
+                    if (!extended) {
+                        break
+                    }
+                }
+            }
+            //consume and parse incoming messages
             for (frame in incoming) {
                 when (val messageType = determineMessageType(frame)) {
                     MessageType.MSG -> {

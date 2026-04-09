@@ -17,6 +17,8 @@ import kotlinx.serialization.json.Json
 class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging {
     private val connection = client.connect()
     private val commands = connection.async()
+    private val twentyFourHours = 24 * 60 * 60L
+
     override suspend fun set(key: String, value: String, expirySeconds: Long?): String = withContext(Dispatchers.IO) {
         if (expirySeconds != null) {
             commands.setex(key, expirySeconds, value).await()
@@ -54,9 +56,18 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
 
     override suspend fun saveUserSession(userSession: UserSessionDomain): String =
         withContext(Dispatchers.IO) {
-            commands.set(
+            commands.setex(
                 "user:session:${userSession.userId}",
+                twentyFourHours,
                 Json.encodeToString(userSession.toEntity())
+            ).await()
+        }
+
+    override suspend fun bumpUserSession(userId: String): Boolean? =
+        withContext(Dispatchers.IO) {
+            commands.expire(
+                "user:session:$userId",
+                twentyFourHours,
             ).await()
         }
     override suspend fun getUserSession(userId: String): UserSessionDomain? =
