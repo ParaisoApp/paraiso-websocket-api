@@ -129,7 +129,7 @@ fun getMentions(content: String?): Set<String> {
     return if (content != null) Regex(">@(.*?)</a>").find(content)?.groupValues?.toSet() ?: emptySet() else emptySet()
 }
 
-fun User.validateUser(): Boolean =
+fun User.validateUserName(): Boolean =
     this.name?.replace("\\s+".toRegex(), "")?.length != 0
 
 inline fun <reified T> decodeMessage(payload: String): T? =

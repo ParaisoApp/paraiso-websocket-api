@@ -60,6 +60,7 @@ import com.paraiso.domain.sport.sports.SportHandler
 import com.paraiso.domain.userchats.DirectMessagesApi
 import com.paraiso.domain.userchats.UserChatsApi
 import com.paraiso.domain.users.User
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UserSessionsApi
 import com.paraiso.domain.users.UserStatus
 import com.paraiso.domain.users.UsersApi
@@ -295,9 +296,9 @@ fun Application.configureSockets(
                 // check if user already exists based on user or passed in id
                 val existingUser = resolvedUserId?.let{
                     //need to fetch full user info
-                    services.userSessionsApi.getUserById(it, null, true)
+                    services.userSessionsApi.getUserById(it, it, true)
                 }
-                val (currentUser, isNewUser) = if(existingUser == null){
+                val (currentUser, isNewUser) = if(existingUser == null || (existingUser.roles != UserRole.GUEST && ticketedUserId == null)){
                     User.newUser(UUID.randomUUID().toString()) to true
                 } else {
                     existingUser to false

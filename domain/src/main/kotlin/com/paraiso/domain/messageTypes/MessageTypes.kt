@@ -16,6 +16,12 @@ data class Delete(
 )
 
 @Serializable
+data class RouteUpdate(
+    val id: String,
+    val title: String
+)
+
+@Serializable
 data class FilterTypes(
     val postTypes: Set<PostType>,
     val userRoles: Set<UserRole>,

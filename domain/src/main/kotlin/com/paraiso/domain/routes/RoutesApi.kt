@@ -92,4 +92,6 @@ class RoutesApi(
             InitRouteData(postsData, contentData, users.await(), route)
         }
     }
+
+    suspend fun setRouteTitle(id: String, title: String) = routesDB.setTitle(id, title)
 }

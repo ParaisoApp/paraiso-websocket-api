@@ -5,6 +5,7 @@ import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.messageTypes.FilterTypes
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 
 class UserSessionsApi(
     private val usersDB: UsersDB,
@@ -12,38 +13,24 @@ class UserSessionsApi(
     private val followsApi: FollowsApi,
     private val blocksApi: BlocksApi
 ) {
-
-    private fun getStatus(session: UserSession?, hidden: Boolean) =
-        if (session == null || hidden) {
-            UserStatus.DISCONNECTED
-        } else {
-            UserStatus.CONNECTED
-        }
-    suspend fun getUserById(userId: String, curUserId: String?, fullInfo: Boolean) = coroutineScope {
+    // full user info only ever returned on initial user self fetch (hide info for others)
+    suspend fun getUserById(userId: String, curUserId: String, fullInfo: Boolean) = coroutineScope {
         cacheService.getUserSession(userId).let { session ->
-            val follows = async {
-                if (curUserId != null) {
-                    followsApi.findIn(curUserId, listOf(userId)).firstOrNull()
-                } else {
-                    null
-                }
-            }
-            val blocks = async {
-                if (curUserId != null) {
-                    blocksApi.findIn(curUserId, listOf(userId)).firstOrNull()
-                } else {
-                    null
-                }
-            }
             usersDB.findById(userId)?.let {
-                val user = it.copy(
-                    status = getStatus(session, it.settings.hidden),
-                    viewerContext = ViewerContext(
-                        follows.await()?.following,
-                        blocks.await()?.blocking
-                    )
-                )
-                if(fullInfo) user else user.toBasicResponse()
+                val user = it.copy(status = getStatus(session, it.settings.hidden))
+                if(fullInfo){
+                    user
+                }else{
+                    // viewer context only needed for other users (following, blocking)
+                    val follows = async{ followsApi.findIn(curUserId, listOf(userId)).firstOrNull() }
+                    val blocks = async{ blocksApi.findIn(curUserId, listOf(userId)).firstOrNull() }
+                    user.copy(
+                        viewerContext = ViewerContext(
+                            follows.await()?.following,
+                            blocks.await()?.blocking
+                        )
+                    ).toBasicResponse()
+                }
             }
         }
     }
@@ -146,4 +133,10 @@ class UserSessionsApi(
                 }
         }
     }
+    private fun getStatus(session: UserSession?, hidden: Boolean) =
+        if (session == null || hidden) {
+            UserStatus.DISCONNECTED
+        } else {
+            UserStatus.CONNECTED
+        }
 }

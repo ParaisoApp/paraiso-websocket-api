@@ -43,13 +43,26 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB, Klogging {
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
+    override suspend fun setTitle(
+        id: String,
+        title: String
+    ) =
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                Filters.eq(ID, id),
+                combine(
+                    set(RouteDetails::title.name, title),
+                    set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
     override suspend fun setFavorites(
-        routeId: String,
+        id: String,
         favorite: Int
     ) =
         withContext(Dispatchers.IO) {
             collection.updateOne(
-                Filters.eq(ID, routeId),
+                Filters.eq(ID, id),
                 combine(
                     Updates.inc(RouteDetails::userFavorites.name, favorite),
                     set(RouteDetails::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))

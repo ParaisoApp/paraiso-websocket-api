@@ -71,6 +71,9 @@ enum class MessageType {
     @SerialName("ROUTE")
     ROUTE,
 
+    @SerialName("ROUTE_UPDATE")
+    ROUTE_UPDATE,
+
     @SerialName("SUBSCRIBE")
     SUBSCRIBE,
 

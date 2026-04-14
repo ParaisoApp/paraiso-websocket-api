@@ -9,6 +9,7 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.RoleUpdate
+import com.paraiso.domain.messageTypes.RouteUpdate
 import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
@@ -38,7 +39,7 @@ import com.paraiso.server.util.cleanAndType
 import com.paraiso.server.util.determineMessageType
 import com.paraiso.server.util.getMentions
 import com.paraiso.server.util.sendTypedMessage
-import com.paraiso.server.util.validateUser
+import com.paraiso.server.util.validateUserName
 import io.klogging.Klogging
 import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
@@ -130,11 +131,29 @@ class WebSocketHandler(
         joinChat(currentUser, sessionId, sessionContext)
     }
 
+    private suspend fun validateMessage(
+        sessionUserId: String,
+        blocking: Boolean,
+        message: Message,
+        sessionContext: SessionContext
+    ) = message.userId?.let { userId -> // user id not null condition
+        val isUser = sessionUserId == userId
+        // user is on home - take any message, otherwise message must come from route
+        val routeCriteria = sessionContext.routeId == HOME_PREFIX || sessionContext.routeId == message.route
+        val filterCriteria =
+            sessionContext.filterTypes.userRoles.contains(message.userRole) &&
+                sessionContext.filterTypes.postTypes.contains(message.type) &&
+                routeCriteria
+        val messageCriteria = !blocking && filterCriteria // user isn't in cur user's block list
+        isUser || messageCriteria
+    } ?: false
+
     private suspend fun WebSocketServerSession.joinChat(
         incomingUser: User,
         sessionId: String,
         sessionContext: SessionContext
     ) {
+        //user may change when banned or when user updates settings (but only care about id, banned, and roles)
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
@@ -178,22 +197,35 @@ class WebSocketHandler(
                         MessageType.BASIC -> sendTypedMessage(type, message as String)
                         MessageType.USER_UPDATE -> {
                             val user = (message as User)
-                            val follow = services.followsApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
-                            val block = services.blocksApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
-                            val userWithData = user.copy(
-                                reports = 0,
-                                banned = false,
-                                viewerContext = ViewerContext(
-                                    following = follow?.following,
-                                    blocking = block?.blocking
-                                )
-                            )
                             // remove private data from user update socket messages
-                            val finalizedUser = if(userWithData.id == sessionUser.id) userWithData else userWithData.toBasicResponse()
+                            val finalizedUser = if(user.id == sessionUser.id){
+                                user
+                            } else {
+                                // grab session user's context for user that changed
+                                val follow = services.followsApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
+                                val block = services.blocksApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
+                                val userWithData = user.copy(
+                                    viewerContext = ViewerContext(
+                                        following = follow?.following,
+                                        blocking = block?.blocking
+                                    )
+                                )
+                                userWithData.toBasicResponse()
+                            }
                             sendTypedMessage(
                                 type,
                                 finalizedUser
                             )
+                        }
+                        MessageType.ROUTE_UPDATE -> {
+                            val route = (message as RouteUpdate)
+                            // remove private data from user update socket messages
+                            if(sessionContext.routeId == route.id){
+                                sendTypedMessage(
+                                    type,
+                                    route
+                                )
+                            }
                         }
                         MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
                         MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
@@ -217,31 +249,6 @@ class WebSocketHandler(
 
         ServerState.userUpdateFlowMut.emit(sessionUser.toBasicResponse())
         services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
-        parseAndRouteMessages(sessionUser, sessionId, sessionContext)
-    }
-
-    private suspend fun validateMessage(
-        sessionUserId: String,
-        blocking: Boolean,
-        message: Message,
-        sessionContext: SessionContext
-    ) = message.userId?.let { userId -> // user id not null condition
-        val isUser = sessionUserId == userId
-        // user is on home - take any message, otherwise message must come from route
-        val routeCriteria = sessionContext.routeId == HOME_PREFIX || sessionContext.routeId == message.route
-        val filterCriteria =
-            sessionContext.filterTypes.userRoles.contains(message.userRole) &&
-                sessionContext.filterTypes.postTypes.contains(message.type) &&
-                routeCriteria
-        val messageCriteria = !blocking && filterCriteria // user isn't in cur user's block list
-        isUser || messageCriteria
-    } ?: false
-
-    private suspend fun WebSocketServerSession.parseAndRouteMessages(
-        sessionUser: User,
-        sessionId: String,
-        sessionContext: SessionContext
-    ) {
         // holds the active jobs for given route
         val activeJobs = mutableListOf<Job>()
         val activeComps = ConcurrentHashMap<Set<String>, Job>()
@@ -284,13 +291,13 @@ class WebSocketHandler(
                     MessageType.MSG -> {
                         converter?.cleanAndType<TypeMapping<Message>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { message ->
-                                handleMessage(message, sessionUser)
+                                handleMessage(message, sessionUser.id, sessionUser.banned)
                             }
                     }
                     MessageType.DM -> {
                         converter?.cleanAndType<TypeMapping<DirectMessage>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.let { dm ->
-                                handleDm(dm, sessionUser)
+                                handleDm(dm, sessionUser.id, sessionUser.banned)
                             }
                     }
                     MessageType.FOLLOW -> {
@@ -343,8 +350,17 @@ class WebSocketHandler(
                     MessageType.USER_UPDATE -> {
                         converter?.cleanAndType<TypeMapping<User>>(frame)
                             ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
-                                if (user.validateUser()) {
+                                if (user.validateUserName()) {
                                     launch { services.usersApi.updateUser(user) }
+                                    launch {
+                                        if(sessionUser.name != user.name){
+                                            user.name?.let { name ->
+                                                val routeId = "/p/${user.id}"
+                                                services.routesApi.setRouteTitle(routeId, name)
+                                                ServerState.routeUpdateFlowMut.emit(RouteUpdate(routeId, name))
+                                            }
+                                        }
+                                    }
                                     ServerState.userUpdateFlowMut.emit(user.toBasicResponse())
                                     sendTypedMessage(MessageType.USER, user) // send full user details back to user
                                     services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
@@ -491,7 +507,7 @@ class WebSocketHandler(
                     } else {
                         serverSessions[serverId] = remainingSessions
                     }
-                    val userDisconnected = services.userSessionsApi.getUserById(sessionUser.id, null, false)
+                    val userDisconnected = services.userSessionsApi.getUserById(sessionUser.id, sessionUser.id, false)
                         ?.copy(status = UserStatus.DISCONNECTED)
                     if (serverSessions.isEmpty()) {
                         // Fully disconnected, remove from redis and publish out user disconnect
@@ -521,14 +537,15 @@ class WebSocketHandler(
 
     private suspend fun WebSocketServerSession.handleMessage(
         message: Message,
-        sessionUser: User
+        userId: String,
+        userBanned: Boolean
     ) = coroutineScope {
         val messageId: String = message.editId ?: UUID.randomUUID().toString()
         val userIdMentions = services.usersApi.addMentions(
             // retreive mentions from content (parse with @)
             getMentions(message.content),
             message.userReceiveIds.firstOrNull(),
-            sessionUser.id
+            userId
         )
         // create notifications for all mentions or replied users
         userIdMentions.map { userReceiveId ->
@@ -538,9 +555,9 @@ class WebSocketHandler(
                 NotificationType.MENTION
             }
             Notification(
-                id = "$userReceiveId-${sessionUser.id}-$messageId-${message.replyId}",
+                id = "$userReceiveId-${userId}-$messageId-${message.replyId}",
                 userId = userReceiveId,
-                createUserId = sessionUser.id,
+                createUserId = userId,
                 refId = messageId,
                 replyId = message.replyId,
                 content = null,
@@ -558,8 +575,8 @@ class WebSocketHandler(
         launch {
             services.votesApi.vote(
                 Vote(
-                    voterId = sessionUser.id,
-                    voteeId = sessionUser.id,
+                    voterId = userId,
+                    voteeId = userId,
                     type = message.type,
                     postId = messageId,
                     upvote = true
@@ -569,19 +586,19 @@ class WebSocketHandler(
         // add init vote to user score
         launch {
             services.usersApi.votePost(
-                sessionUser.id,
+                userId,
                 1
             )
         }
         message.copy(
             id = messageId,
-            userId = sessionUser.id,
+            userId = userId,
             // if root id == message id then it's a post at the root of the route
             rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
             userReceiveIds = message.userReceiveIds.plus(userIdMentions)
         ).let { messageWithData ->
             // shadow send message if user banned
-            if (sessionUser.banned) {
+            if (userBanned) {
                 sendTypedMessage(MessageType.MSG, messageWithData)
             } else {
                 // emit to this server, publish downstream to other servers
@@ -593,19 +610,20 @@ class WebSocketHandler(
     }
     private suspend fun WebSocketServerSession.handleDm(
         dm: DirectMessage,
-        sessionUser: User
+        userId: String,
+        userBanned: Boolean
     ) = coroutineScope {
         dm.copy(
             id = UUID.randomUUID().toString(),
-            userId = sessionUser.id
+            userId = userId
         ).let { dmWithData ->
             launch { sendTypedMessage(MessageType.DM, dmWithData) }
             val userReceiveBlocking = services.blocksApi.findIn(
                 dmWithData.userReceiveId,
-                listOf(sessionUser.id)
+                listOf(userId)
             ).firstOrNull()?.blocking == true
             if (
-                !sessionUser.banned &&
+                !userBanned &&
                 !userReceiveBlocking
             ) {
                 // update chat for receiving user
