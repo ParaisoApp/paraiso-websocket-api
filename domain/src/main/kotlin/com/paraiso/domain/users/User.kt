@@ -1,5 +1,6 @@
 package com.paraiso.domain.users
 
+import com.paraiso.domain.messageTypes.ServerEvent
 import com.paraiso.domain.util.Constants.SYSTEM
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

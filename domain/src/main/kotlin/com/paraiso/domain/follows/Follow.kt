@@ -1,5 +1,6 @@
 package com.paraiso.domain.follows
 
+import com.paraiso.domain.messageTypes.ServerEvent
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock

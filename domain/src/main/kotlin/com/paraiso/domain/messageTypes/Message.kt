@@ -24,7 +24,7 @@ data class Message(
     val editId: String?,
     val route: String,
     val userRole: UserRole
-)
+): ServerEvent
 
 fun Message.toNewPost() =
     Clock.System.now().let { now ->

@@ -18,7 +18,7 @@ import kotlinx.serialization.json.jsonObject
 import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import java.nio.charset.Charset
-import com.paraiso.domain.messageTypes.TypeMapping as TypeMappingDomain
+import com.paraiso.domain.messageTypes.TypeMapping
 
 val safeList: Safelist = Safelist()
     .addTags(
@@ -74,11 +74,13 @@ internal suspend inline fun <reified T> WebsocketContentConverter.cleanAndType(
             frame
         }
 
-        this.deserialize(
+        val result = this.deserialize(
             Charset.defaultCharset(),
-            typeInfo<T>(),
+            typeInfo<TypeMapping<T>>(),
             cleanFrame
-        ) as? T
+        ) as? TypeMapping<T>
+
+        result?.typeMapping?.values?.firstOrNull()
     } catch (e: Exception) {
         println(e)
         null
@@ -141,8 +143,8 @@ inline fun <reified T> decodeMessage(payload: String): T? =
     }
 
 suspend inline fun <reified T> WebSocketServerSession.sendTypedMessage(messageType: MessageType, data: T) =
-    sendSerialized<TypeMappingDomain<T>>(
-        TypeMappingDomain(
+    sendSerialized<TypeMapping<T>>(
+        TypeMapping(
             mapOf(messageType to data)
         )
     )

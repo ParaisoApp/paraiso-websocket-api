@@ -1,8 +1,6 @@
 package com.paraiso.domain.votes
 
 import com.paraiso.domain.posts.PostType
-import com.paraiso.domain.util.Constants
-import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName

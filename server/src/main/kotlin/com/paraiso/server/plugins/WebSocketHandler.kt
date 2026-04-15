@@ -10,6 +10,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.RouteUpdate
+import com.paraiso.domain.messageTypes.ServerEvent
 import com.paraiso.domain.messageTypes.Subscription
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
@@ -41,11 +42,13 @@ import com.paraiso.server.util.getMentions
 import com.paraiso.server.util.sendTypedMessage
 import com.paraiso.server.util.validateUserName
 import io.klogging.Klogging
+import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
+import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -158,96 +161,93 @@ class WebSocketHandler(
         sendTypedMessage(MessageType.USER, sessionUser)
 
         // setup message intake (from others)
-        ServerState.flowList.map { (type, sharedFlow) ->
-            launch {
-                sharedFlow.collect { message ->
-                    when (type) {
-                        MessageType.MSG -> {
-                            (message as? Message)?.let { newMessage ->
-                                val block = services.blocksApi.findIn(
+        launch {
+            ServerState.eventReceivedFlow.collect { event ->
+                when (event) {
+                    is ServerEvent.MessageReceived -> {
+                        event.data.let { message ->
+                            val block = services.blocksApi.findIn(
+                                sessionUser.id,
+                                listOf(message.userId ?: "")
+                            ).firstOrNull()
+                            if (
+                                validateMessage(
                                     sessionUser.id,
-                                    listOf(newMessage.userId ?: "")
-                                ).firstOrNull()
-                                if (
-                                    validateMessage(
-                                        sessionUser.id,
-                                        block?.blocking == true,
-                                        newMessage,
-                                        sessionContext
-                                    )
-                                ) {
-                                    val mappedMessage = if (sessionContext.routeId == HOME_PREFIX && message.replyId == message.route) {
-                                        message.copy(replyId = HOME_PREFIX)
-                                    } else {
-                                        message
-                                    }
-                                    sendTypedMessage(type, mappedMessage)
-                                }
-                            }
-                        }
-                        MessageType.VOTE -> {
-                            (message as? Vote)?.let { newVote ->
-                                if (sessionContext.filterTypes.postTypes.contains(newVote.type)) {
-                                    sendTypedMessage(type, newVote)
-                                }
-                            }
-                        }
-                        MessageType.FOLLOW -> sendTypedMessage(type, message as Follow)
-                        MessageType.DELETE -> sendTypedMessage(type, message as Delete)
-                        MessageType.BASIC -> sendTypedMessage(type, message as String)
-                        MessageType.USER_UPDATE -> {
-                            val user = (message as User)
-                            // remove private data from user update socket messages
-                            val finalizedUser = if(user.id == sessionUser.id){
-                                user
-                            } else {
-                                // grab session user's context for user that changed
-                                val follow = services.followsApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
-                                val block = services.blocksApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
-                                val userWithData = user.copy(
-                                    viewerContext = ViewerContext(
-                                        following = follow?.following,
-                                        blocking = block?.blocking
-                                    )
+                                    block?.blocking == true,
+                                    message,
+                                    sessionContext
                                 )
-                                userWithData.toBasicResponse()
+                            ) {
+                                val mappedMessage = if (sessionContext.routeId == HOME_PREFIX && message.replyId == message.route) {
+                                    message.copy(replyId = HOME_PREFIX)
+                                } else {
+                                    message
+                                }
+                                sendTypedMessage(MessageType.MSG, mappedMessage)
                             }
+                        }
+                    }
+                    is ServerEvent.VoteReceived -> {
+                        event.data.let { newVote ->
+                            if (sessionContext.filterTypes.postTypes.contains(newVote.type)) {
+                                sendTypedMessage(MessageType.VOTE, newVote)
+                            }
+                        }
+                    }
+                    is ServerEvent.FollowReceived -> sendTypedMessage(MessageType.FOLLOW, event.data)
+                    is ServerEvent.FavoriteReceived -> sendTypedMessage(MessageType.FAVORITE, event.data)
+                    is ServerEvent.DeleteReceived -> sendTypedMessage(MessageType.DELETE, event.data)
+                    is ServerEvent.UserUpdateReceived -> {
+                        val user = event.data
+                        // remove private data from user update socket messages
+                        val finalizedUser = if(user.id == sessionUser.id){
+                            user
+                        } else {
+                            // grab session user's context for user that changed
+                            val follow = services.followsApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
+                            val block = services.blocksApi.findIn(sessionUser.id, listOf(user.id)).firstOrNull()
+                            val userWithData = user.copy(
+                                viewerContext = ViewerContext(
+                                    following = follow?.following,
+                                    blocking = block?.blocking
+                                )
+                            )
+                            userWithData.toBasicResponse()
+                        }
+                        sendTypedMessage(
+                            MessageType.USER_UPDATE,
+                            finalizedUser
+                        )
+                    }
+                    is ServerEvent.RouteUpdateReceived -> {
+                        val route = event.data
+                        // remove private data from user update socket messages
+                        if(sessionContext.routeId == route.id){
                             sendTypedMessage(
-                                type,
-                                finalizedUser
+                                MessageType.ROUTE_UPDATE,
+                                route
                             )
                         }
-                        MessageType.ROUTE_UPDATE -> {
-                            val route = (message as RouteUpdate)
-                            // remove private data from user update socket messages
-                            if(sessionContext.routeId == route.id){
-                                sendTypedMessage(
-                                    type,
-                                    route
-                                )
-                            }
-                        }
-                        MessageType.REPORT_USER -> sendTypedMessage(type, message as Report)
-                        MessageType.REPORT_POST -> sendTypedMessage(type, message as Report)
-                        MessageType.PIN_POST -> sendTypedMessage(type, message as PostPin)
-                        MessageType.ROLE_UPDATE -> sendTypedMessage(type, message as RoleUpdate)
-                        MessageType.TAG -> sendTypedMessage(type, message as Tag)
-                        MessageType.FAVORITE -> sendTypedMessage(type, message as Favorite)
-                        MessageType.BAN -> {
-                            val ban = message as? Ban
-                            ban?.let { bannedMsg ->
-                                if (sessionUser.id == bannedMsg.userId) {
-                                    sessionUser = sessionUser.copy(banned = true)
-                                }
-                            }
-                        }
-                        else -> logger.error { "Found unknown type when sending typed message from flow $sharedFlow" }
                     }
+                    is ServerEvent.PostPinReceived -> sendTypedMessage(MessageType.PIN_POST, event.data)
+                    is ServerEvent.RoleUpdateReceived -> sendTypedMessage(MessageType.ROLE_UPDATE, event.data)
+                    is ServerEvent.BanReceived -> {
+                        event.data.let { bannedMsg ->
+                            if (sessionUser.id == bannedMsg.userId) {
+                                sessionUser = sessionUser.copy(banned = true)
+                            }
+                        }
+                    }
+                    is ServerEvent.TagReceived -> sendTypedMessage(MessageType.TAG, event.data)
+                    is ServerEvent.UserReportReceived -> sendTypedMessage(MessageType.REPORT_USER, event.data)
+                    is ServerEvent.PostReportReceived -> sendTypedMessage(MessageType.REPORT_POST, event.data)
+                    is ServerEvent.BasicReceived -> sendTypedMessage(MessageType.BASIC, event.data)
+                    else -> logger.error { "Found unknown type when sending typed message from flow" }
                 }
             }
         }
 
-        ServerState.userUpdateFlowMut.emit(sessionUser.toBasicResponse())
+        ServerState.eventReceivedFlowMut.emit(ServerEvent.UserUpdateReceived(sessionUser.toBasicResponse()))
         services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(sessionUser)}")
         // holds the active jobs for given route
         val activeJobs = mutableListOf<Job>()
@@ -289,203 +289,191 @@ class WebSocketHandler(
             for (frame in incoming) {
                 when (val messageType = determineMessageType(frame)) {
                     MessageType.MSG -> {
-                        converter?.cleanAndType<TypeMapping<Message>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { message ->
-                                handleMessage(message, sessionUser.id, sessionUser.banned)
-                            }
+                        converter?.cleanAndType<Message>(frame)?.let { message ->
+                            handleMessage(message, sessionUser.id, sessionUser.banned)
+                        }
                     }
                     MessageType.DM -> {
-                        converter?.cleanAndType<TypeMapping<DirectMessage>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { dm ->
-                                handleDm(dm, sessionUser.id, sessionUser.banned)
-                            }
+                        converter?.cleanAndType<DirectMessage>(frame)?.let { dm ->
+                            handleDm(dm, sessionUser.id, sessionUser.banned)
+                        }
                     }
                     MessageType.FOLLOW -> {
-                        converter?.cleanAndType<TypeMapping<Follow>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(followerId = sessionUser.id)?.let { follow ->
-                                if (sessionUser.banned) {
-                                    sendTypedMessage(MessageType.FOLLOW, follow)
-                                } else {
-                                    launch { services.followsApi.follow(follow) }
-                                    launch { services.usersApi.follow(follow) }
-                                    ServerState.followFlowMut.emit(follow)
-                                    services.eventService.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
-                                }
+                        converter?.cleanAndType<Follow>(frame)?.copy(followerId = sessionUser.id)?.let { follow ->
+                            if (sessionUser.banned) {
+                                sendTypedMessage(MessageType.FOLLOW, follow)
+                            } else {
+                                launch { services.followsApi.follow(follow) }
+                                launch { services.usersApi.follow(follow) }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.FollowReceived(follow))
+                                services.eventService.publish(MessageType.FOLLOW.name, "$serverId:${Json.encodeToString(follow)}")
                             }
+                        }
                     }
                     MessageType.FAVORITE -> {
-                        converter?.cleanAndType<TypeMapping<Favorite>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { favorite ->
-                                if (sessionUser.banned) {
-                                    sendTypedMessage(MessageType.FAVORITE, favorite)
-                                } else {
-                                    launch { services.usersApi.toggleFavoriteRoute(favorite) }
-                                    // indicates toggle on or off rather than adding route flair
-                                    if (favorite.toggle) {
-                                        launch { services.routesApi.toggleFavoriteRoute(favorite) }
-                                    }
-                                    ServerState.favoriteFlowMut.emit(favorite)
-                                    services.eventService.publish(MessageType.FAVORITE.name, "$serverId:${Json.encodeToString(favorite)}")
+                        converter?.cleanAndType<Favorite>(frame)?.copy(userId = sessionUser.id)?.let { favorite ->
+                            if (sessionUser.banned) {
+                                sendTypedMessage(MessageType.FAVORITE, favorite)
+                            } else {
+                                launch { services.usersApi.toggleFavoriteRoute(favorite) }
+                                // indicates toggle on or off rather than adding route flair
+                                if (favorite.toggle) {
+                                    launch { services.routesApi.toggleFavoriteRoute(favorite) }
                                 }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.FavoriteReceived(favorite))
+                                services.eventService.publish(MessageType.FAVORITE.name, "$serverId:${Json.encodeToString(favorite)}")
                             }
+                        }
                     }
                     MessageType.VOTE -> {
-                        converter?.cleanAndType<TypeMapping<Vote>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(voterId = sessionUser.id)?.let { vote ->
-                                if (sessionUser.banned) {
-                                    sendTypedMessage(MessageType.VOTE, vote)
-                                } else {
-                                    val score = services.votesApi.vote(vote)
-                                    launch { services.postsApi.votePost(vote.postId, score) }
-                                    launch {
-                                        vote.voteeId?.let { voteeId ->
-                                            services.usersApi.votePost(voteeId, score)
-                                        }
+                        converter?.cleanAndType<Vote>(frame)?.copy(voterId = sessionUser.id)?.let { vote ->
+                            if (sessionUser.banned) {
+                                sendTypedMessage(MessageType.VOTE, vote)
+                            } else {
+                                val score = services.votesApi.vote(vote)
+                                launch { services.postsApi.votePost(vote.postId, score) }
+                                launch {
+                                    vote.voteeId?.let { voteeId ->
+                                        services.usersApi.votePost(voteeId, score)
                                     }
-                                    ServerState.voteFlowMut.emit(vote.copy(score = score))
-                                    services.eventService.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
                                 }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.VoteReceived(vote.copy(score = score)))
+                                services.eventService.publish(MessageType.VOTE.name, "$serverId:${Json.encodeToString(vote)}")
                             }
+                        }
                     }
                     MessageType.USER_UPDATE -> {
-                        converter?.cleanAndType<TypeMapping<User>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(id = sessionUser.id)?.let { user ->
-                                if (user.validateUserName()) {
-                                    launch { services.usersApi.updateUser(user) }
-                                    launch {
-                                        if(sessionUser.name != user.name){
-                                            user.name?.let { name ->
-                                                val routeId = "/p/${user.id}"
-                                                services.routesApi.setRouteTitle(routeId, name)
-                                                ServerState.routeUpdateFlowMut.emit(RouteUpdate(routeId, name))
-                                            }
+                        converter?.cleanAndType<User>(frame)?.copy(id = sessionUser.id)?.let { user ->
+                            if (user.validateUserName()) {
+                                launch { services.usersApi.updateUser(user) }
+                                launch {
+                                    if(sessionUser.name != user.name){
+                                        user.name?.let { name ->
+                                            val routeId = "/p/${user.id}"
+                                            services.routesApi.setRouteTitle(routeId, name)
+                                            ServerState.eventReceivedFlowMut.emit(
+                                                ServerEvent.RouteUpdateReceived(
+                                                    RouteUpdate(routeId, name)
+                                                )
+                                            )
                                         }
                                     }
-                                    ServerState.userUpdateFlowMut.emit(user.toBasicResponse())
-                                    sendTypedMessage(MessageType.USER, user) // send full user details back to user
-                                    services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                                 }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.UserUpdateReceived(user.toBasicResponse()))
+                                sendTypedMessage(MessageType.USER, user) // send full user details back to user
+                                services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                             }
+                        }
                     }
                     MessageType.FILTER_TYPES -> {
-                        converter?.cleanAndType<TypeMapping<FilterTypes>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { newFilterTypes ->
-                                sessionContext.filterTypes = newFilterTypes
-                            }
+                        converter?.cleanAndType<FilterTypes>(frame)?.let { newFilterTypes ->
+                            sessionContext.filterTypes = newFilterTypes
+                        }
                     }
                     MessageType.DELETE -> {
-                        converter?.cleanAndType<TypeMapping<Delete>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { delete ->
-                                // validate post is owned by user and delete is executed
-                                services.postsApi.deletePost(delete, sessionUser.id)?.let { deleted ->
-                                    if( deleted ){
-                                        ServerState.deleteFlowMut.emit(delete)
-                                        services.eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
-                                    }
+                        converter?.cleanAndType<Delete>(frame)?.let { delete ->
+                            // validate post is owned by user and delete is executed
+                            services.postsApi.deletePost(delete, sessionUser.id)?.let { deleted ->
+                                if( deleted ){
+                                    ServerState.eventReceivedFlowMut.emit(ServerEvent.DeleteReceived(delete))
+                                    services.eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
                                 }
                             }
+                        }
                     }
                     MessageType.PIN_POST -> {
-                        converter?.cleanAndType<TypeMapping<PostPin>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.copy(userId = sessionUser.id)?.let { postPin ->
-                                // user must have elevated auth or be pinning post on profile
-                                val routeUserId = postPin.routeId.removePrefix(USER_PREFIX)
-                                if (sessionUser.roles == UserRole.ADMIN || sessionUser.roles == UserRole.MOD || (sessionUser.id == routeUserId)) {
-                                    launch {
-                                        if(postPin.order == -1){
-                                            postPin.id?.let{
-                                                services.postPinsApi.delete(it)
-                                            }
-                                        }else{
-                                            services.postPinsApi.save(postPin)
+                        converter?.cleanAndType<PostPin>(frame)?.copy(userId = sessionUser.id)?.let { postPin ->
+                            // user must have elevated auth or be pinning post on profile
+                            val routeUserId = postPin.routeId.removePrefix(USER_PREFIX)
+                            if (sessionUser.roles == UserRole.ADMIN || sessionUser.roles == UserRole.MOD || (sessionUser.id == routeUserId)) {
+                                launch {
+                                    if(postPin.order == -1){
+                                        postPin.id?.let{
+                                            services.postPinsApi.delete(it)
                                         }
+                                    }else{
+                                        services.postPinsApi.save(postPin)
                                     }
-                                    ServerState.postPinFlowMut.emit(postPin)
-                                    services.eventService.publish(MessageType.PIN_POST.name, "$serverId:${Json.encodeToString(postPin)}")
                                 }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.PostPinReceived(postPin))
+                                services.eventService.publish(MessageType.PIN_POST.name, "$serverId:${Json.encodeToString(postPin)}")
                             }
+                        }
                     }
                     MessageType.ROLE_UPDATE -> {
-                        converter?.cleanAndType<TypeMapping<RoleUpdate>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { roleUpdate ->
-                                if (sessionUser.roles == UserRole.ADMIN || (sessionUser.roles == UserRole.MOD && roleUpdate.userRole != UserRole.ADMIN)) {
-                                    launch { services.usersApi.setUserRole(roleUpdate) }
-                                    ServerState.roleUpdateFlowMut.emit(roleUpdate)
-                                    services.eventService.publish(MessageType.ROLE_UPDATE.name, "$serverId:${Json.encodeToString(roleUpdate)}")
-                                }
+                        converter?.cleanAndType<RoleUpdate>(frame)?.let { roleUpdate ->
+                            if (sessionUser.roles == UserRole.ADMIN || (sessionUser.roles == UserRole.MOD && roleUpdate.userRole != UserRole.ADMIN)) {
+                                launch { services.usersApi.setUserRole(roleUpdate) }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.RoleUpdateReceived(roleUpdate))
+                                services.eventService.publish(MessageType.ROLE_UPDATE.name, "$serverId:${Json.encodeToString(roleUpdate)}")
                             }
+                        }
                     }
                     MessageType.BAN -> {
-                        converter?.cleanAndType<TypeMapping<Ban>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { ban ->
-                                if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { services.usersApi.banUser(ban) }
-                                    ServerState.banUserFlowMut.emit(ban)
-                                    services.eventService.publish(MessageType.BAN.name, "$serverId:${Json.encodeToString(ban)}")
-                                }
+                        converter?.cleanAndType<Ban>(frame)?.let { ban ->
+                            if (sessionUser.roles == UserRole.ADMIN) {
+                                launch { services.usersApi.banUser(ban) }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.BanReceived(ban))
+                                services.eventService.publish(MessageType.BAN.name, "$serverId:${Json.encodeToString(ban)}")
                             }
+                        }
                     }
                     MessageType.TAG -> {
-                        converter?.cleanAndType<TypeMapping<Tag>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { tag ->
-                                if (sessionUser.roles == UserRole.ADMIN) {
-                                    launch { services.usersApi.tagUser(tag) }
-                                    ServerState.tagUserFlowMut.emit(tag)
-                                    services.eventService.publish(MessageType.TAG.name, "$serverId:${Json.encodeToString(tag)}")
-                                }
+                        converter?.cleanAndType<Tag>(frame)?.let { tag ->
+                            if (sessionUser.roles == UserRole.ADMIN) {
+                                launch { services.usersApi.tagUser(tag) }
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.TagReceived(tag))
+                                services.eventService.publish(MessageType.TAG.name, "$serverId:${Json.encodeToString(tag)}")
                             }
+                        }
                     }
                     MessageType.REPORT_USER -> {
-                        converter?.cleanAndType<TypeMapping<Report>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { reportUser ->
-                                launch { services.adminApi.reportUser(sessionUser.id, reportUser) }
-                                launch { services.usersApi.addReport() }
-                                ServerState.reportUserFlowMut.emit(reportUser)
-                                services.eventService.publish(MessageType.REPORT_USER.name, "$serverId:${Json.encodeToString(reportUser)}")
-                            }
+                        converter?.cleanAndType<Report>(frame)?.let { reportUser ->
+                            launch { services.adminApi.reportUser(sessionUser.id, reportUser) }
+                            launch { services.usersApi.addReport() }
+                            ServerState.eventReceivedFlowMut.emit(ServerEvent.UserReportReceived(reportUser))
+                            services.eventService.publish(MessageType.REPORT_USER.name, "$serverId:${Json.encodeToString(reportUser)}")
+                        }
                     }
                     MessageType.REPORT_POST -> {
-                        converter?.cleanAndType<TypeMapping<Report>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { reportPost ->
-                                launch { services.adminApi.reportPost(sessionUser.id, reportPost) }
-                                launch { services.usersApi.addReport() }
-                                ServerState.reportPostFlowMut.emit(reportPost)
-                                services.eventService.publish(MessageType.REPORT_POST.name, "$serverId:${Json.encodeToString(reportPost)}")
-                            }
+                        converter?.cleanAndType<Report>(frame)?.let { reportPost ->
+                            launch { services.adminApi.reportPost(sessionUser.id, reportPost) }
+                            launch { services.usersApi.addReport() }
+                            ServerState.eventReceivedFlowMut.emit(ServerEvent.PostReportReceived(reportPost))
+                            services.eventService.publish(MessageType.REPORT_POST.name, "$serverId:${Json.encodeToString(reportPost)}")
+                        }
                     }
                     MessageType.ROUTE -> {
-                        converter?.cleanAndType<TypeMapping<Route>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { route ->
-                                if (sessionContext.routeId != route.routeId) {
-                                    // clear out any active subscriptions on full route change
-                                    activeJobs.removeIf { job ->
-                                        job.cancel()
-                                        true
-                                    }
-                                    activeBoxScores.entries.removeIf {
-                                            sub ->
-                                        sub.value.cancel()
-                                        true
-                                    }
-                                    activeComps.entries.removeIf {
-                                            sub ->
-                                        sub.value.cancel()
-                                        true
-                                    }
-                                    activeJobs += launch {
-                                        handleRoute(route, sessionContext.session)
-                                    }
-                                    sessionContext.routeId = route.routeId
+                        converter?.cleanAndType<Route>(frame)?.let { route ->
+                            if (sessionContext.routeId != route.routeId) {
+                                // clear out any active subscriptions on full route change
+                                activeJobs.removeIf { job ->
+                                    job.cancel()
+                                    true
                                 }
+                                activeBoxScores.entries.removeIf {
+                                        sub ->
+                                    sub.value.cancel()
+                                    true
+                                }
+                                activeComps.entries.removeIf {
+                                        sub ->
+                                    sub.value.cancel()
+                                    true
+                                }
+                                activeJobs += launch {
+                                    handleRoute(route, sessionContext.session)
+                                }
+                                sessionContext.routeId = route.routeId
                             }
+                        }
                     }
                     MessageType.SUBSCRIBE -> {
-                        converter?.cleanAndType<TypeMapping<Subscription>>(frame)
-                            ?.typeMapping?.entries?.first()?.value?.let { subscription ->
-                                launch {
-                                    subscribe(subscription, activeBoxScores, activeComps, sessionContext.session)
-                                }
+                        converter?.cleanAndType<Subscription>(frame)?.let { subscription ->
+                            launch {
+                                subscribe(subscription, activeBoxScores, activeComps, sessionContext.session)
                             }
+                        }
                     }
                     MessageType.PING -> {}
                     else -> logger.error { "Unexpected message received from client: $frame, messageType: $messageType" }
@@ -513,7 +501,7 @@ class WebSocketHandler(
                         // Fully disconnected, remove from redis and publish out user disconnect
                         services.cacheService.deleteUserSession(sessionUser.id)
                         if (userDisconnected != null) {
-                            ServerState.userUpdateFlowMut.emit(userDisconnected)
+                            ServerState.eventReceivedFlowMut.emit(ServerEvent.UserUpdateReceived(userDisconnected))
                             services.eventService.publish(
                                 MessageType.USER_UPDATE.name,
                                 "$serverId:${Json.encodeToString(userDisconnected)}"
@@ -534,7 +522,6 @@ class WebSocketHandler(
             }
         }
     }
-
     private suspend fun WebSocketServerSession.handleMessage(
         message: Message,
         userId: String,
@@ -603,7 +590,7 @@ class WebSocketHandler(
             } else {
                 // emit to this server, publish downstream to other servers
                 launch { services.postsApi.putPost(messageWithData) }
-                ServerState.messageFlowMut.emit(messageWithData)
+                ServerState.eventReceivedFlowMut.emit(ServerEvent.MessageReceived(messageWithData))
                 services.eventService.publish(MessageType.MSG.name, "$serverId:${Json.encodeToString(messageWithData)}")
             }
         }
@@ -663,7 +650,6 @@ class WebSocketHandler(
             }
         }
     }
-
     private suspend fun handleRoute(
         route: Route,
         session: WebSocketServerSession
@@ -700,7 +686,6 @@ class WebSocketHandler(
             }
         }
     }
-
     private suspend fun subscribe(
         subscription: Subscription,
         activeBoxScores: ConcurrentHashMap<String, Job>,
@@ -745,6 +730,7 @@ class WebSocketHandler(
         }
     }
 }
+
 data class SessionContext(
     val session: WebSocketServerSession,
     val sessionId: String = UUID.randomUUID().toString(),

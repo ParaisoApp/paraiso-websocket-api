@@ -8,6 +8,7 @@ import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.RouteUpdate
+import com.paraiso.domain.messageTypes.ServerEvent
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.posts.PostPin
 import com.paraiso.domain.routes.Favorite
@@ -17,33 +18,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 object ServerState {
-    val messageFlowMut = MutableSharedFlow<Message>(replay = 0)
-    val voteFlowMut = MutableSharedFlow<Vote>(replay = 0)
-    val followFlowMut = MutableSharedFlow<Follow>(replay = 0)
-    val favoriteFlowMut = MutableSharedFlow<Favorite>(replay = 0)
-    val deleteFlowMut = MutableSharedFlow<Delete>(replay = 0)
-    val userUpdateFlowMut = MutableSharedFlow<User>(replay = 0)
-    val routeUpdateFlowMut = MutableSharedFlow<RouteUpdate>(replay = 0)
-    val postPinFlowMut = MutableSharedFlow<PostPin>(replay = 0)
-    val roleUpdateFlowMut = MutableSharedFlow<RoleUpdate>(replay = 0)
-    val banUserFlowMut = MutableSharedFlow<Ban>(replay = 0)
-    val tagUserFlowMut = MutableSharedFlow<Tag>(replay = 0)
-    val reportUserFlowMut = MutableSharedFlow<Report>(replay = 0)
-    val reportPostFlowMut = MutableSharedFlow<Report>(replay = 0)
-
-    val flowList = listOf( // convert to immutable for send to client
-        Pair(MessageType.MSG, messageFlowMut.asSharedFlow()),
-        Pair(MessageType.VOTE, voteFlowMut.asSharedFlow()),
-        Pair(MessageType.FOLLOW, followFlowMut.asSharedFlow()),
-        Pair(MessageType.FAVORITE, favoriteFlowMut.asSharedFlow()),
-        Pair(MessageType.DELETE, deleteFlowMut.asSharedFlow()),
-        Pair(MessageType.USER_UPDATE, userUpdateFlowMut.asSharedFlow()),
-        Pair(MessageType.ROUTE_UPDATE, routeUpdateFlowMut.asSharedFlow()),
-        Pair(MessageType.PIN_POST, postPinFlowMut.asSharedFlow()),
-        Pair(MessageType.ROLE_UPDATE, roleUpdateFlowMut.asSharedFlow()),
-        Pair(MessageType.BAN, banUserFlowMut.asSharedFlow()),
-        Pair(MessageType.TAG, tagUserFlowMut.asSharedFlow()),
-        Pair(MessageType.REPORT_USER, reportUserFlowMut.asSharedFlow()),
-        Pair(MessageType.REPORT_POST, reportPostFlowMut.asSharedFlow())
-    )
+    val eventReceivedFlowMut = MutableSharedFlow<ServerEvent>(replay = 0)
+    val eventReceivedFlow = eventReceivedFlowMut.asSharedFlow()
 }

@@ -7,6 +7,7 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.messageTypes.Report
 import com.paraiso.domain.messageTypes.RoleUpdate
+import com.paraiso.domain.messageTypes.ServerEvent
 import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.messageTypes.TypeMapping
@@ -83,72 +84,72 @@ class MessageHandler(
                         }
                         MessageType.USER_UPDATE.name -> {
                             decodeMessage<User>(message)?.let { userUpdate ->
-                                ServerState.userUpdateFlowMut.emit(userUpdate)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.UserUpdateReceived(userUpdate))
                             }
                         }
                         MessageType.MSG.name -> {
                             decodeMessage<Message>(message)?.let { parsedMessage ->
-                                ServerState.messageFlowMut.emit(parsedMessage)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.MessageReceived(parsedMessage))
                             }
                         }
 
                         MessageType.FOLLOW.name -> {
                             decodeMessage<Follow>(message)?.let { follow ->
-                                ServerState.followFlowMut.emit(follow)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.FollowReceived(follow))
                             }
                         }
 
                         MessageType.FAVORITE.name -> {
                             decodeMessage<Favorite>(message)?.let { favorite ->
-                                ServerState.favoriteFlowMut.emit(favorite)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.FavoriteReceived(favorite))
                             }
                         }
 
                         MessageType.VOTE.name -> {
                             decodeMessage<Vote>(message)?.let { vote ->
-                                ServerState.voteFlowMut.emit(vote)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.VoteReceived(vote))
                             }
                         }
 
                         MessageType.DELETE.name -> {
                             decodeMessage<Delete>(message)?.let { delete ->
-                                ServerState.deleteFlowMut.emit(delete)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.DeleteReceived(delete))
                             }
                         }
 
                         MessageType.PIN_POST.name -> {
                             decodeMessage<PostPin>(message)?.let { postPin ->
-                                ServerState.postPinFlowMut.emit(postPin)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.PostPinReceived(postPin))
                             }
                         }
 
                         MessageType.ROLE_UPDATE.name -> {
                             decodeMessage<RoleUpdate>(message)?.let { roleUpdate ->
-                                ServerState.roleUpdateFlowMut.emit(roleUpdate)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.RoleUpdateReceived(roleUpdate))
                             }
                         }
 
                         MessageType.BAN.name -> {
                             decodeMessage<Ban>(message)?.let { ban ->
-                                ServerState.banUserFlowMut.emit(ban)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.BanReceived(ban))
                             }
                         }
 
                         MessageType.TAG.name -> {
                             decodeMessage<Tag>(message)?.let { tag ->
-                                ServerState.tagUserFlowMut.emit(tag)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.TagReceived(tag))
                             }
                         }
 
                         MessageType.REPORT_USER.name -> {
                             decodeMessage<Report>(message)?.let { reportUser ->
-                                ServerState.reportUserFlowMut.emit(reportUser)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.UserReportReceived(reportUser))
                             }
                         }
 
                         MessageType.REPORT_POST.name -> {
                             decodeMessage<Report>(message)?.let { reportPost ->
-                                ServerState.reportPostFlowMut.emit(reportPost)
+                                ServerState.eventReceivedFlowMut.emit(ServerEvent.PostReportReceived(reportPost))
                             }
                         }
 
