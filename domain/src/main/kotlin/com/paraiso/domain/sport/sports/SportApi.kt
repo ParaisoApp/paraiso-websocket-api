@@ -15,12 +15,14 @@ import kotlinx.datetime.toLocalDateTime
 class SportApi(private val sportDBs: SportDBs) {
     companion object {
         // index off one week for conversion and modification in DB layer
-        const val MAX_WEEK_REGULAR_SEASON = 19
         const val MAX_WEEK_PRE_SEASON = 4
+        const val MAX_WEEK_REGULAR_SEASON = 19
         const val MAX_WEEK_POST_SEASON = 5
         const val WEEK_ONE = 0
         const val PRE_SEASON = 1
+        const val REG_SEASON = 2
         const val POST_SEASON = 3
+        const val PLAY_IN = 5
         const val UNKNOWN = 0
     }
     suspend fun findLeague(sport: String) = sportDBs.leaguesDB.findBySport(sport)
@@ -161,16 +163,34 @@ class SportApi(private val sportDBs: SportDBs) {
             val resolvedComps = comps.ifEmpty {
                 val (nextYear, nextType, nextWeek) = if (past) {
                     when (seasonType) {
-                        1 -> Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON)
-                        2 -> Triple(year, seasonType - 1, MAX_WEEK_PRE_SEASON)
-                        3 -> Triple(year, seasonType - 1, MAX_WEEK_REGULAR_SEASON)
+                        PRE_SEASON -> Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON)
+                        REG_SEASON -> Triple(year, PRE_SEASON, MAX_WEEK_PRE_SEASON)
+                        PLAY_IN -> Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
+                        POST_SEASON -> {
+                            if(sport == SiteRoute.BASKETBALL.name){
+                                //handle play in season type (5)
+                                Triple(year, PLAY_IN, 0) // max week ignored for non-football
+                            }else{
+                                Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
+                            }
+                        }
                         else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
                     }
                 } else {
-                    if (seasonType == 3) {
-                        Triple(year + 1, PRE_SEASON, WEEK_ONE)
-                    } else {
-                        Triple(year, seasonType + 1, WEEK_ONE)
+                    when (seasonType) {
+                        PRE_SEASON -> Triple(year, REG_SEASON, WEEK_ONE)
+                        REG_SEASON -> {
+                            if(sport == SiteRoute.BASKETBALL.name) {
+                                Triple(year, PLAY_IN, WEEK_ONE)
+                            } else {
+                                Triple(year, POST_SEASON, WEEK_ONE)
+                            }
+                        }
+                        PLAY_IN -> Triple(year, POST_SEASON, WEEK_ONE)
+                        POST_SEASON -> {
+                            Triple(year + 1, PRE_SEASON, WEEK_ONE)
+                        }
+                        else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
                     }
                 }
                 val resolvedModifier = nextWeek.toString()

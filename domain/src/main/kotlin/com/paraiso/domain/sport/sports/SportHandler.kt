@@ -46,6 +46,11 @@ class SportHandler(
     private val eventService: EventService,
     private val postsDB: PostsDB
 ) : Klogging {
+    companion object {
+        const val POST_SEASON = 3
+        const val PLAY_IN = 5
+    }
+
     private var lastSentScoreboard = ConcurrentHashMap<SiteRoute, Scoreboard>()
     private var lastSentBoxScores = listOf<BoxScore>()
 
@@ -276,11 +281,12 @@ class SportHandler(
                         delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
                         initScoreboard = false
                     )
-                    if (scoreboard.season?.type == 3 && endingCompetitions.isNotEmpty()) {
+                    if ((scoreboard.season?.type == POST_SEASON || scoreboard.season?.type == PLAY_IN) && endingCompetitions.isNotEmpty()) {
                         savePlayoffResults(
                             endingCompetitions,
                             sport,
-                            scoreboard.season.year
+                            scoreboard.season.year,
+                            scoreboard.season?.type
                         )
                     }
                 }
@@ -376,7 +382,8 @@ class SportHandler(
     private suspend fun savePlayoffResults(
         comps: List<Competition>,
         sport: SiteRoute,
-        year: Int
+        year: Int,
+        type: Int?
     ) {
         val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
             ?: Playoff("$sport-$year", sport, year, emptyMap())
@@ -408,7 +415,12 @@ class SportHandler(
                     else -> {
                         val currentScore = matchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                         val updatedScore = if (team.winner) currentScore + 1 else currentScore
-                        updatedScore to (updatedScore == 4)
+                        val winner = if(sport == SiteRoute.BASKETBALL && type == PLAY_IN){
+                            updatedScore == 1
+                        }else{
+                            updatedScore == 4
+                        }
+                        updatedScore to winner
                     }
                 }
                 PlayoffTeam(team.teamId, score, winner)
@@ -463,7 +475,12 @@ class SportHandler(
                         else -> {
                             val currentScore = existingMatchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                             val updatedScore = if (team.winner) currentScore + 1 else currentScore
-                            updatedScore to (updatedScore == 4)
+                            val winner = if(sport == SiteRoute.BASKETBALL && comp.season?.type == PLAY_IN){
+                                updatedScore == 1
+                            }else{
+                                updatedScore == 4
+                            }
+                            updatedScore to winner
                         }
                     }
                     PlayoffTeam(team.teamId, score, winner)
