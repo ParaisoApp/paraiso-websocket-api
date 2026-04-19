@@ -387,15 +387,17 @@ class SportHandler(
     ) {
         val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
             ?: Playoff("$sport-$year", sport, year, emptyMap())
-        val round = playoff.rounds.values.maxByOrNull { it.round }
+        val round = playoff.rounds.values.maxByOrNull { it.round } ?: PlayoffRound(round = 1, winners = emptyList(), matchUps = emptyMap())
         val firstCompTeamIds = comps.first().teams.map { team -> team.teamId }
         // If one team is recognized from the current round but the pairing is different, it's a new round.
-        val isNewRound = round?.matchUps?.values?.any { matchUp ->
+        val isNewRound = round.matchUps.values.any { matchUp ->
             val existingIds = matchUp.teams.values.map { it.id }
-            firstCompTeamIds.any { it in existingIds } && !firstCompTeamIds.all { it in existingIds }
+            firstCompTeamIds.any { it in existingIds } && !firstCompTeamIds.all { it in existingIds } ||
+                // special condition for handling play in -> playoffs transition, check second round of play-in completed
+                (sport == SiteRoute.BASKETBALL && type == POST_SEASON && round.round == 2 && round.winners.size == 2)
         } ?: false
-        val targetRound = if (isNewRound || round == null) {
-            PlayoffRound(round = (round?.round ?: 0) + 1, winners = emptyList(), matchUps = emptyMap())
+        val targetRound = if (isNewRound) {
+            PlayoffRound(round = round.round + 1, winners = emptyList(), matchUps = emptyMap())
         } else {
             round
         }
