@@ -406,10 +406,13 @@ class SportHandler(
         comps.forEach { comp ->
             val matchUpId = comp.teams.map { team -> team.teamId }.sorted().joinToString("-")
             // grab existing matchUp to get existing series score if needed
-            val matchUp = mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
+            val matchUp = (mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
                 id = matchUpId,
+                compIds = mutableSetOf(),
                 teams = emptyMap()
-            )
+            )).apply {
+                compIds.add(comp.id)
+            }
             // map comp teams to results (score and winner)
             val teams = comp.teams.map { team ->
                 val (score, winner) = when (sport) {
@@ -469,7 +472,9 @@ class SportHandler(
 
                 // Update the MatchUp within the Target Round
                 val matchUpMap = currentRound.matchUps.toMutableMap()
-                val existingMatchUp = matchUpMap[matchUpId] ?: PlayoffMatchUp(id = matchUpId, teams = emptyMap())
+                val existingMatchUp = (matchUpMap[matchUpId] ?:
+                    PlayoffMatchUp(id = matchUpId, compIds = mutableSetOf(), teams = emptyMap()
+                )).apply { compIds.add(comp.id) }
 
                 val updatedTeams = comp.teams.map { team ->
                     val (score, winner) = when (sport) {

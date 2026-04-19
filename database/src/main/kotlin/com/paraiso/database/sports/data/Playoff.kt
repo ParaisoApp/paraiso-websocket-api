@@ -26,6 +26,7 @@ data class PlayoffRound(
 @Serializable
 data class PlayoffMatchUp(
     val id: String,
+    val compIds: Set<String>,
     val teams: List<PlayoffTeam>
 )
 
@@ -53,6 +54,7 @@ fun PlayoffRoundDomain.toEntity() =
 fun PlayoffMatchUpDomain.toEntity() =
     PlayoffMatchUp(
         id = id,
+        compIds = compIds,
         teams = teams.values.map { it.toEntity() }
     )
 fun PlayoffTeamDomain.toEntity() =
@@ -80,6 +82,7 @@ fun PlayoffRound.toDomain() =
 fun PlayoffMatchUp.toDomain() =
     PlayoffMatchUpDomain(
         id = id,
+        compIds = compIds.toMutableSet(),
         teams = teams.associate { it.id to it.toDomain() }
     )
 fun PlayoffTeam.toDomain() =

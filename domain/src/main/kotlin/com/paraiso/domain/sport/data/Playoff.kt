@@ -23,6 +23,7 @@ data class PlayoffRound(
 @Serializable
 data class PlayoffMatchUp(
     val id: String,
+    val compIds: MutableSet<String>,
     val teams: Map<String, PlayoffTeam>
 )
 
