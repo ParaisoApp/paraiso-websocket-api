@@ -48,6 +48,7 @@ class SportHandler(
 ) : Klogging {
     companion object {
         const val POST_SEASON = 3
+        const val OFF_SEASON = 4
         const val PLAY_IN = 5
     }
 
@@ -69,6 +70,10 @@ class SportHandler(
         if (autoBuild || manual) {
             sportClient.getLeague(sport)?.let { leagueRes ->
                 sportDBs.leaguesDB.save(listOf(leagueRes))
+                // if manually triggered league sync then rebuild schedules (on season type change)
+                if(!autoBuild){
+                    buildSchedules(sport, true)
+                }
             }
         }
     }
@@ -116,8 +121,7 @@ class SportHandler(
     private suspend fun buildLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
-                // season type 4 is off season
-                val leaders = if((league.activeSeasonType.toIntOrNull() ?: 4) <= 3){
+                val leaders = if((league.activeSeasonType.toIntOrNull() ?: OFF_SEASON) != OFF_SEASON){
                     sportClient.getLeaders(
                         sport,
                         league.activeSeasonYear,
@@ -135,15 +139,29 @@ class SportHandler(
     private suspend fun buildTeamLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
-                sportDBs.teamsDB.findBySport(sport.name).map { team ->
+                val seasonType = league.activeSeasonType.toIntOrNull() ?: OFF_SEASON
+                val teamIds = if(seasonType == POST_SEASON || seasonType == PLAY_IN){
+                    sportDBs.playoffsDB.findBySportAndYear(
+                        sport.name,
+                        seasonType
+                    )?.rounds?.values?.maxByOrNull { it.round }?.let { round ->
+                        round.matchUps.values.flatMap { matchUp ->
+                            matchUp.teams.values.map { team ->
+                                team.id
+                            }
+                        }
+                    }?.toSet() ?: emptySet()
+                }else{
+                    sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }
+                }
+                teamIds.map { teamId ->
                     async {
-                        // season type 4 is off season
-                        if((league.activeSeasonType.toIntOrNull() ?: 4) <= 3){
+                        if(seasonType != OFF_SEASON){
                             sportClient.getTeamLeaders(
                                 sport,
                                 league.activeSeasonYear,
                                 league.activeSeasonType,
-                                team.teamId
+                                teamId
                             )
                         } else null
                     }
@@ -167,8 +185,8 @@ class SportHandler(
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes)
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
-                    if (autoBuildPosts || manual) {
-                        addPosts(sport, schedulesRes.flatMap { it.events }, manual)
+                    if (manual) {
+                        addPosts(sport, schedulesRes.flatMap { it.events })
                     }
                 }
             }
@@ -177,8 +195,7 @@ class SportHandler(
 
     private suspend fun addPosts(
         sport: SiteRoute,
-        competitions: List<Competition>,
-        manual: Boolean
+        competitions: List<Competition>
     ) {
         competitions.map { competition ->
             Post(
@@ -200,11 +217,7 @@ class SportHandler(
                 updatedOn = competition.date
             )
         }.let { gamePosts ->
-            if(manual || (autoBuild && autoBuildPosts)){
-                postsDB.save(gamePosts)
-            }else{
-                postsDB.saveIfNew(gamePosts)
-            }
+            postsDB.saveIfNew(gamePosts)
         }
     }
 
@@ -352,7 +365,12 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
-            addPosts(sport, activeCompetitions, false)
+            addPosts(sport, activeCompetitions)
+            val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
+            //if new competition comes with diff season type than stored update league and pull schedules
+            if(activeCompetitions.firstOrNull()?.season?.type?.toString() != curLeague?.activeSeasonType){
+                buildLeague(sport, true)
+            }
         }
         lastSentScoreboard[sport] = scoreboard
     }

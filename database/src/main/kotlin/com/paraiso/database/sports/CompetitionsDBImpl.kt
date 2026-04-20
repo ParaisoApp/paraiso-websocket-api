@@ -19,6 +19,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.Competition
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
+import com.paraiso.database.userchats.toDomain
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
@@ -45,22 +46,24 @@ import java.util.Date
 class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
     private val collection = database.getCollection("competitions", Competition::class.java)
 
-    override suspend fun findById(id: String) =
-        withContext(Dispatchers.IO) {
-            try{
-                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
-                logger.error { "Error finding competition by id: $ex" }
-                null
-            }
-        }
-
     override suspend fun findByIdIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(Filters.`in`(ID, ids)).map { it.toDomain() }.toList()
+                if (ids.size == 1) {
+                    collection.find(
+                        and(
+                            eq(ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        and(
+                            Filters.`in`(ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
-                logger.error { "Error finding competitions by ids: $ex" }
+                logger.error { "Error finding dms by ids: $ex" }
                 emptyList()
             }
         }

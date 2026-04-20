@@ -1,12 +1,19 @@
 package com.paraiso.api.sports
 
+import com.paraiso.api.util.UserCookie
+import com.paraiso.domain.posts.PostSearchRequest
+import com.paraiso.domain.posts.toDomain
 import com.paraiso.domain.sport.sports.SportApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
 
 fun Route.sportController(sportApi: SportApi) {
     route("s") {
@@ -33,12 +40,12 @@ fun Route.sportController(sportApi: SportApi) {
                 call.respond(HttpStatusCode.OK, it)
             } ?: run { call.respond(HttpStatusCode.NoContent) }
         }
-        get("/competitionById") {
-            sportApi.findCompetitionById(
-                call.request.queryParameters["id"] ?: ""
-            )?.let {
+        post("/competitionsByIds") {
+            sportApi.findCompetitionsByIds(
+                call.receive<Set<String>>()
+            ).let {
                 call.respond(HttpStatusCode.OK, it)
-            } ?: run { call.respond(HttpStatusCode.NoContent) }
+            }
         }
         get("/boxScoresById") {
             sportApi.findBoxScoresById(

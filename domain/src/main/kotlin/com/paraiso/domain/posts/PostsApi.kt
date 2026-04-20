@@ -48,7 +48,7 @@ class PostsApi(
     ): PostsData? =
         postsDB.findById(postSearchId.id)?.let { post ->
             val compStatus = if (post.type == PostType.EVENT && post.id != null) {
-                sportApi.findCompetitionById(post.id.removePrefix(GAME_PREFIX))?.status
+                sportApi.findCompetitionsByIds(setOf(post.id.removePrefix(GAME_PREFIX))).firstOrNull()?.status
             } else {
                 null
             }

@@ -30,7 +30,6 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findTeams(sport: String) = sportDBs.teamsDB.findBySport(sport).associateBy { it.id }
     suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)
     suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids)
-    suspend fun findCompetitionById(id: String) = sportDBs.competitionsDB.findById(id)
     suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids)
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
@@ -226,4 +225,19 @@ class SportApi(private val sportDBs: SportDBs) {
             sport,
             year
         )
+
+    suspend fun findActiveRoundPlayoffTeams(
+        sport: String,
+        year: Int
+    ) =
+        sportDBs.playoffsDB.findBySportAndYear(
+                sport,
+                year
+        )?.rounds?.values?.maxByOrNull { it.round }?.let { round ->
+            round.matchUps.values.flatMap { matchUp ->
+                matchUp.teams.values.map { team ->
+                    team.id
+                }
+            }
+        }?.toSet() ?: emptySet()
 }
