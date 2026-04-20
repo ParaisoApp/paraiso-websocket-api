@@ -44,6 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -455,14 +456,19 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
     override suspend fun saveIfNew(posts: List<PostDomain>) =
         withContext(Dispatchers.IO) {
-            val bulkOps = posts.map { post ->
-                val entity = post.toEntity()
-                val doc = Document.parse(Json.encodeToString(entity))
-                UpdateOneModel<Post>(
-                    eq("_id", entity.id),
-                    Updates.setOnInsert(doc),
-                    UpdateOptions().upsert(true)
-                )
+            val existingPosts = collection.find(
+                `in`(ID, posts.map { it.id })
+            ).map { it.id }.toSet()
+            val bulkOps = posts.mapNotNull { post ->
+                if(!existingPosts.contains(post.id)){
+                    val entity = post.toEntity()
+                    val doc = Document.parse(Json.encodeToString(entity))
+                    UpdateOneModel<Post>(
+                        eq("_id", entity.id),
+                        Updates.setOnInsert(doc),
+                        UpdateOptions().upsert(true)
+                    )
+                } else null
             }
             val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
             result.insertedCount

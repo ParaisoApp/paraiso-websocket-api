@@ -8,6 +8,7 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.gte
 import com.mongodb.client.model.Filters.lt
 import com.mongodb.client.model.Filters.or
+import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts.ascending
@@ -29,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -40,6 +42,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.bson.Document
+import org.bson.conversions.Bson
 import java.time.ZoneId
 import java.util.Date
 
@@ -83,17 +86,20 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
 
     override suspend fun saveIfNew(competitions: List<CompetitionDomain>) =
         withContext(Dispatchers.IO) {
-            val bulkOps = competitions.map { competition ->
-                val entity = competition.toEntity()
-                val doc = Document.parse(Json.encodeToString(entity))
-                UpdateOneModel<Competition>(
-                    eq("_id", entity.id),
-                    setOnInsert(doc),
-                    UpdateOptions().upsert(true)
-                )
+            val existingComps = collection.find(
+                `in`(ID, competitions.map { it.id })
+            ).map { it.id }.toSet()
+            val bulkOps = competitions.mapNotNull { competition ->
+                if(!existingComps.contains(competition.id)){
+                    val entity = competition.toEntity()
+                    ReplaceOneModel(
+                        eq(ID, entity.id),
+                        entity,
+                        ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+                    )
+                } else null
             }
-            val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
-            result.insertedCount
+            return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
 
     override suspend fun findScoreboard(
@@ -158,7 +164,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             // Convert input instant to UTC local date (input is 00:00 so use utc)
             val estLocalDate = Instant.parse(modifier).toLocalDateTime(TimeZone.UTC).date
 
-            // Determine boundary instant depending on past/future suing eastern time zone
+            // Determine boundary instant depending on past/future using eastern time zone
             val boundaryInstant = if (past) {
                 estLocalDate.atStartOfDayIn(estZone)
             } else {
