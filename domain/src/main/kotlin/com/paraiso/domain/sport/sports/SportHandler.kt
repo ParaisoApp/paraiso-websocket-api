@@ -70,10 +70,6 @@ class SportHandler(
         if (autoBuild || manual) {
             sportClient.getLeague(sport)?.let { leagueRes ->
                 sportDBs.leaguesDB.save(listOf(leagueRes))
-                // if manually triggered league sync then rebuild schedules (on season type change)
-                if(!autoBuild){
-                    buildSchedules(sport, true)
-                }
             }
         }
     }
@@ -175,6 +171,7 @@ class SportHandler(
         }
     }
 
+    //get the schedules for each team
     suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
             sportDBs.teamsDB.findBySport(sport.name).map { team ->
@@ -185,9 +182,7 @@ class SportHandler(
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes)
                     sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
-                    if (manual) {
-                        addPosts(sport, schedulesRes.flatMap { it.events })
-                    }
+                    addPosts(sport, schedulesRes.flatMap { it.events })
                 }
             }
         }
@@ -365,11 +360,15 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
-            addPosts(sport, activeCompetitions)
             val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
-            //if new competition comes with diff season type than stored update league and pull schedules
+            //if new competition comes with diff season type than stored update league
             if(activeCompetitions.firstOrNull()?.season?.type?.toString() != curLeague?.activeSeasonType){
                 buildLeague(sport, true)
+            }
+            //if posts don't exist, then pull schedule to generate posts
+            val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
+            if(existingPosts.size != activeCompetitions.size){
+                buildSchedules(sport, true)
             }
         }
         lastSentScoreboard[sport] = scoreboard
