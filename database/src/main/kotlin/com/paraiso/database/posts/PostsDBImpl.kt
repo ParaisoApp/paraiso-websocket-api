@@ -339,7 +339,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
                 // event's create date is the date and time of event, offset to include upcoming events for route
-                lte(Post::createdOn.name, Date.from(Clock.System.now().plus(12.hours).toJavaInstant()))
+                lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
             )
 
             range?.let {
