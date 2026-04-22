@@ -265,15 +265,17 @@ class SportHandler(
             val gameTime = it.date ?: Instant.DISTANT_PAST
             gameTime in sixHoursPast..sixHoursFuture
         }.minOfOrNull { it.date ?: Instant.DISTANT_PAST } ?: Instant.DISTANT_PAST
-        val lastCompCompletedStates = lastSentScoreboard[sport]?.competitions?.associate { it.id to it.status.completed } ?: emptyMap()
+        // check if game completed and need to validate a winner exists (this value is sometimes populated after game end is received)
+        val lastCompCompletedStates = lastSentScoreboard[sport]?.competitions
+            ?.associate { it.id to (it.status.completed && it.teams.map { team -> team.winner }.contains(true)) } ?: emptyMap()
         // if some games are past the earliest start time update scoreboard and box scores
         if (now > earliestTime) {
             // ending comps - filter to last completed false and cur completed true, copy in the end time
             val endingCompetitions = scoreboard.competitions.filter {
-                lastCompCompletedStates[it.id] == false && it.status.completed
+                lastCompCompletedStates[it.id] == false && (it.status.completed && it.teams.map { team -> team.winner }.contains(true))
             }.map { it.copy(status = it.status.copy(completedTime = now)) }
             // ensure ending posts are saved (take as active comps)
-            val activeComps = scoreboard.competitions.filter { !it.status.completed } + endingCompetitions
+            val activeComps = scoreboard.competitions.filter { !(it.status.completed && it.teams.map { team -> team.winner }.contains(true)) } + endingCompetitions
             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
             if (activeComps.isEmpty()) {
                 delay(1.hours)
@@ -492,7 +494,6 @@ class SportHandler(
                 val existingMatchUp = (matchUpMap[matchUpId] ?:
                     PlayoffMatchUp(id = matchUpId, compIds = mutableSetOf(), teams = emptyMap()
                 )).apply { compIds.add(comp.id) }
-
                 val updatedTeams = comp.teams.map { team ->
                     val (score, winner) = when (sport) {
                         SiteRoute.FOOTBALL -> (team.score?.toIntOrNull() ?: 0) to team.winner
