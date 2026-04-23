@@ -296,7 +296,7 @@ class SportHandler(
                             endingCompetitions,
                             sport,
                             scoreboard.season.year,
-                            scoreboard.season?.type
+                            scoreboard.season.type
                         )
                     }
                 }
