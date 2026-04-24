@@ -6,6 +6,7 @@ import com.paraiso.api.admin.adminController
 import com.paraiso.api.auth.authController
 import com.paraiso.api.blocks.blocksController
 import com.paraiso.api.follows.followsController
+import com.paraiso.api.links.linksController
 import com.paraiso.api.metadata.metadataController
 import com.paraiso.api.notifications.notificationsController
 import com.paraiso.api.posts.postsController
@@ -24,6 +25,7 @@ import com.paraiso.database.admin.PostReportsDBImpl
 import com.paraiso.database.admin.UserReportsDBImpl
 import com.paraiso.database.blocks.BlocksDBImpl
 import com.paraiso.database.follows.FollowsDBImpl
+import com.paraiso.database.links.LinksDBImpl
 import com.paraiso.database.notifications.NotificationsDBImpl
 import com.paraiso.database.posts.PostPinsDBImpl
 import com.paraiso.database.posts.PostsDBImpl
@@ -48,6 +50,7 @@ import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.blocks.BlocksApi
 import com.paraiso.domain.follows.FollowsApi
+import com.paraiso.domain.links.LinksApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.notifications.NotificationsApi
 import com.paraiso.domain.posts.PostPinsApi
@@ -209,6 +212,7 @@ fun Application.module(jobScope: CoroutineScope) {
     val userChatsApi = UserChatsApi(UserChatsDBImpl(database), directMessagesApi)
     val adminApi = AdminApi(PostReportsDBImpl(database), UserReportsDBImpl(database), usersApi)
     val metadataApi = MetadataApi(MetadataClientImpl())
+    val linksApi = LinksApi(LinksDBImpl(database))
     val services = AppServices(
         authApi,
         adminApi,
@@ -225,6 +229,7 @@ fun Application.module(jobScope: CoroutineScope) {
         directMessagesApi,
         sportApi,
         metadataApi,
+        linksApi,
         cacheServiceImpl,
         eventServiceImpl
     )
@@ -344,6 +349,7 @@ fun Application.configureSockets(
             followsController(services.followsApi)
             blocksController(services.blocksApi)
             notificationsController(services.notificationsApi)
+            linksController(services.linksApi)
             dataGenerationController(serverHandler, sportHandler)
         }
     }

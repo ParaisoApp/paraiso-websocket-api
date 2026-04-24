@@ -4,6 +4,7 @@ import com.paraiso.domain.admin.AdminApi
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.blocks.BlocksApi
 import com.paraiso.domain.follows.FollowsApi
+import com.paraiso.domain.links.LinksApi
 import com.paraiso.domain.metadata.MetadataApi
 import com.paraiso.domain.notifications.NotificationsApi
 import com.paraiso.domain.posts.PostPinsApi
@@ -34,6 +35,7 @@ data class AppServices(
     val directMessagesApi: DirectMessagesApi,
     val sportApi: SportApi,
     val metadataApi: MetadataApi,
+    val linksApi: LinksApi,
     val cacheService: CacheService,
     val eventService: EventService
 )
