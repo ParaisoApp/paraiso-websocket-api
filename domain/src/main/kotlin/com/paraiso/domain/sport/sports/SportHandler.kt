@@ -362,15 +362,17 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
-            val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
-            //if new competition comes with diff season type than stored update league
-            if(activeCompetitions.firstOrNull()?.season?.type?.toString() != curLeague?.activeSeasonType){
-                buildLeague(sport, true)
-            }
-            //if posts don't exist, then pull schedule to generate posts
-            val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
-            if(existingPosts.size != activeCompetitions.size){
-                buildSchedules(sport, true)
+            if(!initScoreboard){
+                val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
+                //if new competition comes with diff season type than stored update league
+                if(activeCompetitions.firstOrNull()?.season?.type?.toString() != curLeague?.activeSeasonType){
+                    buildLeague(sport, true)
+                }
+                //if posts don't exist, then pull schedule to generate posts
+                val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
+                if(existingPosts.size != activeCompetitions.size){
+                    buildSchedules(sport, true)
+                }
             }
         }
         lastSentScoreboard[sport] = scoreboard
