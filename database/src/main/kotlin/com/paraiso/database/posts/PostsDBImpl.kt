@@ -470,8 +470,11 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     )
                 } else null
             }
-            val result = collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false))
-            result.insertedCount
+            val result = if(bulkOps.isNotEmpty()){
+                collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false)).insertedCount
+            } else 0
+
+            result
         }
 
     override suspend fun editPost(message: Message) =

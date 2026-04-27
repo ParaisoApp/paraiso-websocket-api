@@ -139,7 +139,7 @@ class SportHandler(
                 val teamIds = if(seasonType == POST_SEASON || seasonType == PLAY_IN){
                     sportDBs.playoffsDB.findBySportAndYear(
                         sport.name,
-                        seasonType
+                        league.activeSeasonYear.toIntOrNull() ?: 0
                     )?.rounds?.values?.maxByOrNull { it.round }?.let { round ->
                         round.matchUps.values.flatMap { matchUp ->
                             matchUp.teams.values.map { team ->
@@ -181,7 +181,7 @@ class SportHandler(
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes)
-                    sportDBs.competitionsDB.saveIfNew(schedulesRes.flatMap { it.events })
+                    sportDBs.competitionsDB.saveWithExisting(schedulesRes.flatMap { it.events })
                     addPosts(sport, schedulesRes.flatMap { it.events })
                 }
             }
@@ -328,18 +328,7 @@ class SportHandler(
         if (activeCompetitions.isNotEmpty()) {
             if (initScoreboard) {
                 // don't overwrite existing records if new scoreboard (prevents deleting comp end time on startup)
-                sportDBs.competitionsDB.findByIdIn(activeCompetitions.map { it.id }.toSet())
-                    .associate { it.id to it.status.completedTime }.let { existingCompletedTimes ->
-                        activeCompetitions.map {
-                            it.copy(
-                                status = it.status.copy(
-                                    completedTime = existingCompletedTimes[it.id]
-                                )
-                            )
-                        }.let { updatedComps ->
-                            sportDBs.competitionsDB.save(updatedComps)
-                        }
-                    }
+                sportDBs.competitionsDB.saveWithExisting(activeCompetitions)
             } else {
                 sportDBs.competitionsDB.save(activeCompetitions)
             }
@@ -362,15 +351,16 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
-            if(!initScoreboard){
+            if(!initScoreboard) {
                 val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
+                val curType = activeCompetitions.firstOrNull()?.season?.type
                 //if new competition comes with diff season type than stored update league
-                if(activeCompetitions.firstOrNull()?.season?.type?.toString() != curLeague?.activeSeasonType){
+                if (curType?.toString() != curLeague?.activeSeasonType) {
                     buildLeague(sport, true)
                 }
-                //if posts don't exist, then pull schedule to generate posts
+                //if posts don't exist or if in post season (post season game times may often change), then pull schedule to generate posts
                 val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
-                if(existingPosts.size != activeCompetitions.size){
+                if (existingPosts.size != activeCompetitions.size || curType == 3) {
                     buildSchedules(sport, true)
                 }
             }
@@ -524,7 +514,7 @@ class SportHandler(
     ) {
         // add posts for base sport route
         sportClient.getScoreboardWithDate(sport, dates)?.competitions?.let { competitions ->
-            sportDBs.competitionsDB.save(competitions)
+            sportDBs.competitionsDB.saveWithExisting(competitions)
             competitions.mapNotNull { competition ->
                 sportClient.getGameStats(sport, competition.id)
             }.let { boxScores ->

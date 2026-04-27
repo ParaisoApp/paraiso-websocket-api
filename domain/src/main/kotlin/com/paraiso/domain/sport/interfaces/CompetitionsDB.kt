@@ -5,7 +5,7 @@ import com.paraiso.domain.sport.data.Competition
 interface CompetitionsDB {
     suspend fun findByIdIn(ids: Set<String>): List<Competition>
     suspend fun save(competitions: List<Competition>): Int
-    suspend fun saveIfNew(competitions: List<Competition>): Int
+    suspend fun saveWithExisting(competitions: List<Competition>): Int
     suspend fun findScoreboard(
         sport: String,
         year: Int,

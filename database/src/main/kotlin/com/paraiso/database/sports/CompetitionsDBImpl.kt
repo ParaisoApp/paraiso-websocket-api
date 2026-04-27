@@ -84,20 +84,22 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
 
-    override suspend fun saveIfNew(competitions: List<CompetitionDomain>) =
+    override suspend fun saveWithExisting(competitions: List<CompetitionDomain>) =
         withContext(Dispatchers.IO) {
             val existingComps = collection.find(
                 `in`(ID, competitions.map { it.id })
-            ).map { it.id }.toSet()
-            val bulkOps = competitions.mapNotNull { competition ->
-                if(!existingComps.contains(competition.id)){
-                    val entity = competition.toEntity()
-                    ReplaceOneModel(
-                        eq(ID, entity.id),
-                        entity,
-                        ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+            ).toList().associateBy { it.id }
+            val bulkOps = competitions.map { competition ->
+                val entity = competition.copy(
+                    status = competition.status.copy(
+                        completedTime = existingComps[competition.id]?.status?.completedTime
                     )
-                } else null
+                ).toEntity()
+                ReplaceOneModel(
+                    eq(ID, entity.id),
+                    entity,
+                    ReplaceOptions().upsert(true) // insert if not exists, replace if exists
+                )
             }
             return@withContext collection.bulkWrite(bulkOps).modifiedCount
         }
