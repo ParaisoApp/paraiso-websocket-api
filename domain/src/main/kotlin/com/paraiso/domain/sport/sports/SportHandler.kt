@@ -291,7 +291,11 @@ class SportHandler(
                         delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
                         initScoreboard = false
                     )
-                    if ((scoreboard.season?.type == POST_SEASON || scoreboard.season?.type == PLAY_IN) && endingCompetitions.isNotEmpty()) {
+                    if (
+                        (scoreboard.season?.type == POST_SEASON || scoreboard.season?.type == PLAY_IN) &&
+                        lastCompCompletedStates.isNotEmpty() &&
+                        endingCompetitions.isNotEmpty()
+                    ) {
                         savePlayoffResults(
                             endingCompetitions,
                             sport,
@@ -406,7 +410,7 @@ class SportHandler(
             firstCompTeamIds.any { it in existingIds } && !firstCompTeamIds.all { it in existingIds } ||
                 // special condition for handling play in -> playoffs transition, check second round of play-in completed
                 (sport == SiteRoute.BASKETBALL && type == POST_SEASON && round.round == 2 && round.winners.size == 2)
-        } ?: false
+        }
         val targetRound = if (isNewRound) {
             PlayoffRound(round = round.round + 1, winners = emptyList(), matchUps = emptyMap())
         } else {
