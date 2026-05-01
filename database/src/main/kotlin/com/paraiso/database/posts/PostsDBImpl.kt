@@ -70,7 +70,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+                collection.find(
+                    and(
+                        eq(ID, id),
+                        ne(Post::status.name, PostStatus.DELETED)
+                    )
+                ).limit(1).firstOrNull()?.toDomain()
             } catch (ex: Exception){
                 logger.error { "Error finding post by id: $ex" }
                 null
@@ -80,7 +85,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     override suspend fun findByIdsIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+                collection.find(
+                    and(
+                        `in`(ID, ids),
+                        ne(Post::status.name, PostStatus.DELETED)
+                    )
+                ).map { it.toDomain() }.toList()
             } catch (ex: Exception){
                 logger.error { "Error finding posts by ids: $ex" }
                 emptyList()
@@ -96,7 +106,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                             regex(Post::title.name, partial, "i"),
                             regex(Post::content.name, partial, "i")
                         ),
-                        not(regex(ID, "^TEAM", "i")) // remove team event posts from search
+                        not(regex(ID, "^TEAM", "i")), // remove team event posts from search
+                        ne(Post::status.name, PostStatus.DELETED)
                     )
                 ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -108,7 +119,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(eq(Post::userId.name, userId)).map { it.toDomain() }.toList()
+                collection.find(
+                    and(
+                        eq(Post::userId.name, userId),
+                        ne(Post::status.name, PostStatus.DELETED)
+                    )
+                ).map { it.toDomain() }.toList()
             } catch (ex: Exception){
                 logger.error { "Error finding posts by user id: $ex" }
                 emptyList()
