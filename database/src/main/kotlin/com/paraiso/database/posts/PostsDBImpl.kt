@@ -504,6 +504,17 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             ).modifiedCount
         }
 
+    override suspend fun setPostsDeleted(ids: List<String>): Long  =
+        withContext(Dispatchers.IO) {
+            collection.updateMany(
+                `in`(ID, ids),
+                combine(
+                    set(Post::status.name, PostStatus.DELETED),
+                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
+        }
+
     override suspend fun setScore(
         id: String,
         score: Int

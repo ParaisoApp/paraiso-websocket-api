@@ -71,6 +71,14 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             }
         }
 
+    override suspend fun findByTeamsAndNotStarted(teamIds: List<String>): List<String> =
+        collection.find(
+            and(
+                `in`("${Competition::teams.name}.teamId", teamIds),
+                eq("${Competition::status.name}.state", "pre"),
+            )
+        ).map { it.id }.toList()
+
     override suspend fun save(competitions: List<CompetitionDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = competitions.map { competition ->

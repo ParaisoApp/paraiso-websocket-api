@@ -43,6 +43,9 @@ interface PostsDB {
     suspend fun setPostDeleted(
         id: String
     ): Long
+    suspend fun setPostsDeleted(
+        ids: List<String>
+    ): Long
     suspend fun setScore(
         id: String,
         score: Int

@@ -418,6 +418,7 @@ class SportHandler(
         }
         // merge existing matchUps with new or updated matchUps
         val mergeMatchUps = targetRound.matchUps.toMutableMap()
+        val winnerCleanup = mutableListOf<String>()
         comps.forEach { comp ->
             val matchUpId = comp.teams.map { team -> team.teamId }.sorted().joinToString("-")
             // grab existing matchUp to get existing series score if needed
@@ -440,6 +441,7 @@ class SportHandler(
                         }else{
                             updatedScore == 4
                         }
+                        if(winner) winnerCleanup.add(team.teamId)
                         updatedScore to winner
                     }
                 }
@@ -455,6 +457,12 @@ class SportHandler(
             rounds = finalRounds.sortedBy { it.round }.associateBy { it.round }
         )
         sportDBs.playoffsDB.save(listOf(updatedPlayoff))
+        //remaining scheduled games not needed, remove posts so games don't display
+        if(winnerCleanup.isNotEmpty()){
+            sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).map { "GAME-$it" }.let { postIds ->
+                postsDB.setPostsDeleted(postIds)
+            }
+        }
     }
 
     suspend fun fillPlayoffs(
