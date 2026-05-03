@@ -15,12 +15,15 @@ import com.mongodb.client.model.Sorts.ascending
 import com.mongodb.client.model.Sorts.descending
 import com.mongodb.client.model.UpdateOneModel
 import com.mongodb.client.model.UpdateOptions
+import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.setOnInsert
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.database.posts.Post
 import com.paraiso.database.sports.data.Competition
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
 import com.paraiso.database.userchats.toDomain
+import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
@@ -32,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -55,13 +59,15 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                 if (ids.size == 1) {
                     collection.find(
                         and(
-                            eq(ID, ids.firstOrNull())
+                            eq(ID, ids.firstOrNull()),
+                            eq(Competition::activeStatus.name, PostStatus.ACTIVE)
                         )
                     ).map { it.toDomain() }.toList()
                 } else {
                     collection.find(
                         and(
-                            Filters.`in`(ID, ids)
+                            Filters.`in`(ID, ids),
+                            eq(Competition::activeStatus.name, PostStatus.ACTIVE)
                         )
                     ).map { it.toDomain() }.toList()
                 }
@@ -76,6 +82,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             and(
                 `in`("${Competition::teams.name}.teamId", teamIds),
                 eq("${Competition::status.name}.state", "pre"),
+                eq(Competition::activeStatus.name, PostStatus.ACTIVE)
             )
         ).map { it.id }.toList()
 
@@ -129,7 +136,8 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                             eq(Competition::sport.name, sport),
                             eq("${Competition::season.name}.year", year),
                             eq("${Competition::season.name}.type", type),
-                            eq(Competition::week.name, week)
+                            eq(Competition::week.name, week),
+                            eq(Competition::activeStatus.name, PostStatus.ACTIVE)
                         )
                     ).sort(ascending(Competition::date.name)).map { it.toDomain() }.toList()
                 }
@@ -155,7 +163,8 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                     or(
                         eq("${Competition::season.name}.type", 3),
                         eq("${Competition::season.name}.type", 5)
-                    )
+                    ),
+                    eq(Competition::activeStatus.name, PostStatus.ACTIVE)
                 )
             ).map { it.toDomain() }.toList()
         }
@@ -187,7 +196,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             val direction = if (past) {
                 lt(Competition::date.name, boundaryDate)
             } else {
-                gt(Competition::date.name, boundaryDate)
+                gte(Competition::date.name, boundaryDate)
             }
 
             val directionSort = if (past) {
@@ -202,7 +211,8 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                     eq(Competition::sport.name, sport),
                     eq("${Competition::season.name}.year", year),
                     eq("${Competition::season.name}.type", type),
-                    direction
+                    direction,
+                    eq(Competition::activeStatus.name, PostStatus.ACTIVE)
                 )
             )
                 .sort(directionSort)
@@ -221,9 +231,20 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                         eq("${Competition::season.name}.year", year),
                         eq("${Competition::season.name}.type", type),
                         gte(Competition::date.name, Date.from(startOfDay)),
-                        lt(Competition::date.name, Date.from(endOfDay))
+                        lt(Competition::date.name, Date.from(endOfDay)),
+                        eq(Competition::activeStatus.name, PostStatus.ACTIVE)
                     )
                 ).sort(ascending(Competition::date.name)).map { it.toDomain() }.toList()
             } ?: emptyList()
+        }
+
+    override suspend fun setCompsDeleted(ids: List<String>): Long  =
+        withContext(Dispatchers.IO) {
+            collection.updateMany(
+                `in`(ID, ids),
+                Updates.combine(
+                    Updates.set(Competition::activeStatus.name, PostStatus.DELETED)
+                )
+            ).modifiedCount
         }
 }

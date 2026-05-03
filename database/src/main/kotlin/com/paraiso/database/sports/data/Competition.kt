@@ -1,5 +1,6 @@
 package com.paraiso.database.sports.data
 
+import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -25,7 +26,8 @@ data class Competition(
     val teams: List<TeamGameStats>,
     val venue: Venue,
     val situation: Situation?,
-    val status: Status
+    val status: Status,
+    val activeStatus: PostStatus
 )
 
 @Serializable
@@ -80,7 +82,8 @@ fun CompetitionDomain.toEntity() =
         teams = teams.map { it.toEntity() },
         venue = venue.toEntity(),
         situation = situation?.toEntity(),
-        status = status.toEntity()
+        status = status.toEntity(),
+        activeStatus = activeStatus
     )
 
 fun TeamGameStatsDomain.toEntity() =
@@ -133,7 +136,8 @@ fun Competition.toDomain() =
         teams = teams.map { it.toDomain() },
         venue = venue.toDomain(),
         situation = situation?.toDomain(),
-        status = status.toDomain()
+        status = status.toDomain(),
+        activeStatus = activeStatus
     )
 
 fun TeamGameStats.toDomain() =

@@ -73,7 +73,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 collection.find(
                     and(
                         eq(ID, id),
-                        ne(Post::status.name, PostStatus.DELETED)
+                        eq(Post::status.name, PostStatus.ACTIVE)
                     )
                 ).limit(1).firstOrNull()?.toDomain()
             } catch (ex: Exception){
@@ -88,7 +88,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 collection.find(
                     and(
                         `in`(ID, ids),
-                        ne(Post::status.name, PostStatus.DELETED)
+                        eq(Post::status.name, PostStatus.ACTIVE)
                     )
                 ).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -107,7 +107,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                             regex(Post::content.name, partial, "i")
                         ),
                         not(regex(ID, "^TEAM", "i")), // remove team event posts from search
-                        ne(Post::status.name, PostStatus.DELETED)
+                        eq(Post::status.name, PostStatus.ACTIVE)
                     )
                 ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -122,7 +122,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 collection.find(
                     and(
                         eq(Post::userId.name, userId),
-                        ne(Post::status.name, PostStatus.DELETED)
+                        eq(Post::status.name, PostStatus.ACTIVE)
                     )
                 ).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -351,7 +351,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
             val andConditions = mutableListOf(
                 orConditions,
-                ne(Post::status.name, PostStatus.DELETED),
+                eq(Post::status.name, PostStatus.ACTIVE),
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
                 // event's create date is the date and time of event, offset to include upcoming events for route
@@ -387,7 +387,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         withContext(Dispatchers.IO) {
             val andConditions = mutableListOf(
                 eq(Post::parentId.name, parentId),
-                ne(Post::status.name, PostStatus.DELETED),
+                eq(Post::status.name, PostStatus.ACTIVE),
                 `in`(Post::type.name, filters.postTypes)
             )
             range?.let {
@@ -420,7 +420,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         withContext(Dispatchers.IO) {
             val buildFilters = mutableListOf(
                 eq(Post::parentId.name, parentId),
-                ne(Post::status.name, PostStatus.DELETED),
+                eq(Post::status.name, PostStatus.ACTIVE),
                 `in`(Post::type.name, filters.postTypes)
             )
             if (gameState != null && compStartTime != null && compEndTime != null) {

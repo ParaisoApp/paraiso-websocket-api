@@ -1,5 +1,6 @@
 package com.paraiso.domain.sport.data
 
+import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.routes.SiteRoute
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -16,7 +17,8 @@ data class Competition(
     val teams: List<TeamGameStats>,
     val venue: Venue,
     val situation: Situation?,
-    val status: Status
+    val status: Status,
+    val activeStatus: PostStatus
 )
 
 @Serializable

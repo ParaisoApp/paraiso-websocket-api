@@ -1,5 +1,6 @@
 package com.paraiso.client.sport.data
 
+import com.paraiso.domain.posts.PostStatus
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Status
 import com.paraiso.domain.sport.data.TeamGameStats
@@ -160,7 +161,8 @@ fun RestCompetition.toDomain(
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
     situation = situation?.toDomain(),
-    status = status.toDomain()
+    status = status.toDomain(),
+    activeStatus = PostStatus.ACTIVE
 )
 
 fun RestCompetitor.toTeamDomain() = TeamGameStats(

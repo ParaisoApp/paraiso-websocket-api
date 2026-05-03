@@ -459,8 +459,9 @@ class SportHandler(
         sportDBs.playoffsDB.save(listOf(updatedPlayoff))
         //remaining scheduled games not needed, remove posts so games don't display
         if(winnerCleanup.isNotEmpty()){
-            sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).map { "GAME-$it" }.let { postIds ->
-                postsDB.setPostsDeleted(postIds)
+            sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).let { compIds ->
+                sportDBs.competitionsDB.setCompsDeleted(compIds)
+                postsDB.setPostsDeleted(compIds.map { "GAME-$it" })
             }
         }
     }
