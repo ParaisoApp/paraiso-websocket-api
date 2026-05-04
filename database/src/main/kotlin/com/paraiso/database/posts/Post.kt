@@ -1,7 +1,7 @@
 package com.paraiso.database.posts
 
 import com.paraiso.domain.posts.Post as PostDomain
-import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -21,7 +21,7 @@ data class Post(
     val score: Int,
     val parentId: String?,
     val rootId: String?,
-    val status: PostStatus,
+    val status: ActiveStatus,
     val media: String? = null,
     val data: String?,
     val count: Int,

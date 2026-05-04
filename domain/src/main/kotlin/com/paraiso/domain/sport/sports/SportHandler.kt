@@ -2,7 +2,7 @@ package com.paraiso.domain.sport.sports
 
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.posts.Post
-import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.RouteDetails
@@ -207,7 +207,7 @@ class SportHandler(
                 score = 0,
                 media = null,
                 userVote = null,
-                status = PostStatus.ACTIVE,
+                status = ActiveStatus.ACTIVE,
                 createdOn = competition.date,
                 updatedOn = competition.date
             )

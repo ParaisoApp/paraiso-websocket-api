@@ -29,7 +29,7 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.posts.GameState
 import com.paraiso.domain.posts.Post as PostDomain
-import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
@@ -73,7 +73,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 collection.find(
                     and(
                         eq(ID, id),
-                        eq(Post::status.name, PostStatus.ACTIVE)
+                        eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).limit(1).firstOrNull()?.toDomain()
             } catch (ex: Exception){
@@ -88,7 +88,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 collection.find(
                     and(
                         `in`(ID, ids),
-                        eq(Post::status.name, PostStatus.ACTIVE)
+                        eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -107,7 +107,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                             regex(Post::content.name, partial, "i")
                         ),
                         not(regex(ID, "^TEAM", "i")), // remove team event posts from search
-                        eq(Post::status.name, PostStatus.ACTIVE)
+                        eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -122,7 +122,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 collection.find(
                     and(
                         eq(Post::userId.name, userId),
-                        eq(Post::status.name, PostStatus.ACTIVE)
+                        eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).map { it.toDomain() }.toList()
             } catch (ex: Exception){
@@ -351,7 +351,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
             val andConditions = mutableListOf(
                 orConditions,
-                eq(Post::status.name, PostStatus.ACTIVE),
+                eq(Post::status.name, ActiveStatus.ACTIVE),
                 `in`(Post::type.name, filters.postTypes),
                 nin(ID, filters.postIds),
                 // event's create date is the date and time of event, offset to include upcoming events for route
@@ -387,7 +387,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         withContext(Dispatchers.IO) {
             val andConditions = mutableListOf(
                 eq(Post::parentId.name, parentId),
-                eq(Post::status.name, PostStatus.ACTIVE),
+                eq(Post::status.name, ActiveStatus.ACTIVE),
                 `in`(Post::type.name, filters.postTypes)
             )
             range?.let {
@@ -420,7 +420,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         withContext(Dispatchers.IO) {
             val buildFilters = mutableListOf(
                 eq(Post::parentId.name, parentId),
-                eq(Post::status.name, PostStatus.ACTIVE),
+                eq(Post::status.name, ActiveStatus.ACTIVE),
                 `in`(Post::type.name, filters.postTypes)
             )
             if (gameState != null && compStartTime != null && compEndTime != null) {
@@ -514,7 +514,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             collection.updateOne(
                 eq(ID, id),
                 combine(
-                    set(Post::status.name, PostStatus.DELETED),
+                    set(Post::status.name, ActiveStatus.DELETED),
                     set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount
@@ -525,7 +525,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             collection.updateMany(
                 `in`(ID, ids),
                 combine(
-                    set(Post::status.name, PostStatus.DELETED),
+                    set(Post::status.name, ActiveStatus.DELETED),
                     set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

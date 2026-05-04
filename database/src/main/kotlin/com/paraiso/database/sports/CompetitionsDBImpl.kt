@@ -23,7 +23,7 @@ import com.paraiso.database.sports.data.Competition
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
 import com.paraiso.database.userchats.toDomain
-import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
@@ -60,14 +60,14 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                     collection.find(
                         and(
                             eq(ID, ids.firstOrNull()),
-                            eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                            eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                         )
                     ).map { it.toDomain() }.toList()
                 } else {
                     collection.find(
                         and(
                             Filters.`in`(ID, ids),
-                            eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                            eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                         )
                     ).map { it.toDomain() }.toList()
                 }
@@ -82,7 +82,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             and(
                 `in`("${Competition::teams.name}.teamId", teamIds),
                 eq("${Competition::status.name}.state", "pre"),
-                eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
             )
         ).map { it.id }.toList()
 
@@ -137,7 +137,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                             eq("${Competition::season.name}.year", year),
                             eq("${Competition::season.name}.type", type),
                             eq(Competition::week.name, week),
-                            eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                            eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                         )
                     ).sort(ascending(Competition::date.name)).map { it.toDomain() }.toList()
                 }
@@ -164,7 +164,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                         eq("${Competition::season.name}.type", 3),
                         eq("${Competition::season.name}.type", 5)
                     ),
-                    eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                    eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                 )
             ).map { it.toDomain() }.toList()
         }
@@ -212,7 +212,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                     eq("${Competition::season.name}.year", year),
                     eq("${Competition::season.name}.type", type),
                     direction,
-                    eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                    eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                 )
             )
                 .sort(directionSort)
@@ -232,7 +232,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                         eq("${Competition::season.name}.type", type),
                         gte(Competition::date.name, Date.from(startOfDay)),
                         lt(Competition::date.name, Date.from(endOfDay)),
-                        eq(Competition::activeStatus.name, PostStatus.ACTIVE)
+                        eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                     )
                 ).sort(ascending(Competition::date.name)).map { it.toDomain() }.toList()
             } ?: emptyList()
@@ -243,7 +243,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             collection.updateMany(
                 `in`(ID, ids),
                 Updates.combine(
-                    Updates.set(Competition::activeStatus.name, PostStatus.DELETED)
+                    Updates.set(Competition::activeStatus.name, ActiveStatus.DELETED)
                 )
             ).modifiedCount
         }

@@ -19,7 +19,7 @@ data class Post(
     val score: Int,
     val parentId: String?,
     val rootId: String?,
-    val status: PostStatus,
+    val status: ActiveStatus,
     val media: String?,
     val data: String?,
     val count: Int,
@@ -48,7 +48,7 @@ enum class PostType {
 }
 
 @Serializable
-enum class PostStatus {
+enum class ActiveStatus {
     @SerialName("ACTIVE")
     ACTIVE,
 
@@ -117,7 +117,7 @@ fun generateBasePost(id: String?, title: String?) = Post(
     score = 0,
     parentId = Constants.SYSTEM,
     rootId = id,
-    status = PostStatus.ACTIVE,
+    status = ActiveStatus.ACTIVE,
     data = null,
     count = 0,
     route = null,

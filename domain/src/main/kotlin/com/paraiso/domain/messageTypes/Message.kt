@@ -1,7 +1,7 @@
 package com.paraiso.domain.messageTypes
 
 import com.paraiso.domain.posts.Post
-import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.RecordSerializer
@@ -38,7 +38,7 @@ fun Message.toNewPost() =
             score = 1,
             parentId = replyId,
             rootId = rootId,
-            status = PostStatus.ACTIVE,
+            status = ActiveStatus.ACTIVE,
             data = data,
             count = 0,
             route = route,

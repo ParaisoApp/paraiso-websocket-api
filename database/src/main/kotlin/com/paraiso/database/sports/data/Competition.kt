@@ -1,6 +1,6 @@
 package com.paraiso.database.sports.data
 
-import com.paraiso.domain.posts.PostStatus
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -27,7 +27,7 @@ data class Competition(
     val venue: Venue,
     val situation: Situation?,
     val status: Status,
-    val activeStatus: PostStatus
+    val activeStatus: ActiveStatus
 )
 
 @Serializable
