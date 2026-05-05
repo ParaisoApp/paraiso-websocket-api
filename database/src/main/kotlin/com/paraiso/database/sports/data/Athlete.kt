@@ -1,6 +1,8 @@
 package com.paraiso.database.sports.data
 
 import com.paraiso.domain.util.Constants
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Athlete as AthleteDomain
@@ -19,7 +21,11 @@ data class Athlete(
     val didNotPlay: Boolean,
     val reason: String?,
     val ejected: Boolean,
-    val stats: List<String>
+    val stats: List<String>,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 fun AthleteDomain.toEntity() =
@@ -37,7 +43,10 @@ fun AthleteDomain.toEntity() =
         didNotPlay = didNotPlay,
         reason = reason,
         ejected = ejected,
-        stats = stats
+        stats = stats,
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun Athlete.toDomain() =
@@ -55,5 +64,7 @@ fun Athlete.toDomain() =
         didNotPlay = didNotPlay,
         reason = reason,
         ejected = ejected,
-        stats = stats
+        stats = stats,
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )

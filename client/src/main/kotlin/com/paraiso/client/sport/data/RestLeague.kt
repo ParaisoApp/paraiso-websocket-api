@@ -37,5 +37,7 @@ fun RestLeague.toDomain(sport: SiteRoute) =
         activeSeasonYear = season.year,
         activeSeasonDisplayName = season.displayName,
         activeSeasonType = season.type.type,
-        activeSeasonTypeName = season.type.name
+        activeSeasonTypeName = season.type.name,
+        createdOn = null,
+        updatedOn = null
     )

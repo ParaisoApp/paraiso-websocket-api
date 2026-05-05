@@ -326,7 +326,7 @@ class PostsApi(
 @Serializable
 data class PostsData(
     val posts: MutableMap<String, Post>,
-    val teams: Map<String?, Team>,
+    val teams: Map<String, Team>,
     val competitions: Map<String, Competition>
 )
 

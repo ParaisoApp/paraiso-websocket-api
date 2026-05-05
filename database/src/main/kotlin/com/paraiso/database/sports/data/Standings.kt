@@ -1,6 +1,8 @@
 package com.paraiso.database.sports.data
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
@@ -12,7 +14,11 @@ import com.paraiso.domain.sport.data.StandingsStat as StandingsStatDomain
 @Serializable
 data class AllStandings(
     @SerialName(ID) val id: String,
-    val standingsGroups: List<StandingsGroup>
+    val standingsGroups: List<StandingsGroup>,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -69,6 +75,9 @@ fun AllStandingsDomain.toEntity() =
     AllStandings(
         id = id,
         standingsGroups = standingsGroups.map { it.toEntity() },
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun StandingsGroupDomain.toEntity() =
@@ -105,6 +114,8 @@ fun AllStandings.toDomain() =
     AllStandingsDomain(
         id = id,
         standingsGroups = standingsGroups.map { it.toDomain() },
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun StandingsGroup.toDomain() =

@@ -1,13 +1,16 @@
 package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.util.Constants.ID
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class AllStandings(
     val id: String,
-    val standingsGroups: List<StandingsGroup>
+    val standingsGroups: List<StandingsGroup>,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 )
 
 @Serializable

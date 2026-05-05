@@ -89,7 +89,7 @@ class SportHandler(
                 launch {
                     addTeamRoutes(sport, teamsRes)
                 }
-                sportDBs.teamsDB.save(teamsRes, sport)
+                sportDBs.teamsDB.save(teamsRes)
             }
         }
     }
@@ -181,7 +181,7 @@ class SportHandler(
             }.awaitAll().filterNotNull().let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes)
-                    sportDBs.competitionsDB.saveWithExisting(schedulesRes.flatMap { it.events })
+                    sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
                     addPosts(sport, schedulesRes.flatMap { it.events })
                 }
             }
@@ -331,9 +331,6 @@ class SportHandler(
     ) = coroutineScope {
         if (activeCompetitions.isNotEmpty()) {
             if (initScoreboard) {
-                // don't overwrite existing records if new scoreboard (prevents deleting comp end time on startup)
-                sportDBs.competitionsDB.saveWithExisting(activeCompetitions)
-            } else {
                 sportDBs.competitionsDB.save(activeCompetitions)
             }
             eventService.publish(
@@ -401,7 +398,14 @@ class SportHandler(
         type: Int?
     ) {
         val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
-            ?: Playoff("$sport-$year", sport, year, emptyMap())
+            ?: Playoff(
+                id = "$sport-$year",
+                sport = sport,
+                year = year,
+                rounds = emptyMap(),
+                createdOn = null,
+                updatedOn = null
+            )
         val round = playoff.rounds.values.maxByOrNull { it.round } ?: PlayoffRound(round = 1, winners = emptyList(), matchUps = emptyMap())
         val firstCompTeamIds = comps.first().teams.map { team -> team.teamId }
         // If one team is recognized from the current round but the pairing is different, it's a new round.
@@ -472,7 +476,14 @@ class SportHandler(
     ) =
         sportDBs.competitionsDB.findPlayoffsByYear(sport.name, year).let { comps ->
             val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
-                ?: Playoff("$sport-$year", sport, year, emptyMap())
+                ?: Playoff(
+                    id = "$sport-$year",
+                    sport = sport,
+                    year = year,
+                    rounds = emptyMap(),
+                    createdOn = null,
+                    updatedOn = null
+                )
 
             // Sort by date to ensure chronological processing
             val sortedComps = comps.sortedBy { it.date }
@@ -527,7 +538,7 @@ class SportHandler(
     ) {
         // add posts for base sport route
         sportClient.getScoreboardWithDate(sport, dates)?.competitions?.let { competitions ->
-            sportDBs.competitionsDB.saveWithExisting(competitions)
+            sportDBs.competitionsDB.save(competitions)
             competitions.mapNotNull { competition ->
                 sportClient.getGameStats(sport, competition.id)
             }.let { boxScores ->

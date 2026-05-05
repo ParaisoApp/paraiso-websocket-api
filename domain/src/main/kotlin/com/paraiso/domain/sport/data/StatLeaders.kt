@@ -1,6 +1,7 @@
 package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.util.Constants.ID
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,7 +12,9 @@ data class StatLeaders(
     val season: Int,
     val type: Int,
     val teamId: String? = null,
-    val categories: List<Category>
+    val categories: List<Category>,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 )
 
 @Serializable

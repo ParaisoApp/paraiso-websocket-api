@@ -1,6 +1,8 @@
 package com.paraiso.database.sports.data
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.League as LeagueDomain
@@ -15,7 +17,11 @@ data class League(
     val activeSeasonYear: String,
     val activeSeasonDisplayName: String,
     val activeSeasonType: String,
-    val activeSeasonTypeName: String
+    val activeSeasonTypeName: String,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 fun LeagueDomain.toEntity() = League(
     id = id,
@@ -26,7 +32,10 @@ fun LeagueDomain.toEntity() = League(
     activeSeasonYear = activeSeasonYear,
     activeSeasonDisplayName = activeSeasonDisplayName,
     activeSeasonType = activeSeasonType,
-    activeSeasonTypeName = activeSeasonTypeName
+    activeSeasonTypeName = activeSeasonTypeName,
+    // fields are set in DB layer during save
+    createdOn = createdOn,
+    updatedOn = updatedOn
 )
 fun League.toDomain() = LeagueDomain(
     id = id,
@@ -37,5 +46,7 @@ fun League.toDomain() = LeagueDomain(
     activeSeasonYear = activeSeasonYear,
     activeSeasonDisplayName = activeSeasonDisplayName,
     activeSeasonType = activeSeasonType,
-    activeSeasonTypeName = activeSeasonTypeName
+    activeSeasonTypeName = activeSeasonTypeName,
+    createdOn = createdOn,
+    updatedOn = updatedOn
 )

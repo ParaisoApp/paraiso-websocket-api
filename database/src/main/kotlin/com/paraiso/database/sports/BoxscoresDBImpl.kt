@@ -1,5 +1,6 @@
 package com.paraiso.database.sports
 
+import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
@@ -17,24 +18,27 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 class BoxscoresDBImpl(database: MongoDatabase) : BoxscoresDB, Klogging {
     private val collection = database.getCollection("boxscores", BoxScore::class.java)
 
-    override suspend fun findById(id: String) =
+    override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
-                logger.error { "Error finding boxscore by id: $ex" }
-               null
-            }
-        }
-
-    override suspend fun findByIdsIn(ids: List<String>) =
-        withContext(Dispatchers.IO) {
-            try{
-                collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            `in`(ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding boxscores by ids: $ex" }
                 emptyList()
@@ -43,8 +47,14 @@ class BoxscoresDBImpl(database: MongoDatabase) : BoxscoresDB, Klogging {
 
     override suspend fun save(boxscores: List<BoxScoreDomain>) =
         withContext(Dispatchers.IO) {
+            val allExisting = findByIdIn(boxscores.map { it.id }).associateBy { it.id }
+            val now = Clock.System.now()
             val bulkOps = boxscores.map { boxScore ->
-                val entity = boxScore.toEntity()
+                val existing = allExisting[boxScore.id]
+                val entity = boxScore.copy(
+                    createdOn = existing?.createdOn ?: now,
+                    updatedOn = now
+                ).toEntity()
                 ReplaceOneModel(
                     eq(ID, entity.id),
                     entity,

@@ -1,6 +1,8 @@
 package com.paraiso.database.sports.data
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain
@@ -12,7 +14,11 @@ import com.paraiso.domain.sport.data.StatTypes as StatTypesDomain
 data class BoxScore(
     @SerialName(ID) val id: String,
     val teams: List<FullTeam>,
-    val completed: Boolean? = null
+    val completed: Boolean? = null,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -40,7 +46,10 @@ data class StatTypes(
 fun BoxScoreDomain.toEntity() =
     BoxScore(
         id = id,
-        teams = teams.map { it.toEntity() }
+        teams = teams.map { it.toEntity() },
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun FullTeamDomain.toEntity() =
@@ -68,7 +77,9 @@ fun StatTypesDomain.toEntity() =
 fun BoxScore.toDomain() =
     BoxScoreDomain(
         id = id,
-        teams = teams.map { it.toDomain() }
+        teams = teams.map { it.toDomain() },
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun FullTeam.toDomain() =

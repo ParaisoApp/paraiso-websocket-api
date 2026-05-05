@@ -1,6 +1,7 @@
 package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.util.Constants
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -19,5 +20,7 @@ data class Athlete(
     val didNotPlay: Boolean,
     val reason: String?,
     val ejected: Boolean,
-    val stats: List<String>
+    val stats: List<String>,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 )

@@ -56,7 +56,9 @@ fun RestRosterNested.toDomain(sport: SiteRoute) = RosterDomain(
     sport = sport,
     athletes = athletes.flatMap { restAthleteNested -> restAthleteNested.items.map { it.toDomain(team.abbreviation) } },
     coach = coach.firstOrNull()?.toDomain(),
-    teamId = team.id
+    teamId = team.id,
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestRoster.toDomain(sport: SiteRoute) = RosterDomain(
@@ -64,7 +66,9 @@ fun RestRoster.toDomain(sport: SiteRoute) = RosterDomain(
     sport = sport,
     athletes = athletes.map { it.toDomain(team.abbreviation) },
     coach = coach.firstOrNull()?.toDomain(),
-    teamId = team.id
+    teamId = team.id,
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestAthlete.toDomain(teamAbbr: String) = AthleteDomain(
@@ -81,12 +85,16 @@ fun RestAthlete.toDomain(teamAbbr: String) = AthleteDomain(
     ejected = false,
     reason = "",
     starter = false,
-    stats = emptyList()
+    stats = emptyList(),
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestCoach.toDomain() = CoachDomain(
     id = id,
     firstName = firstName,
     lastName = lastName,
-    experience = experience ?: 0
+    experience = experience ?: 0,
+    createdOn = null,
+    updatedOn = null
 )

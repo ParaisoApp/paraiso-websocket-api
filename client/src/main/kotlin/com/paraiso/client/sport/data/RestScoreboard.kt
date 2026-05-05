@@ -45,7 +45,9 @@ fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
         season = season.toDomain(),
         week = week?.number,
         day = convertStringToInstant(day?.date),
-        competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, week?.number, season, sport) }
+        competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, week?.number, season, sport) },
+        createdOn = null,
+        updatedOn = null
     )
 }
 fun RestSituation.toDomain() = SituationDomain(

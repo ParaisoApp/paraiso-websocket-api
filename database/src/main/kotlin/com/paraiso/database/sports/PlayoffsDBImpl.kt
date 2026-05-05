@@ -13,18 +13,33 @@ import com.paraiso.domain.util.Constants
 import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 class PlayoffsDBImpl(database: MongoDatabase) : PlayoffsDB, Klogging {
     private val collection = database.getCollection("playoffs", Playoff::class.java)
 
-    override suspend fun findById(id: String) =
+    override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(Filters.eq(Constants.ID, id)).limit(1).firstOrNull()?.toDomain()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(Constants.ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            Filters.`in`(Constants.ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding playoffs by id: $ex" }
-                null
+                emptyList()
             }
         }
 
@@ -48,8 +63,14 @@ class PlayoffsDBImpl(database: MongoDatabase) : PlayoffsDB, Klogging {
 
     override suspend fun save(playoffs: List<PlayoffDomain>) =
         withContext(Dispatchers.IO) {
+            val allExisting = findByIdIn(playoffs.map { it.id }).associateBy { it.id }
+            val now = Clock.System.now()
             val bulkOps = playoffs.map { playoff ->
-                val entity = playoff.toEntity()
+                val existing = allExisting[playoff.id]
+                val entity = playoff.copy(
+                    createdOn = existing?.createdOn ?: now,
+                    updatedOn = now
+                ).toEntity()
                 ReplaceOneModel(
                     Filters.eq(Constants.ID, entity.id),
                     entity,

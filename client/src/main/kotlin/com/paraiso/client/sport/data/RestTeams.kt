@@ -38,12 +38,14 @@ data class RestTeam(
 fun RestTeams.toDomain(sport: SiteRoute): List<TeamDomain> = sports.first().leagues.first().teams.map { it.team.toDomain(sport) }
 
 fun RestTeam.toDomain(sport: SiteRoute): TeamDomain = TeamDomain(
-    id = null,
+    id = "$sport-$abbreviation",
     sport = sport,
     teamId = id,
     location = location,
     name = name,
     abbreviation = abbreviation,
     displayName = displayName,
-    shortDisplayName = shortDisplayName
+    shortDisplayName = shortDisplayName,
+    createdOn = null,
+    updatedOn = null
 )

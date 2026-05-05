@@ -1,6 +1,8 @@
 package com.paraiso.database.sports.data
 
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
@@ -14,7 +16,11 @@ data class StatLeaders(
     val season: Int,
     val type: Int,
     val teamId: String? = null,
-    val categories: List<Category>
+    val categories: List<Category>,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -39,6 +45,9 @@ fun StatLeadersDomain.toEntity() = StatLeaders(
     type = type,
     teamId = teamId,
     categories = categories.map { it.toEntity() },
+    // fields are set in DB layer during save
+    createdOn = createdOn,
+    updatedOn = updatedOn
 )
 
 fun CategoryDomain.toEntity() = Category(
@@ -61,6 +70,8 @@ fun StatLeaders.toDomain() = StatLeadersDomain(
     type = type,
     teamId = teamId,
     categories = categories.map { it.toDomain() },
+    createdOn = createdOn,
+    updatedOn = updatedOn
 )
 
 fun Category.toDomain() = CategoryDomain(

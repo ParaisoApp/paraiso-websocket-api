@@ -134,7 +134,9 @@ fun RestSchedule.toDomain(sport: SiteRoute) = ScheduleDomain(
     sport = sport,
     teamId = team.id,
     season = season.toDomain(),
-    events = events.map { it.competitions.first().toDomain(it.name, it.shortName, it.week?.number, season, sport) }
+    events = events.map { it.competitions.first().toDomain(it.name, it.shortName, it.week?.number, season, sport) },
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestSeason.toDomain() = SeasonDomain(
@@ -162,7 +164,9 @@ fun RestCompetition.toDomain(
     venue = venue.toDomain(),
     situation = situation?.toDomain(),
     status = status.toDomain(),
-    activeStatus = ActiveStatus.ACTIVE
+    activeStatus = ActiveStatus.ACTIVE,
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestCompetitor.toTeamDomain() = TeamGameStats(

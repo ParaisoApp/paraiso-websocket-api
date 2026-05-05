@@ -1,6 +1,7 @@
 package com.paraiso.domain.sport.data
 
 import com.paraiso.domain.util.Constants.ID
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -8,7 +9,9 @@ import kotlinx.serialization.Serializable
 data class BoxScore(
     val id: String,
     val teams: List<FullTeam>,
-    val completed: Boolean? = null
+    val completed: Boolean? = null,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 )
 
 @Serializable

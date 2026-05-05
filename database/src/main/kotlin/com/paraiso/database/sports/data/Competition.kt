@@ -27,7 +27,11 @@ data class Competition(
     val venue: Venue,
     val situation: Situation?,
     val status: Status,
-    val activeStatus: ActiveStatus
+    val activeStatus: ActiveStatus,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -83,7 +87,10 @@ fun CompetitionDomain.toEntity() =
         venue = venue.toEntity(),
         situation = situation?.toEntity(),
         status = status.toEntity(),
-        activeStatus = activeStatus
+        activeStatus = activeStatus,
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun TeamGameStatsDomain.toEntity() =
@@ -137,7 +144,9 @@ fun Competition.toDomain() =
         venue = venue.toDomain(),
         situation = situation?.toDomain(),
         status = status.toDomain(),
-        activeStatus = activeStatus
+        activeStatus = activeStatus,
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun TeamGameStats.toDomain() =

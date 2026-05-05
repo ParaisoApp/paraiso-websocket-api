@@ -1,5 +1,6 @@
 package com.paraiso.database.sports
 
+import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
@@ -19,17 +20,30 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 class TeamsDBImpl(database: MongoDatabase) : TeamsDB, Klogging {
     private val collection = database.getCollection("teams", Team::class.java)
 
-    override suspend fun findById(id: String) =
+    override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            `in`(ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding team by id: $ex" }
-                null
+                emptyList()
             }
         }
 
@@ -85,10 +99,16 @@ class TeamsDBImpl(database: MongoDatabase) : TeamsDB, Klogging {
             }
         }
 
-    override suspend fun save(teams: List<TeamDomain>, sport: SiteRoute) =
+    override suspend fun save(teams: List<TeamDomain>) =
         withContext(Dispatchers.IO) {
+            val allExisting = findByIdIn(teams.map { it.id }).associateBy { it.id }
+            val now = Clock.System.now()
             val bulkOps = teams.map { team ->
-                val entity = team.toEntity()
+                val existing = allExisting[team.id]
+                val entity = team.copy(
+                    createdOn = existing?.createdOn ?: now,
+                    updatedOn = now
+                ).toEntity()
                 ReplaceOneModel(
                     eq(ID, entity.id),
                     entity,

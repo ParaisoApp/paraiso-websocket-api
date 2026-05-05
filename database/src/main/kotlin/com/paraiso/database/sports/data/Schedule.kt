@@ -15,7 +15,11 @@ data class Schedule(
     val sport: SiteRoute,
     val season: Season,
     val teamId: String,
-    val events: List<String>
+    val events: List<String>,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -32,7 +36,10 @@ fun ScheduleDomain.toEntity() =
         sport = sport,
         season = season.toEntity(),
         teamId = teamId,
-        events = events.map { it.id }
+        events = events.map { it.id },
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun SeasonDomain.toEntity() =
@@ -49,7 +56,9 @@ fun Schedule.toDomain() =
         sport = sport,
         season = season.toDomain(),
         teamId = teamId,
-        events = emptyList()
+        events = emptyList(),
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun Season.toDomain() =

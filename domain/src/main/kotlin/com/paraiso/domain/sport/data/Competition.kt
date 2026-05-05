@@ -18,7 +18,9 @@ data class Competition(
     val venue: Venue,
     val situation: Situation?,
     val status: Status,
-    val activeStatus: ActiveStatus
+    val activeStatus: ActiveStatus,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 )
 
 @Serializable

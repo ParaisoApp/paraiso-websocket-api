@@ -13,18 +13,33 @@ import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 class LeaguesDBImpl(database: MongoDatabase) : LeaguesDB, Klogging {
     private val collection = database.getCollection("leagues", League::class.java)
 
-    override suspend fun findById(id: String) =
+    override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            Filters.`in`(ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding league by id: $ex" }
-                null
+                emptyList()
             }
         }
 
@@ -40,8 +55,14 @@ class LeaguesDBImpl(database: MongoDatabase) : LeaguesDB, Klogging {
 
     override suspend fun save(leagues: List<LeagueDomain>) =
         withContext(Dispatchers.IO) {
+            val allExisting = findByIdIn(leagues.map { it.id }).associateBy { it.id }
+            val now = Clock.System.now()
             val bulkOps = leagues.map { league ->
-                val entity = league.toEntity()
+                val existing = allExisting[league.id]
+                val entity = league.copy(
+                    createdOn = existing?.createdOn ?: now,
+                    updatedOn = now
+                ).toEntity()
                 ReplaceOneModel(
                     Filters.eq(ID, entity.id),
                     entity,

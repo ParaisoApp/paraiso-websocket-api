@@ -55,7 +55,9 @@ fun RestLeaders.toDomain(
         season = season.toIntOrNull() ?: 0,
         type = type.toIntOrNull() ?: 0,
         teamId = teamId,
-        categories = categories.map { it.toDomain() }
+        categories = categories.map { it.toDomain() },
+        createdOn = null,
+        updatedOn = null
     )
 }
 

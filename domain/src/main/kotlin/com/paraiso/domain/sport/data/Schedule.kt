@@ -13,7 +13,9 @@ data class Schedule(
     val sport: SiteRoute,
     val season: Season,
     val teamId: String,
-    val events: List<Competition>
+    val events: List<Competition>,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -30,5 +32,7 @@ fun ScoreboardBasic.toFullData(competitions: List<Competition>) = Scoreboard(
     season = season,
     week = week,
     day = day,
-    competitions = competitions
+    competitions = competitions,
+    createdOn = null,
+    updatedOn = null
 )

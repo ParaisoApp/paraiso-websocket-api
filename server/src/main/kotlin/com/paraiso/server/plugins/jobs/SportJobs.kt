@@ -3,7 +3,6 @@ package com.paraiso.server.plugins.jobs
 import com.paraiso.domain.messageTypes.MessageType
 import com.paraiso.domain.sport.data.Competition
 import com.paraiso.domain.sport.data.toFullData
-import com.paraiso.domain.sport.data.toResponse
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportState
 import com.paraiso.server.util.sendTypedMessage

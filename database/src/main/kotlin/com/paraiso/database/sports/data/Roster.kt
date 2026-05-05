@@ -2,6 +2,8 @@ package com.paraiso.database.sports.data
 
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.util.Constants.ID
+import com.paraiso.domain.util.InstantBsonSerializer
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Roster as RosterDomain
@@ -12,7 +14,11 @@ data class Roster(
     val sport: SiteRoute,
     val athletes: List<String>,
     val coach: String?,
-    val teamId: String
+    val teamId: String,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 fun RosterDomain.toEntity() =
@@ -21,7 +27,10 @@ fun RosterDomain.toEntity() =
         sport = sport,
         athletes = emptyList(),
         coach = null,
-        teamId = teamId
+        teamId = teamId,
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun Roster.toDomain() =
@@ -30,5 +39,7 @@ fun Roster.toDomain() =
         sport = sport,
         athletes = emptyList(),
         coach = null,
-        teamId = teamId
+        teamId = teamId,
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )

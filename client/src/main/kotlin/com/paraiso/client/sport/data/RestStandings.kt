@@ -49,7 +49,9 @@ data class RestStandingsStat(
 
 fun RestStandings.toDomain(sport: SiteRoute) = AllStandingsDomain(
     id = sport.toString(),
-    standingsGroups = children.map { it.toDomain() }
+    standingsGroups = children.map { it.toDomain() },
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestGroup.toDomain() = StandingsGroupDomain(

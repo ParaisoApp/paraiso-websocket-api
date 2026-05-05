@@ -13,7 +13,9 @@ data class Scoreboard(
     val season: Season?,
     val week: Int?,
     val day: Instant?,
-    val competitions: List<Competition>
+    val competitions: List<Competition>,
+    val createdOn: Instant?,
+    val updatedOn: Instant?
 ) { companion object }
 
 @Serializable
@@ -62,5 +64,7 @@ fun Scoreboard.Companion.init() =
         ),
         week = null,
         day = null,
-        competitions = emptyList()
+        competitions = emptyList(),
+        createdOn = null,
+        updatedOn = null
     )

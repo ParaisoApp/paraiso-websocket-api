@@ -57,7 +57,9 @@ data class RestAthleteBase(
 
 fun RestGameStats.toDomain(competitionId: String) = BoxScoreDomain(
     id = competitionId,
-    teams = boxscore.teams.map { it.toDomain(boxscore.players) }
+    teams = boxscore.teams.map { it.toDomain(boxscore.players) },
+    createdOn = null,
+    updatedOn = null
 )
 
 fun RestTeamWithStats.toDomain(players: List<RestPlayer>?): FullTeamDomain {
@@ -96,5 +98,7 @@ fun RestAthleteBase.toDomain() = AthleteDomain(
     ejected = ejected ?: false,
     stats = stats,
     displayHeight = null,
-    displayWeight = null
+    displayWeight = null,
+    createdOn = null,
+    updatedOn = null
 )

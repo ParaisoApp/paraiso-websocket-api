@@ -1,13 +1,16 @@
 package com.paraiso.database.sports
 
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.Athlete
+import com.paraiso.database.sports.data.Competition
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
+import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.sport.data.Athlete as AthleteDomain
 import com.paraiso.domain.sport.interfaces.AthletesDB
 import com.paraiso.domain.util.Constants.ID
@@ -16,14 +19,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 class AthletesDBImpl(database: MongoDatabase) : AthletesDB, Klogging {
     private val collection = database.getCollection("athletes", Athlete::class.java)
 
-    override suspend fun findByIdsIn(ids: List<String>) =
+    override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            `in`(ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding athletes by ids: $ex" }
                 emptyList()
@@ -32,10 +48,16 @@ class AthletesDBImpl(database: MongoDatabase) : AthletesDB, Klogging {
 
     override suspend fun save(athletes: List<AthleteDomain>) =
         withContext(Dispatchers.IO) {
+            val allExisting = findByIdIn(athletes.map { it.id }).associateBy { it.id }
+            val now = Clock.System.now()
             val bulkOps = athletes.map { athlete ->
-                val entity = athlete.toEntity()
+                val existing = allExisting[athlete.id]
+                val entity = athlete.copy(
+                    createdOn = existing?.createdOn ?: now,
+                    updatedOn = now
+                ).toEntity()
                 ReplaceOneModel(
-                    Filters.eq(ID, entity.id),
+                    eq(ID, entity.id),
                     entity,
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )

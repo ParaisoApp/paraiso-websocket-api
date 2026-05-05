@@ -16,6 +16,8 @@ import com.mongodb.client.model.Sorts.descending
 import com.mongodb.client.model.UpdateOneModel
 import com.mongodb.client.model.UpdateOptions
 import com.mongodb.client.model.Updates
+import com.mongodb.client.model.Updates.combine
+import com.mongodb.client.model.Updates.set
 import com.mongodb.client.model.Updates.setOnInsert
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.posts.Post
@@ -88,27 +90,16 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
 
     override suspend fun save(competitions: List<CompetitionDomain>) =
         withContext(Dispatchers.IO) {
+            val existingComps = findByIdIn(competitions.map { it.id }.toSet()).associateBy { it.id }
+            val now = Clock.System.now()
             val bulkOps = competitions.map { competition ->
-                val entity = competition.toEntity()
-                ReplaceOneModel(
-                    eq(ID, entity.id),
-                    entity,
-                    ReplaceOptions().upsert(true) // insert if not exists, replace if exists
-                )
-            }
-            return@withContext collection.bulkWrite(bulkOps).modifiedCount
-        }
-
-    override suspend fun saveWithExisting(competitions: List<CompetitionDomain>) =
-        withContext(Dispatchers.IO) {
-            val existingComps = collection.find(
-                `in`(ID, competitions.map { it.id })
-            ).toList().associateBy { it.id }
-            val bulkOps = competitions.map { competition ->
+                val existing = existingComps[competition.id]
                 val entity = competition.copy(
                     status = competition.status.copy(
-                        completedTime = existingComps[competition.id]?.status?.completedTime
-                    )
+                        completedTime = existing?.status?.completedTime
+                    ),
+                    createdOn = existing?.createdOn ?: now,
+                    updatedOn = now
                 ).toEntity()
                 ReplaceOneModel(
                     eq(ID, entity.id),
@@ -242,8 +233,9 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
         withContext(Dispatchers.IO) {
             collection.updateMany(
                 `in`(ID, ids),
-                Updates.combine(
-                    Updates.set(Competition::activeStatus.name, ActiveStatus.DELETED)
+                combine(
+                    set(Competition::activeStatus.name, ActiveStatus.DELETED),
+                    set(Competition::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount
         }

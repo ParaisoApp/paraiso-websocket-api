@@ -31,18 +31,18 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findTeamById(sport: String, id: String) = sportDBs.teamsDB.findBySportAndTeamId(sport, id)
     suspend fun findTeamsByIds(ids: Set<String>) = sportDBs.teamsDB.findByIds(ids)
     suspend fun findCompetitionsByIds(ids: Set<String>) = sportDBs.competitionsDB.findByIdIn(ids)
-    suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findById(id)
+    suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findByIdIn(listOf(id))
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
         if (sport == SiteRoute.BASKETBALL.name) {
-            sportDBs.standingsDB.findById(sport)?.standingsGroups?.associate { standingsGroup ->
+            sportDBs.standingsDB.findByIdIn(listOf(sport)).firstOrNull()?.standingsGroups?.associate { standingsGroup ->
                 standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map { standings ->
                     val team = teamsRes.await()[standings.teamId]
                     standings.toResponse(team, standingsGroup.confName, standingsGroup.confAbbr, null, null)
                 }.sortedBy { it.seed }
             }
         } else {
-            sportDBs.standingsDB.findById(sport)?.standingsGroups?.let { standingsGroups ->
+            sportDBs.standingsDB.findByIdIn(listOf(sport)).firstOrNull()?.standingsGroups?.let { standingsGroups ->
                 standingsGroups.associate { confGroup ->
                     val allStandings = confGroup.subGroups.flatMap { standingsSubGroup ->
                         standingsSubGroup.standings.map { standings ->
@@ -65,7 +65,7 @@ class SportApi(private val sportDBs: SportDBs) {
         sportDBs.leadersDB.findBySportAndSeasonAndType(sport, season, type)?.categories?.let { categories ->
             // grab athletes from DB and associate with their id
             val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
-                sportDBs.athletesDB.findByIdsIn(athleteIds.map { it.toString() })
+                sportDBs.athletesDB.findByIdIn(athleteIds.map { it.toString() })
             }.associateBy { it.id }
             // associate each category with athlete name and stats
             categories.associate {
@@ -90,7 +90,7 @@ class SportApi(private val sportDBs: SportDBs) {
         )?.categories?.let { categories ->
             // grab athletes from DB and associate with their id
             val athletes = categories.flatMap { category -> category.leaders.map { it.athleteId } }.let { athleteIds ->
-                sportDBs.athletesDB.findByIdsIn(athleteIds.map { it.toString() })
+                sportDBs.athletesDB.findByIdIn(athleteIds.map { it.toString() })
             }.associateBy { it.id }
             // associate each category with athlete name and stats
             categories.associate {
@@ -110,18 +110,20 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findTeamRoster(sport: String, teamId: String) = coroutineScope {
         sportDBs.rostersDB.findBySportAndTeamId(sport, teamId).let { (roster, athleteIds, coachId) ->
             val athletes = async {
-                sportDBs.athletesDB.findByIdsIn(athleteIds)
+                sportDBs.athletesDB.findByIdIn(athleteIds)
             }
             val coach = async {
-                coachId?.let { sportDBs.coachesDB.findById(it) }
+                coachId?.let { sportDBs.coachesDB.findByIdIn(listOf(it)) }
             }
             roster?.let {
                 Roster(
                     id = it.id,
                     sport = it.sport,
                     athletes = athletes.await(),
-                    coach = coach.await(),
-                    teamId = it.teamId
+                    coach = coach.await()?.firstOrNull(),
+                    teamId = it.teamId,
+                    createdOn = null,
+                    updatedOn = null
                 )
             }
         }
@@ -213,7 +215,9 @@ class SportApi(private val sportDBs: SportDBs) {
                 season = compRef?.season,
                 week = compRef?.week,
                 day = day?.atStartOfDayIn(estZone),
-                competitions = resolvedComps
+                competitions = resolvedComps,
+                createdOn = null,
+                updatedOn = null
             )
         }
 

@@ -13,18 +13,32 @@ import com.paraiso.domain.util.Constants
 import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
 class StandingsDBImpl(database: MongoDatabase) : StandingsDB, Klogging {
     private val collection = database.getCollection("standings", AllStandings::class.java)
 
-    override suspend fun findById(sport: String) =
+    override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(Filters.eq(Constants.ID, sport)).limit(1).firstOrNull()?.toDomain()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(Constants.ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            Filters.`in`(Constants.ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding standings by id: $ex" }
-                null
+                emptyList()
             }
         }
 

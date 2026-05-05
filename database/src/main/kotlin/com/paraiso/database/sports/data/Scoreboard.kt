@@ -17,7 +17,11 @@ data class Scoreboard(
     val week: Int?,
     @Serializable(with = InstantBsonSerializer::class)
     val day: Instant?,
-    val competitions: List<String>
+    val competitions: List<String>,
+    @Serializable(with = InstantBsonSerializer::class)
+    val createdOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
+    val updatedOn: Instant?
 )
 
 @Serializable
@@ -41,7 +45,10 @@ fun ScoreboardDomain.toEntity() =
         season = season?.toEntity(),
         week = week,
         day = day,
-        competitions = competitions.map { it.id }
+        competitions = competitions.map { it.id },
+        // fields are set in DB layer during save
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun RecordDomain.toEntity() =
@@ -65,7 +72,9 @@ fun Scoreboard.toDomain() =
         season = season?.toDomain(),
         week = week,
         day = day,
-        competitions = emptyList()
+        competitions = emptyList(),
+        createdOn = createdOn,
+        updatedOn = updatedOn
     )
 
 fun Record.toDomain() =
