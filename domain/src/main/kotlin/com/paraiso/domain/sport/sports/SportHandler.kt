@@ -330,9 +330,7 @@ class SportHandler(
         initScoreboard: Boolean
     ) = coroutineScope {
         if (activeCompetitions.isNotEmpty()) {
-            if (initScoreboard) {
-                sportDBs.competitionsDB.save(activeCompetitions)
-            }
+            sportDBs.competitionsDB.save(activeCompetitions)
             eventService.publish(
                 MessageType.COMPS.name,
                 "$sport:${Json.encodeToString(activeCompetitions)}"
