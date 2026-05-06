@@ -350,6 +350,8 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
+            //re-add posts in case they were never added from schedule build
+            addPosts(sport, activeCompetitions)
             if(!initScoreboard) {
                 val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
                 val curType = activeCompetitions.firstOrNull()?.season?.type
