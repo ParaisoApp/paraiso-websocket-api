@@ -33,6 +33,7 @@ data class User(
     val status: UserStatus?,
     val viewerContext: ViewerContext?,
     val sessionId: String?,
+    val nameUpdatedOn: Instant?,
     val createdOn: Instant,
     val updatedOn: Instant
 ) { companion object }
@@ -111,6 +112,7 @@ fun User.Companion.newUser(
                 blocking = false
             ),
             sessionId = null, // session id used to tie event data to user's tab
+            nameUpdatedOn = null,
             createdOn = now,
             updatedOn = now
         )
@@ -145,6 +147,7 @@ fun User.Companion.systemUser() =
                 blocking = false
             ),
             sessionId = null,
+            nameUpdatedOn = null,
             createdOn = now,
             updatedOn = now
         )
@@ -199,6 +202,7 @@ fun User.toBasicResponse() = User(
     status = status,
     viewerContext = viewerContext,
     sessionId = null,
+    nameUpdatedOn = null,
     createdOn = createdOn,
     updatedOn = updatedOn
 )

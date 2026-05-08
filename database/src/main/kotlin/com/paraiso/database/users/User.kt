@@ -39,6 +39,8 @@ data class User(
     val tipLinks: Map<String, String>,
     val socialLinks: Map<String, String>,
     @Serializable(with = InstantBsonSerializer::class)
+    val nameUpdatedOn: Instant?,
+    @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant,
     @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
@@ -123,6 +125,7 @@ fun UserDomain.toEntity() = User(
     tipLinks = tipLinks,
     socialLinks = socialLinks,
     tag = tag,
+    nameUpdatedOn = nameUpdatedOn,
     createdOn = createdOn,
     updatedOn = updatedOn
 )
@@ -204,6 +207,7 @@ fun User.toDomain() = UserDomain(
     status = null,
     viewerContext = null,
     sessionId = null,
+    nameUpdatedOn = nameUpdatedOn,
     createdOn = createdOn,
     updatedOn = updatedOn
 )

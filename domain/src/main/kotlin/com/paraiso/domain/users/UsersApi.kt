@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 class UsersApi(
     private val usersDB: UsersDB
 ) {
+    suspend fun findByIdIn(ids: List<String>) =
+        usersDB.findByIdIn(ids)
     suspend fun findUserByAuthId(authId: String) =
         usersDB.findUserByAuthId(authId)
     suspend fun saveUser(user: User) =
@@ -24,7 +26,7 @@ class UsersApi(
         usersDB.setUserRole(roleUpdate)
 
     suspend fun getUserFavorites(userId: String) =
-        usersDB.findById(userId)?.let { user ->
+        usersDB.findByIdIn(listOf(userId)).firstOrNull()?.let { user ->
             user.routeFavorites.filter { it.value.favorite }.map { it.value }
         } ?: emptyList()
 
@@ -65,7 +67,7 @@ class UsersApi(
     suspend fun follow(follow: Follow) = coroutineScope {
         // add follower to followers list of followee user
         launch {
-            usersDB.findById(follow.followeeId)?.let { followee ->
+            usersDB.findByIdIn(listOf(follow.followeeId)).firstOrNull()?.let { followee ->
                 if (follow.following) {
                     usersDB.setFollowers(followee.id, -1)
                 } else {
@@ -73,7 +75,7 @@ class UsersApi(
                 }
             }
         }
-        usersDB.findById(follow.followerId)?.let { follower ->
+        usersDB.findByIdIn(listOf(follow.followerId)).firstOrNull()?.let { follower ->
             if (follow.following) {
                 usersDB.setFollowing(follower.id, -1)
             } else {
@@ -85,7 +87,7 @@ class UsersApi(
     suspend fun toggleFavoriteRoute(favorite: Favorite) {
         // toggle favorite from User
         if (favorite.userId != null) {
-            usersDB.findById(favorite.userId)?.let { user ->
+            usersDB.findByIdIn(listOf(favorite.userId)).firstOrNull()?.let { user ->
                 if (favorite.icon == null && !favorite.favorite) {
                     usersDB.removeFavoriteRoute(user.id, favorite.routeId)
                 } else {

@@ -59,10 +59,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
 class WebSocketHandler(
@@ -345,23 +347,32 @@ class WebSocketHandler(
                     MessageType.USER_UPDATE -> {
                         converter?.cleanAndType<User>(frame)?.copy(id = sessionUser.id)?.let { user ->
                             if (user.validateUserName()) {
-                                launch { services.usersApi.updateUser(user) }
-                                launch {
-                                    if(sessionUser.name != user.name){
-                                        user.name?.let { name ->
-                                            val routeId = "/p/${user.id}"
-                                            services.routesApi.setRouteTitle(routeId, name)
-                                            ServerState.eventReceivedFlowMut.emit(
-                                                ServerEvent.RouteUpdateReceived(
-                                                    RouteUpdate(routeId, name)
+                                val existing = services.usersApi.findByIdIn(listOf(sessionUser.id)).firstOrNull()
+                                //restrict guests from altering username, and restrict to once every 30 days
+                                if(existing?.name == user.name ||
+                                    (
+                                        existing?.roles != UserRole.GUEST &&
+                                        (existing?.nameUpdatedOn ?: Instant.DISTANT_PAST) <= Clock.System.now().minus(30.days)
+                                    )
+                                ){
+                                    launch { services.usersApi.updateUser(user) }
+                                    launch {
+                                        if(existing?.name != user.name){
+                                            user.name?.let { name ->
+                                                val routeId = "/p/${user.id}"
+                                                services.routesApi.setRouteTitle(routeId, name)
+                                                ServerState.eventReceivedFlowMut.emit(
+                                                    ServerEvent.RouteUpdateReceived(
+                                                        RouteUpdate(routeId, name)
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
                                     }
+                                    ServerState.eventReceivedFlowMut.emit(ServerEvent.UserUpdateReceived(user.toBasicResponse()))
+                                    sendTypedMessage(MessageType.USER, user) // send full user details back to user
+                                    services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                                 }
-                                ServerState.eventReceivedFlowMut.emit(ServerEvent.UserUpdateReceived(user.toBasicResponse()))
-                                sendTypedMessage(MessageType.USER, user) // send full user details back to user
-                                services.eventService.publish(MessageType.USER_UPDATE.name, "$serverId:${Json.encodeToString(user)}")
                             }
                         }
                     }

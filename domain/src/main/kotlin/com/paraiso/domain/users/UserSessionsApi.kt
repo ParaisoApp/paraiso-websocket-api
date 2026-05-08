@@ -16,7 +16,7 @@ class UserSessionsApi(
     // full user info only ever returned on initial user self fetch (hide info for others)
     suspend fun getUserById(userId: String, curUserId: String, fullInfo: Boolean) = coroutineScope {
         cacheService.getUserSession(userId).let { session ->
-            usersDB.findById(userId)?.let {
+            usersDB.findByIdIn(listOf(userId)).firstOrNull()?.let {
                 val user = it.copy(status = getStatus(session, it.settings.hidden))
                 if(fullInfo){
                     user

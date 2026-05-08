@@ -7,7 +7,6 @@ import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
 
 interface UsersDB {
-    suspend fun findById(id: String): User?
     suspend fun findByIdIn(ids: List<String>): List<User>
     suspend fun findByName(name: String): User?
     suspend fun existsByName(name: String): Boolean

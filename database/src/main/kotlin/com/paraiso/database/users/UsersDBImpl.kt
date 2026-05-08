@@ -1,5 +1,6 @@
 package com.paraiso.database.users
 
+import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.`in`
@@ -14,6 +15,7 @@ import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.paraiso.database.sports.data.toDomain
 import com.paraiso.domain.auth.AuthId as AuthIdDomain
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
@@ -42,20 +44,22 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
     }
 
     private val collection = database.getCollection("users", User::class.java)
-
-    override suspend fun findById(id: String) =
-        withContext(Dispatchers.IO) {
-            try{
-                collection.find(eq(ID, id)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
-                logger.error { "Error finding user by id: $ex" }
-                null
-            }
-        }
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
             try{
-                collection.find(`in`(ID, ids)).map { it.toDomain() }.toList()
+                if (ids.size == 1) {
+                    collection.find(
+                        Filters.and(
+                            Filters.eq(ID, ids.firstOrNull())
+                        )
+                    ).map { it.toDomain() }.toList()
+                } else {
+                    collection.find(
+                        Filters.and(
+                            `in`(ID, ids)
+                        )
+                    ).map { it.toDomain() }.toList()
+                }
             } catch (ex: Exception){
                 logger.error { "Error finding users by ids: $ex" }
                 emptyList()
