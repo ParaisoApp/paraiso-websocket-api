@@ -1,5 +1,7 @@
 package com.paraiso.domain.util
 
+import com.paraiso.domain.routes.SiteRoute
+
 object Constants {
     const val MAIN_SERVER = "server-1"
     const val UNKNOWN = "UNKNOWN"
@@ -11,4 +13,5 @@ object Constants {
     const val SPORT_PREFIX = "/s"
     const val GAME_PREFIX = "GAME-"
     const val ID = "_id"
+    val ACTIVE_SPORTS = listOf(SiteRoute.BASKETBALL, SiteRoute.FOOTBALL, SiteRoute.HOCKEY)
 }

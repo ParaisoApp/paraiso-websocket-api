@@ -1,7 +1,9 @@
 package com.paraiso.server.plugins.jobs
 
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Competition
+import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.toFullData
 import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.sport.sports.SportState
@@ -15,6 +17,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -25,7 +28,7 @@ class SportJobs(
 ) {
 
     companion object {
-        // delays emitting flow for at lest 5ms, accumulates and batches updates
+        // delays emitting flow for at least 5ms, accumulates and batches updates
         private const val FLOW_DELAY = 5000L
     }
 
@@ -35,22 +38,54 @@ class SportJobs(
         sport: String
     ) = withContext(Dispatchers.IO) {
         // gather triggers and rebuild combined flow if one of the competitions ends
-        val combinedCompsFlow = SportState.getAllTriggers()[sport]?.flatMapLatest { _ ->
-            val compFlowList: List<StateFlow<Competition>> =
-                SportState.getCompetitionsBySport(sport)
-                    ?.values
-                    ?.toList()
-                    ?: emptyList()
-            combine(compFlowList) { it.toList() }
+        val combinedCompsFlow = if (sport == SiteRoute.SPORT.name) {
+            // sport must combine all triggers and all flows
+            SportState.getAllTriggers().values.toList().merge().flatMapLatest { _ ->
+                val compFlowList: List<StateFlow<Competition>> =
+                    SportState.getCompetitionsBySport(sport)
+                        ?.values
+                        ?.toList()
+                        ?: emptyList()
+                combine(compFlowList) { it.toList() }
+            }
+        } else {
+                SportState.getAllTriggers()[sport]?.flatMapLatest { _ ->
+                    val compFlowList: List<StateFlow<Competition>> =
+                        SportState.getCompetitionsBySport(sport)
+                            ?.values
+                            ?.toList()
+                            ?: emptyList()
+                    combine(compFlowList) { it.toList() }
+                }
         }
         listOf(
             launch {
-                // emit scoreboard info (generally once daily)
-                SportState.getScoreboardFlow(sport).collect { sb ->
-                    session.sendTypedMessage(
-                        MessageType.SCOREBOARD,
-                        sb.toFullData(competitions = sportApi.findCompetitionsByIds(sb.competitions.toSet()))
-                    )
+                // emit scoreboard info (updates once daily)
+                if(sport == SiteRoute.SPORT.name){
+                    combine(SportState.getAllScoreboardFlows()){ it.toList() }.collect { sbs ->
+                        val allComps = sbs.flatMap { it.competitions }
+                        val allSportsScoreboard = Scoreboard(
+                            id = sport,
+                            sport = sport,
+                            season = null,
+                            week = null,
+                            day = null,
+                            competitions = sportApi.findCompetitionsByIds(allComps.toSet()),
+                            createdOn = null,
+                            updatedOn = null
+                        )
+                        session.sendTypedMessage(
+                            MessageType.SCOREBOARD,
+                            allSportsScoreboard
+                        )
+                    }
+                }else{
+                    SportState.getScoreboardFlow(sport).collect { sb ->
+                        session.sendTypedMessage(
+                            MessageType.SCOREBOARD,
+                            sb.toFullData(competitions = sportApi.findCompetitionsByIds(sb.competitions.toSet()))
+                        )
+                    }
                 }
             },
             launch {

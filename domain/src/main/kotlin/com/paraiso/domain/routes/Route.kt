@@ -78,4 +78,7 @@ enum class SiteRoute {
     GOLF
 }
 
-fun isSportRoute(route: String) = route == SiteRoute.FOOTBALL.name || route == SiteRoute.BASKETBALL.name || route == SiteRoute.HOCKEY.name
+fun isSportRoute(route: String) = route == SiteRoute.FOOTBALL.name ||
+        route == SiteRoute.BASKETBALL.name ||
+        route == SiteRoute.HOCKEY.name ||
+        route == SiteRoute.SPORT.name

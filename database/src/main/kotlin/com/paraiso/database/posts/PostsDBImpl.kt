@@ -38,6 +38,7 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.routes.isSportRoute
 import com.paraiso.domain.users.UserFavorite
 import com.paraiso.domain.users.UserRole
+import com.paraiso.domain.util.Constants.ACTIVE_SPORTS
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
@@ -335,8 +336,18 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                         else -> or(favConds)
                     }
                 }
+                // General sports case
+                route.route == SiteRoute.SPORT -> {
+                    or(
+                        and(
+                            `in`(Post::data.name, ACTIVE_SPORTS),
+                            eq(Post::type.name, PostType.EVENT.name)
+                        ),
+                        `in`(Post::parentId.name, ACTIVE_SPORTS),
+                    )
+                }
                 // grab events for each sport route, add team filter if team route
-                route.route in listOf(SiteRoute.BASKETBALL, SiteRoute.FOOTBALL, SiteRoute.HOCKEY) -> {
+                route.route in ACTIVE_SPORTS -> {
                     val sportBase = and(eq(Post::data.name, route.route), eq(Post::type.name, PostType.EVENT.name))
                     val teamFilter = route.modifier?.let { regex(Post::title.name, it, "i") }
                     if (teamFilter != null) and(sportBase, teamFilter) else sportBase
@@ -478,11 +489,10 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             val bulkOps = posts.mapNotNull { post ->
                 if(!existingPosts.contains(post.id)){
                     val entity = post.toEntity()
-                    val doc = Document.parse(Json.encodeToString(entity))
-                    UpdateOneModel<Post>(
-                        eq("_id", entity.id),
-                        Updates.setOnInsert(doc),
-                        UpdateOptions().upsert(true)
+                    ReplaceOneModel(
+                        eq(ID, entity.id),
+                        entity,
+                        ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                     )
                 } else null
             }

@@ -32,6 +32,8 @@ object SportState : Klogging {
     fun getAllBoxScores(): Map<String, StateFlow<BoxScore>> = boxScores
     fun getScoreboardFlow(id: String): StateFlow<ScoreboardBasic> =
         scoreboards.getOrPut(id) { MutableStateFlow(Scoreboard.init().toBasic()) }
+    fun getAllScoreboardFlows(): List<StateFlow<ScoreboardBasic>> =
+        scoreboards.values.toList()
 
     suspend fun updateScoreboard(id: String, newSb: ScoreboardBasic) {
         scoreboards.getOrPut(id) { MutableStateFlow(newSb) }.value = newSb

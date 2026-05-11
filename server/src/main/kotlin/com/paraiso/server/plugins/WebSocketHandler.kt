@@ -675,8 +675,7 @@ class WebSocketHandler(
                     SiteRoute.FOOTBALL -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.FOOTBALL.name)
                     SiteRoute.HOCKEY -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.HOCKEY.name)
                     else -> {
-                        logger.error("Unrecognized Sport: $route")
-                        emptyList()
+                        SportJobs(services.sportApi).sportJobs(session, SiteRoute.SPORT.name)
                     }
                 }
             }
