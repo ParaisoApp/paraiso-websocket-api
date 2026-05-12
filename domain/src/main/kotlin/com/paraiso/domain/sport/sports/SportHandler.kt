@@ -397,6 +397,7 @@ class SportHandler(
         year: Int,
         type: Int?
     ) {
+        logger.info { "Playoff comps to save: $comps" }
         val playoff = sportDBs.playoffsDB.findBySportAndYear(sport.name, year)
             ?: Playoff(
                 id = "$sport-$year",
@@ -420,6 +421,7 @@ class SportHandler(
         } else {
             round
         }
+        logger.info { "playoff round determined: $targetRound" }
         // merge existing matchUps with new or updated matchUps
         val mergeMatchUps = targetRound.matchUps.toMutableMap()
         val winnerCleanup = mutableListOf<String>()
@@ -449,7 +451,9 @@ class SportHandler(
                         updatedScore to winner
                     }
                 }
-                PlayoffTeam(team.teamId, score, winner)
+                val playoffTeam = PlayoffTeam(team.teamId, score, winner)
+                logger.info { "playoff team determined: $playoffTeam" }
+                playoffTeam
             }
             // copy updated teams into matchUp
             mergeMatchUps[matchUpId] = matchUp.copy(teams = teams.associateBy { it.id })
@@ -464,6 +468,7 @@ class SportHandler(
         //remaining scheduled games not needed, remove posts so games don't display
         if(winnerCleanup.isNotEmpty()){
             sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).let { compIds ->
+                logger.info { "compId cleanup identified: $compIds for winners: $winnerCleanup" }
                 sportDBs.competitionsDB.setCompsDeleted(compIds)
                 postsDB.setPostsDeleted(compIds.map { "GAME-$it" })
             }

@@ -112,6 +112,6 @@ class LeadersDBImpl(database: MongoDatabase) : LeadersDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext collection.bulkWrite(bulkOps).modifiedCount
+            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 }
