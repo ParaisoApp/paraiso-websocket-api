@@ -103,7 +103,7 @@ class UsersApi(
     }
 
     suspend fun votePost(userId: String, score: Int) =
-        usersDB.setScore(userId, score)
+        usersDB.setVotes(userId, score)
 
     suspend fun addChat(
         userId: String?

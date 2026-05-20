@@ -295,7 +295,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
                 )
             ).modifiedCount
         }
-    override suspend fun setScore(
+    override suspend fun setVotes(
         id: String,
         score: Int
     ) =

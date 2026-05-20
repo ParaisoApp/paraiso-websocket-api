@@ -276,7 +276,7 @@ class PostsApi(
     }
 
     suspend fun votePost(postId: String, score: Int) =
-        postsDB.setScore(postId, score)
+        postsDB.setVotes(postId, score)
 
     suspend fun deletePost(delete: Delete, userId: String) =
         postsDB.findById(delete.postId)?.let { post ->

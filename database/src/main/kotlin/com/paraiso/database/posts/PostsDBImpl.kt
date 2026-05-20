@@ -55,6 +55,9 @@ import kotlinx.serialization.json.Json
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
+import kotlin.math.abs
+import kotlin.math.log10
+import kotlin.math.max
 import kotlin.time.Duration.Companion.hours
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
@@ -173,102 +176,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         return match(Document("\$expr", Document("\$or", orConditions)))
     }
 
-    // (voteSum + commentWeight * count)
-    private fun getScore(): Document {
-        return Document(
-            "\$add",
-            listOf(
-                Document(
-                    "\$sum",
-                    listOf(
-                        Document(
-                            "\$map",
-                            Document()
-                                .append("input", Document("\$objectToArray", "\$votes"))
-                                .append("as", "vote")
-                                .append("in", Document("\$cond", listOf("\$\$vote.v", 1, -1)))
-                        )
-                    )
-                ),
-                Document("\$multiply", listOf(COMMENT_WEIGHTING, "\$count"))
-            )
-        )
-    }
-
-    /*
-     * weightedScore = sign(s) * log10(max(|s|, 1)) + RISING_MULT * (timestamp(createdOn) / TIME_WEIGHTING)
-     * where:
-     *   s = sum of votes (+1/-1) + COMMENT_WEIGHTING * count
-     *   RISING_MULT = multiplier for boosting newer posts
-     *   TIME_WEIGHTING = scaling factor to normalize timestamp
-     */
-    private fun getTimeAndVoteWeighting(risingMult: Double): Document {
-        return Document(
-            "\$addFields",
-            Document(
-                "weightedScore",
-                Document(
-                    "\$let",
-                    Document("vars", Document("s", getScore()))
-                        .append(
-                            "in",
-                            Document(
-                                "\$add",
-                                listOf(
-                                    // sign(s) * log10(max(|s|,1))
-                                    Document(
-                                        "\$multiply",
-                                        listOf(
-                                            Document(
-                                                "\$cond",
-                                                listOf(
-                                                    Document("\$gt", listOf("\$\$s", 0)),
-                                                    1,
-                                                    Document(
-                                                        "\$cond",
-                                                        listOf(
-                                                            Document("\$lt", listOf("\$\$s", 0)),
-                                                            -1,
-                                                            0
-                                                        )
-                                                    )
-                                                )
-                                            ),
-                                            Document(
-                                                "\$log10",
-                                                Document(
-                                                    "\$max",
-                                                    listOf(
-                                                        Document("\$abs", "\$\$s"),
-                                                        1
-                                                    )
-                                                )
-                                            )
-                                        )
-                                    ),
-                                    // time factor: createdOnTimestamp / TIME_WEIGHTING
-                                    Document(
-                                        "\$multiply",
-                                        listOf(
-                                            risingMult,
-                                            Document(
-                                                "\$divide",
-                                                listOf(
-                                                    // createdOn is already a date, get milliseconds since epoch
-                                                    Document("\$toLong", "\$createdOn"),
-                                                    TIME_WEIGHTING
-                                                )
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                )
-            )
-        )
-    }
-
     private fun getSort(sortType: SortType): List<Bson> {
         return when (sortType) {
             SortType.NEW -> listOf(
@@ -276,25 +183,15 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             )
 
             SortType.TOP -> listOf(
-                Document(
-                    "\$addFields",
-                    Document(
-                        "calculatedScore",
-                        // (voteSum + commentWeight * count)
-                        getScore()
-                    )
-                ),
-                Document("\$sort", Document("calculatedScore", -1))
+                Document("\$sort", Document(Post::topScore.name, -1))
             )
 
             SortType.HOT -> listOf(
-                getTimeAndVoteWeighting(1.0),
-                Document("\$sort", Document("weightedScore", -1))
+                Document("\$sort", Document(Post::hotScore.name, -1))
             )
 
             SortType.RISING -> listOf(
-                getTimeAndVoteWeighting(RISING_TIME_MULTIPLIER),
-                Document("\$sort", Document("weightedScore", -1))
+                Document("\$sort", Document(Post::risingScore.name, -1))
             )
         }
     }
@@ -319,7 +216,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     val parentIds = mutableListOf<String>()
                     val sportLeagues = mutableListOf<String>()
                     val teamConditions = mutableListOf<Bson>()
-                    val favConds = userFavorites.forEach { fav ->
+                    userFavorites.forEach { fav ->
                         fav.routeId.let { parentIds.add(it) }
                         if(isSportRoute(fav.route)){
                             if (fav.altId != null) {
@@ -564,18 +461,28 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             ).modifiedCount
         }
 
-    override suspend fun setScore(
+    override suspend fun setVotes(
         id: String,
         score: Int
     ) =
         withContext(Dispatchers.IO) {
-            collection.updateOne(
-                eq(ID, id),
-                combine(
-                    inc(Post::score.name, score),
-                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+            collection.find(eq(ID, id)).firstOrNull()?.let {post ->
+                val (topScore, hotScore, risingScore) = calculateScores(
+                    post.votes + score,
+                    post.count,
+                    post.createdOn?.toEpochMilliseconds() ?: 0L
                 )
-            ).modifiedCount
+                collection.updateOne(
+                    eq(ID, id),
+                    combine(
+                        inc(Post::votes.name, score),
+                        set(Post::topScore.name, topScore),
+                        set(Post::hotScore.name, hotScore),
+                        set(Post::risingScore.name, risingScore),
+                        set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                    )
+                ).modifiedCount
+            } ?: 0L
         }
 
     override suspend fun setCount(
@@ -583,12 +490,42 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         increment: Int // +1 for inc | -1 for dec
     ) =
         withContext(Dispatchers.IO) {
-            collection.updateOne(
-                eq(ID, id),
-                combine(
-                    inc(Post::count.name, 1 * increment),
-                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+            collection.find(eq(ID, id)).firstOrNull()?.let { post ->
+                val (topScore, hotScore, risingScore) = calculateScores(
+                    post.votes,
+                    post.count + (1 * increment),
+                    post.createdOn?.toEpochMilliseconds() ?: 0L
                 )
-            ).modifiedCount
+                collection.updateOne(
+                    eq(ID, id),
+                    combine(
+                        inc(Post::count.name, 1 * increment),
+                        set(Post::topScore.name, topScore),
+                        set(Post::hotScore.name, hotScore),
+                        set(Post::risingScore.name, risingScore),
+                        set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                    )
+                ).modifiedCount
+            } ?: 0L
         }
+
+    private fun calculateScores(voteSum: Int, commentCount: Int, createdOn: Long): Triple<Double, Double, Double> {
+        // s = sum of votes + COMMENT_WEIGHTING * count
+        val topScore = voteSum + (COMMENT_WEIGHTING * commentCount)
+        val sign = when {
+            topScore > 0 -> 1.0
+            topScore < 0 -> -1.0
+            else -> 0.0
+        }
+        // basic log score = sign(s) * log10(max(|s|, 1))
+        val logScore = sign * log10(max(abs(topScore), 1.0))
+
+        // timestamp(createdOn) / TIME_WEIGHTING
+        val timeFactor = createdOn / TIME_WEIGHTING
+
+        val hotScore = logScore + (1.0 * timeFactor)
+        val risingScore = logScore + (RISING_TIME_MULTIPLIER * timeFactor)
+
+        return Triple(topScore, hotScore, risingScore)
+    }
 }

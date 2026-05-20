@@ -46,7 +46,7 @@ interface PostsDB {
     suspend fun setPostsDeleted(
         ids: List<String>
     ): Long
-    suspend fun setScore(
+    suspend fun setVotes(
         id: String,
         score: Int
     ): Long
