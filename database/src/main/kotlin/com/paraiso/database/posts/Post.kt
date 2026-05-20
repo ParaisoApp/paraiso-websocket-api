@@ -26,6 +26,7 @@ data class Post(
     val data: String?,
     val count: Int,
     val route: String? = null,
+    val tags: Set<String>,
     @Serializable(with = InstantBsonSerializer::class)
     val createdOn: Instant? = Clock.System.now(),
     @Serializable(with = InstantBsonSerializer::class)
@@ -45,6 +46,7 @@ fun PostDomain.toEntity() = Post(
     data = data,
     count = count,
     route = route,
+    tags = tags,
     createdOn = createdOn,
     updatedOn = updatedOn
 )
@@ -63,6 +65,7 @@ fun Post.toDomain() = PostDomain(
     count = count,
     route = route,
     userVote = null,
+    tags = tags,
     createdOn = createdOn,
     updatedOn = updatedOn
 )

@@ -43,6 +43,7 @@ fun Message.toNewPost() =
             count = 0,
             route = route,
             userVote = null,
+            tags = emptySet(),
             createdOn = now,
             updatedOn = now
         )

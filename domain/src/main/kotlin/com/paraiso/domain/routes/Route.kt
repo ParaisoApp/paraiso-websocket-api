@@ -1,6 +1,7 @@
 package com.paraiso.domain.routes
 
 import com.paraiso.domain.posts.Post
+import com.paraiso.domain.users.UserFavorite
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,6 +11,7 @@ data class RouteDetails(
     val id: String,
     val route: SiteRoute,
     val modifier: String?,
+    val altId: String?,
     val title: String,
     val userFavorites: Int,
     val about: String?,
@@ -25,6 +27,7 @@ data class Favorite(
     val routeId: String,
     val route: String,
     val modifier: String?,
+    val altId: String?,
     val title: String,
     val icon: String?,
     val favorite: Boolean,
@@ -77,6 +80,17 @@ enum class SiteRoute {
     @SerialName("GOLF")
     GOLF
 }
+
+fun Favorite.toUserFavorite() = UserFavorite(
+    routeId = routeId,
+    route = route,
+    modifier = modifier,
+    altId = altId,
+    title = title,
+    favorite = favorite,
+    icon = icon
+)
+
 
 fun isSportRoute(route: String) = route == SiteRoute.FOOTBALL.name ||
         route == SiteRoute.BASKETBALL.name ||

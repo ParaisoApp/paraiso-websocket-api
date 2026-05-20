@@ -81,6 +81,7 @@ data class UserFavorite(
     val routeId: String,
     val route: String,
     val modifier: String?,
+    val altId: String?,
     val title: String,
     val favorite: Boolean,
     val icon: String?
@@ -144,6 +145,7 @@ fun UserFavoriteDomain.toEntity() = UserFavorite(
     routeId = routeId,
     route = route,
     modifier = modifier,
+    altId = altId,
     title = title,
     favorite = favorite,
     icon= icon
@@ -216,6 +218,7 @@ fun UserFavorite.toDomain() = UserFavoriteDomain(
     routeId = routeId,
     route = route,
     modifier = modifier,
+    altId = altId,
     title = title,
     favorite = favorite,
     icon= icon

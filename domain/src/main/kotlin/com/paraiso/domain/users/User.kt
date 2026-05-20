@@ -67,6 +67,7 @@ data class UserFavorite(
     val routeId: String,
     val route: String,
     val modifier: String?,
+    val altId: String?,
     val title: String,
     val favorite: Boolean,
     val icon: String?

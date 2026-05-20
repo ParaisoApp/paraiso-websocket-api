@@ -6,6 +6,7 @@ import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
 import com.paraiso.domain.routes.Favorite
+import com.paraiso.domain.routes.toUserFavorite
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -94,14 +95,7 @@ class UsersApi(
                     usersDB.addFavoriteRoute(
                         user.id,
                         favorite.routeId,
-                        UserFavorite(
-                            favorite.routeId,
-                            favorite.route,
-                            favorite.modifier,
-                            favorite.title,
-                            favorite.favorite,
-                            favorite.icon
-                        )
+                        favorite.toUserFavorite()
                     )
                 }
             }

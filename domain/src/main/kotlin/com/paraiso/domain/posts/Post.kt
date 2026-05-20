@@ -25,6 +25,7 @@ data class Post(
     val count: Int,
     val route: String?,
     val userVote: Boolean?,
+    val tags: Set<String>,
     val createdOn: Instant?,
     val updatedOn: Instant?
 ) { companion object }
@@ -122,6 +123,7 @@ fun generateBasePost(id: String?, title: String?) = Post(
     count = 0,
     route = null,
     userVote = null,
+    tags = emptySet(),
     createdOn = Clock.System.now(),
     updatedOn = Clock.System.now()
 )

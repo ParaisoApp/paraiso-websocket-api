@@ -101,6 +101,7 @@ class SportHandler(
                 id = "${SPORT_PREFIX}/${sport.name.lowercase()}/t/${it.abbreviation}",
                 route = sport,
                 modifier = it.abbreviation,
+                altId = "$sport-${it.teamId}",
                 title = it.displayName,
                 userFavorites = 0,
                 about = null,
@@ -208,6 +209,7 @@ class SportHandler(
                 media = null,
                 userVote = null,
                 status = ActiveStatus.ACTIVE,
+                tags = competition.teams.map { "$sport-${it.teamId}" }.toSet(),
                 createdOn = competition.date,
                 updatedOn = competition.date
             )

@@ -13,6 +13,7 @@ import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
+import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.toDomain
@@ -289,7 +290,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
             collection.updateOne(
                 eq(ID, id),
                 combine(
-                    Document("\$unset", Document("routeFavorites.$routeId", "")),
+                    pull(User::routeFavorites.name, Document("routeId", routeId)),
                     set(User::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
                 )
             ).modifiedCount

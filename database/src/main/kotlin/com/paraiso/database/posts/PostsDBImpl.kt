@@ -316,24 +316,47 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 route.route == SiteRoute.PROFILE -> eq(Post::userId.name, route.modifier)
                 // favorites resolve to user's favorites
                 route.route == SiteRoute.FAVORITES -> {
-                    val favConds = userFavorites.map { fav ->
+                    val parentIds = mutableListOf<String>()
+                    val sportLeagues = mutableListOf<String>()
+                    val teamConditions = mutableListOf<Bson>()
+                    val favConds = userFavorites.forEach { fav ->
+                        fav.routeId.let { parentIds.add(it) }
                         if(isSportRoute(fav.route)){
-                            val sportBase = and(eq(Post::data.name, fav.route), eq(Post::type.name, PostType.EVENT.name))
-                            val teamFilter = fav.modifier?.let { regex(Post::title.name, it, "i") }
-                            or(
-                                if (teamFilter != null) and(sportBase, teamFilter) else sportBase,
-                                eq(Post::parentId.name, fav.routeId)
-                            )
-                        }else{
-                            //grab all posts in that fav route
-                            eq(Post::parentId.name, fav.routeId)
+                            if (fav.altId != null) {
+                                // Specific team filter within a sport (requires isolated pairing)
+                                teamConditions.add(
+                                    and(
+                                        eq(Post::data.name, fav.route),
+                                        eq(Post::type.name, PostType.EVENT.name),
+                                        eq(Post::tags.name, fav.altId)
+                                    )
+                                )
+                            }else{
+                                //no team specific so safe to batch full sport league
+                                sportLeagues.add(fav.route)
+                            }
                         }
+                    }
+                    val consolidatedClauses = mutableListOf<Bson>()
+                    if (parentIds.isNotEmpty()) {
+                        consolidatedClauses.add(`in`(Post::parentId.name, parentIds))
+                    }
+                    if (sportLeagues.isNotEmpty()) {
+                        consolidatedClauses.add(
+                            and(
+                                `in`(Post::data.name, sportLeagues),
+                                eq(Post::type.name, PostType.EVENT.name)
+                            )
+                        )
+                    }
+                    if (teamConditions.isNotEmpty()) {
+                        consolidatedClauses.addAll(teamConditions)
                     }
                     // add or condition if more than one condition exists
                     when {
-                        favConds.isEmpty() -> null
-                        favConds.size == 1 -> favConds.first()
-                        else -> or(favConds)
+                        consolidatedClauses.isEmpty() -> null
+                        consolidatedClauses.size == 1 -> consolidatedClauses.first()
+                        else -> or(consolidatedClauses)
                     }
                 }
                 // General sports case
@@ -349,7 +372,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 // grab events for each sport route, add team filter if team route
                 route.route in ACTIVE_SPORTS -> {
                     val sportBase = and(eq(Post::data.name, route.route), eq(Post::type.name, PostType.EVENT.name))
-                    val teamFilter = route.modifier?.let { regex(Post::title.name, it, "i") }
+                    val teamFilter = route.altId?.let { eq(Post::tags.name, it) }
                     if (teamFilter != null) and(sportBase, teamFilter) else sportBase
                 }
                 else -> null
