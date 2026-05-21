@@ -136,23 +136,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             }
         }
 
-    private fun getSort(sortType: SortType): List<Bson> {
+    private fun getSort(sortType: SortType): Bson {
         return when (sortType) {
-            SortType.NEW -> listOf(
-                Document("\$sort", Document(Post::createdOn.name, -1))
-            )
-
-            SortType.TOP -> listOf(
-                Document("\$sort", Document(Post::topScore.name, -1))
-            )
-
-            SortType.HOT -> listOf(
-                Document("\$sort", Document(Post::hotScore.name, -1))
-            )
-
-            SortType.RISING -> listOf(
-                Document("\$sort", Document(Post::risingScore.name, -1))
-            )
+            SortType.NEW -> Document("\$sort", Document(Post::createdOn.name, -1))
+            SortType.TOP -> Document("\$sort", Document(Post::topScore.name, -1))
+            SortType.HOT -> Document("\$sort", Document(Post::hotScore.name, -1))
+            SortType.RISING -> Document("\$sort", Document(Post::risingScore.name, -1))
         }
     }
 
@@ -267,12 +256,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
             }
 
-            val pipeline = mutableListOf(match(and(baseFilters)))
-            pipeline.addAll(getSort(sortType))
-            pipeline.add(limit(RETRIEVE_LIM))
-
             try{
-                return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+                return@withContext collection.find(match(and(baseFilters)))
+                    .sort(getSort(sortType))
+                    .limit(RETRIEVE_LIM)
+                    .map { it.toDomain() }
+                    .toList()
             } catch (ex: Exception){
                 logger.error { "Error finding posts by base criteria: $ex" }
                 return@withContext emptyList()
@@ -290,10 +279,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
                 add(eq(Post::parentId.name, parentId))
             }
-            val pipeline = mutableListOf(match(and(baseFilters)))
-            pipeline.addAll(getSort(sortType))
             try{
-                return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+                return@withContext collection.find(match(and(baseFilters)))
+                    .sort(getSort(sortType))
+                    .limit(RETRIEVE_LIM)
+                    .map { it.toDomain() }
+                    .toList()
             } catch (ex: Exception){
                 logger.error { "Error finding posts by parent id: $ex" }
                 return@withContext emptyList()
@@ -333,10 +324,12 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     add(eq(Post::route.name, commentRouteLocation))
                 }
             }
-            val pipeline = mutableListOf(match(and(baseFilters)))
-            pipeline.addAll(getSort(sortType))
             try{
-                return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
+                return@withContext collection.find(match(and(baseFilters)))
+                    .sort(getSort(sortType))
+                    .limit(RETRIEVE_LIM)
+                    .map { it.toDomain() }
+                    .toList()
             } catch (ex: Exception){
                 logger.error { "Error finding posts by parent id with event filters: $ex" }
                 return@withContext emptyList()
