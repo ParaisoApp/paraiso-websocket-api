@@ -2,8 +2,10 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.UserFavorite
+import com.paraiso.domain.users.UserRole
 import kotlinx.datetime.Instant
 
 interface PostsDB {
@@ -49,6 +51,9 @@ interface PostsDB {
     suspend fun setVotes(
         id: String,
         score: Int
+    ): Long
+    suspend fun setUserRole(
+        roleUpdate: RoleUpdate
     ): Long
     suspend fun setCount(
         id: String,

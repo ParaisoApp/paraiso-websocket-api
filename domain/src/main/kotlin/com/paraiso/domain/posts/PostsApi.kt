@@ -5,6 +5,7 @@ import com.paraiso.domain.messageTypes.Delete
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.SubscriptionInfo
 import com.paraiso.domain.messageTypes.init
 import com.paraiso.domain.messageTypes.toNewPost
@@ -16,6 +17,7 @@ import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.CacheService
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.User
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
@@ -277,6 +279,9 @@ class PostsApi(
 
     suspend fun votePost(postId: String, score: Int) =
         postsDB.setVotes(postId, score)
+
+    suspend fun setUserRole(roleUpdate: RoleUpdate) =
+        postsDB.setUserRole(roleUpdate)
 
     suspend fun deletePost(delete: Delete, userId: String) =
         postsDB.findById(delete.postId)?.let { post ->

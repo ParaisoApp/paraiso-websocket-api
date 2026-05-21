@@ -18,6 +18,7 @@ import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toBasic
 import com.paraiso.domain.users.EventService
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SPORT_PREFIX
@@ -197,6 +198,7 @@ class SportHandler(
             Post(
                 id = "$GAME_PREFIX${competition.id}",
                 userId = SYSTEM,
+                userRole = UserRole.ADMIN,
                 title = competition.shortName,
                 content = "${competition.date}||${competition.shortName}",
                 type = PostType.EVENT,

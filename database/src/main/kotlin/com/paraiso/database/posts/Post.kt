@@ -3,6 +3,7 @@ package com.paraiso.database.posts
 import com.paraiso.domain.posts.Post as PostDomain
 import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
@@ -15,6 +16,7 @@ import kotlinx.serialization.Serializable
 data class Post(
     @SerialName(Constants.ID) val id: String?,
     val userId: String? = null,
+    val userRole: UserRole,
     val title: String?,
     val content: String?,
     val type: PostType,
@@ -38,6 +40,7 @@ data class Post(
 fun PostDomain.toEntity() = Post(
     id = id,
     userId = userId,
+    userRole = userRole,
     title = title,
     content = content,
     type = type,
@@ -59,6 +62,7 @@ fun PostDomain.toEntity() = Post(
 fun Post.toDomain() = PostDomain(
     id = id,
     userId = userId,
+    userRole = userRole,
     title = title,
     content = content,
     type = type,

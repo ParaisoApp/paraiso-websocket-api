@@ -233,7 +233,14 @@ class WebSocketHandler(
                         }
                     }
                     is ServerEvent.PostPinReceived -> sendTypedMessage(MessageType.PIN_POST, event.data)
-                    is ServerEvent.RoleUpdateReceived -> sendTypedMessage(MessageType.ROLE_UPDATE, event.data)
+                    is ServerEvent.RoleUpdateReceived -> {
+                        event.data.let { roleUpdate ->
+                            if(sessionUser.id == roleUpdate.userId){
+                                sessionUser = sessionUser.copy(roles = roleUpdate.userRole)
+                            }
+                            sendTypedMessage(MessageType.ROLE_UPDATE, roleUpdate)
+                        }
+                    }
                     is ServerEvent.BanReceived -> {
                         event.data.let { bannedMsg ->
                             if (sessionUser.id == bannedMsg.userId) {
@@ -293,7 +300,7 @@ class WebSocketHandler(
                 when (val messageType = determineMessageType(frame)) {
                     MessageType.MSG -> {
                         converter?.cleanAndType<Message>(frame)?.let { message ->
-                            handleMessage(message, sessionUser.id, sessionUser.banned)
+                            handleMessage(message, sessionUser.id, sessionUser.banned, sessionUser.roles)
                         }
                     }
                     MessageType.DM -> {
@@ -416,6 +423,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<RoleUpdate>(frame)?.let { roleUpdate ->
                             if (sessionUser.roles == UserRole.ADMIN || (sessionUser.roles == UserRole.MOD && roleUpdate.userRole != UserRole.ADMIN)) {
                                 launch { services.usersApi.setUserRole(roleUpdate) }
+                                launch { services.postsApi.setUserRole(roleUpdate) }
                                 ServerState.eventReceivedFlowMut.emit(ServerEvent.RoleUpdateReceived(roleUpdate))
                                 services.eventService.publish(MessageType.ROLE_UPDATE.name, "$serverId:${Json.encodeToString(roleUpdate)}")
                             }
@@ -537,7 +545,8 @@ class WebSocketHandler(
     private suspend fun WebSocketServerSession.handleMessage(
         message: Message,
         userId: String,
-        userBanned: Boolean
+        userBanned: Boolean,
+        userRole: UserRole
     ) = coroutineScope {
         val messageId: String = message.editId ?: UUID.randomUUID().toString()
         val userIdMentions = services.usersApi.addMentions(
@@ -592,6 +601,7 @@ class WebSocketHandler(
         message.copy(
             id = messageId,
             userId = userId,
+            userRole = userRole,
             // if root id == message id then it's a post at the root of the route
             rootId = messageId.takeIf { message.rootId == null } ?: message.rootId,
             userReceiveIds = message.userReceiveIds.plus(userIdMentions)

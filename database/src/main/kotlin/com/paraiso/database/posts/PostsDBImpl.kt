@@ -27,6 +27,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
+import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.posts.GameState
 import com.paraiso.domain.posts.Post as PostDomain
 import com.paraiso.domain.posts.ActiveStatus
@@ -135,47 +136,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             }
         }
 
-    private fun getInitAggPipeline(
-        initialFilter: Bson
-    ) =
-        mutableListOf(
-            // Step 1: apply initial filters
-            match(initialFilter),
-
-            // Step 2: join user roles
-            lookup(
-                "users", // from collection
-                Post::userId.name, // localField
-                ID, // foreignField
-                "userInfo" // as
-            )
-        )
-
-    private fun getUserRoleCondition(
-        filters: FilterTypes,
-        userFollowing: Set<String>
-    ): Bson {
-        val roleCondition = Document(
-            "\$gt",
-            listOf(
-                Document(
-                    "\$size",
-                    Document("\$setIntersection", listOf("\$userInfo.roles", filters.userRoles))
-                ),
-                0
-            )
-        )
-
-        val orConditions = mutableListOf(roleCondition)
-
-        // Only add following condition if FOLLOWING is in filters
-        if (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.isNotEmpty()) {
-            val followingCondition = Document("\$in", listOf("\$userId", userFollowing))
-            orConditions.add(followingCondition)
-        }
-        return match(Document("\$expr", Document("\$or", orConditions)))
-    }
-
     private fun getSort(sortType: SortType): List<Bson> {
         return when (sortType) {
             SortType.NEW -> listOf(
@@ -196,6 +156,95 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         }
     }
 
+    private fun getBaseFilters(
+        range: Instant?,
+        filters: FilterTypes,
+        userFollowing: Set<String>
+    ) = mutableListOf(
+        eq(Post::status.name, ActiveStatus.ACTIVE),
+        `in`(Post::type.name, filters.postTypes),
+        `in`(Post::userRole.name, filters.userRoles)
+    ).apply {
+        if (filters.userRoles.contains(UserRole.FOLLOWING) && userFollowing.isNotEmpty()) {
+            add(`in`(Post::userId.name, userFollowing))
+        }
+        range?.let {
+            add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
+        }
+    }
+    private fun getRouteFilter(
+        route: RouteDetails?,
+        userFavorites: List<UserFavorite>,
+    ) = when {
+        route == null -> null
+        // if id == root id then post was made at base route
+        route.route == SiteRoute.HOME -> eqId(Post::rootId)
+        // Profile case where search id is the user id - match to post's user id
+        route.route == SiteRoute.PROFILE -> eq(Post::userId.name, route.modifier)
+        // favorites resolve to user's favorites
+        route.route == SiteRoute.FAVORITES -> {
+            val parentIds = mutableListOf<String>()
+            val sportLeagues = mutableListOf<String>()
+            val teamConditions = mutableListOf<Bson>()
+            userFavorites.forEach { fav ->
+                fav.routeId.let { parentIds.add(it) }
+                if(isSportRoute(fav.route)){
+                    if (fav.altId != null) {
+                        // Specific team filter within a sport (requires isolated pairing)
+                        teamConditions.add(
+                            and(
+                                eq(Post::data.name, fav.route),
+                                eq(Post::type.name, PostType.EVENT.name),
+                                eq(Post::tags.name, fav.altId)
+                            )
+                        )
+                    }else{
+                        //no team specific so safe to batch full sport league
+                        sportLeagues.add(fav.route)
+                    }
+                }
+            }
+            val consolidatedClauses = mutableListOf<Bson>()
+            if (parentIds.isNotEmpty()) {
+                consolidatedClauses.add(`in`(Post::parentId.name, parentIds))
+            }
+            if (sportLeagues.isNotEmpty()) {
+                consolidatedClauses.add(
+                    and(
+                        `in`(Post::data.name, sportLeagues),
+                        eq(Post::type.name, PostType.EVENT.name)
+                    )
+                )
+            }
+            if (teamConditions.isNotEmpty()) {
+                consolidatedClauses.addAll(teamConditions)
+            }
+            // add or condition if more than one condition exists
+            when {
+                consolidatedClauses.isEmpty() -> null
+                consolidatedClauses.size == 1 -> consolidatedClauses.first()
+                else -> or(consolidatedClauses)
+            }
+        }
+        // General sports case
+        route.route == SiteRoute.SPORT -> {
+            or(
+                and(
+                    `in`(Post::data.name, ACTIVE_SPORTS),
+                    eq(Post::type.name, PostType.EVENT.name)
+                ),
+                `in`(Post::parentId.name, ACTIVE_SPORTS),
+            )
+        }
+        // grab events for each sport route, add team filter if team route
+        route.route in ACTIVE_SPORTS -> {
+            val sportBase = and(eq(Post::data.name, route.route), eq(Post::type.name, PostType.EVENT.name))
+            val teamFilter = route.altId?.let { eq(Post::tags.name, it) }
+            if (teamFilter != null) and(sportBase, teamFilter) else sportBase
+        }
+        else -> null
+    }
+
     override suspend fun findByBaseCriteria(
         route: RouteDetails?,
         range: Instant?,
@@ -205,98 +254,20 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         userFollowing: Set<String>
     ) =
         withContext(Dispatchers.IO) {
-            val routeFilter = when {
-                route == null -> null
-                // if id == root id then post was made at base route
-                route.route == SiteRoute.HOME -> eqId(Post::rootId)
-                // Profile case where search id is the user id - match to post's user id
-                route.route == SiteRoute.PROFILE -> eq(Post::userId.name, route.modifier)
-                // favorites resolve to user's favorites
-                route.route == SiteRoute.FAVORITES -> {
-                    val parentIds = mutableListOf<String>()
-                    val sportLeagues = mutableListOf<String>()
-                    val teamConditions = mutableListOf<Bson>()
-                    userFavorites.forEach { fav ->
-                        fav.routeId.let { parentIds.add(it) }
-                        if(isSportRoute(fav.route)){
-                            if (fav.altId != null) {
-                                // Specific team filter within a sport (requires isolated pairing)
-                                teamConditions.add(
-                                    and(
-                                        eq(Post::data.name, fav.route),
-                                        eq(Post::type.name, PostType.EVENT.name),
-                                        eq(Post::tags.name, fav.altId)
-                                    )
-                                )
-                            }else{
-                                //no team specific so safe to batch full sport league
-                                sportLeagues.add(fav.route)
-                            }
-                        }
-                    }
-                    val consolidatedClauses = mutableListOf<Bson>()
-                    if (parentIds.isNotEmpty()) {
-                        consolidatedClauses.add(`in`(Post::parentId.name, parentIds))
-                    }
-                    if (sportLeagues.isNotEmpty()) {
-                        consolidatedClauses.add(
-                            and(
-                                `in`(Post::data.name, sportLeagues),
-                                eq(Post::type.name, PostType.EVENT.name)
-                            )
-                        )
-                    }
-                    if (teamConditions.isNotEmpty()) {
-                        consolidatedClauses.addAll(teamConditions)
-                    }
-                    // add or condition if more than one condition exists
-                    when {
-                        consolidatedClauses.isEmpty() -> null
-                        consolidatedClauses.size == 1 -> consolidatedClauses.first()
-                        else -> or(consolidatedClauses)
-                    }
-                }
-                // General sports case
-                route.route == SiteRoute.SPORT -> {
-                    or(
-                        and(
-                            `in`(Post::data.name, ACTIVE_SPORTS),
-                            eq(Post::type.name, PostType.EVENT.name)
-                        ),
-                        `in`(Post::parentId.name, ACTIVE_SPORTS),
-                    )
-                }
-                // grab events for each sport route, add team filter if team route
-                route.route in ACTIVE_SPORTS -> {
-                    val sportBase = and(eq(Post::data.name, route.route), eq(Post::type.name, PostType.EVENT.name))
-                    val teamFilter = route.altId?.let { eq(Post::tags.name, it) }
-                    if (teamFilter != null) and(sportBase, teamFilter) else sportBase
-                }
-                else -> null
-            }
+            val routeFilter = getRouteFilter(route, userFavorites)
             // add or condition if more than one condition exists
             val orConditions = when {
                 routeFilter != null -> or(routeFilter, eq(Post::parentId.name, route?.id))
                 else -> eq(Post::parentId.name, route?.id)
             }
 
-            val andConditions = mutableListOf(
-                orConditions,
-                eq(Post::status.name, ActiveStatus.ACTIVE),
-                `in`(Post::type.name, filters.postTypes),
-                nin(ID, filters.postIds),
-                // event's create date is the date and time of event, offset to include upcoming events for route
-                lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant()))
-            )
-
-            range?.let {
-                andConditions.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
+            val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
+                add(orConditions)
+                add(nin(ID, filters.postIds))
+                add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
             }
 
-            val initialFilter = and(andConditions)
-
-            val pipeline = getInitAggPipeline(initialFilter)
-            pipeline.add(getUserRoleCondition(filters, userFollowing))
+            val pipeline = mutableListOf(match(and(baseFilters)))
             pipeline.addAll(getSort(sortType))
             pipeline.add(limit(RETRIEVE_LIM))
 
@@ -316,18 +287,10 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         userFollowing: Set<String>
     ) =
         withContext(Dispatchers.IO) {
-            val andConditions = mutableListOf(
-                eq(Post::parentId.name, parentId),
-                eq(Post::status.name, ActiveStatus.ACTIVE),
-                `in`(Post::type.name, filters.postTypes)
-            )
-            range?.let {
-                andConditions.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
+            val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
+                add(eq(Post::parentId.name, parentId))
             }
-            val initialFilter = and(andConditions)
-
-            val pipeline = getInitAggPipeline(initialFilter)
-            pipeline.add(getUserRoleCondition(filters, userFollowing))
+            val pipeline = mutableListOf(match(and(baseFilters)))
             pipeline.addAll(getSort(sortType))
             try{
                 return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
@@ -349,36 +312,28 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         commentRouteLocation: String?
     ) =
         withContext(Dispatchers.IO) {
-            val buildFilters = mutableListOf(
-                eq(Post::parentId.name, parentId),
-                eq(Post::status.name, ActiveStatus.ACTIVE),
-                `in`(Post::type.name, filters.postTypes)
-            )
-            if (gameState != null && compStartTime != null && compEndTime != null) {
-                when (gameState) {
-                    GameState.PRE -> {
-                        buildFilters.add(lt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
+            val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
+                add(eq(Post::parentId.name, parentId))
+                if (gameState != null && compStartTime != null && compEndTime != null) {
+                    when (gameState) {
+                        GameState.PRE -> {
+                            add(lt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
+                        }
+                        GameState.MID -> {
+                            add(gt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
+                            add(lt(Post::createdOn.name, Date.from(compEndTime.toJavaInstant())))
+                        }
+                        GameState.POST -> {
+                            add(gt(Post::createdOn.name, Date.from(compEndTime.toJavaInstant())))
+                        }
+                        GameState.ALL -> {}
                     }
-                    GameState.MID -> {
-                        buildFilters.add(gt(Post::createdOn.name, Date.from(compStartTime.toJavaInstant())))
-                        buildFilters.add(lt(Post::createdOn.name, Date.from(compEndTime.toJavaInstant())))
-                    }
-                    GameState.POST -> {
-                        buildFilters.add(gt(Post::createdOn.name, Date.from(compEndTime.toJavaInstant())))
-                    }
-                    GameState.ALL -> {}
+                }
+                commentRouteLocation?.let {
+                    add(eq(Post::route.name, commentRouteLocation))
                 }
             }
-            commentRouteLocation?.let {
-                buildFilters.add(eq(Post::route.name, commentRouteLocation))
-            }
-            range?.let {
-                buildFilters.add(gt(Post::createdOn.name, Date.from(it.toJavaInstant())))
-            }
-            val initialFilter = and(buildFilters)
-
-            val pipeline = getInitAggPipeline(initialFilter)
-            pipeline.add(getUserRoleCondition(filters, userFollowing))
+            val pipeline = mutableListOf(match(and(baseFilters)))
             pipeline.addAll(getSort(sortType))
             try{
                 return@withContext collection.aggregate<Post>(pipeline).map { it.toDomain() }.toList()
@@ -483,6 +438,19 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     )
                 ).modifiedCount
             } ?: 0L
+        }
+
+    override suspend fun setUserRole(
+        roleUpdate: RoleUpdate
+    ) =
+        withContext(Dispatchers.IO) {
+            collection.updateOne(
+                `in`(Post::userId.name, roleUpdate.userId),
+                combine(
+                    set(Post::userRole.name, roleUpdate.userRole),
+                    set(Post::updatedOn.name, Date.from(Clock.System.now().toJavaInstant()))
+                )
+            ).modifiedCount
         }
 
     override suspend fun setCount(

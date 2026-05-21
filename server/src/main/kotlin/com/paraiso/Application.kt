@@ -191,7 +191,6 @@ fun Application.module(jobScope: CoroutineScope) {
     // setup apis and scopes
     val sportApi = SportApi(sportsDBs)
     val usersApi = UsersApi(usersDb)
-    val authApi = AuthApi(usersApi, cacheServiceImpl)
     val votesApi = VotesApi(VotesDBImpl(database))
     val followsApi = FollowsApi(FollowsDBImpl(database))
     val blocksApi = BlocksApi(BlocksDBImpl(database))
@@ -204,6 +203,7 @@ fun Application.module(jobScope: CoroutineScope) {
         eventServiceImpl,
         sportApi
     )
+    val authApi = AuthApi(usersApi, postsApi, cacheServiceImpl)
     val postPinsApi = PostPinsApi(PostPinsDBImpl(database))
     val notificationsApi = NotificationsApi(NotificationsDBImpl(database), postsApi)
     val userSessionsApi = UserSessionsApi(usersDb, cacheServiceImpl, followsApi, blocksApi)

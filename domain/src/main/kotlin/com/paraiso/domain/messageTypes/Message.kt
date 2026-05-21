@@ -31,6 +31,7 @@ fun Message.toNewPost() =
         Post(
             id = id,
             userId = userId,
+            userRole = userRole,
             title = title,
             content = content,
             type = type,

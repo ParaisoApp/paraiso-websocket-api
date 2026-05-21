@@ -1,6 +1,7 @@
 package com.paraiso.domain.posts
 
 import com.paraiso.domain.routes.RouteDetails
+import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
@@ -13,6 +14,7 @@ import kotlinx.serialization.Serializable
 data class Post(
     val id: String?,
     val userId: String?,
+    val userRole: UserRole,
     val title: String?,
     val content: String?,
     val type: PostType,
@@ -114,6 +116,7 @@ enum class Range {
 fun generateBasePost(id: String?, title: String?) = Post(
     id = id,
     userId = null,
+    userRole = UserRole.ADMIN,
     title = title,
     content = null,
     type = PostType.SUPER,
