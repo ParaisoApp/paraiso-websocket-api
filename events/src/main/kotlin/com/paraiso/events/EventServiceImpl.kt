@@ -1,11 +1,8 @@
 package com.paraiso.events
 
 import com.paraiso.domain.users.EventService
-import com.paraiso.domain.users.UserSession
 import io.klogging.Klogging
-import io.lettuce.core.KeyScanCursor
 import io.lettuce.core.RedisClient
-import io.lettuce.core.ScanArgs
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands
 import kotlinx.coroutines.Dispatchers
@@ -14,9 +11,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 class EventServiceImpl(
     private val client: RedisClient

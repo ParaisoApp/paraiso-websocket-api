@@ -17,15 +17,11 @@ import com.mongodb.client.model.Updates.pull
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.toDomain
-import com.paraiso.domain.auth.AuthId as AuthIdDomain
 import com.paraiso.domain.messageTypes.Ban
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.Tag
-import com.paraiso.domain.users.User as UserDomain
-import com.paraiso.domain.users.UserFavorite as UserFavoriteDomain
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.users.UserSettings as UserSettingsDomain
 import com.paraiso.domain.users.UsersDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -38,6 +34,10 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.bson.Document
 import java.util.Date
+import com.paraiso.domain.auth.AuthId as AuthIdDomain
+import com.paraiso.domain.users.User as UserDomain
+import com.paraiso.domain.users.UserFavorite as UserFavoriteDomain
+import com.paraiso.domain.users.UserSettings as UserSettingsDomain
 
 class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
     companion object {
@@ -47,7 +47,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
     private val collection = database.getCollection("users", User::class.java)
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         Filters.and(
@@ -61,7 +61,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding users by ids: $ex" }
                 emptyList()
             }
@@ -69,9 +69,9 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
 
     override suspend fun findByName(name: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(eq(User::name.name, name)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding user by name: $ex" }
                 null
             }
@@ -79,11 +79,11 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
 
     override suspend fun existsByName(name: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(eq(User::name.name, name))
-                .limit(1)
-                .firstOrNull() != null
-            } catch (ex: Exception){
+                    .limit(1)
+                    .firstOrNull() != null
+            } catch (ex: Exception) {
                 logger.error { "Error checking if user exists by name: $ex" }
                 false
             }
@@ -91,12 +91,12 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
 
     override suspend fun findByPartial(partial: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(regex(User::name.name, partial, "i"))
                     .limit(PARTIAL_RETRIEVE_LIM)
                     .map { it.toDomain() }
                     .toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding users by partial: $ex" }
                 emptyList()
             }
@@ -104,9 +104,9 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
 
     override suspend fun findUserByAuthId(authId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(eq("${User::authIds.name}.id", authId)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding user by auth id: $ex" }
                 null
             }
@@ -118,7 +118,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
         followingList: List<String>
     ) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         `in`(ID, userIds),
@@ -131,7 +131,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
                         )
                     )
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error getting user list: $ex" }
                 emptyList()
             }
@@ -147,7 +147,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun addMentions(id: String) =
@@ -348,7 +348,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
             ).modifiedCount
         }
 
-    override suspend fun syncUserAuth(authId: AuthIdDomain): Long  =
+    override suspend fun syncUserAuth(authId: AuthIdDomain): Long =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, authId.userId),
@@ -360,7 +360,7 @@ class UsersDBImpl(database: MongoDatabase) : UsersDB, Klogging {
             ).modifiedCount
         }
 
-    override suspend fun setUserRole(roleUpdate: RoleUpdate): Long  =
+    override suspend fun setUserRole(roleUpdate: RoleUpdate): Long =
         withContext(Dispatchers.IO) {
             collection.updateOne(
                 eq(ID, roleUpdate.userId),

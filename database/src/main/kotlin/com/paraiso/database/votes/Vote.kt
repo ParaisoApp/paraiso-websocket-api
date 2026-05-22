@@ -3,12 +3,11 @@ package com.paraiso.database.votes
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
-import com.paraiso.domain.votes.Vote as VoteDomain
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.votes.Vote as VoteDomain
 
 @Serializable
 data class Vote(

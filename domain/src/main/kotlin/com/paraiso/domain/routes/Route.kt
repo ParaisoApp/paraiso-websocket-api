@@ -91,8 +91,7 @@ fun Favorite.toUserFavorite() = UserFavorite(
     icon = icon
 )
 
-
 fun isSportRoute(route: String) = route == SiteRoute.FOOTBALL.name ||
-        route == SiteRoute.BASKETBALL.name ||
-        route == SiteRoute.HOCKEY.name ||
-        route == SiteRoute.SPORT.name
+    route == SiteRoute.BASKETBALL.name ||
+    route == SiteRoute.HOCKEY.name ||
+    route == SiteRoute.SPORT.name

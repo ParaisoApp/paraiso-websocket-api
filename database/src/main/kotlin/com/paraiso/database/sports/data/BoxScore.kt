@@ -7,8 +7,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain
 import com.paraiso.domain.sport.data.FullTeam as FullTeamDomain
-import com.paraiso.domain.sport.data.TeamStat as TeamStatDomain
 import com.paraiso.domain.sport.data.StatTypes as StatTypesDomain
+import com.paraiso.domain.sport.data.TeamStat as TeamStatDomain
 
 @Serializable
 data class BoxScore(

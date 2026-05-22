@@ -10,7 +10,6 @@ import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.domain.users.User
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.votes.Vote as VoteDomain
 import com.paraiso.domain.votes.VotesDB
 import io.klogging.Klogging
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +20,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
+import com.paraiso.domain.votes.Vote as VoteDomain
 
 class VotesDBImpl(database: MongoDatabase) : VotesDB, Klogging {
 
@@ -28,14 +28,14 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB, Klogging {
 
     override suspend fun findByVoterIdAndPostId(voterId: String, postId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         eq(Vote::voterId.name, voterId),
                         eq(Vote::postId.name, postId)
                     )
                 ).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding vote by id: $ex" }
                 null
             }
@@ -43,14 +43,14 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB, Klogging {
 
     override suspend fun findByUserIdAndPostIdIn(userId: String, postIds: Set<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         eq(Vote::voterId.name, userId),
                         `in`(Vote::postId.name, postIds)
                     )
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding votes by id user id and post id in: $ex" }
                 emptyList()
             }
@@ -66,7 +66,7 @@ class VotesDBImpl(database: MongoDatabase) : VotesDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun setVote(voterId: String, postId: String, vote: Boolean) =

@@ -96,9 +96,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
-import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -122,8 +120,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.net.URI
-import java.net.URL
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -289,7 +285,7 @@ fun Application.configureSockets(
     routing {
         route("/chat") {
             intercept(ApplicationCallPipeline.Plugins) {
-                //hacky resolution but other paths were bleeding into the chat route
+                // hacky resolution but other paths were bleeding into the chat route
                 if (!call.request.path().startsWith("/chat")) {
                     return@intercept
                 }
@@ -299,11 +295,11 @@ fun Application.configureSockets(
                 val ticketedUserId = call.request.queryParameters["ticket"]?.let { services.cacheService.redeemTicket(it) }
                 val resolvedUserId = ticketedUserId ?: userCookie?.userId
                 // check if user already exists based on user or passed in id
-                val existingUser = resolvedUserId?.let{
-                    //need to fetch full user info
+                val existingUser = resolvedUserId?.let {
+                    // need to fetch full user info
                     services.userSessionsApi.getUserById(it, it, true)
                 }
-                val (currentUser, isNewUser) = if(existingUser == null || (existingUser.roles != UserRole.GUEST && ticketedUserId == null)){
+                val (currentUser, isNewUser) = if (existingUser == null || (existingUser.roles != UserRole.GUEST && ticketedUserId == null)) {
                     User.newUser(UUID.randomUUID().toString()) to true
                 } else {
                     existingUser to false
@@ -401,12 +397,12 @@ fun Application.configureFeatures(config: HoconApplicationConfig) {
     install(Sessions) {
         cookie<UserCookie>("USER_SESSION") {
             val secretEncryptKey = hex(secretEncryptKeyString) // Use a real key from ENV
-            val secretSignKey = hex(secretSignKeyString)    // Use a real key from ENV
+            val secretSignKey = hex(secretSignKeyString) // Use a real key from ENV
 
             transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
             cookie.path = "/"
-            cookie.httpOnly = true  // JS cannot touch this
-            cookie.secure = true    // Only sent over HTTPS
+            cookie.httpOnly = true // JS cannot touch this
+            cookie.secure = true // Only sent over HTTPS
             cookie.extensions["SameSite"] = "Strict"
         }
     }
@@ -422,13 +418,15 @@ fun Application.configureSecurity(config: HoconApplicationConfig) {
                 .cached(10, 24, TimeUnit.HOURS)
                 .rateLimited(10, 1, TimeUnit.MINUTES)
                 .build()
-            verifier(jwkProvider, "https://$authDomain/"){
+            verifier(jwkProvider, "https://$authDomain/") {
                 acceptLeeway(30)
             }
             validate { credential ->
                 if (credential.payload.audience.contains(authAudience)) {
                     JWTPrincipal(credential.payload)
-                } else null
+                } else {
+                    null
+                }
             }
             challenge { _, _ ->
                 val failures = call.authentication.allFailures

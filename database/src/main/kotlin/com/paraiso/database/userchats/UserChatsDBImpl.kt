@@ -7,7 +7,6 @@ import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.userchats.UserChat as UserChatDomain
 import com.paraiso.domain.userchats.UserChatsDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -19,24 +18,25 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
+import com.paraiso.domain.userchats.UserChat as UserChatDomain
 
 class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB, Klogging {
     private val collection = database.getCollection("userChats", UserChat::class.java)
 
     override suspend fun findByUserIds(userId: String, otherUserId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(all(UserChat::userIds.name, listOf(userId, otherUserId))).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding user chat by id: $ex" }
                 null
             }
         }
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(eq(UserChat::userIds.name, userId)).map { Pair(it.toDomain(), it.recentDm) }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding user chat by userId: $ex" }
                 emptyList()
             }
@@ -52,7 +52,7 @@ class UserChatsDBImpl(database: MongoDatabase) : UserChatsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun setMostRecentDm(

@@ -5,7 +5,6 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.posts.PostPin as PostPinDomain
 import com.paraiso.domain.posts.PostPinsDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -13,15 +12,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import com.paraiso.domain.posts.PostPin as PostPinDomain
 
 class PostPinsDBImpl(database: MongoDatabase) : PostPinsDB, Klogging {
 
     private val collection = database.getCollection("postPins", PostPin::class.java)
     override suspend fun findByRouteId(routeId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(`in`(PostPin::routeId.name, routeId)).map { Pair(it.toDomain(), it.postId) }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding post pins by route id: $ex" }
                 emptyList()
             }
@@ -37,7 +37,7 @@ class PostPinsDBImpl(database: MongoDatabase) : PostPinsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun delete(id: String) =

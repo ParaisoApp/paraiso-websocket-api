@@ -1,14 +1,11 @@
 package com.paraiso.domain.routes
 
-import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.posts.InitRouteData
 import com.paraiso.domain.posts.InitSearch
 import com.paraiso.domain.posts.PostPinsApi
 import com.paraiso.domain.posts.PostSearch
 import com.paraiso.domain.posts.PostSearchId
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.posts.Range
-import com.paraiso.domain.posts.SortType
 import com.paraiso.domain.users.UserSessionsApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

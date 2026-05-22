@@ -1,13 +1,12 @@
 package com.paraiso.database.sports.data
 
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.data.Team as TeamDomain
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.sport.data.Team as TeamDomain
 
 @Serializable
 data class Team(

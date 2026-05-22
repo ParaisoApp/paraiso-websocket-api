@@ -11,7 +11,7 @@ fun Route.linksController(linksApi: LinksApi) {
     route("links") {
         get {
             linksApi.findLinksByType(
-                call.request.queryParameters["type"] ?: "",
+                call.request.queryParameters["type"] ?: ""
             ).let {
                 call.respond(HttpStatusCode.OK, it)
             }

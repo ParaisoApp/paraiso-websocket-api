@@ -6,10 +6,10 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
-import com.paraiso.domain.sport.data.StandingsGroup as StandingsGroupDomain
-import com.paraiso.domain.sport.data.StandingsSubGroup as StandingsSubGroupDomain
 import com.paraiso.domain.sport.data.Standings as StandingsDomain
+import com.paraiso.domain.sport.data.StandingsGroup as StandingsGroupDomain
 import com.paraiso.domain.sport.data.StandingsStat as StandingsStatDomain
+import com.paraiso.domain.sport.data.StandingsSubGroup as StandingsSubGroupDomain
 
 @Serializable
 data class AllStandings(
@@ -85,21 +85,21 @@ fun StandingsGroupDomain.toEntity() =
         confName = confName,
         confAbbr = confAbbr,
         standings = standings.map { it.toEntity() },
-        subGroups = subGroups.map { it.toEntity() },
+        subGroups = subGroups.map { it.toEntity() }
     )
 
 fun StandingsSubGroupDomain.toEntity() =
     StandingsSubGroup(
         divName = divName,
         divAbbr = divAbbr,
-        standings = standings.map { it.toEntity() },
+        standings = standings.map { it.toEntity() }
     )
 
 fun StandingsDomain.toEntity() =
     Standings(
         teamId = teamId,
         seed = seed,
-        stats = stats.map { it.toEntity() },
+        stats = stats.map { it.toEntity() }
     )
 
 fun StandingsStatDomain.toEntity() =
@@ -107,7 +107,7 @@ fun StandingsStatDomain.toEntity() =
         shortDisplayName = shortDisplayName,
         displayValue = displayValue,
         displayName = displayName,
-        value = value,
+        value = value
     )
 
 fun AllStandings.toDomain() =
@@ -123,21 +123,21 @@ fun StandingsGroup.toDomain() =
         confName = confName,
         confAbbr = confAbbr,
         standings = standings.map { it.toDomain() },
-        subGroups = subGroups.map { it.toDomain() },
+        subGroups = subGroups.map { it.toDomain() }
     )
 
 fun StandingsSubGroup.toDomain() =
     StandingsSubGroupDomain(
         divName = divName,
         divAbbr = divAbbr,
-        standings = standings.map { it.toDomain() },
+        standings = standings.map { it.toDomain() }
     )
 
 fun Standings.toDomain() =
     StandingsDomain(
         teamId = teamId,
         seed = seed,
-        stats = stats.map { it.toDomain() },
+        stats = stats.map { it.toDomain() }
     )
 
 fun StandingsStat.toDomain() =
@@ -145,5 +145,5 @@ fun StandingsStat.toDomain() =
         shortDisplayName = shortDisplayName,
         displayValue = displayValue,
         displayName = displayName,
-        value = value,
+        value = value
     )

@@ -1,20 +1,20 @@
 package com.paraiso.cache
 
 import com.paraiso.domain.users.CacheService
-import com.paraiso.domain.users.UserSession as UserSessionDomain
 import io.klogging.Klogging
 import io.lettuce.core.KeyScanCursor
 import io.lettuce.core.RedisClient
 import io.lettuce.core.ScanArgs
 import io.lettuce.core.ScriptOutputType
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.paraiso.domain.users.UserSession as UserSessionDomain
 
-class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging {
+class CacheServiceImpl(private val client: RedisClient) : CacheService, Klogging {
     private val connection = client.connect()
     private val commands = connection.async()
     private val twentyFourHours = 24 * 60 * 60L
@@ -36,7 +36,7 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
             commands.del(key).await()
         }
 
-    //get and delete ticket in one transaction
+    // get and delete ticket in one transaction
     override suspend fun redeemTicket(ticket: String): String? = withContext(Dispatchers.IO) {
         val luaScript = """
             local val = redis.call('GET', KEYS[1])
@@ -67,7 +67,7 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
         withContext(Dispatchers.IO) {
             commands.expire(
                 "user:session:$userId",
-                twentyFourHours,
+                twentyFourHours
             ).await()
         }
     override suspend fun getUserSession(userId: String): UserSessionDomain? =
@@ -109,5 +109,4 @@ class CacheServiceImpl(private val client: RedisClient): CacheService, Klogging 
 
         return activeSessions
     }
-
 }

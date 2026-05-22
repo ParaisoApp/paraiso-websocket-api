@@ -1,16 +1,14 @@
 package com.paraiso.domain.messageTypes
 
-import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.ActiveStatus
+import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.RecordSerializer
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
-import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.max
-import kotlin.math.pow
 
 const val COMMENT_WEIGHTING = 0.5
 const val EPOCH_OFFSET = 1735689600000L // Jan 1, 2025
@@ -36,7 +34,7 @@ data class Message(
     val editId: String?,
     val route: String,
     val userRole: UserRole
-): ServerEvent
+) : ServerEvent
 
 fun Message.toNewPost() =
     Clock.System.now().let { now ->

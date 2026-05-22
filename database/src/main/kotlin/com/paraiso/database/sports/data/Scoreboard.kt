@@ -5,9 +5,9 @@ import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.sport.data.Record as RecordDomain
 import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.data.TeamYearStats as TeamYearStatsDomain
-import com.paraiso.domain.sport.data.Record as RecordDomain
 
 @Serializable
 data class Scoreboard(

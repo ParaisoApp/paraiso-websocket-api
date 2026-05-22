@@ -1,6 +1,5 @@
 package com.paraiso.domain.users
 
-import com.paraiso.domain.messageTypes.ServerEvent
 import com.paraiso.domain.util.Constants.SYSTEM
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -181,11 +180,11 @@ fun UserImage.Companion.initImage() =
 fun User.toBasicResponse() = User(
     id = id,
     name = name,
-    fullName = if(settings.showName) fullName else null,
-    email = if(settings.showEmail) email else null,
+    fullName = if (settings.showName) fullName else null,
+    email = if (settings.showEmail) email else null,
     about = about,
-    location = if(settings.showLocation) location else null,
-    birthday = if(settings.showBirthday) birthday else null,
+    location = if (settings.showLocation) location else null,
+    birthday = if (settings.showBirthday) birthday else null,
     chats = chats,
     replies = replies,
     score = score,

@@ -7,7 +7,6 @@ import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.routes.RouteDetails as RouteDetailsDomain
 import com.paraiso.domain.routes.RoutesDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -17,15 +16,16 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
+import com.paraiso.domain.routes.RouteDetails as RouteDetailsDomain
 
 class RoutesDBImpl(database: MongoDatabase) : RoutesDB, Klogging {
     private val collection = database.getCollection("routes", RouteDetails::class.java)
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(Filters.eq(ID, id)).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding route by id: $ex" }
                 null
             }
@@ -41,7 +41,7 @@ class RoutesDBImpl(database: MongoDatabase) : RoutesDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
     override suspend fun setTitle(
         id: String,

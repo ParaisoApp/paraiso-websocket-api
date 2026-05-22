@@ -1,13 +1,12 @@
 package com.paraiso.database.admin
 
-import com.paraiso.domain.admin.UserReport as UserReportDomain
-import com.paraiso.domain.admin.PostReport as PostReportDomain
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.admin.PostReport as PostReportDomain
+import com.paraiso.domain.admin.UserReport as UserReportDomain
 
 @Serializable
 data class UserReport(

@@ -17,5 +17,5 @@ enum class LinkType {
     DONATE,
 
     @SerialName("SOCIAL")
-    SOCIAL,
+    SOCIAL
 }

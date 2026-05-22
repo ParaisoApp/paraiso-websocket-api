@@ -1,13 +1,12 @@
 package com.paraiso.database.notifications
 
-import com.paraiso.domain.notifications.Notification as NotificationDomain
 import com.paraiso.domain.notifications.NotificationType
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.notifications.Notification as NotificationDomain
 
 @Serializable
 data class Notification(

@@ -168,10 +168,10 @@ class SportApi(private val sportDBs: SportDBs) {
                         REG_SEASON -> Triple(year, PRE_SEASON, MAX_WEEK_PRE_SEASON)
                         PLAY_IN -> Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
                         POST_SEASON -> {
-                            if(sport == SiteRoute.BASKETBALL.name){
-                                //handle play in season type (5)
+                            if (sport == SiteRoute.BASKETBALL.name) {
+                                // handle play in season type (5)
                                 Triple(year, PLAY_IN, 0) // max week ignored for non-football
-                            }else{
+                            } else {
                                 Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
                             }
                         }
@@ -181,7 +181,7 @@ class SportApi(private val sportDBs: SportDBs) {
                     when (seasonType) {
                         PRE_SEASON -> Triple(year, REG_SEASON, WEEK_ONE)
                         REG_SEASON -> {
-                            if(sport == SiteRoute.BASKETBALL.name) {
+                            if (sport == SiteRoute.BASKETBALL.name) {
                                 Triple(year, PLAY_IN, WEEK_ONE)
                             } else {
                                 Triple(year, POST_SEASON, WEEK_ONE)
@@ -235,8 +235,8 @@ class SportApi(private val sportDBs: SportDBs) {
         year: Int
     ) =
         sportDBs.playoffsDB.findBySportAndYear(
-                sport,
-                year
+            sport,
+            year
         )?.rounds?.values?.maxByOrNull { it.round }?.let { round ->
             round.matchUps.values.flatMap { matchUp ->
                 matchUp.teams.values.map { team ->

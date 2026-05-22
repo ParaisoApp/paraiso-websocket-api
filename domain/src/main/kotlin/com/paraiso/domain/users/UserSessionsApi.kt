@@ -5,7 +5,6 @@ import com.paraiso.domain.follows.FollowsApi
 import com.paraiso.domain.messageTypes.FilterTypes
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
 
 class UserSessionsApi(
     private val usersDB: UsersDB,
@@ -18,12 +17,12 @@ class UserSessionsApi(
         cacheService.getUserSession(userId).let { session ->
             usersDB.findByIdIn(listOf(userId)).firstOrNull()?.let {
                 val user = it.copy(status = getStatus(session, it.settings.hidden))
-                if(fullInfo){
+                if (fullInfo) {
                     user
-                }else{
+                } else {
                     // viewer context only needed for other users (following, blocking)
-                    val follows = async{ followsApi.findIn(curUserId, listOf(userId)).firstOrNull() }
-                    val blocks = async{ blocksApi.findIn(curUserId, listOf(userId)).firstOrNull() }
+                    val follows = async { followsApi.findIn(curUserId, listOf(userId)).firstOrNull() }
+                    val blocks = async { blocksApi.findIn(curUserId, listOf(userId)).firstOrNull() }
                     user.copy(
                         viewerContext = ViewerContext(
                             follows.await()?.following,

@@ -17,7 +17,6 @@ import com.paraiso.domain.sport.sports.SportApi
 import com.paraiso.domain.users.CacheService
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.User
-import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UsersApi
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.HOME_PREFIX
@@ -291,7 +290,9 @@ class PostsApi(
                     updateCounts(parent, increment = -1)
                 }
                 true
-            } else false
+            } else {
+                false
+            }
         }
 
     private suspend fun updateCounts(post: Post, increment: Int) {

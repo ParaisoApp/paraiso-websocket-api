@@ -5,9 +5,9 @@ import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 import com.paraiso.domain.sport.data.Category as CategoryDomain
 import com.paraiso.domain.sport.data.CategoryLeader as CategoryLeaderDomain
+import com.paraiso.domain.sport.data.StatLeaders as StatLeadersDomain
 
 @Serializable
 data class StatLeaders(
@@ -54,7 +54,7 @@ fun CategoryDomain.toEntity() = Category(
     name = name,
     displayName = displayName,
     shortDisplayName = shortDisplayName,
-    leaders = leaders.map { it.toEntity() },
+    leaders = leaders.map { it.toEntity() }
 )
 
 fun CategoryLeaderDomain.toEntity() = CategoryLeader(
@@ -78,7 +78,7 @@ fun Category.toDomain() = CategoryDomain(
     name = name,
     displayName = displayName,
     shortDisplayName = shortDisplayName,
-    leaders = leaders.map { it.toDomain() },
+    leaders = leaders.map { it.toDomain() }
 )
 
 fun CategoryLeader.toDomain() = CategoryLeaderDomain(

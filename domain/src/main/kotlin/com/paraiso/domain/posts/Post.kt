@@ -1,10 +1,7 @@
 package com.paraiso.domain.posts
 
-import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants
-import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName

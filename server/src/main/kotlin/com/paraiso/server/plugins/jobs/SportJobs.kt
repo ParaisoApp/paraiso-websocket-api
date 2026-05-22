@@ -49,20 +49,20 @@ class SportJobs(
                 combine(compFlowList) { it.toList() }
             }
         } else {
-                SportState.getAllTriggers()[sport]?.flatMapLatest { _ ->
-                    val compFlowList: List<StateFlow<Competition>> =
-                        SportState.getCompetitionsBySport(sport)
-                            ?.values
-                            ?.toList()
-                            ?: emptyList()
-                    combine(compFlowList) { it.toList() }
-                }
+            SportState.getAllTriggers()[sport]?.flatMapLatest { _ ->
+                val compFlowList: List<StateFlow<Competition>> =
+                    SportState.getCompetitionsBySport(sport)
+                        ?.values
+                        ?.toList()
+                        ?: emptyList()
+                combine(compFlowList) { it.toList() }
+            }
         }
         listOf(
             launch {
                 // emit scoreboard info (updates once daily)
-                if(sport == SiteRoute.SPORT.name){
-                    combine(SportState.getAllScoreboardFlows()){ it.toList() }.collect { sbs ->
+                if (sport == SiteRoute.SPORT.name) {
+                    combine(SportState.getAllScoreboardFlows()) { it.toList() }.collect { sbs ->
                         val allComps = sbs.flatMap { it.competitions }
                         val allSportsScoreboard = Scoreboard(
                             id = sport,
@@ -79,7 +79,7 @@ class SportJobs(
                             allSportsScoreboard
                         )
                     }
-                }else{
+                } else {
                     SportState.getScoreboardFlow(sport).collect { sb ->
                         session.sendTypedMessage(
                             MessageType.SCOREBOARD,

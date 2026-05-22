@@ -1,6 +1,5 @@
 package com.paraiso.domain.sport.interfaces
 
-import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Team
 
 interface TeamsDB {

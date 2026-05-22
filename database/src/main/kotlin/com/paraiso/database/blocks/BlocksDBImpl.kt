@@ -6,7 +6,6 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.blocks.Block as BlockDomain
 import com.paraiso.domain.blocks.BlocksDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import com.paraiso.domain.blocks.Block as BlockDomain
 
 class BlocksDBImpl(database: MongoDatabase) : BlocksDB, Klogging {
 
@@ -22,7 +22,7 @@ class BlocksDBImpl(database: MongoDatabase) : BlocksDB, Klogging {
 
     override suspend fun findIn(blockerId: String, blockeeIds: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (blockeeIds.size == 1) {
                     collection.find(
                         and(
@@ -38,7 +38,7 @@ class BlocksDBImpl(database: MongoDatabase) : BlocksDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding blocks by ids: $ex" }
                 emptyList()
             }
@@ -54,7 +54,7 @@ class BlocksDBImpl(database: MongoDatabase) : BlocksDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun delete(blockerId: String, blockeeId: String) =

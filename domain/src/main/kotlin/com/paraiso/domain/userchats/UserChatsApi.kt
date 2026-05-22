@@ -10,10 +10,10 @@ class UserChatsApi(
 
     suspend fun getOrPutUserChat(userId: String, otherUserId: String): UserChat {
         val chat = userChatsDB.findByUserIds(userId, otherUserId)
-        if(chat != null){
+        if (chat != null) {
             val dms = directMessagesApi.findByChatId(chat.id, userId)
             return chat.copy(dms = dms)
-        }else{
+        } else {
             val now = Clock.System.now()
             UUID.randomUUID().toString().let { newChatId ->
                 val newUserChat = UserChat(

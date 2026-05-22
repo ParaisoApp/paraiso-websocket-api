@@ -49,8 +49,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestLeague? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getLeague data sport: $sport, " +
-                                "status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getLeague data sport: $sport, " +
+                                "status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -77,8 +79,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestScoreboard? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getScoreboard data sport: $sport, " +
-                                "status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getScoreboard data sport: $sport, " +
+                                "status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -108,8 +112,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestScoreboard? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getScoreboardWithDate data sport: $sport, " +
-                                "status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getScoreboardWithDate data sport: $sport, " +
+                                "status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -138,8 +144,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestGameStats? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getGameStats data compId: $competitionId, " +
-                                "status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getGameStats data compId: $competitionId, " +
+                                "status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -170,8 +178,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val standingsResponse: RestStandings? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getStandings data sport: $sport status ${it.status} " +
-                                "body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getStandings data sport: $sport status ${it.status} " +
+                                "body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -197,8 +207,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestTeams? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getTeams data sport: $sport status ${it.status} " +
-                                "body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getTeams data sport: $sport status ${it.status} " +
+                                "body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -212,7 +224,8 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
         }
     }
     override suspend fun getRoster(
-        sport: SiteRoute, teamId: String
+        sport: SiteRoute,
+        teamId: String
     ): RosterDomain? = withContext(dispatcher) {
         try {
             var url = clientConfig.statsBaseUrl
@@ -226,15 +239,17 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: String? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getRoster data sport: $sport teamId: $teamId " +
-                                "status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getRoster data sport: $sport teamId: $teamId " +
+                                "status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
                     }
                 }
             }
-            if(response == null) return@withContext null
+            if (response == null) return@withContext null
             val json = Json {
                 prettyPrint = true
                 isLenient = true
@@ -270,8 +285,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestLeaders? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getLeaders data sport: $sport season: $season " +
-                                "type: $type status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getLeaders data sport: $sport season: $season " +
+                                "type: $type status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()
@@ -302,8 +319,10 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
             val response: RestLeaders? = getHttpClient().use { httpClient ->
                 httpClient.get(url).let {
                     if (it.status != HttpStatusCode.OK) {
-                        logger.error { "Error fetching getTeamLeaders data sport: $sport season: $season " +
-                                "type: $type teamId: $teamId status ${it.status} body: ${it.body<String>()}" }
+                        logger.error {
+                            "Error fetching getTeamLeaders data sport: $sport season: $season " +
+                                "type: $type teamId: $teamId status ${it.status} body: ${it.body<String>()}"
+                        }
                         null
                     } else {
                         it.body()

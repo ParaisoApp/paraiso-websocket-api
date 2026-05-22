@@ -1,6 +1,5 @@
 package com.paraiso.domain.sport.interfaces
 
-import com.paraiso.domain.sport.data.Athlete
 import com.paraiso.domain.sport.data.StatLeaders
 
 interface LeadersDB {

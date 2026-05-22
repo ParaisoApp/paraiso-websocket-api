@@ -1,13 +1,12 @@
 package com.paraiso.database.userchats
 
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.userchats.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.userchats.DirectMessage as DirectMessageDomain
 
 @Serializable
 data class DirectMessage(

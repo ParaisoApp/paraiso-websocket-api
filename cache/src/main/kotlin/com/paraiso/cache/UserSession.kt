@@ -1,8 +1,8 @@
 package com.paraiso.cache
 
-import com.paraiso.domain.users.UserSession as UserSessionDomain
 import com.paraiso.domain.users.UserStatus
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.users.UserSession as UserSessionDomain
 
 @Serializable
 data class UserSession(

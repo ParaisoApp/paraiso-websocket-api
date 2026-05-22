@@ -8,6 +8,7 @@ data class Login(
     val email: String,
     val password: String
 )
+
 @Serializable
 data class AuthId(
     val id: String,
@@ -18,6 +19,7 @@ data class AuthId(
     val picture: String?,
     val userId: String
 )
+
 @Serializable
 data class TicketResponse(
     val ticket: String

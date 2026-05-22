@@ -21,9 +21,9 @@ sealed interface ServerEvent {
     data class RoleUpdateReceived(val data: RoleUpdate) : ServerEvent
     data class BanReceived(val data: Ban) : ServerEvent
     data class TagReceived(val data: Tag) : ServerEvent
-    data class UserReportReceived(val data: Report): ServerEvent
-    data class PostReportReceived(val data: Report): ServerEvent
-    data class BasicReceived(val data: String): ServerEvent
+    data class UserReportReceived(val data: Report) : ServerEvent
+    data class PostReportReceived(val data: Report) : ServerEvent
+    data class BasicReceived(val data: String) : ServerEvent
 }
 
 @Serializable

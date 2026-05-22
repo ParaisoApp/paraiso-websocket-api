@@ -3,7 +3,6 @@ package com.paraiso.domain.votes
 import com.paraiso.domain.posts.PostType
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable

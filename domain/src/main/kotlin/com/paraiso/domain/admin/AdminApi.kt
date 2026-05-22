@@ -1,7 +1,6 @@
 package com.paraiso.domain.admin
 
 import com.paraiso.domain.messageTypes.Report
-import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.users.UsersApi
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch

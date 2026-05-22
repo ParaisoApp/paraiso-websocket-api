@@ -7,7 +7,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.AllStandings
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
-import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
 import com.paraiso.domain.sport.interfaces.StandingsDB
 import com.paraiso.domain.util.Constants
 import io.klogging.Klogging
@@ -16,13 +15,14 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import com.paraiso.domain.sport.data.AllStandings as AllStandingsDomain
 
 class StandingsDBImpl(database: MongoDatabase) : StandingsDB, Klogging {
     private val collection = database.getCollection("standings", AllStandings::class.java)
 
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         Filters.and(
@@ -36,7 +36,7 @@ class StandingsDBImpl(database: MongoDatabase) : StandingsDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding standings by id: $ex" }
                 emptyList()
             }
@@ -52,6 +52,6 @@ class StandingsDBImpl(database: MongoDatabase) : StandingsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 }

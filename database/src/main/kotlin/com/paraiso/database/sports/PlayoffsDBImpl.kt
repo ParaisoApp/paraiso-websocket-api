@@ -7,7 +7,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.Playoff
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
-import com.paraiso.domain.sport.data.Playoff as PlayoffDomain
 import com.paraiso.domain.sport.interfaces.PlayoffsDB
 import com.paraiso.domain.util.Constants
 import io.klogging.Klogging
@@ -17,13 +16,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import com.paraiso.domain.sport.data.Playoff as PlayoffDomain
 
 class PlayoffsDBImpl(database: MongoDatabase) : PlayoffsDB, Klogging {
     private val collection = database.getCollection("playoffs", Playoff::class.java)
 
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         Filters.and(
@@ -37,7 +37,7 @@ class PlayoffsDBImpl(database: MongoDatabase) : PlayoffsDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding playoffs by id: $ex" }
                 emptyList()
             }
@@ -48,14 +48,14 @@ class PlayoffsDBImpl(database: MongoDatabase) : PlayoffsDB, Klogging {
         year: Int
     ) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     Filters.and(
                         Filters.eq(Playoff::sport.name, sport),
                         Filters.eq(Playoff::year.name, year)
                     )
                 ).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding playoffs by sport and year: $ex" }
                 null
             }
@@ -77,6 +77,6 @@ class PlayoffsDBImpl(database: MongoDatabase) : PlayoffsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 }

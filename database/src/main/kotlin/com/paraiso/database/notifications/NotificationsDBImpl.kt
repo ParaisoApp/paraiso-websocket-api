@@ -8,7 +8,6 @@ import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.notifications.Notification as NotificationDomain
 import com.paraiso.domain.notifications.NotificationsDB
 import com.paraiso.domain.notifications.PostNotificationContent
 import com.paraiso.domain.users.User
@@ -21,6 +20,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
+import com.paraiso.domain.notifications.Notification as NotificationDomain
 
 class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB, Klogging {
 
@@ -28,14 +28,14 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB, Klogging {
 
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     or(
                         eq(Notification::userId.name, userId),
                         eq(Notification::createUserId.name, userId)
                     )
                 ).map { Pair(it.toDomain(), it.content) }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding notifications by userId: $ex" }
                 emptyList()
             }
@@ -44,7 +44,7 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB, Klogging {
     override suspend fun save(notifications: List<NotificationDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = notifications.map { notification ->
-                val parsedContent = when(val content = notification.content){
+                val parsedContent = when (val content = notification.content) {
                     is PostNotificationContent -> content.post?.id
                     else -> content.toString()
                 }
@@ -55,7 +55,7 @@ class NotificationsDBImpl(database: MongoDatabase) : NotificationsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun setNotificationsRead(

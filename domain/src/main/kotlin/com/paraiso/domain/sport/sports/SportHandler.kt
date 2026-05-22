@@ -1,8 +1,8 @@
 package com.paraiso.domain.sport.sports
 
 import com.paraiso.domain.messageTypes.MessageType
-import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.ActiveStatus
+import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.RouteDetails
@@ -19,12 +19,10 @@ import com.paraiso.domain.sport.data.Team
 import com.paraiso.domain.sport.data.toBasic
 import com.paraiso.domain.users.EventService
 import com.paraiso.domain.users.UserRole
-import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SPORT_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerConfig.autoBuild
-import com.paraiso.domain.util.ServerConfig.autoBuildPosts
 import io.klogging.Klogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -99,7 +97,7 @@ class SportHandler(
         teams.map {
             val now = Clock.System.now()
             RouteDetails(
-                id = "${SPORT_PREFIX}/${sport.name.lowercase()}/t/${it.abbreviation}",
+                id = "$SPORT_PREFIX/${sport.name.lowercase()}/t/${it.abbreviation}",
                 route = sport,
                 modifier = it.abbreviation,
                 altId = "$sport-${it.teamId}",
@@ -119,13 +117,15 @@ class SportHandler(
     private suspend fun buildLeaders(sport: SiteRoute) = coroutineScope {
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
-                val leaders = if((league.activeSeasonType.toIntOrNull() ?: OFF_SEASON) != OFF_SEASON){
+                val leaders = if ((league.activeSeasonType.toIntOrNull() ?: OFF_SEASON) != OFF_SEASON) {
                     sportClient.getLeaders(
                         sport,
                         league.activeSeasonYear,
                         league.activeSeasonType
                     )
-                } else null
+                } else {
+                    null
+                }
                 leaders?.let { leadersRes ->
                     sportDBs.leadersDB.save(listOf(leadersRes))
                 }
@@ -138,7 +138,7 @@ class SportHandler(
         while (isActive) {
             sportDBs.leaguesDB.findBySport(sport.name)?.let { league ->
                 val seasonType = league.activeSeasonType.toIntOrNull() ?: OFF_SEASON
-                val teamIds = if(seasonType == POST_SEASON || seasonType == PLAY_IN){
+                val teamIds = if (seasonType == POST_SEASON || seasonType == PLAY_IN) {
                     sportDBs.playoffsDB.findBySportAndYear(
                         sport.name,
                         league.activeSeasonYear.toIntOrNull() ?: 0
@@ -149,19 +149,21 @@ class SportHandler(
                             }
                         }
                     }?.toSet() ?: emptySet()
-                }else{
+                } else {
                     sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }
                 }
                 teamIds.map { teamId ->
                     async {
-                        if(seasonType != OFF_SEASON){
+                        if (seasonType != OFF_SEASON) {
                             sportClient.getTeamLeaders(
                                 sport,
                                 league.activeSeasonYear,
                                 league.activeSeasonType,
                                 teamId
                             )
-                        } else null
+                        } else {
+                            null
+                        }
                     }
                 }.awaitAll().filterNotNull().let { leadersRes ->
                     if (leadersRes.isNotEmpty()) {
@@ -173,7 +175,7 @@ class SportHandler(
         }
     }
 
-    //get the schedules for each team
+    // get the schedules for each team
     suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
             sportDBs.teamsDB.findBySport(sport.name).map { team ->
@@ -357,16 +359,16 @@ class SportHandler(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
-            //add posts in case they were never added from schedule build (only saves if they're new)
+            // add posts in case they were never added from schedule build (only saves if they're new)
             addPosts(sport, activeCompetitions)
-            if(!initScoreboard) {
+            if (!initScoreboard) {
                 val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
                 val curType = activeCompetitions.firstOrNull()?.season?.type
-                //if new competition comes with diff season type than stored update league
+                // if new competition comes with diff season type than stored update league
                 if (curType?.toString() != curLeague?.activeSeasonType) {
                     buildLeague(sport, true)
                 }
-                //if posts don't exist or if in post season (post season game times may often change), then pull schedule to generate posts
+                // if posts don't exist or if in post season (post season game times may often change), then pull schedule to generate posts
                 val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
                 if (existingPosts.size != activeCompetitions.size || curType == 3) {
                     buildSchedules(sport, true)
@@ -435,11 +437,13 @@ class SportHandler(
         comps.forEach { comp ->
             val matchUpId = comp.teams.map { team -> team.teamId }.sorted().joinToString("-")
             // grab existing matchUp to get existing series score if needed
-            val matchUp = (mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
-                id = matchUpId,
-                compIds = mutableSetOf(),
-                teams = emptyMap()
-            )).apply {
+            val matchUp = (
+                mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
+                    id = matchUpId,
+                    compIds = mutableSetOf(),
+                    teams = emptyMap()
+                )
+                ).apply {
                 compIds.add(comp.id)
             }
             // map comp teams to results (score and winner)
@@ -449,12 +453,12 @@ class SportHandler(
                     else -> {
                         val currentScore = matchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                         val updatedScore = if (team.winner) currentScore + 1 else currentScore
-                        val winner = if(sport == SiteRoute.BASKETBALL && type == PLAY_IN){
+                        val winner = if (sport == SiteRoute.BASKETBALL && type == PLAY_IN) {
                             updatedScore == 1
-                        }else{
+                        } else {
                             updatedScore == 4
                         }
-                        if(winner) winnerCleanup.add(team.teamId)
+                        if (winner) winnerCleanup.add(team.teamId)
                         updatedScore to winner
                     }
                 }
@@ -472,8 +476,8 @@ class SportHandler(
             rounds = finalRounds.sortedBy { it.round }.associateBy { it.round }
         )
         sportDBs.playoffsDB.save(listOf(updatedPlayoff))
-        //remaining scheduled games not needed, remove posts so games don't display
-        if(winnerCleanup.isNotEmpty()){
+        // remaining scheduled games not needed, remove posts so games don't display
+        if (winnerCleanup.isNotEmpty()) {
             sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).let { compIds ->
                 logger.info { "compId cleanup identified: $compIds for winners: $winnerCleanup" }
                 sportDBs.competitionsDB.setCompsDeleted(compIds)
@@ -519,18 +523,23 @@ class SportHandler(
 
                 // Update the MatchUp within the Target Round
                 val matchUpMap = currentRound.matchUps.toMutableMap()
-                val existingMatchUp = (matchUpMap[matchUpId] ?:
-                    PlayoffMatchUp(id = matchUpId, compIds = mutableSetOf(), teams = emptyMap()
-                )).apply { compIds.add(comp.id) }
+                val existingMatchUp = (
+                    matchUpMap[matchUpId]
+                        ?: PlayoffMatchUp(
+                        id = matchUpId,
+                        compIds = mutableSetOf(),
+                        teams = emptyMap()
+                    )
+                    ).apply { compIds.add(comp.id) }
                 val updatedTeams = comp.teams.map { team ->
                     val (score, winner) = when (sport) {
                         SiteRoute.FOOTBALL -> (team.score?.toIntOrNull() ?: 0) to team.winner
                         else -> {
                             val currentScore = existingMatchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                             val updatedScore = if (team.winner) currentScore + 1 else currentScore
-                            val winner = if(sport == SiteRoute.BASKETBALL && comp.season?.type == PLAY_IN){
+                            val winner = if (sport == SiteRoute.BASKETBALL && comp.season?.type == PLAY_IN) {
                                 updatedScore == 1
-                            }else{
+                            } else {
                                 updatedScore == 4
                             }
                             updatedScore to winner

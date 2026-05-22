@@ -1,12 +1,12 @@
 package com.paraiso.database.blocks
 
-import com.paraiso.domain.blocks.Block as BlockDomain
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.blocks.Block as BlockDomain
 
 @Serializable
 data class Block(

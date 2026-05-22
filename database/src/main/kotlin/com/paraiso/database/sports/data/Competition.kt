@@ -8,9 +8,9 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
-import com.paraiso.domain.sport.data.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.data.Situation as SituationDomain
 import com.paraiso.domain.sport.data.Status as StatusDomain
+import com.paraiso.domain.sport.data.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
 
 @Serializable

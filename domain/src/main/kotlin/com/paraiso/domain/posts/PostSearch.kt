@@ -86,14 +86,14 @@ fun InitSearchRequest.toDomain(userId: String) = InitSearch(
     contentDisplayOps = contentDisplayOps,
     userId = userId,
     sessionId = sessionId,
-    postId = postId,
+    postId = postId
 )
 
 fun PostSearchRequest.toDomain(userId: String) = PostSearch(
     route = route,
     postsDisplayOps = postsDisplayOps,
     sessionId = sessionId,
-    userId = userId,
+    userId = userId
 )
 
 fun PostSearchIdRequest.toDomain(userId: String) = PostSearchId(
@@ -102,5 +102,5 @@ fun PostSearchIdRequest.toDomain(userId: String) = PostSearchId(
     sessionId = sessionId,
     gameState = gameState,
     commentRouteLocation = commentRouteLocation,
-    userId = userId,
+    userId = userId
 )

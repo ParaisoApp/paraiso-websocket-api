@@ -8,7 +8,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.Scoreboard
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
-import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 import com.paraiso.domain.sport.interfaces.ScoreboardsDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -18,13 +17,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import com.paraiso.domain.sport.data.Scoreboard as ScoreboardDomain
 
 class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB, Klogging {
     private val collection = database.getCollection("scoreboards", Scoreboard::class.java)
 
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         Filters.and(
@@ -38,7 +38,7 @@ class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding scoreboard by id: $ex" }
                 emptyList()
             }
@@ -60,6 +60,6 @@ class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 }

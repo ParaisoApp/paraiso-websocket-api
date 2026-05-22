@@ -42,13 +42,10 @@ import com.paraiso.server.util.getMentions
 import com.paraiso.server.util.sendTypedMessage
 import com.paraiso.server.util.validateUserName
 import io.klogging.Klogging
-import io.ktor.serialization.WebsocketContentConverter
 import io.ktor.server.sessions.get
-import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
-import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -159,7 +156,7 @@ class WebSocketHandler(
         sessionId: String,
         sessionContext: SessionContext
     ) {
-        //user may change when banned or when user updates settings (but only care about id, banned, and roles)
+        // user may change when banned or when user updates settings (but only care about id, banned, and roles)
         var sessionUser = incomingUser.copy()
         sendTypedMessage(MessageType.USER, sessionUser)
 
@@ -203,7 +200,7 @@ class WebSocketHandler(
                     is ServerEvent.UserUpdateReceived -> {
                         val user = event.data
                         // remove private data from user update socket messages
-                        val finalizedUser = if(user.id == sessionUser.id){
+                        val finalizedUser = if (user.id == sessionUser.id) {
                             user
                         } else {
                             // grab session user's context for user that changed
@@ -225,7 +222,7 @@ class WebSocketHandler(
                     is ServerEvent.RouteUpdateReceived -> {
                         val route = event.data
                         // remove private data from user update socket messages
-                        if(sessionContext.routeId == route.id){
+                        if (sessionContext.routeId == route.id) {
                             sendTypedMessage(
                                 MessageType.ROUTE_UPDATE,
                                 route
@@ -235,7 +232,7 @@ class WebSocketHandler(
                     is ServerEvent.PostPinReceived -> sendTypedMessage(MessageType.PIN_POST, event.data)
                     is ServerEvent.RoleUpdateReceived -> {
                         event.data.let { roleUpdate ->
-                            if(sessionUser.id == roleUpdate.userId){
+                            if (sessionUser.id == roleUpdate.userId) {
                                 sessionUser = sessionUser.copy(roles = roleUpdate.userRole)
                             }
                             sendTypedMessage(MessageType.ROLE_UPDATE, roleUpdate)
@@ -295,7 +292,7 @@ class WebSocketHandler(
                     }
                 }
             }
-            //consume and parse incoming messages
+            // consume and parse incoming messages
             for (frame in incoming) {
                 when (val messageType = determineMessageType(frame)) {
                     MessageType.MSG -> {
@@ -356,16 +353,16 @@ class WebSocketHandler(
                         converter?.cleanAndType<User>(frame)?.copy(id = sessionUser.id)?.let { user ->
                             if (user.validateUserName()) {
                                 val existing = services.usersApi.findByIdIn(listOf(sessionUser.id)).firstOrNull()
-                                //restrict guests from altering username, and restrict to once every 30 days
-                                if(existing?.name == user.name ||
+                                // restrict guests from altering username, and restrict to once every 30 days
+                                if (existing?.name == user.name ||
                                     (
                                         existing?.roles != UserRole.GUEST &&
-                                        (existing?.nameUpdatedOn ?: Instant.DISTANT_PAST) <= Clock.System.now().minus(30.days)
-                                    )
-                                ){
+                                            (existing?.nameUpdatedOn ?: Instant.DISTANT_PAST) <= Clock.System.now().minus(30.days)
+                                        )
+                                ) {
                                     launch { services.usersApi.updateUser(user) }
                                     launch {
-                                        if(existing?.name != user.name){
+                                        if (existing?.name != user.name) {
                                             user.name?.let { name ->
                                                 val routeId = "/p/${user.id}"
                                                 services.routesApi.setRouteTitle(routeId, name)
@@ -393,7 +390,7 @@ class WebSocketHandler(
                         converter?.cleanAndType<Delete>(frame)?.let { delete ->
                             // validate post is owned by user and delete is executed
                             services.postsApi.deletePost(delete, sessionUser.id)?.let { deleted ->
-                                if( deleted ){
+                                if (deleted) {
                                     ServerState.eventReceivedFlowMut.emit(ServerEvent.DeleteReceived(delete))
                                     services.eventService.publish(MessageType.DELETE.name, "$serverId:${Json.encodeToString(delete)}")
                                 }
@@ -406,11 +403,11 @@ class WebSocketHandler(
                             val routeUserId = postPin.routeId.removePrefix(USER_PREFIX)
                             if (sessionUser.roles == UserRole.ADMIN || sessionUser.roles == UserRole.MOD || (sessionUser.id == routeUserId)) {
                                 launch {
-                                    if(postPin.order == -1){
-                                        postPin.id?.let{
+                                    if (postPin.order == -1) {
+                                        postPin.id?.let {
                                             services.postPinsApi.delete(it)
                                         }
-                                    }else{
+                                    } else {
                                         services.postPinsApi.save(postPin)
                                     }
                                 }
@@ -563,7 +560,7 @@ class WebSocketHandler(
                 NotificationType.MENTION
             }
             Notification(
-                id = "$userReceiveId-${userId}-$messageId-${message.replyId}",
+                id = "$userReceiveId-$userId-$messageId-${message.replyId}",
                 userId = userReceiveId,
                 createUserId = userId,
                 refId = messageId,

@@ -7,7 +7,6 @@ import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.userchats.DirectMessage as DirectMessageDomain
 import com.paraiso.domain.userchats.DirectMessagesDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -15,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import com.paraiso.domain.userchats.DirectMessage as DirectMessageDomain
 
 class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB, Klogging {
 
@@ -22,7 +22,7 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB, Klogging
 
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         and(
@@ -36,24 +36,24 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB, Klogging
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding dms by ids: $ex" }
                 emptyList()
             }
         }
     override suspend fun findByChatId(chatId: String, userId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         eq(DirectMessage::chatId.name, chatId),
                         or(
                             eq(DirectMessage::userId.name, userId),
-                            eq(DirectMessage::userReceiveId.name, userId),
+                            eq(DirectMessage::userReceiveId.name, userId)
                         )
                     )
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding dms by chat id: $ex" }
                 emptyList()
             }
@@ -69,6 +69,6 @@ class DirectMessagesDBImpl(database: MongoDatabase) : DirectMessagesDB, Klogging
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 }

@@ -2,7 +2,6 @@ package com.paraiso.api.auth
 
 import com.paraiso.domain.auth.AuthApi
 import com.paraiso.domain.auth.AuthId
-import com.paraiso.domain.auth.Login
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
@@ -19,7 +18,7 @@ import io.ktor.server.routing.route
 
 fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
     route("auth") {
-        post("syncUser") {// Validate Shared Secret
+        post("syncUser") { // Validate Shared Secret
             val receivedSecret = call.request.header("X-Internal-Secret")
             val expectedSecret = config.property("auth.internalSyncSecret").getString()
 
@@ -32,8 +31,8 @@ fun Route.authController(authApi: AuthApi, config: HoconApplicationConfig) {
                 }
             }
         }
-        authenticate("auth0"){
-            post("ticket"){
+        authenticate("auth0") {
+            post("ticket") {
                 val principal = call.principal<JWTPrincipal>()
                 val auth0Id = principal?.payload?.subject ?: return@post call.respond(HttpStatusCode.Unauthorized)
                 authApi.ticket(auth0Id)?.let { ticket ->

@@ -1,8 +1,5 @@
 package com.paraiso.api.sports
 
-import com.paraiso.api.util.UserCookie
-import com.paraiso.domain.posts.PostSearchRequest
-import com.paraiso.domain.posts.toDomain
 import com.paraiso.domain.sport.sports.SportApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -13,7 +10,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.sessions.get
-import io.ktor.server.sessions.sessions
 
 fun Route.sportController(sportApi: SportApi) {
     route("s") {

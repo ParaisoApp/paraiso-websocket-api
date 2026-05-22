@@ -1,6 +1,5 @@
 package com.paraiso.database.posts
 
-import com.paraiso.domain.posts.Post as PostDomain
 import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.users.UserRole
@@ -10,7 +9,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.posts.Post as PostDomain
 
 @Serializable
 data class Post(

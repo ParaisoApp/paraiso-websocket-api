@@ -1,13 +1,12 @@
 package com.paraiso.database.follows
 
-import com.paraiso.domain.follows.Follow as FollowDomain
 import com.paraiso.domain.util.Constants
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
+import com.paraiso.domain.follows.Follow as FollowDomain
 
 @Serializable
 data class Follow(

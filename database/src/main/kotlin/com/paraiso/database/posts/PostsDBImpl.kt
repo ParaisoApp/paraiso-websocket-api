@@ -1,7 +1,6 @@
 package com.paraiso.database.posts
 
 import com.mongodb.client.model.Aggregates.limit
-import com.mongodb.client.model.Aggregates.lookup
 import com.mongodb.client.model.Aggregates.match
 import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.Filters.and
@@ -10,16 +9,12 @@ import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.lt
 import com.mongodb.client.model.Filters.lte
-import com.mongodb.client.model.Filters.ne
 import com.mongodb.client.model.Filters.nin
 import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
-import com.mongodb.client.model.UpdateOneModel
-import com.mongodb.client.model.UpdateOptions
-import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
@@ -29,9 +24,8 @@ import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.calculateScores
-import com.paraiso.domain.posts.GameState
-import com.paraiso.domain.posts.Post as PostDomain
 import com.paraiso.domain.posts.ActiveStatus
+import com.paraiso.domain.posts.GameState
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.posts.SortType
@@ -52,15 +46,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
-import kotlin.math.abs
-import kotlin.math.log10
-import kotlin.math.max
-import kotlin.time.Duration.Companion.hours
+import com.paraiso.domain.posts.Post as PostDomain
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     companion object {
@@ -72,14 +61,14 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
     override suspend fun findById(id: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         eq(ID, id),
                         eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).limit(1).firstOrNull()?.toDomain()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding post by id: $ex" }
                 null
             }
@@ -87,14 +76,14 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
     override suspend fun findByIdsIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         `in`(ID, ids),
                         eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding posts by ids: $ex" }
                 emptyList()
             }
@@ -102,7 +91,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
     override suspend fun findByPartial(partial: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         or(
@@ -113,7 +102,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                         eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).limit(PARTIAL_RETRIEVE_LIM).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding posts by partial: $ex" }
                 emptyList()
             }
@@ -121,14 +110,14 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
     override suspend fun findByUserId(userId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     and(
                         eq(Post::userId.name, userId),
                         eq(Post::status.name, ActiveStatus.ACTIVE)
                     )
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding posts by user id: $ex" }
                 emptyList()
             }
@@ -161,7 +150,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     }
     private fun getRouteFilter(
         route: RouteDetails?,
-        userFavorites: List<UserFavorite>,
+        userFavorites: List<UserFavorite>
     ) = when {
         route == null -> null
         // if id == root id then post was made at base route
@@ -175,7 +164,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             val teamConditions = mutableListOf<Bson>()
             userFavorites.forEach { fav ->
                 fav.routeId.let { parentIds.add(it) }
-                if(isSportRoute(fav.route)){
+                if (isSportRoute(fav.route)) {
                     if (fav.altId != null) {
                         // Specific team filter within a sport (requires isolated pairing)
                         teamConditions.add(
@@ -185,8 +174,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                                 eq(Post::tags.name, fav.altId)
                             )
                         )
-                    }else{
-                        //no team specific so safe to batch full sport league
+                    } else {
+                        // no team specific so safe to batch full sport league
                         sportLeagues.add(fav.route)
                     }
                 }
@@ -220,7 +209,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     `in`(Post::data.name, ACTIVE_SPORTS),
                     eq(Post::type.name, PostType.EVENT.name)
                 ),
-                `in`(Post::parentId.name, ACTIVE_SPORTS),
+                `in`(Post::parentId.name, ACTIVE_SPORTS)
             )
         }
         // grab events for each sport route, add team filter if team route
@@ -254,13 +243,13 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
             }
 
-            try{
+            try {
                 return@withContext collection.find(match(and(baseFilters)))
                     .sort(getSort(sortType))
                     .limit(RETRIEVE_LIM)
                     .map { it.toDomain() }
                     .toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding posts by base criteria: $ex" }
                 return@withContext emptyList()
             }
@@ -277,13 +266,13 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
                 add(eq(Post::parentId.name, parentId))
             }
-            try{
+            try {
                 return@withContext collection.find(match(and(baseFilters)))
                     .sort(getSort(sortType))
                     .limit(RETRIEVE_LIM)
                     .map { it.toDomain() }
                     .toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding posts by parent id: $ex" }
                 return@withContext emptyList()
             }
@@ -322,13 +311,13 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     add(eq(Post::route.name, commentRouteLocation))
                 }
             }
-            try{
+            try {
                 return@withContext collection.find(match(and(baseFilters)))
                     .sort(getSort(sortType))
                     .limit(RETRIEVE_LIM)
                     .map { it.toDomain() }
                     .toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding posts by parent id with event filters: $ex" }
                 return@withContext emptyList()
             }
@@ -344,7 +333,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun saveIfNew(posts: List<PostDomain>) =
@@ -353,18 +342,22 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 `in`(ID, posts.map { it.id })
             ).map { it.id }.toSet()
             val bulkOps = posts.mapNotNull { post ->
-                if(!existingPosts.contains(post.id)){
+                if (!existingPosts.contains(post.id)) {
                     val entity = post.toEntity()
                     ReplaceOneModel(
                         eq(ID, entity.id),
                         entity,
                         ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                     )
-                } else null
+                } else {
+                    null
+                }
             }
-            val result = if(bulkOps.isNotEmpty()){
+            val result = if (bulkOps.isNotEmpty()) {
                 collection.bulkWrite(bulkOps, BulkWriteOptions().ordered(false)).insertedCount
-            } else 0
+            } else {
+                0
+            }
 
             result
         }
@@ -396,7 +389,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             ).modifiedCount
         }
 
-    override suspend fun setPostsDeleted(ids: List<String>): Long  =
+    override suspend fun setPostsDeleted(ids: List<String>): Long =
         withContext(Dispatchers.IO) {
             collection.updateMany(
                 `in`(ID, ids),
@@ -412,7 +405,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         score: Int
     ) =
         withContext(Dispatchers.IO) {
-            collection.find(eq(ID, id)).firstOrNull()?.let {post ->
+            collection.find(eq(ID, id)).firstOrNull()?.let { post ->
                 val (topScore, hotScore, risingScore) = calculateScores(
                     post.votes + score,
                     post.count,

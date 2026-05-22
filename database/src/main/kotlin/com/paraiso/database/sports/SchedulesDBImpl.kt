@@ -7,7 +7,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.Schedule
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
-import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.interfaces.SchedulesDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -17,12 +16,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
 
 class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
     private val collection = database.getCollection("schedules", Schedule::class.java)
     override suspend fun findByIdIn(ids: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         Filters.and(
@@ -36,7 +36,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
                         )
                     ).map { Pair(it.toDomain(), it.events ?: emptyList()) }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding athletes by ids: $ex" }
                 emptyList()
             }
@@ -49,7 +49,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
         seasonType: Int
     ): Pair<ScheduleDomain?, List<String>>? =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 val schedule = collection.find(
                     Filters.and(
                         Filters.eq(Schedule::sport.name, sport),
@@ -59,7 +59,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
                     )
                 ).limit(1).firstOrNull()
                 Pair(schedule?.toDomain(), schedule?.events ?: emptyList())
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding schedule by sport, teamId, season, and type: $ex" }
                 null
             }
@@ -71,7 +71,7 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
             val now = Clock.System.now()
             val bulkOps = schedules.map { schedule ->
                 val existing = allExisting[schedule.id]
-                //convert first to place in event ids after
+                // convert first to place in event ids after
                 val entity = schedule.toEntity().copy(
                     createdOn = existing?.first?.createdOn ?: now,
                     updatedOn = now
@@ -82,6 +82,6 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 }

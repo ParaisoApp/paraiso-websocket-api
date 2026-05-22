@@ -1,33 +1,25 @@
 package com.paraiso.database.sports
 
-import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
-import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Filters.gte
+import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.Filters.lt
 import com.mongodb.client.model.Filters.or
-import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts.ascending
 import com.mongodb.client.model.Sorts.descending
-import com.mongodb.client.model.UpdateOneModel
-import com.mongodb.client.model.UpdateOptions
-import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
-import com.mongodb.client.model.Updates.setOnInsert
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.database.posts.Post
 import com.paraiso.database.sports.data.Competition
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
 import com.paraiso.database.userchats.toDomain
 import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.routes.SiteRoute
-import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -45,19 +37,16 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import org.bson.Document
-import org.bson.conversions.Bson
 import java.time.ZoneId
 import java.util.Date
+import com.paraiso.domain.sport.data.Competition as CompetitionDomain
 
 class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
     private val collection = database.getCollection("competitions", Competition::class.java)
 
     override suspend fun findByIdIn(ids: Set<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (ids.size == 1) {
                     collection.find(
                         and(
@@ -73,7 +62,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding dms by ids: $ex" }
                 emptyList()
             }
@@ -107,7 +96,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun findScoreboard(
@@ -229,7 +218,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             } ?: emptyList()
         }
 
-    override suspend fun setCompsDeleted(ids: List<String>): Long  =
+    override suspend fun setCompsDeleted(ids: List<String>): Long =
         withContext(Dispatchers.IO) {
             collection.updateMany(
                 `in`(ID, ids),

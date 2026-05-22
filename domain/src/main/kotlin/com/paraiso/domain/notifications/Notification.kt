@@ -1,8 +1,6 @@
 package com.paraiso.domain.notifications
 
 import com.paraiso.domain.posts.Post
-import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

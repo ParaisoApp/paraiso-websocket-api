@@ -1,12 +1,11 @@
 package com.paraiso.database.userchats
 
-import com.paraiso.domain.userchats.DirectMessage
 import com.paraiso.domain.util.Constants.ID
-import com.paraiso.domain.userchats.UserChat as UserChatDomain
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.userchats.UserChat as UserChatDomain
 
 @Serializable
 data class UserChat(

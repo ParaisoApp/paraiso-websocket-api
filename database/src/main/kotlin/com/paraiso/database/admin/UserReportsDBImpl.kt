@@ -8,7 +8,6 @@ import com.mongodb.client.model.Updates.addToSet
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.set
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.admin.UserReport as UserReportDomain
 import com.paraiso.domain.admin.UserReportsDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -19,15 +18,16 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import java.util.Date
+import com.paraiso.domain.admin.UserReport as UserReportDomain
 
 class UserReportsDBImpl(database: MongoDatabase) : UserReportsDB, Klogging {
     private val collection = database.getCollection("userReports", UserReport::class.java)
 
     override suspend fun getAll() =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find().sort(ascending(UserReport::updatedOn.name)).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error getting all user reports: $ex" }
                 emptyList()
             }
@@ -43,7 +43,7 @@ class UserReportsDBImpl(database: MongoDatabase) : UserReportsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun addUserReport(

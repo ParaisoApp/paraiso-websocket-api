@@ -1,18 +1,18 @@
 package com.paraiso.database.users
 
-import com.paraiso.domain.users.User as UserDomain
-import com.paraiso.domain.auth.AuthId as AuthIdDomain
-import com.paraiso.domain.users.UserFavorite as UserFavoriteDomain
-import com.paraiso.domain.users.UserImage as UserImageDomain
-import com.paraiso.domain.users.UserSettings as UserSettingsDomain
-import com.paraiso.domain.users.Location as LocationDomain
-import com.paraiso.domain.users.Country as CountryDomain
 import com.paraiso.domain.users.UserRole
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.auth.AuthId as AuthIdDomain
+import com.paraiso.domain.users.Country as CountryDomain
+import com.paraiso.domain.users.Location as LocationDomain
+import com.paraiso.domain.users.User as UserDomain
+import com.paraiso.domain.users.UserFavorite as UserFavoriteDomain
+import com.paraiso.domain.users.UserImage as UserImageDomain
+import com.paraiso.domain.users.UserSettings as UserSettingsDomain
 
 @Serializable
 data class User(
@@ -45,6 +45,7 @@ data class User(
     @Serializable(with = InstantBsonSerializer::class)
     val updatedOn: Instant
 )
+
 @Serializable
 data class AuthId(
     val id: String,
@@ -54,6 +55,7 @@ data class AuthId(
     val name: String?,
     val picture: String?
 )
+
 @Serializable
 data class UserSettings(
     val theme: Int,
@@ -69,6 +71,7 @@ data class UserSettings(
     val showBirthday: Boolean,
     val hidden: Boolean
 )
+
 @Serializable
 data class UserImage(
     val url: String?,
@@ -76,6 +79,7 @@ data class UserImage(
     val posY: Int,
     val scale: Float
 )
+
 @Serializable
 data class UserFavorite(
     val routeId: String,
@@ -86,17 +90,20 @@ data class UserFavorite(
     val favorite: Boolean,
     val icon: String?
 )
+
 @Serializable
 data class ViewerContext(
     val following: Boolean?,
     val blocking: Boolean?
 )
+
 @Serializable
 data class Location(
     val city: String?,
     val state: String?,
     val country: Country?
 ) { companion object }
+
 @Serializable
 data class Country(
     val name: String?,
@@ -138,7 +145,7 @@ fun AuthIdDomain.toEntity() =
         provider = provider,
         email = email,
         name = name,
-        picture = picture,
+        picture = picture
     )
 
 fun UserFavoriteDomain.toEntity() = UserFavorite(
@@ -148,7 +155,7 @@ fun UserFavoriteDomain.toEntity() = UserFavorite(
     altId = altId,
     title = title,
     favorite = favorite,
-    icon= icon
+    icon = icon
 )
 
 fun UserImageDomain.toEntity() = UserImage(
@@ -170,18 +177,18 @@ fun UserSettingsDomain.toEntity() = UserSettings(
     showName = showName,
     showLocation = showLocation,
     showBirthday = showBirthday,
-    hidden = hidden,
+    hidden = hidden
 )
 
 fun LocationDomain.toEntity() = Location(
     city = city,
     state = state,
-    country = country?.toEntity(),
+    country = country?.toEntity()
 )
 
 fun CountryDomain.toEntity() = Country(
     name = name,
-    code = code,
+    code = code
 )
 
 fun User.toDomain() = UserDomain(
@@ -221,7 +228,7 @@ fun UserFavorite.toDomain() = UserFavoriteDomain(
     altId = altId,
     title = title,
     favorite = favorite,
-    icon= icon
+    icon = icon
 )
 
 fun UserImage.toDomain() = UserImageDomain(
@@ -243,16 +250,16 @@ fun UserSettings.toDomain() = UserSettingsDomain(
     showName = showName,
     showLocation = showLocation,
     showBirthday = showBirthday,
-    hidden = hidden,
+    hidden = hidden
 )
 
 fun Location.toDomain() = LocationDomain(
     city = city,
     state = state,
-    country = country?.toDomain(),
+    country = country?.toDomain()
 )
 
 fun Country.toDomain() = CountryDomain(
     name = name,
-    code = code,
+    code = code
 )

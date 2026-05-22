@@ -1,8 +1,6 @@
 package com.paraiso.api.posts
 
 import com.paraiso.api.util.UserCookie
-import com.paraiso.domain.posts.PostSearch
-import com.paraiso.domain.posts.PostSearchId
 import com.paraiso.domain.posts.PostSearchIdRequest
 import com.paraiso.domain.posts.PostSearchRequest
 import com.paraiso.domain.posts.PostsApi

@@ -1,12 +1,12 @@
 package com.paraiso.database.posts
 
-import com.paraiso.domain.posts.PostPin as PostPinDomain
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.posts.PostPin as PostPinDomain
 
 @Serializable
 data class PostPin(
@@ -26,6 +26,7 @@ fun PostPin.toDomain() = PostPinDomain(
     userId = userId,
     createdOn = createdOn
 )
+
 // id as route ID for now (with only one allowed pinned post)
 fun PostPinDomain.toEntity() = PostPin(
     id = routeId,

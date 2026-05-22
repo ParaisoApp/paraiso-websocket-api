@@ -6,7 +6,6 @@ import com.mongodb.client.model.Filters.`in`
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.paraiso.domain.follows.Follow as FollowDomain
 import com.paraiso.domain.follows.FollowsDB
 import com.paraiso.domain.util.Constants.ID
 import io.klogging.Klogging
@@ -14,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import com.paraiso.domain.follows.Follow as FollowDomain
 
 class FollowsDBImpl(database: MongoDatabase) : FollowsDB, Klogging {
 
@@ -21,7 +21,7 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB, Klogging {
 
     override suspend fun findIn(followerId: String, followeeIds: List<String>) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 if (followeeIds.size == 1) {
                     collection.find(
                         and(
@@ -37,18 +37,18 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB, Klogging {
                         )
                     ).map { it.toDomain() }.toList()
                 }
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding follows by ids: $ex" }
                 emptyList()
             }
         }
     override suspend fun findByFollowerId(followerId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     eq(Follow::followerId.name, followerId)
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding follows by follower id: $ex" }
                 emptyList()
             }
@@ -56,11 +56,11 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB, Klogging {
 
     override suspend fun findByFolloweeId(followeeId: String) =
         withContext(Dispatchers.IO) {
-            try{
+            try {
                 collection.find(
                     eq(Follow::followeeId.name, followeeId)
                 ).map { it.toDomain() }.toList()
-            } catch (ex: Exception){
+            } catch (ex: Exception) {
                 logger.error { "Error finding follows by followee id: $ex" }
                 emptyList()
             }
@@ -76,7 +76,7 @@ class FollowsDBImpl(database: MongoDatabase) : FollowsDB, Klogging {
                     ReplaceOptions().upsert(true) // insert if not exists, replace if exists
                 )
             }
-            return@withContext if(bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
+            return@withContext if (bulkOps.isNotEmpty()) collection.bulkWrite(bulkOps).modifiedCount else 0
         }
 
     override suspend fun delete(followerId: String, followeeId: String) =

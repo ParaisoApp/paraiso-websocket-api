@@ -1,8 +1,6 @@
 package com.paraiso.api.routes
 
 import com.paraiso.api.util.UserCookie
-import com.paraiso.domain.messageTypes.FilterTypes
-import com.paraiso.domain.posts.InitSearch
 import com.paraiso.domain.posts.InitSearchRequest
 import com.paraiso.domain.posts.toDomain
 import com.paraiso.domain.routes.RoutesApi

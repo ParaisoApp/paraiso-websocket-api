@@ -5,7 +5,6 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.users.UserFavorite
-import com.paraiso.domain.users.UserRole
 import kotlinx.datetime.Instant
 
 interface PostsDB {
