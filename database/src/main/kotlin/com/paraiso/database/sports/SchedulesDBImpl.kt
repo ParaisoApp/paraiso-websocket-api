@@ -73,7 +73,6 @@ class SchedulesDBImpl(database: MongoDatabase) : SchedulesDB, Klogging {
                 val existing = allExisting[schedule.id]
                 //convert first to place in event ids after
                 val entity = schedule.toEntity().copy(
-                    events = existing?.second ?: emptyList(),
                     createdOn = existing?.first?.createdOn ?: now,
                     updatedOn = now
                 )
