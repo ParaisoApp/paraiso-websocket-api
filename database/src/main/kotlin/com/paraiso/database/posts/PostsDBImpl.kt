@@ -28,6 +28,7 @@ import com.paraiso.database.util.eqId
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.RoleUpdate
+import com.paraiso.domain.messageTypes.calculateScores
 import com.paraiso.domain.posts.GameState
 import com.paraiso.domain.posts.Post as PostDomain
 import com.paraiso.domain.posts.ActiveStatus
@@ -65,9 +66,6 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     companion object {
         const val RETRIEVE_LIM = 50
         const val PARTIAL_RETRIEVE_LIM = 10
-        const val TIME_WEIGHTING = 10_000_000_000L
-        const val RISING_TIME_MULTIPLIER = 2.0
-        const val COMMENT_WEIGHTING = 0.5
     }
 
     private val collection = database.getCollection("posts", Post::class.java)
@@ -469,24 +467,4 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 ).modifiedCount
             } ?: 0L
         }
-
-    private fun calculateScores(voteSum: Int, commentCount: Int, createdOn: Long): Triple<Double, Double, Double> {
-        // s = sum of votes + COMMENT_WEIGHTING * count
-        val topScore = voteSum + (COMMENT_WEIGHTING * commentCount)
-        val sign = when {
-            topScore > 0 -> 1.0
-            topScore < 0 -> -1.0
-            else -> 0.0
-        }
-        // basic log score = sign(s) * log10(max(|s|, 1))
-        val logScore = sign * log10(max(abs(topScore), 1.0))
-
-        // timestamp(createdOn) / TIME_WEIGHTING
-        val timeFactor = createdOn / TIME_WEIGHTING
-
-        val hotScore = logScore + (1.0 * timeFactor)
-        val risingScore = logScore + (RISING_TIME_MULTIPLIER * timeFactor)
-
-        return Triple(topScore, hotScore, risingScore)
-    }
 }
