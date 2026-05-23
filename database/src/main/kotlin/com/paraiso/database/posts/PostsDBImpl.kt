@@ -1,7 +1,6 @@
 package com.paraiso.database.posts
 
 import com.mongodb.client.model.Aggregates.limit
-import com.mongodb.client.model.Aggregates.match
 import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
@@ -15,6 +14,7 @@ import com.mongodb.client.model.Filters.or
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.Sorts.descending
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
@@ -125,10 +125,10 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
 
     private fun getSort(sortType: SortType): Bson {
         return when (sortType) {
-            SortType.NEW -> Document("\$sort", Document(Post::createdOn.name, -1))
-            SortType.TOP -> Document("\$sort", Document(Post::topScore.name, -1))
-            SortType.HOT -> Document("\$sort", Document(Post::hotScore.name, -1))
-            SortType.RISING -> Document("\$sort", Document(Post::risingScore.name, -1))
+            SortType.NEW -> descending(Post::createdOn.name)
+            SortType.TOP -> descending(Post::topScore.name)
+            SortType.HOT -> descending(Post::hotScore.name)
+            SortType.RISING -> descending(Post::risingScore.name)
         }
     }
 
@@ -244,7 +244,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             }
 
             try {
-                return@withContext collection.find(match(and(baseFilters)))
+                return@withContext collection.find(and(baseFilters))
                     .sort(getSort(sortType))
                     .limit(RETRIEVE_LIM)
                     .map { it.toDomain() }
@@ -267,7 +267,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 add(eq(Post::parentId.name, parentId))
             }
             try {
-                return@withContext collection.find(match(and(baseFilters)))
+                return@withContext collection.find(and(baseFilters))
                     .sort(getSort(sortType))
                     .limit(RETRIEVE_LIM)
                     .map { it.toDomain() }
@@ -312,7 +312,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 }
             }
             try {
-                return@withContext collection.find(match(and(baseFilters)))
+                return@withContext collection.find(and(baseFilters))
                     .sort(getSort(sortType))
                     .limit(RETRIEVE_LIM)
                     .map { it.toDomain() }
