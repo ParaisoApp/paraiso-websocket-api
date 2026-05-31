@@ -15,10 +15,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Fixes the capital letter error by creating an all-lowercase variable
-      - name: Sanitize image name to lowercase
+      # Bash syntax converts the variable to lower case safely on the runner execution line
+      - name: Set lowercase repository owner variable
         run: |
-          echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/paraiso-websocket-api" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -28,14 +30,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Backend image
-        uses: docker/build-push-action@v6  # Upgraded to v6 for Node 24 support
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/paraiso-websocket-api:latest
+            ghcr.io/${{ env.OWNER_LC }}/paraiso-websocket-api:${{ github.sha }}
 
   deploy:
     needs: build-and-push
