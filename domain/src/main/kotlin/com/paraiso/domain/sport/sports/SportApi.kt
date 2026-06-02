@@ -200,17 +200,16 @@ class SportApi(private val sportDBs: SportDBs) {
         modifier: String,
         past: Boolean
     ): Scoreboard {
-        val resolvedSeasonType = if(seasonType == OFF_SEASON) REG_SEASON else seasonType
         sportDBs.competitionsDB.findScoreboard(
             sport,
             year,
-            resolvedSeasonType,
+            seasonType,
             modifier,
             past
         ).let { comps ->
             // if comps is empty, try diff type or year
             val resolvedComps = comps.ifEmpty {
-                val (nextYear, nextType, nextWeek) = getNextScoreboardParams(sport, year, resolvedSeasonType, past)
+                val (nextYear, nextType, nextWeek) = getNextScoreboardParams(sport, year, seasonType, past)
                 val resolvedModifier = nextWeek.toString()
                     .takeIf { sport == SiteRoute.FOOTBALL.name } ?: modifier
                 sportDBs.competitionsDB.findScoreboard(
