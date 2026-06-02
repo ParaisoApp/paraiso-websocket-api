@@ -44,6 +44,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             val response: RestLeague? = getHttpClient().use { httpClient ->
@@ -73,6 +74,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard"
@@ -106,6 +108,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/scoreboard?$date"
@@ -138,6 +141,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/summary?event=$competitionId"
@@ -167,6 +171,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/standings"
@@ -201,6 +206,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams"
@@ -233,6 +239,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/roster"
@@ -260,6 +267,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> json.decodeFromString<RestRoster>(response).toDomain(sport)
                 SiteRoute.FOOTBALL -> json.decodeFromString<RestRosterNested>(response).toDomain(sport)
                 SiteRoute.HOCKEY -> json.decodeFromString<RestRosterNested>(response).toDomain(sport)
+                SiteRoute.BASEBALL -> json.decodeFromString<RestRosterNested>(response).toDomain(sport)
                 else -> { null }
             }
             parsedResponse
@@ -279,6 +287,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/leaders"
@@ -313,6 +322,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballCoreUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballCoreUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyCoreUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballCoreUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/seasons/$season/types/$type/teams/$teamId/leaders"
@@ -342,6 +352,7 @@ class SportClientImpl : SportClient, BaseAdapter, Klogging {
                 SiteRoute.BASKETBALL -> url += clientConfig.bballStatsUri
                 SiteRoute.FOOTBALL -> url += clientConfig.fballStatsUri
                 SiteRoute.HOCKEY -> url += clientConfig.hockeyStatsUri
+                SiteRoute.BASEBALL -> url += clientConfig.baseballStatsUri
                 else -> { logger.info { "Unrecognized sport $sport" } }
             }
             url += "/teams/$teamId/schedule"

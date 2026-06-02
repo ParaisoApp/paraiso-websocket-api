@@ -9,14 +9,14 @@ import com.paraiso.domain.sport.data.Roster as RosterDomain
 @Serializable
 data class RestRoster(
     val athletes: List<RestAthlete>,
-    val coach: List<RestCoach>,
+    val coach: List<RestCoach>? = null,
     val team: RestTeam
 )
 
 @Serializable
 data class RestRosterNested(
     val athletes: List<RestAthleteNested>,
-    val coach: List<RestCoach>,
+    val coach: List<RestCoach>? = null,
     val team: RestTeam
 )
 
@@ -55,7 +55,7 @@ fun RestRosterNested.toDomain(sport: SiteRoute) = RosterDomain(
     id = "$sport-${team.id}",
     sport = sport,
     athletes = athletes.flatMap { restAthleteNested -> restAthleteNested.items.map { it.toDomain(team.abbreviation) } },
-    coach = coach.firstOrNull()?.toDomain(),
+    coach = coach?.firstOrNull()?.toDomain(),
     teamId = team.id,
     createdOn = null,
     updatedOn = null
@@ -65,7 +65,7 @@ fun RestRoster.toDomain(sport: SiteRoute) = RosterDomain(
     id = "$sport-${team.id}",
     sport = sport,
     athletes = athletes.map { it.toDomain(team.abbreviation) },
-    coach = coach.firstOrNull()?.toDomain(),
+    coach = coach?.firstOrNull()?.toDomain(),
     teamId = team.id,
     createdOn = null,
     updatedOn = null

@@ -100,6 +100,19 @@ class ServerHandler(
                         pinnedPosts = emptyMap(),
                         createdOn = now,
                         updatedOn = now
+                    ),
+                    RouteDetails(
+                        id = "$SPORT_PREFIX/baseball",
+                        route = SiteRoute.BASEBALL,
+                        modifier = null,
+                        altId = null,
+                        title = SiteRoute.BASEBALL.name,
+                        userFavorites = 0,
+                        about = null,
+                        pinnedPostIds = emptyList(),
+                        pinnedPosts = emptyMap(),
+                        createdOn = now,
+                        updatedOn = now
                     )
                 )
             )

@@ -13,5 +13,5 @@ object Constants {
     const val SPORT_PREFIX = "/s"
     const val GAME_PREFIX = "GAME-"
     const val ID = "_id"
-    val ACTIVE_SPORTS = listOf(SiteRoute.BASKETBALL, SiteRoute.FOOTBALL, SiteRoute.HOCKEY)
+    val ACTIVE_SPORTS = listOf(SiteRoute.BASKETBALL, SiteRoute.FOOTBALL, SiteRoute.HOCKEY, SiteRoute.BASEBALL)
 }

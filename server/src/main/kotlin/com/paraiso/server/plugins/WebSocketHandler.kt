@@ -682,6 +682,7 @@ class WebSocketHandler(
                     SiteRoute.BASKETBALL -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.BASKETBALL.name)
                     SiteRoute.FOOTBALL -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.FOOTBALL.name)
                     SiteRoute.HOCKEY -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.HOCKEY.name)
+                    SiteRoute.BASEBALL -> SportJobs(services.sportApi).sportJobs(session, SiteRoute.BASEBALL.name)
                     else -> {
                         SportJobs(services.sportApi).sportJobs(session, SiteRoute.SPORT.name)
                     }
@@ -692,6 +693,7 @@ class WebSocketHandler(
                     SiteRoute.BASKETBALL -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.BASKETBALL.name)
                     SiteRoute.FOOTBALL -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.FOOTBALL.name)
                     SiteRoute.HOCKEY -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.HOCKEY.name)
+                    SiteRoute.BASEBALL -> SportJobs(services.sportApi).teamJobs(route.content, session, SiteRoute.BASEBALL.name)
                     else -> {
                         logger.error("Unrecognized Team: $route")
                         emptyList()

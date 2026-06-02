@@ -6,6 +6,7 @@ import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain
 import com.paraiso.domain.sport.data.FullTeam as FullTeamDomain
 import com.paraiso.domain.sport.data.StatTypes as StatTypesDomain
 import com.paraiso.domain.sport.data.TeamStat as TeamStatDomain
+import com.paraiso.domain.sport.data.TeamStatNested as TeamStatNestedDomain
 
 @Serializable
 data class RestGameStats(
@@ -26,9 +27,18 @@ data class RestTeamWithStats(
 
 @Serializable
 data class RestTeamStat(
-    val displayValue: String,
+    val displayName: String? = null,
+    val displayValue: String? = null,
     val abbreviation: String? = null,
-    val label: String
+    val label: String? = null,
+    val stats: List<RestTeamStatNested>? = null
+)
+@Serializable
+data class RestTeamStatNested(
+    val displayName: String? = null,
+    val displayValue: String? = null,
+    val abbreviation: String? = null,
+    val label: String? = null
 )
 
 @Serializable
@@ -72,6 +82,15 @@ fun RestTeamWithStats.toDomain(players: List<RestPlayer>?): FullTeamDomain {
 }
 
 fun RestTeamStat.toDomain() = TeamStatDomain(
+    displayName = displayName,
+    displayValue = displayValue,
+    abbreviation = abbreviation,
+    label = label,
+    stats = stats?.map { it.toDomain() }
+)
+
+fun RestTeamStatNested.toDomain() = TeamStatNestedDomain(
+    displayName = displayName,
     displayValue = displayValue,
     abbreviation = abbreviation,
     label = label

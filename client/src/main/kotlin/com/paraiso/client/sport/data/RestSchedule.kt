@@ -2,6 +2,7 @@ package com.paraiso.client.sport.data
 
 import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.routes.SiteRoute
+import com.paraiso.domain.sport.data.Situation
 import com.paraiso.domain.sport.data.Status
 import com.paraiso.domain.sport.data.TeamGameStats
 import com.paraiso.domain.sport.data.TeamYearStats
@@ -26,7 +27,6 @@ import com.paraiso.domain.sport.data.Venue as VenueDomain
 
 @Serializable
 data class RestSchedule(
-    val season: RestSeason,
     val team: RestTeam,
     val events: List<RestEvent>
 )
@@ -36,8 +36,22 @@ data class RestEvent(
     val id: String,
     val name: String,
     val shortName: String,
+    val season: RestEventSeason? = null,
+    val seasonType: RestEventSeasonType? = null,
     val week: RestWeek? = null,
     val competitions: List<RestCompetition>
+)
+
+@Serializable
+data class RestEventSeason(
+    val year: Int,
+    val displayName: String? = null
+)
+
+@Serializable
+data class RestEventSeasonType(
+    val type: Int,
+    val name: String? = null
 )
 
 @Serializable
@@ -48,6 +62,17 @@ data class RestCompetition(
     val competitors: List<RestCompetitor>,
     val situation: RestSituation? = null,
     val status: RestStatus
+)
+
+@Serializable
+data class RestSituation(
+    val down: Int? = null,
+    val distance: Int? = null,
+    val downDistanceText: String? = null,
+    val isRedZone: Boolean? = null,
+    val homeTimeouts: Int? = null,
+    val awayTimeouts: Int? = null,
+    val possession: String? = null
 )
 
 @Serializable
@@ -129,15 +154,24 @@ data class RestSeason(
     val displayName: String? = null
 )
 
-fun RestSchedule.toDomain(sport: SiteRoute) = ScheduleDomain(
-    id = "$sport-${team.id}-${season.year}-${season.type}",
-    sport = sport,
-    teamId = team.id,
-    season = season.toDomain(),
-    events = events.map { it.competitions.first().toDomain(it.name, it.shortName, it.week?.number, season, sport) },
-    createdOn = null,
-    updatedOn = null
-)
+fun RestSchedule.toDomain(sport: SiteRoute): ScheduleDomain {
+    val firstEvent = events.firstOrNull()
+    val season = SeasonDomain(
+        firstEvent?.season?.year,
+        firstEvent?.seasonType?.type,
+        firstEvent?.seasonType?.name,
+        firstEvent?.season?.displayName
+    )
+    return ScheduleDomain(
+        id = "$sport-${team.id}-${season.year}-${season.type}",
+        sport = sport,
+        teamId = team.id,
+        season = season,
+        events = events.map { it.competitions.first().toDomain(it.name, it.shortName, season, it.week?.number, sport) },
+        createdOn = null,
+        updatedOn = null
+    )
+}
 
 fun RestSeason.toDomain() = SeasonDomain(
     year = year,
@@ -149,8 +183,8 @@ fun RestSeason.toDomain() = SeasonDomain(
 fun RestCompetition.toDomain(
     name: String,
     shortName: String,
+    season: SeasonDomain?,
     week: Int?,
-    season: RestSeason,
     sport: SiteRoute
 ) = CompetitionDomain(
     id = id,
@@ -159,7 +193,7 @@ fun RestCompetition.toDomain(
     shortName = shortName,
     date = convertStringZToInstant(date),
     week = week,
-    season = season.toDomain(),
+    season = season,
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
     situation = situation?.toDomain(),
@@ -167,6 +201,16 @@ fun RestCompetition.toDomain(
     activeStatus = ActiveStatus.ACTIVE,
     createdOn = null,
     updatedOn = null
+)
+
+fun RestSituation.toDomain() = Situation(
+    down = down,
+    distance = distance,
+    downDistanceText = downDistanceText,
+    isRedZone = isRedZone,
+    homeTimeouts = homeTimeouts,
+    awayTimeouts = awayTimeouts,
+    possession = possession
 )
 
 fun RestCompetitor.toTeamDomain() = TeamGameStats(

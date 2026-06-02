@@ -24,17 +24,6 @@ data class RestDay(
     val date: String
 )
 
-@Serializable
-data class RestSituation(
-    val down: Int? = null,
-    val distance: Int? = null,
-    val downDistanceText: String? = null,
-    val isRedZone: Boolean? = null,
-    val homeTimeouts: Int? = null,
-    val awayTimeouts: Int? = null,
-    val possession: String? = null
-)
-
 fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
     var id = "$sport-${season.type}-${season.year}"
     if (week != null) id += "-${week.number}"
@@ -45,17 +34,8 @@ fun RestScoreboard.toDomain(sport: SiteRoute): Scoreboard {
         season = season.toDomain(),
         week = week?.number,
         day = convertStringToInstant(day?.date),
-        competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, week?.number, season, sport) },
+        competitions = this.events.map { it.competitions.first().toDomain(it.name, it.shortName, season.toDomain(), week?.number, sport) },
         createdOn = null,
         updatedOn = null
     )
 }
-fun RestSituation.toDomain() = SituationDomain(
-    down = down,
-    distance = distance,
-    downDistanceText = downDistanceText,
-    isRedZone = isRedZone,
-    homeTimeouts = homeTimeouts,
-    awayTimeouts = awayTimeouts,
-    possession = possession
-)

@@ -17,11 +17,12 @@ class SportApi(private val sportDBs: SportDBs) {
         // index off one week for conversion and modification in DB layer
         const val MAX_WEEK_PRE_SEASON = 4
         const val MAX_WEEK_REGULAR_SEASON = 19
-        const val MAX_WEEK_POST_SEASON = 5
+        const val MAX_WEEK_POST_SEASON = 6 // pro bowl adds one week
         const val WEEK_ONE = 0
         const val PRE_SEASON = 1
         const val REG_SEASON = 2
         const val POST_SEASON = 3
+        const val OFF_SEASON = 4
         const val PLAY_IN = 5
         const val UNKNOWN = 0
     }
@@ -34,7 +35,7 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findByIdIn(listOf(id)).firstOrNull()
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
-        if (sport == SiteRoute.BASKETBALL.name) {
+        if (sport == SiteRoute.BASKETBALL.name || sport == SiteRoute.BASEBALL.name) {
             sportDBs.standingsDB.findByIdIn(listOf(sport)).firstOrNull()?.standingsGroups?.associate { standingsGroup ->
                 standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map { standings ->
                     val team = teamsRes.await()[standings.teamId]
@@ -146,54 +147,70 @@ class SportApi(private val sportDBs: SportDBs) {
             schedule?.copy(events = competitions)
         }
 
+    private fun getNextScoreboardParams(
+        sport: String,
+        year: Int,
+        seasonType: Int,
+        past: Boolean
+    ) = if (past) {
+        when (seasonType) {
+            PRE_SEASON -> Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON)
+            REG_SEASON -> Triple(year, PRE_SEASON, MAX_WEEK_PRE_SEASON)
+            PLAY_IN -> Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
+            POST_SEASON -> {
+                if (sport == SiteRoute.BASKETBALL.name) {
+                    // handle play in season type (5)
+                    Triple(year, PLAY_IN, 0) // max week ignored for non-football
+                } else {
+                    Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
+                }
+            }
+            OFF_SEASON -> Triple(year, PRE_SEASON, MAX_WEEK_PRE_SEASON)
+            else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
+        }
+    } else {
+        when (seasonType) {
+            PRE_SEASON -> Triple(year, REG_SEASON, WEEK_ONE)
+            REG_SEASON -> {
+                if (sport == SiteRoute.BASKETBALL.name) {
+                    Triple(year, PLAY_IN, WEEK_ONE)
+                } else {
+                    Triple(year, POST_SEASON, WEEK_ONE)
+                }
+            }
+            PLAY_IN -> Triple(year, POST_SEASON, WEEK_ONE)
+            POST_SEASON -> {
+                Triple(year + 1, PRE_SEASON, WEEK_ONE)
+            }
+            OFF_SEASON -> {
+                if (sport == SiteRoute.BASKETBALL.name) {
+                    Triple(year, PLAY_IN, WEEK_ONE)
+                } else {
+                    Triple(year, POST_SEASON, WEEK_ONE)
+                }
+            }
+            else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
+        }
+    }
+
     suspend fun findScoreboard(
         sport: String,
         year: Int,
         seasonType: Int,
         modifier: String,
         past: Boolean
-    ) =
+    ): Scoreboard {
+        val resolvedSeasonType = if(seasonType == OFF_SEASON) REG_SEASON else seasonType
         sportDBs.competitionsDB.findScoreboard(
             sport,
             year,
-            seasonType,
+            resolvedSeasonType,
             modifier,
             past
         ).let { comps ->
             // if comps is empty, try diff type or year
             val resolvedComps = comps.ifEmpty {
-                val (nextYear, nextType, nextWeek) = if (past) {
-                    when (seasonType) {
-                        PRE_SEASON -> Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON)
-                        REG_SEASON -> Triple(year, PRE_SEASON, MAX_WEEK_PRE_SEASON)
-                        PLAY_IN -> Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
-                        POST_SEASON -> {
-                            if (sport == SiteRoute.BASKETBALL.name) {
-                                // handle play in season type (5)
-                                Triple(year, PLAY_IN, 0) // max week ignored for non-football
-                            } else {
-                                Triple(year, REG_SEASON, MAX_WEEK_REGULAR_SEASON)
-                            }
-                        }
-                        else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
-                    }
-                } else {
-                    when (seasonType) {
-                        PRE_SEASON -> Triple(year, REG_SEASON, WEEK_ONE)
-                        REG_SEASON -> {
-                            if (sport == SiteRoute.BASKETBALL.name) {
-                                Triple(year, PLAY_IN, WEEK_ONE)
-                            } else {
-                                Triple(year, POST_SEASON, WEEK_ONE)
-                            }
-                        }
-                        PLAY_IN -> Triple(year, POST_SEASON, WEEK_ONE)
-                        POST_SEASON -> {
-                            Triple(year + 1, PRE_SEASON, WEEK_ONE)
-                        }
-                        else -> Triple(UNKNOWN, UNKNOWN, UNKNOWN)
-                    }
-                }
+                val (nextYear, nextType, nextWeek) = getNextScoreboardParams(sport, year, resolvedSeasonType, past)
                 val resolvedModifier = nextWeek.toString()
                     .takeIf { sport == SiteRoute.FOOTBALL.name } ?: modifier
                 sportDBs.competitionsDB.findScoreboard(
@@ -202,14 +219,30 @@ class SportApi(private val sportDBs: SportDBs) {
                     nextType,
                     resolvedModifier,
                     past
-                )
+                ).ifEmpty {
+                    //preseason games not added, skip over
+                    if(sport == SiteRoute.FOOTBALL.name){
+                        val(yearChange, type, week) = if(past){
+                            Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON.toString())
+                        }else{
+                            Triple(year + 1, REG_SEASON, WEEK_ONE.toString())
+                        }
+                        sportDBs.competitionsDB.findScoreboard(
+                            sport,
+                            yearChange,
+                            type,
+                            week,
+                            past
+                        )
+                    } else emptyList()
+                }
             }
             val compRef = resolvedComps.firstOrNull()
             val estZone = TimeZone.of("America/New_York")
             val day = compRef?.date?.toLocalDateTime(estZone)?.date
             val resolvedModifier = compRef?.week.toString()
                 .takeIf { sport == SiteRoute.FOOTBALL.name } ?: day
-            Scoreboard(
+            return Scoreboard(
                 id = "$sport-${compRef?.season?.type}-${compRef?.season?.year}-$resolvedModifier",
                 sport = sport,
                 season = compRef?.season,
@@ -220,6 +253,8 @@ class SportApi(private val sportDBs: SportDBs) {
                 updatedOn = null
             )
         }
+    }
+
 
     suspend fun findPlayoff(
         sport: String,

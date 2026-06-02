@@ -20,7 +20,8 @@ object SportState : Klogging {
         listOf(
             SiteRoute.FOOTBALL.name to MutableStateFlow(false),
             SiteRoute.BASKETBALL.name to MutableStateFlow(false),
-            SiteRoute.HOCKEY.name to MutableStateFlow(false)
+            SiteRoute.HOCKEY.name to MutableStateFlow(false),
+            SiteRoute.BASEBALL.name to MutableStateFlow(false)
         ).toMap()
     )
     fun getAllTriggers(): Map<String, StateFlow<Boolean>> = triggerRestart

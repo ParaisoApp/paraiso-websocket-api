@@ -87,6 +87,12 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                     status = competition.status.copy(
                         completedTime = existing?.status?.completedTime
                     ),
+                    season = competition.season?.copy(
+                        year = competition.season?.year ?: existing?.season?.year,
+                        type = competition.season?.type ?: existing?.season?.type,
+                        name = competition.season?.name ?: existing?.season?.name,
+                        displayName = competition.season?.displayName ?: existing?.season?.displayName
+                    ),
                     createdOn = existing?.createdOn ?: now,
                     updatedOn = now
                 ).toEntity()

@@ -61,7 +61,7 @@ class RostersDBImpl(database: MongoDatabase) : RostersDB, Klogging {
     override suspend fun save(rosters: List<RosterDomain>) =
         withContext(Dispatchers.IO) {
             val bulkOps = rosters.map { roster ->
-                val entity = roster.toEntity()
+                val entity = roster.toEntity(roster.athletes.map { it.id })
                 ReplaceOneModel(
                     Filters.eq(ID, entity.id),
                     entity,

@@ -21,11 +21,11 @@ data class Roster(
     val updatedOn: Instant?
 )
 
-fun RosterDomain.toEntity() =
+fun RosterDomain.toEntity(athletes: List<String>) =
     Roster(
         id = id,
         sport = sport,
-        athletes = emptyList(),
+        athletes = athletes,
         coach = null,
         teamId = teamId,
         // fields are set in DB layer during save

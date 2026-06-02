@@ -21,9 +21,18 @@ data class FullTeam(
 
 @Serializable
 data class TeamStat(
-    val displayValue: String,
+    val displayName: String?,
+    val displayValue: String?,
     val abbreviation: String?,
-    val label: String
+    val label: String?,
+    val stats: List<TeamStatNested>?
+)
+@Serializable
+data class TeamStatNested(
+    val displayName: String?,
+    val displayValue: String?,
+    val abbreviation: String?,
+    val label: String?
 )
 
 @Serializable

@@ -24,8 +24,6 @@ import com.paraiso.domain.util.Constants.SPORT_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerConfig.autoBuild
 import io.klogging.Klogging
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -152,20 +150,18 @@ class SportHandler(
                 } else {
                     sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }
                 }
-                teamIds.map { teamId ->
-                    async {
-                        if (seasonType != OFF_SEASON) {
-                            sportClient.getTeamLeaders(
-                                sport,
-                                league.activeSeasonYear,
-                                league.activeSeasonType,
-                                teamId
-                            )
-                        } else {
-                            null
-                        }
+                teamIds.mapNotNull { teamId ->
+                    if (seasonType != OFF_SEASON) {
+                        sportClient.getTeamLeaders(
+                            sport,
+                            league.activeSeasonYear,
+                            league.activeSeasonType,
+                            teamId
+                        )
+                    } else {
+                        null
                     }
-                }.awaitAll().filterNotNull().let { leadersRes ->
+                }.let { leadersRes ->
                     if (leadersRes.isNotEmpty()) {
                         sportDBs.leadersDB.save(leadersRes)
                     }
@@ -178,11 +174,9 @@ class SportHandler(
     // get the schedules for each team
     suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
-            sportDBs.teamsDB.findBySport(sport.name).map { team ->
-                async {
-                    sportClient.getSchedule(sport, team.teamId)
-                }
-            }.awaitAll().filterNotNull().let { schedulesRes ->
+            sportDBs.teamsDB.findBySport(sport.name).mapNotNull { team ->
+                sportClient.getSchedule(sport, team.teamId)
+            }.let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes)
                     sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
@@ -227,11 +221,9 @@ class SportHandler(
 
     suspend fun buildRosters(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
-            sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.map { teamId ->
-                async {
-                    sportClient.getRoster(sport, teamId)
-                }
-            }.awaitAll().filterNotNull().let { rostersRes ->
+            sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.mapNotNull { teamId ->
+                sportClient.getRoster(sport, teamId)
+            }.let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
                     sportDBs.rostersDB.save(rostersRes)
                     sportDBs.athletesDB.save(rostersRes.flatMap { it.athletes })
@@ -303,7 +295,8 @@ class SportHandler(
                     if (
                         (scoreboard.season?.type == POST_SEASON || scoreboard.season?.type == PLAY_IN) &&
                         lastCompCompletedStates.isNotEmpty() &&
-                        endingCompetitions.isNotEmpty()
+                        endingCompetitions.isNotEmpty() &&
+                        scoreboard.season.year != null
                     ) {
                         savePlayoffResults(
                             endingCompetitions,
@@ -368,7 +361,7 @@ class SportHandler(
                 if (curType?.toString() != curLeague?.activeSeasonType) {
                     buildLeague(sport, true)
                 }
-                // if posts don't exist or if in post season (post season game times may often change), then pull schedule to generate posts
+                // if posts don't exist or if in post season (post season game times change often), then pull schedule to generate posts
                 val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
                 if (existingPosts.size != activeCompetitions.size || curType == 3) {
                     buildSchedules(sport, true)
@@ -382,11 +375,9 @@ class SportHandler(
         sport: SiteRoute,
         competitionIds: List<String>
     ) = coroutineScope {
-        competitionIds.map { gameId ->
-            async {
-                sportClient.getGameStats(sport, gameId)
-            }
-        }.awaitAll().filterNotNull().let { newBoxScores ->
+        competitionIds.mapNotNull { gameId ->
+            sportClient.getGameStats(sport, gameId)
+        }.let { newBoxScores ->
             // map result to teams
             if (newBoxScores != lastSentBoxScores) {
                 // only send in progress or just completed box scores

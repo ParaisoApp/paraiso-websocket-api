@@ -14,5 +14,8 @@ data class ClientConfig(
     var fballCdnUri: String = "/nfl",
     var hockeyStatsUri: String = "/hockey/nhl",
     var hockeyCoreUri: String = "/hockey/leagues/nhl",
-    var hockeyCdnUri: String = "/nhl"
+    var hockeyCdnUri: String = "/nhl",
+    var baseballStatsUri: String = "/baseball/mlb",
+    var baseballCoreUri: String = "/baseball/leagues/mlb",
+    var baseballCdnUri: String = "/mlb"
 )

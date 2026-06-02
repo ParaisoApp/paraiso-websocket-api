@@ -20,7 +20,7 @@ class RoutesApi(
         postPinsApi.findByRouteId(id).let { pinnedPosts ->
             val postIds = pinnedPosts.mapNotNull { it.second }
             val posts = postsApi.getByIds(userId, postIds.toSet(), sessionId)
-            return routesDB.findById(id)?.copy(pinnedPostIds = postIds, pinnedPosts = posts.posts)
+            return routesDB.findByIdIn(listOf(id)).firstOrNull()?.copy(pinnedPostIds = postIds, pinnedPosts = posts.posts)
         }
     }
     suspend fun saveRoutes(routeDetails: List<RouteDetails>) = routesDB.save(routeDetails)

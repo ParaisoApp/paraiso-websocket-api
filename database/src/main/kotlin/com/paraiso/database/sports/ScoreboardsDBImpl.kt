@@ -51,6 +51,12 @@ class ScoreboardsDBImpl(database: MongoDatabase) : ScoreboardsDB, Klogging {
             val bulkOps = scoreboards.map { scoreboard ->
                 val existing = allExisting[scoreboard.id]
                 val entity = scoreboard.copy(
+                    season = scoreboard.season?.copy(
+                        year = scoreboard.season?.year ?: existing?.season?.year,
+                        type = scoreboard.season?.type ?: existing?.season?.type,
+                        name = scoreboard.season?.name ?: existing?.season?.name,
+                        displayName = scoreboard.season?.displayName ?: existing?.season?.displayName
+                    ),
                     createdOn = existing?.createdOn ?: now,
                     updatedOn = now
                 ).toEntity()

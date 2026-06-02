@@ -1,5 +1,6 @@
 package com.paraiso.database.sports.data
 
+import com.paraiso.domain.sport.data.TeamStatNested
 import com.paraiso.domain.util.Constants.ID
 import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
@@ -9,6 +10,7 @@ import com.paraiso.domain.sport.data.BoxScore as BoxScoreDomain
 import com.paraiso.domain.sport.data.FullTeam as FullTeamDomain
 import com.paraiso.domain.sport.data.StatTypes as StatTypesDomain
 import com.paraiso.domain.sport.data.TeamStat as TeamStatDomain
+import com.paraiso.domain.sport.data.TeamStatNested as TeamStatNestedDomain
 
 @Serializable
 data class BoxScore(
@@ -30,9 +32,18 @@ data class FullTeam(
 
 @Serializable
 data class TeamStat(
-    val displayValue: String,
+    val displayName: String?,
+    val displayValue: String?,
     val abbreviation: String?,
-    val label: String
+    val label: String?,
+    val stats: List<TeamStatNested>?
+)
+@Serializable
+data class TeamStatNested(
+    val displayName: String?,
+    val displayValue: String?,
+    val abbreviation: String?,
+    val label: String?
 )
 
 @Serializable
@@ -61,10 +72,20 @@ fun FullTeamDomain.toEntity() =
 
 fun TeamStatDomain.toEntity() =
     TeamStat(
+        displayName = displayName,
+        displayValue = displayValue,
+        abbreviation = abbreviation,
+        label = label,
+        stats = stats?.map { it.toEntity() }
+    )
+fun TeamStatNestedDomain.toEntity() =
+    TeamStatNested(
+        displayName = displayName,
         displayValue = displayValue,
         abbreviation = abbreviation,
         label = label
     )
+
 
 fun StatTypesDomain.toEntity() =
     StatTypes(
@@ -91,6 +112,15 @@ fun FullTeam.toDomain() =
 
 fun TeamStat.toDomain() =
     TeamStatDomain(
+        displayName = displayName,
+        displayValue = displayValue,
+        abbreviation = abbreviation,
+        label = label,
+        stats = stats?.map { it.toDomain() }
+    )
+fun TeamStatNested.toDomain() =
+    TeamStatNestedDomain(
+        displayName = displayName,
         displayValue = displayValue,
         abbreviation = abbreviation,
         label = label

@@ -24,8 +24,8 @@ data class Schedule(
 
 @Serializable
 data class Season(
-    val year: Int,
-    val type: Int,
+    val year: Int?,
+    val type: Int?,
     val name: String?,
     val displayName: String?
 )
