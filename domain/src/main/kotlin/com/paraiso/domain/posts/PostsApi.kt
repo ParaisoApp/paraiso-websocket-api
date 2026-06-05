@@ -97,6 +97,9 @@ class PostsApi(
             }
         }
 
+    suspend fun findByIdsIn(postSearchIds: Set<String>) =
+        postsDB.findByIdsIn(postSearchIds)
+
     suspend fun getByIdsBasic(userId: String, postSearchIds: Set<String>) =
         postsDB.findByIdsIn(postSearchIds).let { posts ->
             val votes = votesApi.getByUserIdAndPostIdIn(userId, postSearchIds)
@@ -253,6 +256,8 @@ class PostsApi(
             }
         }.takeIf { rangeModifier != Range.ALL && sortType == SortType.TOP }
 
+    suspend fun saveIfNew(posts: List<Post>) = postsDB.saveIfNew(posts)
+
     suspend fun putPost(message: Message): Unit = coroutineScope {
         message.id?.let { messageId ->
             // if post already exists then edit
@@ -281,19 +286,6 @@ class PostsApi(
 
     suspend fun setUserRole(roleUpdate: RoleUpdate) =
         postsDB.setUserRole(roleUpdate)
-
-    suspend fun deletePost(delete: Delete, userId: String) =
-        postsDB.findById(delete.postId)?.let { post ->
-            if (post.userId == userId) {
-                postsDB.setPostDeleted(delete.postId)
-                postsDB.findById(delete.parentId)?.let { parent ->
-                    updateCounts(parent, increment = -1)
-                }
-                true
-            } else {
-                false
-            }
-        }
 
     private suspend fun updateCounts(post: Post, increment: Int) {
         if (post.id != null) {
@@ -327,6 +319,20 @@ class PostsApi(
             }
         }
     }
+
+    suspend fun deletePost(delete: Delete, userId: String) =
+        postsDB.findById(delete.postId)?.let { post ->
+            if (post.userId == userId) {
+                postsDB.setPostDeleted(delete.postId)
+                postsDB.findById(delete.parentId)?.let { parent ->
+                    updateCounts(parent, increment = -1)
+                }
+                true
+            } else {
+                false
+            }
+        }
+    suspend fun setPostsDeleted(postIds: List<String>) = postsDB.setPostsDeleted(postIds)
 }
 
 @Serializable

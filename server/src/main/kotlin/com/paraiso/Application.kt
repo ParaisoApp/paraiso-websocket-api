@@ -235,7 +235,7 @@ fun Application.module(jobScope: CoroutineScope) {
         routesApi,
         sportsDBs,
         eventServiceImpl,
-        postsDb
+        postsApi
     )
     val serverHandler = ServerHandler(routesApi)
     // only launch data fetching jobs on a single server - will split off to microservice

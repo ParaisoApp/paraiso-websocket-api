@@ -1,9 +1,11 @@
 package com.paraiso.domain.sport.sports
 
 import com.paraiso.domain.messageTypes.MessageType
+import com.paraiso.domain.messageTypes.calculateScores
 import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostType
+import com.paraiso.domain.posts.PostsApi
 import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
@@ -41,7 +43,7 @@ class SportHandler(
     private val routesApi: RoutesApi,
     private val sportDBs: SportDBs,
     private val eventService: EventService,
-    private val postsDB: PostsDB
+    private val postsApi: PostsApi
 ) : Klogging {
     companion object {
         const val BO1_W = 1
@@ -195,6 +197,11 @@ class SportHandler(
         competitions: List<Competition>
     ) {
         competitions.map { competition ->
+            val (topScore, hotScore, risingScore) = calculateScores(
+                0,
+                0,
+                competition.date?.toEpochMilliseconds() ?: 0L
+            )
             Post(
                 id = "$GAME_PREFIX${competition.id}",
                 userId = SYSTEM,
@@ -208,9 +215,9 @@ class SportHandler(
                 route = "$SPORT_PREFIX/${sport.name.lowercase()}",
                 votes = 0,
                 count = 0,
-                topScore = 0.0,
-                hotScore = 0.0,
-                risingScore = 0.0,
+                topScore = topScore,
+                hotScore = hotScore,
+                risingScore = risingScore,
                 media = null,
                 userVote = null,
                 status = ActiveStatus.ACTIVE,
@@ -219,7 +226,7 @@ class SportHandler(
                 updatedOn = competition.date
             )
         }.let { gamePosts ->
-            postsDB.saveIfNew(gamePosts)
+            postsApi.saveIfNew(gamePosts)
         }
     }
 
@@ -366,7 +373,7 @@ class SportHandler(
                     buildLeague(sport, true)
                 }
                 // if posts don't exist or if in post season (post season game times change often), then pull schedule to generate posts
-                val existingPosts = postsDB.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
+                val existingPosts = postsApi.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
                 if (existingPosts.size != activeCompetitions.size || curType == 3) {
                     buildSchedules(sport, true)
                 }
@@ -480,7 +487,7 @@ class SportHandler(
             sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).let { compIds ->
                 logger.info { "compId cleanup identified: $compIds for winners: $winnerCleanup" }
                 sportDBs.competitionsDB.setCompsDeleted(compIds)
-                postsDB.setPostsDeleted(compIds.map { "GAME-$it" })
+                postsApi.setPostsDeleted(compIds.map { "GAME-$it" })
             }
         }
     }
