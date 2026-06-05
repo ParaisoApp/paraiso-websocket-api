@@ -21,7 +21,7 @@ suspend inline fun RoutingContext.withElevatedAuth(crossinline block: suspend ()
     if (userCookie?.isElevated() == true) {
         block()
     } else {
-        call.respond(HttpStatusCode.Unauthorized, "User not authorized to view reports")
+        call.respond(HttpStatusCode.Unauthorized, "User not authorized to run this function")
     }
 }
 suspend inline fun RoutingContext.withAdminAuth(crossinline block: suspend () -> Unit) {

@@ -36,13 +36,21 @@ data class TeamGameStats(
 
 @Serializable
 data class Situation(
-    val down: Int? = null,
-    val distance: Int? = null,
-    val downDistanceText: String? = null,
-    val isRedZone: Boolean? = null,
-    val homeTimeouts: Int? = null,
-    val awayTimeouts: Int? = null,
-    val possession: String? = null
+    // football
+    val down: Int?,
+    val distance: Int?,
+    val downDistanceText: String?,
+    val isRedZone: Boolean?,
+    val homeTimeouts: Int?,
+    val awayTimeouts: Int?,
+    val possession: String?,
+    // baseball
+    val balls: Int?,
+    val strikes: Int?,
+    val outs: Int?,
+    val onFirst: Boolean?,
+    val onSecond: Boolean?,
+    val onThird: Boolean?
 )
 
 @Serializable
@@ -51,6 +59,7 @@ data class Status(
     val period: Int,
     val name: String,
     val state: String,
+    val shortDetail: String?,
     val completed: Boolean,
     val completedTime: Instant?
 )

@@ -35,7 +35,7 @@ class SportApi(private val sportDBs: SportDBs) {
     suspend fun findBoxScoresById(id: String) = sportDBs.boxscoresDB.findByIdIn(listOf(id)).firstOrNull()
     suspend fun findStandings(sport: String): Map<String, List<StandingsResponse>>? = coroutineScope {
         val teamsRes = async { sportDBs.teamsDB.findBySport(sport).associateBy { it.teamId } }
-        if (sport == SiteRoute.BASKETBALL.name || sport == SiteRoute.BASEBALL.name) {
+        if (sport == SiteRoute.BASKETBALL.name) {
             sportDBs.standingsDB.findByIdIn(listOf(sport)).firstOrNull()?.standingsGroups?.associate { standingsGroup ->
                 standingsGroup.confAbbr.uppercase() to standingsGroup.standings.map { standings ->
                     val team = teamsRes.await()[standings.teamId]

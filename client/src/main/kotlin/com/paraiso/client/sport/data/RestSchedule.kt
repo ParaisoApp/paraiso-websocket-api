@@ -66,13 +66,21 @@ data class RestCompetition(
 
 @Serializable
 data class RestSituation(
+    // football
     val down: Int? = null,
     val distance: Int? = null,
     val downDistanceText: String? = null,
     val isRedZone: Boolean? = null,
     val homeTimeouts: Int? = null,
     val awayTimeouts: Int? = null,
-    val possession: String? = null
+    val possession: String? = null,
+    // baseball
+    val balls: Int? = null,
+    val strikes: Int? = null,
+    val outs: Int? = null,
+    val onFirst: Boolean? = null,
+    val onSecond: Boolean? = null,
+    val onThird: Boolean? = null
 )
 
 @Serializable
@@ -86,6 +94,7 @@ data class RestStatus(
 data class RestType(
     val name: String,
     val state: String,
+    val shortDetail: String? = null,
     val completed: Boolean
 )
 
@@ -210,7 +219,13 @@ fun RestSituation.toDomain() = Situation(
     isRedZone = isRedZone,
     homeTimeouts = homeTimeouts,
     awayTimeouts = awayTimeouts,
-    possession = possession
+    possession = possession,
+    balls = balls,
+    strikes = strikes,
+    outs = outs,
+    onFirst = onFirst,
+    onSecond = onSecond,
+    onThird = onThird
 )
 
 fun RestCompetitor.toTeamDomain() = TeamGameStats(
@@ -251,6 +266,7 @@ fun RestStatus.toDomain() = Status(
     period = period,
     name = type.name,
     state = type.state,
+    shortDetail = type.shortDetail,
     completed = type.completed,
     completedTime = null
 )

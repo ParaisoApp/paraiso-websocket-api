@@ -47,13 +47,20 @@ data class TeamGameStats(
 
 @Serializable
 data class Situation(
-    val down: Int? = null,
-    val distance: Int? = null,
-    val downDistanceText: String? = null,
-    val isRedZone: Boolean? = null,
-    val homeTimeouts: Int? = null,
-    val awayTimeouts: Int? = null,
-    val possession: String? = null
+    val down: Int?,
+    val distance: Int?,
+    val downDistanceText: String?,
+    val isRedZone: Boolean?,
+    val homeTimeouts: Int?,
+    val awayTimeouts: Int?,
+    val possession: String?,
+    // baseball
+    val balls: Int?,
+    val strikes: Int?,
+    val outs: Int?,
+    val onFirst: Boolean?,
+    val onSecond: Boolean?,
+    val onThird: Boolean?
 )
 
 @Serializable
@@ -62,6 +69,7 @@ data class Status(
     val period: Int,
     val name: String,
     val state: String,
+    val shortDetail: String?,
     val completed: Boolean,
     @Serializable(with = InstantBsonSerializer::class)
     val completedTime: Instant?
@@ -111,7 +119,13 @@ fun SituationDomain.toEntity() = Situation(
     isRedZone = isRedZone,
     homeTimeouts = homeTimeouts,
     awayTimeouts = awayTimeouts,
-    possession = possession
+    possession = possession,
+    balls = balls,
+    strikes = strikes,
+    outs = outs,
+    onFirst = onFirst,
+    onSecond = onSecond,
+    onThird = onThird
 )
 
 fun StatusDomain.toEntity() =
@@ -120,6 +134,7 @@ fun StatusDomain.toEntity() =
         period = period,
         name = name,
         state = state,
+        shortDetail = shortDetail,
         completed = completed,
         completedTime = completedTime
     )
@@ -167,7 +182,13 @@ fun Situation.toDomain() = SituationDomain(
     isRedZone = isRedZone,
     homeTimeouts = homeTimeouts,
     awayTimeouts = awayTimeouts,
-    possession = possession
+    possession = possession,
+    balls = balls,
+    strikes = strikes,
+    outs = outs,
+    onFirst = onFirst,
+    onSecond = onSecond,
+    onThird = onThird
 )
 
 fun Status.toDomain() =
@@ -176,6 +197,7 @@ fun Status.toDomain() =
         period = period,
         name = name,
         state = state,
+        shortDetail = shortDetail,
         completed = completed,
         completedTime = completedTime
     )

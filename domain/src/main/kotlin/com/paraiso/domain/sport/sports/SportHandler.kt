@@ -44,6 +44,10 @@ class SportHandler(
     private val postsDB: PostsDB
 ) : Klogging {
     companion object {
+        const val BO1_W = 1
+        const val BO3_W = 2
+        const val BO5_W = 3
+        const val BO7_W = 4
         const val POST_SEASON = 3
         const val OFF_SEASON = 4
         const val PLAY_IN = 5
@@ -429,14 +433,14 @@ class SportHandler(
             val matchUpId = comp.teams.map { team -> team.teamId }.sorted().joinToString("-")
             // grab existing matchUp to get existing series score if needed
             val matchUp = (
-                mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
-                    id = matchUpId,
-                    compIds = mutableSetOf(),
-                    teams = emptyMap()
-                )
+                    mergeMatchUps[matchUpId] ?: PlayoffMatchUp(
+                        id = matchUpId,
+                        compIds = mutableSetOf(),
+                        teams = emptyMap()
+                    )
                 ).apply {
-                compIds.add(comp.id)
-            }
+                    compIds.add(comp.id)
+                }
             // map comp teams to results (score and winner)
             val teams = comp.teams.map { team ->
                 val (score, winner) = when (sport) {
@@ -445,9 +449,13 @@ class SportHandler(
                         val currentScore = matchUp.teams.values.find { it.id == team.teamId }?.score ?: 0
                         val updatedScore = if (team.winner) currentScore + 1 else currentScore
                         val winner = if (sport == SiteRoute.BASKETBALL && type == PLAY_IN) {
-                            updatedScore == 1
+                            updatedScore == BO1_W
+                        } else if(sport == SiteRoute.BASEBALL && round.round == 1){
+                            updatedScore == BO3_W
+                        } else if(sport == SiteRoute.BASEBALL && round.round == 2){
+                            updatedScore == BO5_W
                         } else {
-                            updatedScore == 4
+                            updatedScore == BO7_W
                         }
                         if (winner) winnerCleanup.add(team.teamId)
                         updatedScore to winner
