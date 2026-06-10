@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.sample
@@ -41,28 +42,18 @@ class SportJobs(
         val combinedCompsFlow = if (sport == SiteRoute.SPORT.name) {
             // sport must combine all triggers and all flows
             SportState.getAllTriggers().values.toList().merge().flatMapLatest { _ ->
-                val compFlowList: List<StateFlow<Competition>> =
-                    SportState.getCompetitionsBySport(sport)
-                        ?.values
-                        ?.toList()
-                        ?: emptyList()
-                combine(compFlowList) { it.toList() }
+                combine(SportState.getAllCompetitions()) { it.toList() }
             }
         } else {
             SportState.getAllTriggers()[sport]?.flatMapLatest { _ ->
-                val compFlowList: List<StateFlow<Competition>> =
-                    SportState.getCompetitionsBySport(sport)
-                        ?.values
-                        ?.toList()
-                        ?: emptyList()
-                combine(compFlowList) { it.toList() }
+                combine(SportState.getCompetitionsBySport(sport)) { it.toList() }
             }
-        }
+        }?.distinctUntilChanged()
         listOf(
             launch {
                 // emit scoreboard info (updates once daily)
                 if (sport == SiteRoute.SPORT.name) {
-                    combine(SportState.getAllScoreboardFlows()) { it.toList() }.collect { sbs ->
+                    combine(SportState.getAllScoreboardFlows()) { it.toList() }.distinctUntilChanged().collect { sbs ->
                         val allComps = sbs.flatMap { it.competitions }
                         val allSportsScoreboard = Scoreboard(
                             id = sport,
@@ -89,7 +80,7 @@ class SportJobs(
                 }
             },
             launch {
-                combinedCompsFlow?.sample(FLOW_DELAY)?.collect { comps ->
+                combinedCompsFlow?.sample(FLOW_DELAY)?.distinctUntilChanged()?.collect { comps ->
                     session.sendTypedMessage(MessageType.COMPS, comps.associateBy { it.id })
                 }
             }
@@ -102,7 +93,7 @@ class SportJobs(
         sport: String
     ) = withContext(Dispatchers.IO) {
         val teamId = content?.split("-")?.lastOrNull() ?: ""
-        SportState.getCompetitionsBySport(sport)?.values?.firstOrNull { comp ->
+        SportState.getCompetitionsBySport(sport).firstOrNull { comp ->
             comp.value.teams.map { it.teamId }.contains(teamId)
         }.let { compFlow ->
             listOf(
@@ -136,7 +127,7 @@ class SportJobs(
         ids: Set<String>,
         session: WebSocketServerSession
     ) = withContext(Dispatchers.IO) {
-        val combinedTriggers = combine(SportState.getAllTriggers().values) { it.toList() }
+        val combinedTriggers = combine(SportState.getAllTriggers().values) { it.toList() }.distinctUntilChanged()
         val combinedCompsFlow = combinedTriggers.flatMapLatest { _ ->
             val compFlowList: List<StateFlow<Competition>> =
                 SportState.getCompetitionsIn(ids)

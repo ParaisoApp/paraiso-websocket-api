@@ -29,7 +29,8 @@ object SportState : Klogging {
         competitions.values.flatMap { it.entries }.filter { ids.contains(it.key) }.map { it.value }
     private fun getCompetition(id: String): StateFlow<Competition>? =
         competitions.values.flatMap { it.entries }.firstOrNull { it.key == id }?.value
-    fun getCompetitionsBySport(sport: String): Map<String, StateFlow<Competition>>? = competitions[sport]
+    fun getCompetitionsBySport(sport: String): List<StateFlow<Competition>> = competitions[sport]?.values?.toList() ?: emptyList()
+    fun getAllCompetitions(): List<StateFlow<Competition>> = competitions.values.flatMap { it.values }
     fun getAllBoxScores(): Map<String, StateFlow<BoxScore>> = boxScores
     fun getScoreboardFlow(id: String): StateFlow<ScoreboardBasic> =
         scoreboards.getOrPut(id) { MutableStateFlow(Scoreboard.init().toBasic()) }
