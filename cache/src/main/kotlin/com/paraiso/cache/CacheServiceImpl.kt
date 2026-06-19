@@ -12,12 +12,17 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.minutes
 import com.paraiso.domain.users.UserSession as UserSessionDomain
 
-class CacheServiceImpl(private val client: RedisClient) : CacheService, Klogging {
+class CacheServiceImpl(client: RedisClient) : CacheService, Klogging {
     private val connection = client.connect()
     private val commands = connection.async()
-    private val twentyFourHours = 24 * 60 * 60L
+    // Define your time constants clearly
+    private val THIRTY_MINUTES = 30.minutes.inWholeSeconds
+    // Only rewrite if the session has lost more than 30 minutes of its life
+    private val BUMP_THRESHOLD_SECONDS = 10.minutes.inWholeSeconds
+    private val THRESHOLD_LIMIT = THIRTY_MINUTES - BUMP_THRESHOLD_SECONDS
 
     override suspend fun set(key: String, value: String, expirySeconds: Long?): String = withContext(Dispatchers.IO) {
         if (expirySeconds != null) {
@@ -58,17 +63,28 @@ class CacheServiceImpl(private val client: RedisClient) : CacheService, Klogging
         withContext(Dispatchers.IO) {
             commands.setex(
                 "user:session:${userSession.userId}",
-                twentyFourHours,
+                THIRTY_MINUTES,
                 Json.encodeToString(userSession.toEntity())
             ).await()
         }
 
-    override suspend fun bumpUserSession(userId: String): Boolean? =
-        withContext(Dispatchers.IO) {
-            commands.expire(
-                "user:session:$userId",
-                twentyFourHours
-            ).await()
+    override suspend fun bumpUserSession(userId: String): Boolean =
+        withContext(Dispatchers.IO) {val key = "user:session:$userId"
+
+            // Check remaining TTL
+            val remainingTtl = commands.ttl(key).await() ?: return@withContext false
+
+            // Key doesn't exist (-2) or has no TTL (-1)
+            if (remainingTtl < 0) return@withContext false
+
+            // only bump if the remaining time has dipped below the threshold
+            if (remainingTtl <= THRESHOLD_LIMIT) {
+                commands.expire(key, THIRTY_MINUTES).await()
+                return@withContext true
+            }
+
+            // Skip the write - the session is still fresh enough
+            true
         }
     override suspend fun getUserSession(userId: String): UserSessionDomain? =
         withContext(Dispatchers.IO) {

@@ -42,8 +42,6 @@ import com.paraiso.server.util.getMentions
 import com.paraiso.server.util.sendTypedMessage
 import com.paraiso.server.util.validateUserName
 import io.klogging.Klogging
-import io.ktor.server.sessions.get
-import io.ktor.server.sessions.set
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.converter
 import io.ktor.websocket.close
@@ -51,8 +49,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -62,7 +58,6 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 
 class WebSocketHandler(
     private val serverId: String,
@@ -134,7 +129,7 @@ class WebSocketHandler(
         joinChat(currentUser, sessionId, sessionContext)
     }
 
-    private suspend fun validateMessage(
+    private fun validateMessage(
         sessionUserId: String,
         blocking: Boolean,
         message: Message,
@@ -280,16 +275,6 @@ class WebSocketHandler(
                     }
                 } catch (e: Exception) {
                     logger.error { "Redis Collector Job failed: $e" }
-                }
-            }
-            // Wait 23 hours before bumping the user session (refresh ttl of key)
-            launch {
-                while (isActive) {
-                    delay(23.hours)
-                    val extended = services.cacheService.bumpUserSession(sessionUser.id) ?: false
-                    if (!extended) {
-                        break
-                    }
                 }
             }
             // consume and parse incoming messages
@@ -492,7 +477,9 @@ class WebSocketHandler(
                             }
                         }
                     }
-                    MessageType.PING -> {}
+                    MessageType.PING -> {
+                        services.cacheService.bumpUserSession(sessionUser.id)
+                    }
                     else -> logger.error { "Unexpected message received from client: $frame, messageType: $messageType" }
                 }
             }
