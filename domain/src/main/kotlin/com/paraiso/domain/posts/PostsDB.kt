@@ -18,7 +18,8 @@ interface PostsDB {
         filters: FilterTypes,
         sortType: SortType,
         userFavorites: List<UserFavorite>,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        cursor: Cursor?
     ): List<Post>
     suspend fun findByParentId(
         parentId: String,

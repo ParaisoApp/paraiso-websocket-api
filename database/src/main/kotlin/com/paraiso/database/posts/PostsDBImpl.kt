@@ -15,6 +15,7 @@ import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.ReplaceOneModel
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts.descending
+import com.mongodb.client.model.Sorts.orderBy
 import com.mongodb.client.model.Updates.combine
 import com.mongodb.client.model.Updates.inc
 import com.mongodb.client.model.Updates.set
@@ -25,6 +26,7 @@ import com.paraiso.domain.messageTypes.Message
 import com.paraiso.domain.messageTypes.RoleUpdate
 import com.paraiso.domain.messageTypes.calculateScores
 import com.paraiso.domain.posts.ActiveStatus
+import com.paraiso.domain.posts.Cursor
 import com.paraiso.domain.posts.GameState
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsDB
@@ -123,14 +125,48 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
             }
         }
 
-    private fun getSort(sortType: SortType): Bson {
-        return when (sortType) {
+    private fun getSort(sortType: SortType) =
+        when (sortType) {
             SortType.NEW -> descending(Post::createdOn.name)
             SortType.TOP -> descending(Post::topScore.name)
             SortType.HOT -> descending(Post::hotScore.name)
             SortType.RISING -> descending(Post::risingScore.name)
+        }.let { sort ->
+            // tiebreak the sort against the ID in case of equal values (for pagination)
+            orderBy(sort, descending((ID)))
         }
-    }
+
+    private fun getCursorFilter(sortType: SortType, cursor: Cursor) =
+        when (sortType) {
+            SortType.NEW -> or(
+                lt(Post::createdOn.name, Date.from(cursor.date.toJavaInstant())),
+                and(
+                    eq(Post::createdOn.name, Date.from(cursor.date.toJavaInstant())),
+                    lt(ID, cursor.id)
+                )
+            )
+            SortType.TOP -> or(
+                lt(Post::topScore.name, cursor.score),
+                and(
+                    eq(Post::topScore.name, cursor.score),
+                    lt(ID, cursor.id)
+                )
+            )
+            SortType.HOT -> or(
+                lt(Post::hotScore.name, cursor.score),
+                and(
+                    eq(Post::hotScore.name, cursor.score),
+                    lt(ID, cursor.id)
+                )
+            )
+            SortType.RISING -> or(
+                lt(Post::risingScore.name, cursor.score),
+                and(
+                    eq(Post::risingScore.name, cursor.score),
+                    lt(ID, cursor.id)
+                )
+            )
+        }
 
     private fun getBaseFilters(
         range: Instant?,
@@ -227,7 +263,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         filters: FilterTypes,
         sortType: SortType,
         userFavorites: List<UserFavorite>,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        cursor: Cursor?
     ) =
         withContext(Dispatchers.IO) {
             val routeFilter = getRouteFilter(route, userFavorites)
@@ -241,6 +278,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 add(orConditions)
                 add(nin(ID, filters.postIds))
                 add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
+                if(cursor != null) add(getCursorFilter(sortType, cursor))
             }
 
             try {

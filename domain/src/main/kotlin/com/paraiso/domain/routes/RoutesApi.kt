@@ -45,7 +45,8 @@ class RoutesApi(
                     route,
                     initSearch.postsDisplayOps,
                     initSearch.userId,
-                    initSearch.sessionId
+                    initSearch.sessionId,
+                    null
                 )
             )
             if (initSearch.postId != null) {
@@ -72,7 +73,8 @@ class RoutesApi(
                             route,
                             initSearch.contentDisplayOps,
                             initSearch.userId,
-                            initSearch.sessionId
+                            initSearch.sessionId,
+                            null
                         )
                     )
                 // specific sub post case

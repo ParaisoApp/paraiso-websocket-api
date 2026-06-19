@@ -150,7 +150,8 @@ class PostsApi(
             postSearch.postsDisplayOps.selectedFilters,
             postSearch.postsDisplayOps.sort,
             favorites,
-            followees
+            followees,
+            postSearch.cursor
         ) // generate base post and post tree off of given inputs
             .let { subPosts ->
                 val posts = generatePostTree(
@@ -169,6 +170,8 @@ class PostsApi(
                     postSearch.sessionId,
                     subscribe = postSearch.route.route == SiteRoute.HOME
                 )
+                val lastPost = subPosts.lastOrNull()
+
                 PostsData(posts, teams, comps)
             }
     }

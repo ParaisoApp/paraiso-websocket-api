@@ -2,6 +2,7 @@ package com.paraiso.domain.posts
 
 import com.paraiso.domain.messageTypes.FilterTypes
 import com.paraiso.domain.routes.RouteDetails
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -10,6 +11,12 @@ data class DisplayOps(
     val range: Range,
     val sort: SortType,
     val selectedFilters: FilterTypes
+)
+@Serializable
+data class Cursor(
+    val score: Double,
+    val date: Instant,
+    val id: String
 )
 
 @Serializable
@@ -35,7 +42,8 @@ data class InitSearch(
 data class PostSearchRequest(
     val route: RouteDetails,
     val postsDisplayOps: DisplayOps,
-    val sessionId: String
+    val sessionId: String,
+    val cursor: Cursor?
 )
 
 @Serializable
@@ -43,7 +51,8 @@ data class PostSearch(
     val route: RouteDetails,
     val postsDisplayOps: DisplayOps,
     val userId: String,
-    val sessionId: String
+    val sessionId: String,
+    val cursor: Cursor?
 )
 
 @Serializable
@@ -93,7 +102,8 @@ fun PostSearchRequest.toDomain(userId: String) = PostSearch(
     route = route,
     postsDisplayOps = postsDisplayOps,
     sessionId = sessionId,
-    userId = userId
+    userId = userId,
+    cursor = cursor
 )
 
 fun PostSearchIdRequest.toDomain(userId: String) = PostSearchId(
