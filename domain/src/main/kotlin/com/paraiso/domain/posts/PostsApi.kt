@@ -170,7 +170,6 @@ class PostsApi(
                     postSearch.sessionId,
                     subscribe = postSearch.route.route == SiteRoute.HOME
                 )
-                val lastPost = subPosts.lastOrNull()
 
                 PostsData(posts, teams, comps)
             }

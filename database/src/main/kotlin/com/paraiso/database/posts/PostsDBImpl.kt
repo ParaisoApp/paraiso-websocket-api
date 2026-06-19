@@ -1,6 +1,5 @@
 package com.paraiso.database.posts
 
-import com.mongodb.client.model.Aggregates.limit
 import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
@@ -48,7 +47,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import org.bson.Document
 import org.bson.conversions.Bson
 import java.util.Date
 import com.paraiso.domain.posts.Post as PostDomain
