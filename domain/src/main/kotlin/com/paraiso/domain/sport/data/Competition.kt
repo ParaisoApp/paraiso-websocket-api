@@ -17,6 +17,7 @@ data class Competition(
     val teams: List<TeamGameStats>,
     val venue: Venue,
     val situation: Situation?,
+    val broadcasts: List<Broadcast>?,
     val status: Status,
     val activeStatus: ActiveStatus,
     val createdOn: Instant?,
@@ -69,4 +70,10 @@ data class Venue(
     val fullName: String,
     val city: String,
     val state: String?
+)
+
+@Serializable
+data class Broadcast(
+    val market: String,
+    val names: List<String>
 )

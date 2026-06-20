@@ -24,6 +24,7 @@ import com.paraiso.domain.sport.data.Record as RecordDomain
 import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.data.Season as SeasonDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
+import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
 
 @Serializable
 data class RestSchedule(
@@ -61,7 +62,8 @@ data class RestCompetition(
     val date: String,
     val competitors: List<RestCompetitor>,
     val situation: RestSituation? = null,
-    val status: RestStatus
+    val status: RestStatus,
+    val broadcasts: List<RestBroadcast>? = null
 )
 
 @Serializable
@@ -81,6 +83,12 @@ data class RestSituation(
     val onFirst: Boolean? = null,
     val onSecond: Boolean? = null,
     val onThird: Boolean? = null
+)
+
+@Serializable
+data class RestBroadcast(
+    val market: String,
+    val names: List<String>
 )
 
 @Serializable
@@ -206,6 +214,7 @@ fun RestCompetition.toDomain(
     teams = competitors.map { it.toTeamDomain() },
     venue = venue.toDomain(),
     situation = situation?.toDomain(),
+    broadcasts = broadcasts?.map { it.toDomain() },
     status = status.toDomain(),
     activeStatus = ActiveStatus.ACTIVE,
     createdOn = null,
@@ -269,6 +278,11 @@ fun RestStatus.toDomain() = Status(
     shortDetail = type.shortDetail,
     completed = type.completed,
     completedTime = null
+)
+
+fun RestBroadcast.toDomain() = BroadcastDomain(
+    market = market,
+    names = names
 )
 
 object ScoreSerializer : KSerializer<RestScore> {

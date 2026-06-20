@@ -12,6 +12,7 @@ import com.paraiso.domain.sport.data.Situation as SituationDomain
 import com.paraiso.domain.sport.data.Status as StatusDomain
 import com.paraiso.domain.sport.data.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
+import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
 
 @Serializable
 data class Competition(
@@ -26,6 +27,7 @@ data class Competition(
     val teams: List<TeamGameStats>,
     val venue: Venue,
     val situation: Situation?,
+    val broadcasts: List<Broadcast>?,
     val status: Status,
     val activeStatus: ActiveStatus,
     @Serializable(with = InstantBsonSerializer::class)
@@ -82,6 +84,12 @@ data class Venue(
     val state: String?
 )
 
+@Serializable
+data class Broadcast(
+    val market: String,
+    val names: List<String>
+)
+
 fun CompetitionDomain.toEntity() =
     Competition(
         id = id,
@@ -94,6 +102,7 @@ fun CompetitionDomain.toEntity() =
         teams = teams.map { it.toEntity() },
         venue = venue.toEntity(),
         situation = situation?.toEntity(),
+        broadcasts = broadcasts?.map { it.toEntity() },
         status = status.toEntity(),
         activeStatus = activeStatus,
         // fields are set in DB layer during save
@@ -146,6 +155,12 @@ fun VenueDomain.toEntity() =
         state = state
     )
 
+fun BroadcastDomain.toEntity() =
+    Broadcast(
+        market = market,
+        names = names
+    )
+
 fun Competition.toDomain() =
     CompetitionDomain(
         id = id,
@@ -158,6 +173,7 @@ fun Competition.toDomain() =
         teams = teams.map { it.toDomain() },
         venue = venue.toDomain(),
         situation = situation?.toDomain(),
+        broadcasts = broadcasts?.map { it.toDomain() },
         status = status.toDomain(),
         activeStatus = activeStatus,
         createdOn = createdOn,
@@ -207,4 +223,10 @@ fun Venue.toDomain() =
         fullName = fullName,
         city = city,
         state = state
+    )
+
+fun Broadcast.toDomain() =
+    BroadcastDomain(
+        market = market,
+        names = names
     )
