@@ -18,6 +18,7 @@ data class Competition(
     val venue: Venue,
     val situation: Situation?,
     val broadcasts: List<Broadcast>?,
+    val odds: List<Odds>?,
     val status: Status,
     val activeStatus: ActiveStatus,
     val createdOn: Instant?,
@@ -76,4 +77,21 @@ data class Venue(
 data class Broadcast(
     val market: String,
     val names: List<String>
+)
+
+@Serializable
+data class Odds(
+    val displayName: String,
+    val shortDisplayName: String,
+    val home: OddsDiff?,
+    val away: OddsDiff?,
+    val total: OddsDiff?
+)
+
+@Serializable
+data class OddsDiff(
+    val openOdds: String,
+    val closeOdds: String,
+    val openLine: String?,
+    val closeLine: String?
 )

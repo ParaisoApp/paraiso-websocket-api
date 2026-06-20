@@ -13,6 +13,8 @@ import com.paraiso.domain.sport.data.Status as StatusDomain
 import com.paraiso.domain.sport.data.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
 import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
+import com.paraiso.domain.sport.data.Odds as OddsDomain
+import com.paraiso.domain.sport.data.OddsDiff as OddsDiffDomain
 
 @Serializable
 data class Competition(
@@ -28,6 +30,7 @@ data class Competition(
     val venue: Venue,
     val situation: Situation?,
     val broadcasts: List<Broadcast>?,
+    val odds: List<Odds>?,
     val status: Status,
     val activeStatus: ActiveStatus,
     @Serializable(with = InstantBsonSerializer::class)
@@ -90,6 +93,23 @@ data class Broadcast(
     val names: List<String>
 )
 
+@Serializable
+data class Odds(
+    val displayName: String,
+    val shortDisplayName: String,
+    val home: OddsDiff?,
+    val away: OddsDiff?,
+    val total: OddsDiff?
+)
+
+@Serializable
+data class OddsDiff(
+    val openOdds: String,
+    val closeOdds: String,
+    val openLine: String?,
+    val closeLine: String?
+)
+
 fun CompetitionDomain.toEntity() =
     Competition(
         id = id,
@@ -103,6 +123,7 @@ fun CompetitionDomain.toEntity() =
         venue = venue.toEntity(),
         situation = situation?.toEntity(),
         broadcasts = broadcasts?.map { it.toEntity() },
+        odds = odds?.map { it.toEntity() },
         status = status.toEntity(),
         activeStatus = activeStatus,
         // fields are set in DB layer during save
@@ -161,6 +182,23 @@ fun BroadcastDomain.toEntity() =
         names = names
     )
 
+fun OddsDomain.toEntity() =
+    Odds(
+        displayName = displayName,
+        shortDisplayName = shortDisplayName,
+        home = home?.toEntity(),
+        away = away?.toEntity(),
+        total = total?.toEntity()
+    )
+
+fun OddsDiffDomain.toEntity() =
+    OddsDiff(
+        openOdds = openOdds,
+        closeOdds = closeOdds,
+        openLine = openLine,
+        closeLine = closeLine
+    )
+
 fun Competition.toDomain() =
     CompetitionDomain(
         id = id,
@@ -174,6 +212,7 @@ fun Competition.toDomain() =
         venue = venue.toDomain(),
         situation = situation?.toDomain(),
         broadcasts = broadcasts?.map { it.toDomain() },
+        odds = odds?.map { it.toDomain() },
         status = status.toDomain(),
         activeStatus = activeStatus,
         createdOn = createdOn,
@@ -229,4 +268,21 @@ fun Broadcast.toDomain() =
     BroadcastDomain(
         market = market,
         names = names
+    )
+
+fun Odds.toDomain() =
+    OddsDomain(
+        displayName = displayName,
+        shortDisplayName = shortDisplayName,
+        home = home?.toDomain(),
+        away = away?.toDomain(),
+        total = total?.toDomain()
+    )
+
+fun OddsDiff.toDomain() =
+    OddsDiffDomain(
+        openOdds = openOdds,
+        closeOdds = closeOdds,
+        openLine = openLine,
+        closeLine = closeLine
     )

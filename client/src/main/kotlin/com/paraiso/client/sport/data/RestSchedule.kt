@@ -25,6 +25,8 @@ import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.data.Season as SeasonDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
 import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
+import com.paraiso.domain.sport.data.Odds as OddsDomain
+import com.paraiso.domain.sport.data.OddsDiff as OddsDiffDomain
 
 @Serializable
 data class RestSchedule(
@@ -63,7 +65,8 @@ data class RestCompetition(
     val competitors: List<RestCompetitor>,
     val situation: RestSituation? = null,
     val status: RestStatus,
-    val broadcasts: List<RestBroadcast>? = null
+    val broadcasts: List<RestBroadcast>? = null,
+    val odds: List<RestOdds>? = null
 )
 
 @Serializable
@@ -89,6 +92,35 @@ data class RestSituation(
 data class RestBroadcast(
     val market: String,
     val names: List<String>
+)
+
+@Serializable
+data class RestOdds(
+    val moneyline: RestOddsCat,
+    val pointSpread: RestOddsCat,
+    val total: RestOddsCat,
+)
+
+@Serializable
+data class RestOddsCat(
+    val displayName: String,
+    val shortDisplayName: String,
+    val home: RestOddsDiff? = null,
+    val away: RestOddsDiff? = null,
+    val over: RestOddsDiff? = null,
+    val under: RestOddsDiff? = null
+)
+
+@Serializable
+data class RestOddsDiff(
+    val close: RestPureOdds,
+    val open: RestPureOdds
+)
+
+@Serializable
+data class RestPureOdds(
+    val line: String? = null,
+    val odds: String
 )
 
 @Serializable
@@ -203,23 +235,32 @@ fun RestCompetition.toDomain(
     season: SeasonDomain?,
     week: Int?,
     sport: SiteRoute
-) = CompetitionDomain(
-    id = id,
-    sport = sport,
-    name = name,
-    shortName = shortName,
-    date = convertStringZToInstant(date),
-    week = week,
-    season = season,
-    teams = competitors.map { it.toTeamDomain() },
-    venue = venue.toDomain(),
-    situation = situation?.toDomain(),
-    broadcasts = broadcasts?.map { it.toDomain() },
-    status = status.toDomain(),
-    activeStatus = ActiveStatus.ACTIVE,
-    createdOn = null,
-    updatedOn = null
-)
+): CompetitionDomain {
+    val odds = odds?.firstOrNull()
+    val convertedOdds = listOfNotNull(
+        odds?.moneyline?.toDomain(),
+        odds?.pointSpread?.toDomain(),
+        odds?.total?.toDomain(),
+    )
+    return CompetitionDomain(
+        id = id,
+        sport = sport,
+        name = name,
+        shortName = shortName,
+        date = convertStringZToInstant(date),
+        week = week,
+        season = season,
+        teams = competitors.map { it.toTeamDomain() },
+        venue = venue.toDomain(),
+        situation = situation?.toDomain(),
+        broadcasts = broadcasts?.map { it.toDomain() },
+        odds = convertedOdds,
+        status = status.toDomain(),
+        activeStatus = ActiveStatus.ACTIVE,
+        createdOn = null,
+        updatedOn = null
+    )
+}
 
 fun RestSituation.toDomain() = Situation(
     down = down,
@@ -283,6 +324,21 @@ fun RestStatus.toDomain() = Status(
 fun RestBroadcast.toDomain() = BroadcastDomain(
     market = market,
     names = names
+)
+
+fun RestOddsCat.toDomain() = OddsDomain(
+    displayName = displayName,
+    shortDisplayName = shortDisplayName,
+    home = home?.toDomain(),
+    away = away?.toDomain(),
+    total = over?.toDomain()
+)
+
+fun RestOddsDiff.toDomain() = OddsDiffDomain(
+    openOdds = open.odds,
+    closeOdds = close.odds,
+    openLine = open.line,
+    closeLine = close.line
 )
 
 object ScoreSerializer : KSerializer<RestScore> {
