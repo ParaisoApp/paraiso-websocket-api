@@ -1,6 +1,5 @@
 package com.paraiso.database.sports
 
-import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gte
@@ -17,7 +16,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.paraiso.database.sports.data.Competition
 import com.paraiso.database.sports.data.toDomain
 import com.paraiso.database.sports.data.toEntity
-import com.paraiso.database.userchats.toDomain
 import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.interfaces.CompetitionsDB
@@ -27,7 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -57,7 +54,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                 } else {
                     collection.find(
                         and(
-                            Filters.`in`(ID, ids),
+                            `in`(ID, ids),
                             eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)
                         )
                     ).map { it.toDomain() }.toList()
@@ -83,6 +80,9 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             val now = Clock.System.now()
             val bulkOps = competitions.map { competition ->
                 val existing = existingComps[competition.id]
+                val odds = if(competition.odds?.isNotEmpty() == true){
+                    competition.odds
+                } else existing?.odds
                 val entity = competition.copy(
                     status = competition.status.copy(
                         completedTime = existing?.status?.completedTime
@@ -93,6 +93,7 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
                         name = competition.season?.name ?: existing?.season?.name,
                         displayName = competition.season?.displayName ?: existing?.season?.displayName
                     ),
+                    odds = odds,
                     createdOn = existing?.createdOn ?: now,
                     updatedOn = now
                 ).toEntity()
