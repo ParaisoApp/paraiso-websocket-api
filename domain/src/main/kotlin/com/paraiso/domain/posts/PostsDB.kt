@@ -37,7 +37,8 @@ interface PostsDB {
         compStartTime: Instant?,
         compEndTime: Instant?,
         gameState: GameState?,
-        commentRouteLocation: String?
+        commentRouteLocation: String?,
+        cursor: Cursor?
     ): List<Post>
     suspend fun save(posts: List<Post>): Int
     suspend fun saveIfNew(posts: List<Post>): Int

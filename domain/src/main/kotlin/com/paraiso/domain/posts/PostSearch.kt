@@ -52,7 +52,7 @@ data class PostSearch(
     val postsDisplayOps: DisplayOps,
     val userId: String,
     val sessionId: String,
-    val cursor: Cursor?
+    val cursor: Cursor? = null
 )
 
 @Serializable
@@ -61,7 +61,8 @@ data class PostSearchIdRequest(
     val postsDisplayOps: DisplayOps,
     val sessionId: String,
     val gameState: GameState? = null,
-    val commentRouteLocation: String? = null
+    val commentRouteLocation: String? = null,
+    val cursor: Cursor? = null
 )
 
 @Serializable
@@ -70,8 +71,9 @@ data class PostSearchId(
     val postsDisplayOps: DisplayOps,
     val userId: String,
     val sessionId: String,
-    val gameState: GameState? = null,
-    val commentRouteLocation: String? = null
+    val gameState: GameState?,
+    val commentRouteLocation: String?,
+    val cursor: Cursor?
 )
 
 @Serializable
@@ -112,5 +114,6 @@ fun PostSearchIdRequest.toDomain(userId: String) = PostSearchId(
     sessionId = sessionId,
     gameState = gameState,
     commentRouteLocation = commentRouteLocation,
-    userId = userId
+    userId = userId,
+    cursor = cursor
 )

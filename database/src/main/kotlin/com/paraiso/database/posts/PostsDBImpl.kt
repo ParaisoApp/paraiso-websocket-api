@@ -276,7 +276,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 add(orConditions)
                 add(nin(ID, filters.postIds))
                 add(lte(Post::createdOn.name, Date.from(Clock.System.now().toJavaInstant())))
-                if(cursor != null) add(getCursorFilter(sortType, cursor))
+                cursor?.let {
+                    add(getCursorFilter(sortType, cursor))
+                }
             }
 
             try {
@@ -323,7 +325,8 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         compStartTime: Instant?,
         compEndTime: Instant?,
         gameState: GameState?,
-        commentRouteLocation: String?
+        commentRouteLocation: String?,
+        cursor: Cursor?
     ) =
         withContext(Dispatchers.IO) {
             val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
@@ -345,6 +348,9 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 }
                 commentRouteLocation?.let {
                     add(eq(Post::route.name, commentRouteLocation))
+                }
+                cursor?.let {
+                    add(getCursorFilter(sortType, cursor))
                 }
             }
             try {

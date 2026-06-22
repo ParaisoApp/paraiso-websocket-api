@@ -74,7 +74,8 @@ class PostsApi(
                 post.createdOn,
                 compStatus?.completedTime,
                 resolvedGameState,
-                postSearchId.commentRouteLocation.takeIf { post.type == PostType.EVENT }
+                postSearchId.commentRouteLocation.takeIf { post.type == PostType.EVENT },
+                postSearchId.cursor
             )
             generatePostTree(
                 post,

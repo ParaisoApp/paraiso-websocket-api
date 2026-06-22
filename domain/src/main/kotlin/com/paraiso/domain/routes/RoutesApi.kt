@@ -55,7 +55,10 @@ class RoutesApi(
                         initSearch.postId,
                         initSearch.postsDisplayOps,
                         initSearch.userId,
-                        initSearch.sessionId
+                        initSearch.sessionId,
+                        null,
+                        null,
+                        null,
                     )
                 )?.posts?.values?.forEach { post ->
                     post.id?.let {
@@ -84,7 +87,10 @@ class RoutesApi(
                             initSearch.postId,
                             initSearch.contentDisplayOps,
                             initSearch.userId,
-                            initSearch.sessionId
+                            initSearch.sessionId,
+                            null,
+                            null,
+                            null,
                         )
                     )
             }
