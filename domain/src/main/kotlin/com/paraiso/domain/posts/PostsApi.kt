@@ -42,6 +42,9 @@ class PostsApi(
     private val eventService: EventService,
     private val sportApi: SportApi
 ) {
+    companion object {
+        const val MAX_DEPTH = 5
+    }
 
     // return fully updated root post (for update or load of root post to post tree)
     suspend fun getById(
@@ -193,26 +196,34 @@ class PostsApi(
                     returnPosts[post.id] = post
                 }
             }
+
+            var depth = 1
             while (postsQueue.isNotEmpty()) {
-                val nextRefNode = postsQueue.removeFirst()
-                // no need to search for sub posts if none exist beneath
-                val subPosts = if (nextRefNode.count > 0) {
-                    postsDB.findByParentId(
-                        nextRefNode.id ?: UNKNOWN,
-                        range,
-                        filters,
-                        sortType,
-                        userFollowing
-                    )
-                } else {
-                    emptyList()
-                }
-                subPosts.map { post ->
-                    if (post.id != null) {
-                        returnPosts[post.id] = post
-                        postsQueue.addLast(post)
+                val levelSize = postsQueue.size
+                for(i in 0 until levelSize){
+                    val nextRefNode = postsQueue.removeFirst()
+                    // no need to search for sub posts if none exist beneath
+                    val subPosts = if (nextRefNode.count > 0) {
+                        postsDB.findByParentId(
+                            nextRefNode.id ?: UNKNOWN,
+                            range,
+                            filters,
+                            sortType,
+                            userFollowing,
+                            depth
+                        )
+                    } else {
+                        emptyList()
+                    }
+                    subPosts.map { post ->
+                        if (post.id != null) {
+                            returnPosts[post.id] = post
+                            postsQueue.addLast(post)
+                        }
                     }
                 }
+                depth++
+                if (depth >= MAX_DEPTH) break
             }
             // grab all user votes for each post
             val votes = votesApi.getByUserIdAndPostIdIn(userId, returnPosts.keys)

@@ -53,7 +53,7 @@ import com.paraiso.domain.posts.Post as PostDomain
 
 class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
     companion object {
-        const val RETRIEVE_LIM = 50
+        const val RETRIEVE_LIM = 30
         const val PARTIAL_RETRIEVE_LIM = 10
     }
 
@@ -298,16 +298,19 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        depth: Int
     ) =
         withContext(Dispatchers.IO) {
             val baseFilters = getBaseFilters(range, filters, userFollowing).apply {
                 add(eq(Post::parentId.name, parentId))
             }
             try {
+                //taper return at each level by 2^depth
+                val taperedLimit = RETRIEVE_LIM shr depth
                 return@withContext collection.find(and(baseFilters))
                     .sort(getSort(sortType))
-                    .limit(RETRIEVE_LIM)
+                    .limit(taperedLimit)
                     .map { it.toDomain() }
                     .toList()
             } catch (ex: Exception) {

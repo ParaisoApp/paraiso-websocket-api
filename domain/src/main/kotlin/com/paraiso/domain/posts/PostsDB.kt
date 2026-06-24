@@ -26,7 +26,8 @@ interface PostsDB {
         range: Instant?,
         filters: FilterTypes,
         sortType: SortType,
-        userFollowing: Set<String>
+        userFollowing: Set<String>,
+        depth: Int
     ): List<Post>
     suspend fun findByParentIdWithEventFilters(
         parentId: String,
