@@ -222,8 +222,8 @@ class SportHandler(
                 userVote = null,
                 status = ActiveStatus.ACTIVE,
                 tags = competition.teams.map { "$sport-${it.teamId}" }.toSet(),
-                createdOn = competition.date,
-                updatedOn = competition.date
+                createdOn = competition.date?.minus(12.hours),
+                updatedOn = competition.date?.minus(12.hours)
             )
         }.let { gamePosts ->
             postsApi.saveIfNew(gamePosts)
