@@ -260,6 +260,9 @@ class SportHandler(
                     } else {
                         delayBoxScore = determineActiveComps(sport, scoreboard, delayBoxScore)
                     }
+                } ?: run {
+                    // if call failed back off and delay fetch for 30 seconds
+                    delay(30.seconds)
                 }
             }
         }
