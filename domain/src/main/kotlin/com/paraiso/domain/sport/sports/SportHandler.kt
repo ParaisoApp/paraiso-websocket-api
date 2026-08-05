@@ -6,7 +6,6 @@ import com.paraiso.domain.posts.ActiveStatus
 import com.paraiso.domain.posts.Post
 import com.paraiso.domain.posts.PostType
 import com.paraiso.domain.posts.PostsApi
-import com.paraiso.domain.posts.PostsDB
 import com.paraiso.domain.routes.RouteDetails
 import com.paraiso.domain.routes.RoutesApi
 import com.paraiso.domain.routes.SiteRoute
