@@ -34,8 +34,9 @@ interface BaseAdapter : Klogging {
                 }
             }
             defaultRequest {
-                header(HttpHeaders.Accept, "application/json")
-                headers.append(HttpHeaders.ContentType, "application/json")
+                header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                header("Accept", "application/json, text/plain, */*")
+                header("Accept-Language", "en-US,en;q=0.9")
             }
             expectSuccess = false
         }

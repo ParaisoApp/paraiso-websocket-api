@@ -59,12 +59,19 @@ class SportHandler(
 
     suspend fun bootJobs(sport: SiteRoute) = coroutineScope {
         launch { buildLeague(sport, manual = false) }
+        delay(5.seconds)
         launch { buildScoreboard(sport) }
+        delay(5.seconds)
         launch { buildStandings(sport) }
+        delay(5.seconds)
         launch { buildTeams(sport, manual = false) }
+        delay(5.seconds)
         launch { buildLeaders(sport) }
+        delay(5.seconds)
         launch { buildTeamLeaders(sport) }
+        delay(5.seconds)
         launch { buildRosters(sport, manual = false) }
+        delay(5.seconds)
         launch { buildSchedules(sport, manual = false) }
     }
 
@@ -156,6 +163,7 @@ class SportHandler(
                     sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }
                 }
                 teamIds.mapNotNull { teamId ->
+                    delay(5.seconds)
                     if (seasonType != OFF_SEASON) {
                         sportClient.getTeamLeaders(
                             sport,
@@ -180,6 +188,7 @@ class SportHandler(
     suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
             sportDBs.teamsDB.findBySport(sport.name).mapNotNull { team ->
+                delay(5.seconds)
                 sportClient.getSchedule(sport, team.teamId)
             }.let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
@@ -232,6 +241,7 @@ class SportHandler(
     suspend fun buildRosters(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
             sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.mapNotNull { teamId ->
+                delay(5.seconds)
                 sportClient.getRoster(sport, teamId)
             }.let { rostersRes ->
                 if (rostersRes.isNotEmpty()) {
