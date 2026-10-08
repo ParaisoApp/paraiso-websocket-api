@@ -31,10 +31,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class SportHandler(
@@ -81,7 +85,7 @@ class SportHandler(
             sportClient.getStandings(sport)?.let { standingsRes ->
                 sportDBs.standingsDB.save(listOf(standingsRes))
             }
-            delay(1.hours)
+            delay(3.hours)
         }
     }
 
@@ -133,7 +137,7 @@ class SportHandler(
                     sportDBs.leadersDB.save(listOf(leadersRes))
                 }
             }
-            delay(1.hours)
+            delay(3.hours)
         }
     }
 
@@ -156,7 +160,6 @@ class SportHandler(
                     sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }
                 }
                 teamIds.mapNotNull { teamId ->
-                    delay(1.seconds)
                     if (seasonType != OFF_SEASON) {
                         sportClient.getTeamLeaders(
                             sport,
@@ -171,9 +174,10 @@ class SportHandler(
                     if (leadersRes.isNotEmpty()) {
                         sportDBs.leadersDB.save(leadersRes)
                     }
+                    delay(Random.nextDouble(1000.0, 2000.0).milliseconds)
                 }
             }
-            delay(1.hours)
+            delay(3.hours)
         }
     }
 
@@ -181,13 +185,13 @@ class SportHandler(
     suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
         if (autoBuild || manual) {
             sportDBs.teamsDB.findBySport(sport.name).mapNotNull { team ->
-                delay(1.seconds)
                 sportClient.getSchedule(sport, team.teamId)
             }.let { schedulesRes ->
                 if (schedulesRes.isNotEmpty()) {
                     sportDBs.schedulesDB.save(schedulesRes)
                     sportDBs.competitionsDB.save(schedulesRes.flatMap { it.events })
                     addPosts(sport, schedulesRes.flatMap { it.events })
+                    delay(Random.nextDouble(1000.0, 2000.0).milliseconds)
                 }
             }
         }
@@ -323,9 +327,9 @@ class SportHandler(
                     }
                 }
                 // retrieve scoreboard every ten seconds
-                delay(10.seconds)
-                // delay boxScore fetch for 6 ticks of delay (every 1 minute)
-                if (delayBoxScore == 6) {
+                delay(15.seconds)
+                // delay boxScore fetch for 20 ticks of delay (every 5 minutes)
+                if (delayBoxScore == 20) {
                     0
                 } else {
                     delayBoxScore + 1
@@ -575,7 +579,9 @@ class SportHandler(
                 sportClient.getGameStats(sport, competition.id)
             }.let { boxScores ->
                 sportDBs.boxscoresDB.save(boxScores)
+                delay(Random.nextDouble(1000.0, 2000.0).milliseconds)
             }
         }
     }
+    private data class ScheduleTime(val hour: Int, val minute: Int)
 }
