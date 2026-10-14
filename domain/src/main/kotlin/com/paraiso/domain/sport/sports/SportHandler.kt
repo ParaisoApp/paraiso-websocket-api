@@ -24,6 +24,7 @@ import com.paraiso.domain.util.Constants.GAME_PREFIX
 import com.paraiso.domain.util.Constants.SPORT_PREFIX
 import com.paraiso.domain.util.Constants.SYSTEM
 import com.paraiso.domain.util.ServerConfig.autoBuild
+import com.paraiso.domain.util.ServerConfig.autoBuildSports
 import io.klogging.Klogging
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -67,11 +68,11 @@ class SportHandler(
         launch { buildLeaders(sport) }
         launch { buildTeamLeaders(sport) }
         launch { buildRosters(sport, manual = false) }
-        launch { buildSchedules(sport, manual = false) }
+        launch { buildSchedules(sport, manual = false, automated = false) }
     }
 
     suspend fun buildLeague(sport: SiteRoute, manual: Boolean) = coroutineScope {
-        if (autoBuild || manual) {
+        if (autoBuild || autoBuildSports || manual) {
             sportClient.getLeague(sport)?.let { leagueRes ->
                 sportDBs.leaguesDB.save(listOf(leagueRes))
             }
@@ -88,7 +89,7 @@ class SportHandler(
     }
 
     suspend fun buildTeams(sport: SiteRoute, manual: Boolean) = coroutineScope {
-        if (autoBuild || manual) {
+        if (autoBuild || autoBuildSports || manual) {
             sportClient.getTeams(sport).let { teamsRes ->
                 launch {
                     addTeamRoutes(sport, teamsRes)
@@ -180,8 +181,8 @@ class SportHandler(
     }
 
     // get the schedules for each team
-    suspend fun buildSchedules(sport: SiteRoute, manual: Boolean) = coroutineScope {
-        if (autoBuild || manual) {
+    suspend fun buildSchedules(sport: SiteRoute, manual: Boolean, automated: Boolean) = coroutineScope {
+        if (autoBuild || autoBuildSports || manual || automated) {
             sportDBs.teamsDB.findBySport(sport.name).mapNotNull { team ->
                 sportClient.getSchedule(sport, team.teamId)
             }.let { schedulesRes ->
@@ -234,7 +235,7 @@ class SportHandler(
     }
 
     suspend fun buildRosters(sport: SiteRoute, manual: Boolean) = coroutineScope {
-        if (autoBuild || manual) {
+        if (autoBuild || autoBuildSports || manual) {
             sportDBs.teamsDB.findBySport(sport.name).map { it.teamId }.mapNotNull { teamId ->
                 delay(1.seconds)
                 sportClient.getRoster(sport, teamId)
@@ -382,7 +383,7 @@ class SportHandler(
                 // if posts don't exist or if in post season (post season game times change often), then pull schedule to generate posts
                 val existingPosts = postsApi.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
                 if (existingPosts.size != activeCompetitions.size || curType == 3) {
-                    buildSchedules(sport, true)
+                    buildSchedules(sport, manual = false, automated = true)
                 }
             }
         }
