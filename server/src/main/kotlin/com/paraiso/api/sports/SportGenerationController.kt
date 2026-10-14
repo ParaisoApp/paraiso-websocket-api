@@ -46,7 +46,8 @@ fun Route.dataGenerationController(
                 withAdminAuth {
                     sportHandler.buildSchedules(
                         enumValueOf<SiteRoute>(call.request.queryParameters["sport"] ?: ""),
-                        manual = true
+                        manual = true,
+                        automated = false
                     )
                     call.respond(HttpStatusCode.OK)
                 }
