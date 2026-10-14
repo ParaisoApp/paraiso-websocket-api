@@ -90,8 +90,21 @@ data class RestSituation(
 
 @Serializable
 data class RestBroadcast(
-    val market: String,
-    val names: List<String>
+    @Serializable(with = MarketSerializer::class)
+    val market: RestMarket,
+    val media: RestMedia? = null,
+    val names: List<String>? = null
+)
+
+@Serializable
+data class RestMarket(
+    val id: String?,
+    val type: String?
+)
+
+@Serializable
+data class RestMedia(
+    val shortName: String?
 )
 
 @Serializable
@@ -141,7 +154,7 @@ data class RestType(
 @Serializable
 data class RestVenue(
     val fullName: String,
-    val address: RestAddress
+    val address: RestAddress? = null
 )
 
 @Serializable
@@ -307,8 +320,8 @@ fun RestRecordYTD.toDomain() = RecordDomain(
 
 fun RestVenue.toDomain() = VenueDomain(
     fullName = fullName,
-    city = address.city,
-    state = address.state
+    city = address?.city,
+    state = address?.state
 )
 
 fun RestStatus.toDomain() = Status(
@@ -322,8 +335,8 @@ fun RestStatus.toDomain() = Status(
 )
 
 fun RestBroadcast.toDomain() = BroadcastDomain(
-    market = market,
-    names = names
+    market = market.type,
+    names = names ?: listOfNotNull(media?.shortName)
 )
 
 fun RestOddsCat.toDomain() = OddsDomain(
@@ -355,7 +368,7 @@ object ScoreSerializer : KSerializer<RestScore> {
                 val displayValue = element["displayValue"]?.jsonPrimitive?.content
                 RestScore(value = value, displayValue = displayValue)
             }
-            else -> throw SerializationException("Unknown type for score")
+            else -> throw SerializationException("Unknown type for score, element: $element")
         }
     }
 
@@ -396,6 +409,29 @@ object RecordSerializer : KSerializer<List<RestRecordYTD>> {
     }
 
     override fun serialize(encoder: Encoder, value: List<RestRecordYTD>) {
+        // no need to serialize
+    }
+}
+
+object MarketSerializer : KSerializer<RestMarket> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("MarketWrapper")
+
+    override fun deserialize(decoder: Decoder): RestMarket {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("Expected JsonDecoder")
+
+        return when (val element = jsonDecoder.decodeJsonElement()) {
+            is JsonPrimitive -> RestMarket(id = element.content, type = element.content)
+            is JsonObject -> {
+                val id = element["id"]?.jsonPrimitive?.content
+                val type = element["value"]?.jsonPrimitive?.content
+                RestMarket(id = id, type = type)
+            }
+            else -> throw SerializationException("Unknown type for market, element: $element")
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: RestMarket) {
         // no need to serialize
     }
 }

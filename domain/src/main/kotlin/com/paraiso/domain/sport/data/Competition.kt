@@ -69,13 +69,13 @@ data class Status(
 @Serializable
 data class Venue(
     val fullName: String,
-    val city: String,
+    val city: String?,
     val state: String?
 )
 
 @Serializable
 data class Broadcast(
-    val market: String,
+    val market: String?,
     val names: List<String>
 )
 
