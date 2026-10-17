@@ -18,8 +18,10 @@ import com.paraiso.domain.users.UserSession as UserSessionDomain
 class CacheServiceImpl(client: RedisClient) : CacheService, Klogging {
     private val connection = client.connect()
     private val commands = connection.async()
+
     // Define your time constants clearly
     private val THIRTY_MINUTES = 30.minutes.inWholeSeconds
+
     // Only rewrite if the session has lost more than 30 minutes of its life
     private val BUMP_THRESHOLD_SECONDS = 10.minutes.inWholeSeconds
     private val THRESHOLD_LIMIT = THIRTY_MINUTES - BUMP_THRESHOLD_SECONDS
@@ -69,7 +71,8 @@ class CacheServiceImpl(client: RedisClient) : CacheService, Klogging {
         }
 
     override suspend fun bumpUserSession(userId: String): Boolean =
-        withContext(Dispatchers.IO) {val key = "user:session:$userId"
+        withContext(Dispatchers.IO) {
+            val key = "user:session:$userId"
 
             // Check remaining TTL
             val remainingTtl = commands.ttl(key).await() ?: return@withContext false

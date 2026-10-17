@@ -27,6 +27,7 @@ data class TeamStat(
     val label: String?,
     val stats: List<TeamStatNested>?
 )
+
 @Serializable
 data class TeamStatNested(
     val displayName: String?,

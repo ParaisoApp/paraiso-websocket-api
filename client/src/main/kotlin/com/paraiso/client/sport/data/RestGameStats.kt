@@ -33,6 +33,7 @@ data class RestTeamStat(
     val label: String? = null,
     val stats: List<RestTeamStatNested>? = null
 )
+
 @Serializable
 data class RestTeamStatNested(
     val displayName: String? = null,

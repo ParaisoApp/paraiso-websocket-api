@@ -15,7 +15,7 @@ data class Competition(
     val week: Int?,
     val season: Season?,
     val teams: List<TeamGameStats>,
-    val venue: Venue,
+    val venue: Venue?,
     val situation: Situation?,
     val broadcasts: List<Broadcast>?,
     val odds: List<Odds>?,

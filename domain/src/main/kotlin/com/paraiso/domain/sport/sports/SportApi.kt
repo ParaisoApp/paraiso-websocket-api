@@ -219,11 +219,11 @@ class SportApi(private val sportDBs: SportDBs) {
                     resolvedModifier,
                     past
                 ).ifEmpty {
-                    //preseason games not added, skip over
-                    if(sport == SiteRoute.FOOTBALL.name){
-                        val(yearChange, type, week) = if(past){
+                    // preseason games not added, skip over
+                    if (sport == SiteRoute.FOOTBALL.name) {
+                        val(yearChange, type, week) = if (past) {
                             Triple(year - 1, POST_SEASON, MAX_WEEK_POST_SEASON.toString())
-                        }else{
+                        } else {
                             Triple(year + 1, REG_SEASON, WEEK_ONE.toString())
                         }
                         sportDBs.competitionsDB.findScoreboard(
@@ -233,7 +233,9 @@ class SportApi(private val sportDBs: SportDBs) {
                             week,
                             past
                         )
-                    } else emptyList()
+                    } else {
+                        emptyList()
+                    }
                 }
             }
             val compRef = resolvedComps.firstOrNull()
@@ -253,7 +255,6 @@ class SportApi(private val sportDBs: SportDBs) {
             )
         }
     }
-
 
     suspend fun findPlayoff(
         sport: String,

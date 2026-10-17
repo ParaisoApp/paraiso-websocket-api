@@ -200,7 +200,7 @@ class PostsApi(
             var depth = 1
             while (postsQueue.isNotEmpty()) {
                 val levelSize = postsQueue.size
-                for(i in 0 until levelSize){
+                for (i in 0 until levelSize) {
                     val nextRefNode = postsQueue.removeFirst()
                     // no need to search for sub posts if none exist beneath
                     val subPosts = if (nextRefNode.count > 0) {

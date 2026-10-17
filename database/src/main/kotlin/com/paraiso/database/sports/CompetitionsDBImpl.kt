@@ -80,9 +80,11 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             val now = Clock.System.now()
             val bulkOps = competitions.map { competition ->
                 val existing = existingComps[competition.id]
-                val odds = if(competition.odds?.isNotEmpty() == true){
+                val odds = if (competition.odds?.isNotEmpty() == true) {
                     competition.odds
-                } else existing?.odds
+                } else {
+                    existing?.odds
+                }
                 val entity = competition.copy(
                     status = competition.status.copy(
                         completedTime = existing?.status?.completedTime

@@ -19,14 +19,14 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
+import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
+import com.paraiso.domain.sport.data.Odds as OddsDomain
+import com.paraiso.domain.sport.data.OddsDiff as OddsDiffDomain
 import com.paraiso.domain.sport.data.Record as RecordDomain
 import com.paraiso.domain.sport.data.Schedule as ScheduleDomain
 import com.paraiso.domain.sport.data.Season as SeasonDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
-import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
-import com.paraiso.domain.sport.data.Odds as OddsDomain
-import com.paraiso.domain.sport.data.OddsDiff as OddsDiffDomain
 
 @Serializable
 data class RestSchedule(
@@ -60,7 +60,7 @@ data class RestEventSeasonType(
 @Serializable
 data class RestCompetition(
     val id: String,
-    val venue: RestVenue,
+    val venue: RestVenue? = null,
     val date: String,
     val competitors: List<RestCompetitor>,
     val situation: RestSituation? = null,
@@ -111,7 +111,7 @@ data class RestMedia(
 data class RestOdds(
     val moneyline: RestOddsCat,
     val pointSpread: RestOddsCat,
-    val total: RestOddsCat,
+    val total: RestOddsCat
 )
 
 @Serializable
@@ -253,7 +253,7 @@ fun RestCompetition.toDomain(
     val convertedOdds = listOfNotNull(
         odds?.moneyline?.toDomain(),
         odds?.pointSpread?.toDomain(),
-        odds?.total?.toDomain(),
+        odds?.total?.toDomain()
     )
     return CompetitionDomain(
         id = id,
@@ -264,7 +264,7 @@ fun RestCompetition.toDomain(
         week = week,
         season = season,
         teams = competitors.map { it.toTeamDomain() },
-        venue = venue.toDomain(),
+        venue = venue?.toDomain(),
         situation = situation?.toDomain(),
         broadcasts = broadcasts?.map { it.toDomain() },
         odds = convertedOdds,

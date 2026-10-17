@@ -12,6 +12,7 @@ data class DisplayOps(
     val sort: SortType,
     val selectedFilters: FilterTypes
 )
+
 @Serializable
 data class Cursor(
     val score: Double,

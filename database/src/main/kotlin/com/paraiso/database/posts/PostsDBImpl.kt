@@ -306,7 +306,7 @@ class PostsDBImpl(database: MongoDatabase) : PostsDB, Klogging {
                 add(eq(Post::parentId.name, parentId))
             }
             try {
-                //taper return at each level by 2^depth
+                // taper return at each level by 2^depth
                 val taperedLimit = RETRIEVE_LIM shr depth
                 return@withContext collection.find(and(baseFilters))
                     .sort(getSort(sortType))

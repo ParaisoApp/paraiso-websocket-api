@@ -7,14 +7,14 @@ import com.paraiso.domain.util.InstantBsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
 import com.paraiso.domain.sport.data.Competition as CompetitionDomain
+import com.paraiso.domain.sport.data.Odds as OddsDomain
+import com.paraiso.domain.sport.data.OddsDiff as OddsDiffDomain
 import com.paraiso.domain.sport.data.Situation as SituationDomain
 import com.paraiso.domain.sport.data.Status as StatusDomain
 import com.paraiso.domain.sport.data.TeamGameStats as TeamGameStatsDomain
 import com.paraiso.domain.sport.data.Venue as VenueDomain
-import com.paraiso.domain.sport.data.Broadcast as BroadcastDomain
-import com.paraiso.domain.sport.data.Odds as OddsDomain
-import com.paraiso.domain.sport.data.OddsDiff as OddsDiffDomain
 
 @Serializable
 data class Competition(
@@ -27,7 +27,7 @@ data class Competition(
     val week: Int?,
     val season: Season?,
     val teams: List<TeamGameStats>,
-    val venue: Venue,
+    val venue: Venue?,
     val situation: Situation?,
     val broadcasts: List<Broadcast>?,
     val odds: List<Odds>?,
@@ -120,7 +120,7 @@ fun CompetitionDomain.toEntity() =
         week = week,
         season = season?.toEntity(),
         teams = teams.map { it.toEntity() },
-        venue = venue.toEntity(),
+        venue = venue?.toEntity(),
         situation = situation?.toEntity(),
         broadcasts = broadcasts?.map { it.toEntity() },
         odds = odds?.map { it.toEntity() },
@@ -209,7 +209,7 @@ fun Competition.toDomain() =
         week = week,
         season = season?.toDomain(),
         teams = teams.map { it.toDomain() },
-        venue = venue.toDomain(),
+        venue = venue?.toDomain(),
         situation = situation?.toDomain(),
         broadcasts = broadcasts?.map { it.toDomain() },
         odds = odds?.map { it.toDomain() },

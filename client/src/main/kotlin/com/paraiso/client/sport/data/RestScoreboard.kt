@@ -4,7 +4,6 @@ import com.paraiso.domain.routes.SiteRoute
 import com.paraiso.domain.sport.data.Scoreboard
 import com.paraiso.domain.util.convertStringToInstant
 import kotlinx.serialization.Serializable
-import com.paraiso.domain.sport.data.Situation as SituationDomain
 
 @Serializable
 data class RestScoreboard(

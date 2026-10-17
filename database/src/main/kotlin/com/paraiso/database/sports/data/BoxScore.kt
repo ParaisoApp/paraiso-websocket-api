@@ -38,6 +38,7 @@ data class TeamStat(
     val label: String?,
     val stats: List<TeamStatNested>?
 )
+
 @Serializable
 data class TeamStatNested(
     val displayName: String?,
@@ -85,7 +86,6 @@ fun TeamStatNestedDomain.toEntity() =
         abbreviation = abbreviation,
         label = label
     )
-
 
 fun StatTypesDomain.toEntity() =
     StatTypes(
