@@ -65,9 +65,10 @@ class CompetitionsDBImpl(database: MongoDatabase) : CompetitionsDB, Klogging {
             }
         }
 
-    override suspend fun findByTeamsAndNotStarted(teamIds: List<String>): List<String> =
+    override suspend fun findByTeamsAndNotStarted(sport: String, teamIds: List<String>): List<String> =
         collection.find(
             and(
+                eq(Competition::sport.name, sport),
                 `in`("${Competition::teams.name}.teamId", teamIds),
                 eq("${Competition::status.name}.state", "pre"),
                 eq(Competition::activeStatus.name, ActiveStatus.ACTIVE)

@@ -492,7 +492,7 @@ class SportHandler(
         sportDBs.playoffsDB.save(listOf(updatedPlayoff))
         // remaining scheduled games not needed, remove posts so games don't display
         if (winnerCleanup.isNotEmpty()) {
-            sportDBs.competitionsDB.findByTeamsAndNotStarted(winnerCleanup).let { compIds ->
+            sportDBs.competitionsDB.findByTeamsAndNotStarted(sport.name, winnerCleanup).let { compIds ->
                 logger.info { "compId cleanup identified: $compIds for winners: $winnerCleanup" }
                 sportDBs.competitionsDB.setCompsDeleted(compIds)
                 postsApi.setPostsDeleted(compIds.map { "GAME-$it" })
