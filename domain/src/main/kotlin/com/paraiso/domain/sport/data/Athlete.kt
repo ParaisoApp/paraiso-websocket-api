@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Athlete(
-    @SerialName(Constants.ID) val id: String,
+    val id: String,
     val teamAbbr: String?,
     val displayName: String,
     val shortName: String?,
