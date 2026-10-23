@@ -5,5 +5,5 @@ object ServerConfig {
     var autoBuild: Boolean = false
 
     // builds leagues, teams, schedules, rosters
-    var autoBuildSports: Boolean = false
+    var autoBuildSports: Boolean = true
 }

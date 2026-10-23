@@ -363,16 +363,15 @@ class SportHandler(
                 )
             }
         }
-        // send scoreboard last as it will trigger refresh of comp consumers
         val basicScoreboard = scoreboard.toBasic()
+        // diff in basic scoreboard means new day (block runs once per day)
         if (basicScoreboard != lastSentScoreboard[sport]?.toBasic()) {
             sportDBs.scoreboardsDB.save(listOf(scoreboard))
+            // send scoreboard last as it will trigger refresh of comp consumers
             eventService.publish(
                 MessageType.SCOREBOARD.name,
                 "$sport:${Json.encodeToString(basicScoreboard)}"
             )
-            // add posts in case they were never added from schedule build (only saves if they're new)
-            addPosts(sport, activeCompetitions)
             if (!initScoreboard) {
                 val curLeague = sportDBs.leaguesDB.findBySport(sport.name)
                 val curType = activeCompetitions.firstOrNull()?.season?.type
@@ -382,10 +381,12 @@ class SportHandler(
                 }
                 // if posts don't exist or if in post season (post season game times change often), then pull schedule to generate posts
                 val existingPosts = postsApi.findByIdsIn(activeCompetitions.map { "$GAME_PREFIX${it.id}" }.toSet())
-                if (existingPosts.size != activeCompetitions.size || curType == 3) {
+                if (existingPosts.size != activeCompetitions.size || curType == POST_SEASON) {
                     buildSchedules(sport, manual = false, automated = true)
                 }
             }
+            // add posts in case they were never added from schedule build (only saves if they're new)
+            addPosts(sport, activeCompetitions)
         }
         lastSentScoreboard[sport] = scoreboard
     }
