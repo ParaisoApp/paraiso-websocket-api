@@ -295,9 +295,9 @@ class SportHandler(
                 lastCompCompletedStates[it.id] == false && (it.status.completed && it.teams.map { team -> team.winner }.contains(true))
             }.map { it.copy(status = it.status.copy(completedTime = now)) }
             // ensure ending posts are saved (take as active comps)
-            val activeComps = scoreboard.competitions.filter { !(it.status.completed && it.teams.map { team -> team.winner }.contains(true)) } + endingCompetitions
+            val activeOrEndingComps = scoreboard.competitions.filter { !(it.status.completed && it.teams.map { team -> team.winner }.contains(true)) } + endingCompetitions
             // delay an hour if all games ended - will trigger as long as scoreboard is still prev day
-            if (activeComps.isEmpty()) {
+            if (activeOrEndingComps.isEmpty()) {
                 delay(1.hours)
                 delayBoxScore
             } else {
@@ -306,9 +306,9 @@ class SportHandler(
                     saveScoreboardAndGetBoxScores(
                         sport,
                         scoreboard,
-                        activeComps,
-                        // send boxscores every 60 seconds or when last comps are ending
-                        delayBoxScore == 0 || activeComps.size == endingCompetitions.size,
+                        activeOrEndingComps,
+                        // send box scores every 60 seconds or when last comps are ending
+                        delayBoxScore == 0 || activeOrEndingComps.size == endingCompetitions.size,
                         initScoreboard = false
                     )
                     if (
@@ -326,9 +326,9 @@ class SportHandler(
                     }
                 }
                 // retrieve scoreboard every ten seconds
-                delay(15.seconds)
-                // delay boxScore fetch for 20 ticks of delay (every 5 minutes)
-                if (delayBoxScore == 20) {
+                delay(10.seconds)
+                // delay boxScore fetch for 18 ticks of delay (every 3 minutes)
+                if (delayBoxScore == 18) {
                     0
                 } else {
                     delayBoxScore + 1
